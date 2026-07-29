@@ -50,7 +50,10 @@ STATUTES = [
     },
 ]
 
-JUNK_MARKER = "Lawyer Egypt Firm"
+JUNK_MARKERS = [
+    "Lawyer Egypt Firm",
+    "مكتب محامى مصر للمحاماة والاستشارات القانونية",
+]
 
 
 def extract_law_text(html: str) -> str:
@@ -59,7 +62,8 @@ def extract_law_text(html: str) -> str:
     The site's Elementor theme renders post content inside one or more
     `.elementor-widget-theme-post-content` containers (one is often an
     empty duplicate); pick the longest one. Trim the trailing law-firm
-    contact block if present.
+    contact block if present (the marker appears in either English or
+    Arabic depending on the page).
     """
     soup = BeautifulSoup(html, "html.parser")
     candidates = soup.select(".elementor-widget-theme-post-content")
@@ -67,8 +71,9 @@ def extract_law_text(html: str) -> str:
         raise ValueError("no .elementor-widget-theme-post-content container found")
     best = max(candidates, key=lambda c: len(c.get_text(strip=True)))
     text = best.get_text("\n", strip=True)
-    if JUNK_MARKER in text:
-        text = text[: text.index(JUNK_MARKER)].rstrip()
+    for marker in JUNK_MARKERS:
+        if marker in text:
+            text = text[: text.index(marker)].rstrip()
     return text
 
 

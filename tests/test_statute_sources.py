@@ -19,12 +19,33 @@ FIXTURE_HTML = """
 </body></html>
 """
 
+ARABIC_JUNK_FIXTURE_HTML = """
+<html><body>
+<div class="elementor-widget-theme-post-content"></div>
+<div class="elementor-widget-theme-post-content">
+<p>قانون تجريبى</p>
+<p>مادة 1 - نص المادة الأولى.</p>
+<p>مادة 2 - نص المادة الثانية.</p>
+<p>مكتب محامى مصر للمحاماة والاستشارات القانونية</p>
+<p>واتس أب: 201220615243+</p>
+</div>
+</body></html>
+"""
+
 
 def test_extract_law_text_picks_longest_container_and_trims_junk():
     text = extract_law_text(FIXTURE_HTML)
     assert "مادة 1" in text
     assert "مادة 2" in text
     assert "Lawyer Egypt Firm" not in text
+    assert "واتس" not in text
+
+
+def test_extract_law_text_trims_arabic_firm_signature():
+    text = extract_law_text(ARABIC_JUNK_FIXTURE_HTML)
+    assert "مادة 1" in text
+    assert "مادة 2" in text
+    assert "مكتب محامى مصر للمحاماة والاستشارات القانونية" not in text
     assert "واتس" not in text
 
 

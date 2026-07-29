@@ -8,8 +8,12 @@ Run: uv run python scratch/fetch_statutes.py
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from datetime import datetime, timezone
 
 import httpx
 from datasets import load_dataset
