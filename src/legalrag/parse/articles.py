@@ -70,7 +70,7 @@ def parse_articles(text: str) -> list[ParsedArticle]:
         if mukarrar:
             key = str(base)
             mukarrar_counts[key] = mukarrar_counts.get(key, 0) + 1
-            sort_key = Decimal(base) + Decimal(mukarrar_counts[key]) / Decimal(10)
+            sort_key = Decimal(base) + Decimal(mukarrar_counts[key]) / Decimal(100)
             article_number = f"{base} {mukarrar.strip()}"
         else:
             sort_key = Decimal(base)

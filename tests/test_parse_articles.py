@@ -60,7 +60,7 @@ def test_parses_real_mukarrar_marker():
     articles = parse_articles(text)
     assert len(articles) == 3
     assert articles[1].article_number == "1 مكررًا"
-    assert articles[1].article_sort_key == Decimal("1.1")
+    assert articles[1].article_sort_key == Decimal("1.01")
     assert articles[2].article_sort_key == Decimal("2")
 
 
@@ -73,9 +73,31 @@ def test_second_mukarrar_for_same_base_increments_sort_key():
     articles = parse_articles(text)
     assert [a.article_sort_key for a in articles] == [
         Decimal("5"),
-        Decimal("5.1"),
-        Decimal("5.2"),
+        Decimal("5.01"),
+        Decimal("5.02"),
     ]
+
+
+def test_many_mukarrar_insertions_do_not_collide_with_next_article():
+    # Regression test: with a divisor of 10, the 10th مكرر on a base article
+    # would compute sort_key = base + 10/10 = base + 1, colliding with the
+    # next real article's integer sort key. With a divisor of 100, up to 99
+    # مكرر insertions have headroom before any collision risk.
+    mukarrar_blocks = "".join(
+        f"مادة 5 مكرر –\nنص خامس مكرر رقم {i}.\n" for i in range(1, 13)
+    )
+    text = "مادة 5 –\nنص خامس.\n" + mukarrar_blocks + "مادة 6 –\nنص سادس.\n"
+    articles = parse_articles(text)
+
+    base_article = articles[0]
+    mukarrar_articles = articles[1:13]
+    next_article = articles[13]
+
+    assert base_article.article_sort_key == Decimal("5")
+    assert len(mukarrar_articles) == 12
+    assert next_article.article_sort_key == Decimal("6")
+    for article in mukarrar_articles:
+        assert article.article_sort_key < next_article.article_sort_key
 
 
 def test_arabic_indic_digits_in_marker_are_normalized():
