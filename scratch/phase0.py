@@ -72,6 +72,7 @@ if "statutes" not in st.session_state:
     st.session_state.statutes = load_statute_texts(RAW_DIR)
 if "system_prompt" not in st.session_state:
     st.session_state.system_prompt = build_system_prompt(st.session_state.statutes)
+st.caption(f"~{len(st.session_state.system_prompt):,} chars of statute text in context")
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -87,13 +88,16 @@ if question:
 
     with st.chat_message("assistant"):
         with st.spinner("جارٍ البحث في نصوص القانون..."):
-            response = client.chat.completions.create(
-                model=MODEL,
-                messages=[
-                    {"role": "system", "content": st.session_state.system_prompt},
-                    *st.session_state.messages,
-                ],
-            )
-            reply = response.choices[0].message.content
+            try:
+                response = client.chat.completions.create(
+                    model=MODEL,
+                    messages=[
+                        {"role": "system", "content": st.session_state.system_prompt},
+                        *st.session_state.messages,
+                    ],
+                )
+                reply = response.choices[0].message.content or "(empty response from model)"
+            except Exception as e:
+                reply = f"⚠️ حدث خطأ أثناء الاتصال بالنموذج: {e}"
         st.markdown(reply)
     st.session_state.messages.append({"role": "assistant", "content": reply})

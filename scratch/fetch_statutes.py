@@ -38,7 +38,10 @@ def check_fr3on() -> None:
         if matches:
             print(f"  FOUND in fr3on for {statute['slug']}: {matches}")
         else:
-            print(f"  not found in fr3on for {statute['slug']}, will fetch instead")
+            print(
+                f"  not found in fr3on for {statute['slug']} "
+                "(expected — fetching from lawyeregypt.net regardless)"
+            )
 
 
 def fetch_statute(statute: dict) -> None:

@@ -94,3 +94,6 @@ def test_write_statute_files_writes_text_and_meta(tmp_path: Path):
     assert meta["slug"] == "test-statute"
     assert meta["source"] == "example.com"
     assert meta["fetched_at"] == "2026-07-29T00:00:00+00:00"
+    assert meta["law_number"] == "1"
+    assert meta["law_year"] == 2000
+    assert meta["title_ar"] == "قانون تجريبى"

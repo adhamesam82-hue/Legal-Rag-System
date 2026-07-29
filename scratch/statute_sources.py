@@ -98,8 +98,8 @@ def write_statute_files(
 ) -> tuple[Path, Path]:
     """Write a statute's text and provenance sidecar to `raw_dir`.
 
-    Returns (txt_path, meta_path). `source` is a short label such as
-    "lawyeregypt.net" or "fr3on/eg-legal-rag@<revision>".
+    Returns (txt_path, meta_path). `source` is a short label describing where
+    the text came from; currently only "lawyeregypt.net" is ever passed.
     """
     raw_dir.mkdir(parents=True, exist_ok=True)
     txt_path = raw_dir / f"{statute['slug']}.txt"
