@@ -9,10 +9,22 @@ from legalrag.ingest import insert_articles, upsert_instrument
 from legalrag.parse.articles import ParsedArticle
 
 
+def _delete_test_rows(connection):
+    with connection.cursor() as cur:
+        cur.execute(
+            "DELETE FROM articles WHERE instrument_id IN "
+            "(SELECT id FROM instruments WHERE number LIKE 'TEST-%')"
+        )
+        cur.execute("DELETE FROM instruments WHERE number LIKE 'TEST-%'")
+    connection.commit()
+
+
 @pytest.fixture
 def conn():
     connection = get_connection()
+    _delete_test_rows(connection)
     yield connection
+    _delete_test_rows(connection)
     connection.rollback()
     connection.close()
 
@@ -135,8 +147,6 @@ def test_insert_articles_upsert_refreshes_stale_columns(conn):
         source_url="https://example.com/test4",
     )
 
-    # Derive "changed" values from literals already in this file rather than
-    # inventing new Arabic prose (see Arabic-text-hazard mitigation).
     updated_text = original_text + 'قانون تجريبى ثان'
     updated_chapter = 'قانون تجريبى'
     updated_articles = [
