@@ -33,12 +33,19 @@ def report_instrument(slug: str, text: str) -> None:
         return
 
     base_numbers = sorted({int(a.article_sort_key) for a in articles})
-    gaps = [
-        n
-        for n in range(base_numbers[0], base_numbers[-1])
-        if n not in base_numbers and (n + 1) in base_numbers
-    ]
-    print(f"  numbering gaps: {gaps}" if gaps else "  no numbering gaps")
+    base_number_set = set(base_numbers)
+    missing = [n for n in range(base_numbers[0], base_numbers[-1]) if n not in base_number_set]
+    gap_labels = []
+    i = 0
+    while i < len(missing):
+        start = missing[i]
+        end = start
+        while i + 1 < len(missing) and missing[i + 1] == end + 1:
+            i += 1
+            end = missing[i]
+        gap_labels.append(f"{start}-{end}" if end != start else str(start))
+        i += 1
+    print(f"  numbering gaps: [{', '.join(gap_labels)}]" if gap_labels else "  no numbering gaps")
 
     number_counts = Counter(a.article_number for a in articles)
     duplicates = {number: count for number, count in number_counts.items() if count > 1}
