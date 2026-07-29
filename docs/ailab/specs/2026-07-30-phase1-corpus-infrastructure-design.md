@@ -51,9 +51,8 @@ Phase 0 already validated if no dataset covers them cleanly:
 
 ## Infrastructure
 
-- **Container runtime**: Colima (`colima start`) + Docker CLI — chosen over
-  Docker Desktop for a lighter footprint, no license/GUI. Same
-  `docker-compose.yml` works under either.
+- **Container runtime**: Docker Desktop. Standard install, GUI for inspecting
+  containers/volumes during development.
 - **`docker-compose.yml`** (repo root): single `postgres` service using
   `pgvector/pgvector:pg16`, named volume `pgdata` for persistence, port 5432
   mapped to localhost, credentials from `.env` (`POSTGRES_USER`,
