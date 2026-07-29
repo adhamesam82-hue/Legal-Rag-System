@@ -189,35 +189,71 @@ there's an index to invalidate.
 
 ## Acquisition (`sources/`)
 
-Executed in this order — each step is a real investigation, not decided here:
+Verified directly against the live datasets/sites while writing the
+implementation plan (not assumed):
 
-1. **`fr3on/eg-legal-rag`**: already known from Phase 0 to cover only Penal
-   Code + Criminal Procedure Law (1,046 rows, no structured law-number/year
-   field). Load it anyway via `sources/fr3on.py` for completeness and to
-   confirm nothing has changed upstream; treat it as a contributor, not the
-   spine.
-2. **Survey remaining `fr3on` releases** (`fr3on/eg-legal-instruction-following`
-   for gold-set phrasing ideas later; scan the rest of the profile) —
-   report coverage, don't ingest instruction-following data as corpus text.
-3. **`dataflare/egypt-legal-corpus`** (~25M tokens, MIT, hierarchical category
-   metadata): primary spine candidate given its breadth. `sources/dataflare.py`
-   loads it, reports schema/row count/whether article-segmented.
-4. **Fidelity check**: pick one well-known statute already in the spine
-   dataset, compare 20 articles character-by-character against
-   Tashreaat/gazette text, report a fidelity estimate. This gate must pass
-   (or the discrepancies must be understood and acceptable) before building
-   the parser against the spine dataset at scale.
-5. **`TawasulAI/egyptian-law-articles`** cross-checked for coverage gaps or
-   disagreements against the spine.
-6. **Guarantee-list fallback**: for Civil Code 131/1948, Labour Law 12/2003,
-   Companies Law 159/1981 specifically — if the spine dataset's version is
-   missing, low-fidelity, or structurally unreliable, fall back to
-   `sources/lawyeregypt.py`, which wraps Phase 0's already-validated
-   `extract_law_text` logic against the same 3 URLs.
-7. **No further scraping** beyond the guarantee list unless a specific,
+- **`fr3on/eg-legal-rag`** (1,046 rows) and its sibling releases
+  (`eg-legal-multi-task`, `eg-legal-comparative-law`, `eg-legal-ner`,
+  `eg-legal-classification`, `eg-legal-reasoning`, `eg-legal-qa`) are all
+  scoped to **Penal Code + Criminal Procedure Law only**, richly annotated
+  (NER, classification, article-level) but not a source of broader coverage.
+  Role: enrichment/cross-check for those 2 statutes specifically, not a
+  spine.
+- **`dataflare/egypt-legal-corpus`** (2,434 rows, MIT) is **not** clean
+  per-statute rows — most rows are short legal-encyclopedia/case-note
+  entries (e.g. "دعوى مدنية تعويض" — "civil suit: compensation"), not statute
+  text. A minority of rows (~300–550 of 2,434, by token count — verified:
+  126 rows have >50,000 tokens, 324 have >20,000) are genuine full-instrument
+  text; row-level spot checks confirm at least the Civil Code row (`law_name`
+  = "القانون المدني") is clean, matching known Art. 1–2 text exactly. This is
+  still the primary spine candidate, but **loading it requires a
+  classification step**, not a straight dump: filter candidate rows by
+  token-count threshold (>10,000 tokens as a starting cut) and `law_name`
+  matching a statute-title pattern (`قانون رقم N لسنة YYYY` or a known title),
+  then human-eyeball the filtered set before treating any row as a real
+  instrument.
+- **`TawasulAI/egyptian-law-articles`** (1,105 rows) is clean, article-level,
+  bilingual (`text_ar`/`text_en` per row) — verified against known Civil Code
+  translation text (Art. 1–4 match). It covers the **Civil Code only**, not a
+  broad corpus. Role: bilingual cross-check/fidelity source for Civil Code
+  specifically (its `text_en` also seeds future official-translation rows).
+- **`tashreaat.com`** — confirmed still unreachable today (as it was in
+  Phase 0). It is **not** used as the fidelity-check source, despite being
+  named in the original roadmap doc. **`manshurat.org`** is reachable
+  (HTTP 200) but PDF-only, format/quality unverified — usable as a fidelity
+  source for broad-corpus statutes once its PDF text layer is checked.
+  **`lawyeregypt.net`** (already validated working in Phase 0, plain HTML)
+  is the fidelity source for the 3 guaranteed statutes specifically.
+
+Acquisition order:
+
+1. Load `fr3on/eg-legal-rag` via `sources/fr3on.py`; confirm current coverage
+   still matches (Penal Code + Criminal Procedure). Treat as enrichment for
+   those 2 statutes, not the spine.
+2. Load `dataflare/egypt-legal-corpus` via `sources/dataflare.py`. Apply the
+   token-count + `law_name`-pattern filter above to separate real-instrument
+   rows from encyclopedia/case-note rows; print the filtered candidate list
+   for human review before treating any row as ingestable statute text.
+3. **Fidelity check**: for one well-known statute already in the filtered
+   dataflare set (e.g. Civil Code), compare 20 articles character-by-character
+   against `lawyeregypt.net` text (already scraped in Phase 0, reusable) as
+   ground truth; report a fidelity estimate. This gate must pass — or the
+   discrepancies must be understood and judged acceptable — before building
+   the parser against the filtered dataflare rows at scale.
+4. Cross-check `TawasulAI/egyptian-law-articles` against the Civil Code rows
+   from dataflare for coverage/disagreement (both claim to cover the same
+   statute; disagreements are a fidelity signal in either direction).
+5. **Guarantee-list fallback**: for Civil Code 131/1948, Labour Law 12/2003,
+   Companies Law 159/1981 specifically — if the filtered dataflare/fr3on/
+   TawasulAI set is missing, low-fidelity, or structurally unreliable for any
+   of them, fall back to `sources/lawyeregypt.py`, which wraps Phase 0's
+   already-validated `extract_law_text` logic against the same 3 URLs.
+6. **No further scraping** beyond the guarantee list unless a specific,
    named gap is found and approved — the "no scraper until exhausted" rule
    from the roadmap doc applies to avoid open-ended crawler-building.
-8. Every acquired file is written untouched to `data/raw/{slug}.{ext}` with a
+   `manshurat.org` PDF extraction is the documented next fallback if a
+   broad-corpus gap needs closing later, but is not built speculatively.
+7. Every acquired file is written untouched to `data/raw/{slug}.{ext}` with a
    `.meta.json` sidecar (source name + revision/URL, fetch date) before any
    parsing touches it. Extracted-but-not-yet-parsed intermediate text (e.g.
    HF dataset rows flattened to per-instrument text) goes in `data/interim/`.
@@ -289,16 +325,21 @@ produces only the verified YAML.
 
 ## Known risks (carried forward from the roadmap doc)
 
-- **Broad-corpus fidelity is unverified until the step-4 gate runs** — if the
-  spine dataset's fidelity estimate comes back poor, the acquisition order
-  above may need to fall back further than planned (e.g. treating
-  `dataflare` as a cross-check instead of the spine). This is a real
-  possibility, not just a formality — flag it to the user immediately if it
-  happens rather than proceeding on low-fidelity text.
+- **`dataflare`'s row-classification filter (token-count + `law_name`
+  pattern) is a heuristic, not a guarantee** — it may admit a non-statute row
+  or miss a genuine short statute. The human-eyeball step after filtering
+  exists specifically to catch this; do not skip it even under time pressure.
+- **The character-by-character fidelity check now runs against
+  `lawyeregypt.net`, not an official gazette/Tashreaat source** (Tashreaat is
+  confirmed unreachable). This is one step further from primary-source
+  ground truth than the roadmap originally intended. Acceptable for Phase 1
+  given Phase 0 already spot-checked `lawyeregypt.net` text as clean, but
+  worth revisiting if a genuinely official source becomes reachable later.
 - **`مكرر` chains and spelled ordinals** remain the most likely source of
   silent numbering gaps, now across many more instruments than Phase 0's 3.
 - **Arabic OCR is out of scope for Phase 1** unless the guarantee-list
   fallback or a broad-corpus gap specifically requires it — expect this not
   to come up if `dataflare`/`fr3on`/`lawyeregypt.net` cover what's needed,
-  but don't assume it in advance.
+  but don't assume it in advance. `manshurat.org` PDFs are unverified for
+  text-layer quality and are a documented fallback, not a relied-upon source.
 </content>
