@@ -787,9 +787,11 @@ git commit -m "Add article-boundary parser handling three real marker formats"
 
 **Interfaces:**
 - Consumes: `legalrag.parse.articles.parse_articles` (Task 4), reads `data/raw/*.meta.json` + `.txt`
-- Produces: a CLI printing article counts / numbering gaps / length outliers per instrument — used manually throughout acquisition tasks (7 onward) after every new source is added.
+- Produces: a CLI printing article counts / numbering gaps / duplicate article numbers / length outliers per instrument — used manually throughout acquisition tasks (7 onward) after every new source is added.
 
 Not unit-tested — it's a reporting CLI over real files, verified by running it (same pattern as Phase 0's acquisition script).
+
+**Amended during Task 4's review:** the Task 4 reviewer ran the parser against the real, already-acquired `eg-civil-code-131-1948.txt` and found genuine duplicate article numbers — two articles numbered `"1"` and two numbered `"2"` (Egyptian promulgation-law texts commonly prepend a short 2-article "law of promulgation" before the substantive law's own text, which restarts numbering from 1), plus two entries both numbered `"922"` with different text (likely a pre-existing scrape defect from Phase 0's acquisition, not a parser bug). Task 6's `ingest.py` has a `UNIQUE (instrument_id, article_number, language)` constraint and an `ON CONFLICT ... DO UPDATE`, which means a real duplicate silently overwrites one article's text with the other's — undetected data loss unless `parse_report` flags it first. Duplicate detection is added to `report_instrument` below for this reason; it is not optional/deferred.
 
 - [ ] **Step 1: Write `src/legalrag/parse/report.py`**
 
@@ -802,6 +804,7 @@ from __future__ import annotations
 
 import json
 import statistics
+from collections import Counter
 from pathlib import Path
 
 from legalrag.parse.articles import parse_articles
@@ -835,6 +838,11 @@ def report_instrument(slug: str, text: str) -> None:
     ]
     print(f"  numbering gaps: {gaps}" if gaps else "  no numbering gaps")
 
+    number_counts = Counter(a.article_number for a in articles)
+    duplicates = {number: count for number, count in number_counts.items() if count > 1}
+    if duplicates:
+        print(f"  WARNING duplicate article numbers (ingest will silently overwrite these): {duplicates}")
+
     lengths = [len(a.article_text) for a in articles]
     mean = statistics.mean(lengths)
     stdev = statistics.pstdev(lengths) if len(lengths) > 1 else 0
@@ -863,7 +871,9 @@ if __name__ == "__main__":
 - [ ] **Step 2: Run it against the 3 already-acquired statutes**
 
 Run: `uv run python -m legalrag.parse.report`
-Expected: one block per statute (`eg-civil-code-131-1948`, `eg-companies-law-159-1981`, `eg-labour-law-12-2003`) showing article count, gap list, and any length outliers. Eyeball the gap lists — Civil Code has ~1149 articles, Labour Law ~257, Companies Law's real article count is expected to be lower than the raw `مادة` occurrence count noted in Phase 0 (that count included appended executive-regulation cross-references past article 505; the real parse should clarify the true count). If a gap list looks wrong (e.g. large unexplained runs), stop and inspect the source text at that line number before proceeding to Task 6 — don't paper over a parser bug by adjusting the gap-detection thresholds.
+Expected: one block per statute (`eg-civil-code-131-1948`, `eg-companies-law-159-1981`, `eg-labour-law-12-2003`) showing article count, gap list, duplicate-number warnings, and any length outliers. Eyeball the gap lists — Civil Code has ~1149 articles, Labour Law ~257, Companies Law's real article count is expected to be lower than the raw `مادة` occurrence count noted in Phase 0 (that count included appended executive-regulation cross-references past article 505; the real parse should clarify the true count). If a gap list looks wrong (e.g. large unexplained runs), stop and inspect the source text at that line number before proceeding to Task 6 — don't paper over a parser bug by adjusting the gap-detection thresholds.
+
+Expect the Civil Code's duplicate-number warning to include `"1"` and `"2"` (the 2-article promulgation decree preceding the substantive law restarts numbering — benign, both articles are real text, Task 6 will need to decide how to handle the collision, e.g. by treating the promulgation decree as a separate instrument or accepting last-write-wins) and `"922"` (found during Task 4's review with different text at each occurrence — inspect both occurrences in `data/raw/eg-civil-code-131-1948.txt` directly; this looks like a pre-existing scrape defect from Phase 0's acquisition rather than a parser bug, but confirm before treating it as such, and decide with the user whether to hand-correct the source file or accept the data loss from Task 6's overwrite behavior).
 
 - [ ] **Step 3: Commit**
 
