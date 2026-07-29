@@ -73,6 +73,7 @@ legal-rag-system/
     0001_init.sql
   scripts/
     migrate.py
+    fidelity_check.py  # NEW — character-by-character comparison, reports a score
   data/
     raw/            # existing — untouched Phase 0 files stay; new sources added
     interim/         # NEW — extracted/pre-parse text, one file per instrument
@@ -91,12 +92,19 @@ legal-rag-system/
     parse/
       articles.py     # article-boundary parser
       report.py        # parse_report CLI
+    ingest.py          # NEW — bridges parse+normalize output into instruments/articles rows
   scratch/            # UNCHANGED — Phase 0 prototype stays frozen
   tests/
     test_arabic.py
     test_parse_articles.py
+    test_ingest.py
     (existing test_statute_sources.py untouched)
 ```
+
+`ingest.py` and `scripts/fidelity_check.py` were not explicitly named in the
+first draft of this doc but are required by the phase gate (data must
+actually be loaded into Postgres and spot-checked; the fidelity gate must
+produce a reportable number) — added here for completeness.
 
 `scratch/phase0.py` and its helpers are not touched, deprecated, or deleted —
 they remain the disposable Phase 0 artifact.
