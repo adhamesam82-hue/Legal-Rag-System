@@ -1,4 +1,4 @@
-"""parse_report CLI: article counts, numbering gaps, length outliers per instrument.
+"""parse_report CLI: article counts, numbering gaps, duplicates, length outliers per instrument.
 
 Run: uv run python -m legalrag.parse.report
 """
