@@ -3,6 +3,7 @@ from decimal import Decimal
 
 import pytest
 
+from legalrag.arabic import normalize
 from legalrag.db import get_connection
 from legalrag.ingest import insert_articles, upsert_instrument
 from legalrag.parse.articles import ParsedArticle
@@ -46,8 +47,22 @@ def test_upsert_instrument_is_idempotent_on_conflict(conn):
         fetched_at=datetime(2026, 7, 30, tzinfo=timezone.utc),
     )
     first_id = upsert_instrument(conn, **kwargs)
-    second_id = upsert_instrument(conn, **kwargs)
+
+    updated_kwargs = dict(kwargs)
+    updated_kwargs["title"] = kwargs["title"] + kwargs["title"]  # derived, not hand-typed
+    updated_kwargs["source_url"] = "https://example.com/test2-updated"
+    second_id = upsert_instrument(conn, **updated_kwargs)
     assert first_id == second_id
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT title, title_norm, source_url FROM instruments WHERE id = %s",
+            (second_id,),
+        )
+        title, title_norm, source_url = cur.fetchone()
+    assert title == updated_kwargs["title"]
+    assert title_norm == normalize(updated_kwargs["title"])
+    assert source_url == "https://example.com/test2-updated"
 
 
 def test_insert_articles_writes_normalized_text_and_hash(conn):
@@ -89,3 +104,63 @@ def test_insert_articles_writes_normalized_text_and_hash(conn):
     assert "نص الماده الاولي" in text_norm  # ة->ه, ى->ي applied
     assert norm_version == "v1"
     assert len(content_hash) == 64  # sha256 hex digest
+
+
+def test_insert_articles_upsert_refreshes_stale_columns(conn):
+    instrument_id = upsert_instrument(
+        conn,
+        jurisdiction="EG",
+        instrument_type="law",
+        number="TEST-4",
+        year=2003,
+        title='قانون تجريبى ثالث',
+        source_url="https://example.com/test4",
+        fetched_at=datetime(2026, 7, 30, tzinfo=timezone.utc),
+    )
+    original_text = 'نص المادة الأولى.'
+    articles = [
+        ParsedArticle(
+            article_number="1",
+            article_sort_key=Decimal("1"),
+            article_text=original_text,
+            chapter=None,
+        )
+    ]
+    insert_articles(
+        conn,
+        instrument_id=instrument_id,
+        jurisdiction="EG",
+        articles=articles,
+        language="ar",
+        source_url="https://example.com/test4",
+    )
+
+    # Derive "changed" values from literals already in this file rather than
+    # inventing new Arabic prose (see Arabic-text-hazard mitigation).
+    updated_text = original_text + 'قانون تجريبى ثان'
+    updated_chapter = 'قانون تجريبى'
+    updated_articles = [
+        ParsedArticle(
+            article_number="1",
+            article_sort_key=Decimal("1"),
+            article_text=updated_text,
+            chapter=updated_chapter,
+        )
+    ]
+    insert_articles(
+        conn,
+        instrument_id=instrument_id,
+        jurisdiction="EG",
+        articles=updated_articles,
+        language="ar",
+        source_url="https://example.com/test4",
+    )
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT article_text, chapter FROM articles WHERE instrument_id = %s AND article_number = %s",
+            (instrument_id, "1"),
+        )
+        article_text, chapter = cur.fetchone()
+    assert article_text == updated_text
+    assert chapter == updated_chapter
