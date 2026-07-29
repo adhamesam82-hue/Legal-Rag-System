@@ -10,7 +10,7 @@ import re
 NORM_VERSION = "v1"
 
 _DIACRITICS = re.compile(
-    r"[ً-ْٓ-ٰ٘ۖ-ۭ]"
+    r"[\u0610-\u061A\u064B-\u065F\u06D6-\u06DC\u06DF-\u06E8\u06EA-\u06ED\u0670]"
 )
 _TATWEEL = "ـ"
 

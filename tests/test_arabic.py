@@ -41,3 +41,8 @@ def test_normalize_real_mukarrar_article_snippet():
 def test_norm_version_is_a_short_string():
     assert isinstance(NORM_VERSION, str)
     assert len(NORM_VERSION) > 0
+
+
+def test_normalize_preserves_arabic_indic_digits_through_full_pipeline():
+    text = "قانون رقم ١٥٩ لسنة ١٩٨١"
+    assert normalize(text) == "قانون رقم 159 لسنه 1981"
