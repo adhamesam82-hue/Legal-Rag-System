@@ -1,0 +1,257 @@
+- id: goldset-001
+  question: What does Article 558 of the Egyptian Civil Code (Law 131/1948) say a lease contract is?
+  jurisdiction: EG
+  expected_articles:
+  - 131/1948 Art. 558
+  category: exact_citation
+  notes: 'Verified text: ''الإيجار عقد يلتزم المؤجر بمقتضاه أن يمكن المستأجر من الانتفاع بشىء معين عدة معينة لقاء أجر معلوم'' (lease = contract giving the tenant use of a thing for a period against rent).'
+- id: goldset-002
+  question: ماذا تنص المادة 163 من القانون المدني؟
+  jurisdiction: EG
+  expected_articles:
+  - 131/1948 Art. 163
+  category: exact_citation
+  notes: 'Verified text: ''كل خطأ سبب ضررا للغير يلزم من ارتكبه بالتعويض'' (the general tort-liability rule).'
+- id: goldset-003
+  question: What does Article 1 of the Egyptian Civil Code say a judge should apply when no statute covers a case -- custom, Islamic law principles, or natural law?
+  jurisdiction: EG
+  expected_articles:
+  - 131/1948 Art. 1
+  category: exact_citation
+  notes: 'Verified: order is statute, then custom (العرف), then principles of Islamic sharia, then natural law/equity.'
+- id: goldset-004
+  question: ماذا تنص المادة 80 من قانون العمل رقم 12 لسنة 2003؟
+  jurisdiction: EG
+  expected_articles:
+  - 12/2003 Art. 80
+  category: exact_citation
+  notes: 'Verified: caps actual working time at 8 hours/day or 48 hours/week.'
+- id: goldset-005
+  question: What does Article 9 of Egypt's Intellectual Property Law (82/2002) say about how long patent protection lasts?
+  jurisdiction: EG
+  expected_articles:
+  - 82/2002 Art. 9
+  category: exact_citation
+  notes: 'Verified: patent protection lasts twenty years from the filing date.'
+- id: goldset-006
+  question: ماذا تنص المادة 90 من قانون حماية الملكية الفكرية رقم 82 لسنة 2002؟
+  jurisdiction: EG
+  expected_articles:
+  - 82/2002 Art. 90
+  category: exact_citation
+  notes: 'Verified: trademark registration protection lasts ten years, renewable.'
+- id: goldset-007
+  question: What does Article 2 of the Companies Law (159/1981) say about a shareholder's liability for the company's debts?
+  jurisdiction: EG
+  expected_articles:
+  - 159/1981 Art. 2
+  category: exact_citation
+  notes: 'Verified: shareholder liability is limited to the value of shares subscribed.'
+- id: goldset-008
+  question: ماذا تنص المادة 2 من قانون الضرائب على الدخل رقم 157 لسنة 1981؟
+  jurisdiction: EG
+  expected_articles:
+  - 157/1981 Art. 2
+  category: exact_citation
+  notes: 'Verified: sets the tax rate at 32% of gross taxable income.'
+- id: goldset-009
+  question: What does Article 1 of the Military Judiciary Law (25/1966) say about the independence of Egypt's military courts?
+  jurisdiction: EG
+  expected_articles:
+  - 25/1966 Art. 1
+  category: exact_citation
+  notes: 'Verified: military judiciary is an independent judicial body.'
+- id: goldset-010
+  question: ماذا تنص المادة 1 من قانون المحاماة المصري رقم 17 لسنة 1983؟
+  jurisdiction: EG
+  expected_articles:
+  - 17/1983 Art. 1
+  category: exact_citation
+  notes: 'Verified: advocacy is a free profession that shares in achieving justice alongside the judiciary.'
+- id: goldset-011
+  question: What does Article 10 of the Egyptian Arbitration Law (27/1994) say defines an arbitration agreement?
+  jurisdiction: EG
+  expected_articles:
+  - 27/1994 Art. 10
+  category: exact_citation
+  notes: 'Verified: an arbitration agreement is the parties'' agreement to resort to arbitration to settle a dispute.'
+- id: goldset-012
+  question: ماذا تنص المادة 5 من قانون التجارة رقم 17 لسنة 1999؟
+  jurisdiction: EG
+  expected_articles:
+  - 17/1999 Art. 5
+  category: exact_citation
+  notes: 'Verified: lists acts deemed commercial when done as a profession (supply of goods/services, industry, transport, brokerage, insurance, banking, etc.).'
+- id: goldset-013
+  question: What does Article 6 of the Central Bank Law (88/2003) list as the powers of the Central Bank of Egypt?
+  jurisdiction: EG
+  expected_articles:
+  - 88/2003 Art. 6
+  category: exact_citation
+  notes: 'Verified: issuing currency, managing monetary liquidity, credit oversight, gold/FX reserves, FX market regulation, payments system supervision, etc.'
+- id: goldset-014
+  question: لو حدثت حوادث استثنائية عامة جعلت تنفيذ عقدى مرهقًا جدًا رغم أنه لم يصبح مستحيلًا، هل يستطيع القاضى تعديل التزامى؟
+  jurisdiction: EG
+  expected_articles:
+  - 131/1948 Art. 147
+  category: plain_language
+  notes: 'Verified: Art. 147(2) lets a judge reduce a contractual obligation made crushingly burdensome (not impossible) by unforeseeable exceptional events, to a reasonable limit.'
+- id: goldset-015
+  question: هل تكون للشركة، بصفتها شخصًا اعتباريًا، ذمة مالية مستقلة عن أصحابها فى القانون المدني؟
+  jurisdiction: EG
+  expected_articles:
+  - 131/1948 Art. 53
+  category: plain_language
+  notes: 'Verified: Art. 53 gives a juridical person (شخص اعتبارى) an independent financial estate (ذمة مالية مستقلة) among other attributes.'
+- id: goldset-016
+  question: إذا توصل العامل إلى اختراع جديد أثناء خدمته لدى صاحب العمل، فلمن يكون الحق فى هذا الاختراع؟
+  jurisdiction: EG
+  expected_articles:
+  - 131/1948 Art. 688
+  category: plain_language
+  notes: 'Verified: Art. 688 -- default is the employee keeps the rights, unless the job itself required inventive work or the contract stipulates otherwise.'
+- id: goldset-017
+  question: كم يومًا تكون مدة الإجازة السنوية للعامل بعد أن يمضى سنة كاملة فى الخدمة؟
+  jurisdiction: EG
+  expected_articles:
+  - 12/2003 Art. 47
+  category: plain_language
+  notes: 'Verified: 21 paid days after one full year of service, rising to 30 days after 10 years'' service or once the worker is over 50.'
+- id: goldset-018
+  question: هل يجوز فصل العامل إذا وُجد أثناء ساعات العمل فى حالة سكر بيّن؟
+  jurisdiction: EG
+  expected_articles:
+  - 12/2003 Art. 69
+  category: plain_language
+  notes: 'Verified: Art. 69(7) lists being visibly drunk during working hours as gross misconduct justifying dismissal.'
+- id: goldset-019
+  question: هل يجوز الحصول على براءة اختراع عن الاكتشافات والنظريات العلمية فى مصر؟
+  jurisdiction: EG
+  expected_articles:
+  - 82/2002 Art. 2
+  category: plain_language
+  notes: 'Verified: Art. 2(2) excludes scientific discoveries and theories from patentability.'
+- id: goldset-020
+  question: هل تتمتع برامج الحاسب الآلى بحماية حقوق المؤلف فى القانون المصري؟
+  jurisdiction: EG
+  expected_articles:
+  - 82/2002 Art. 140
+  category: plain_language
+  notes: 'Verified: Art. 140(2) lists computer programs among works protected by copyright.'
+- id: goldset-021
+  question: كم يبلغ سن الشيخوخة الذى يستحق عنده المؤمن عليه معاشه وفقًا لقانون التأمينات الاجتماعية رقم 148 لسنة 2019؟
+  jurisdiction: EG
+  expected_articles:
+  - 148/2019 Art. 1
+  category: plain_language
+  notes: 'Verified: Art. 1 definitions, item 10 -- retirement age is 60 (65 for certain categories under Art. 2 items 2/4).'
+- id: goldset-022
+  question: هل تسرى أحكام قانون الطيران المدنى المصري على الطائرات العسكرية؟
+  jurisdiction: EG
+  expected_articles:
+  - 28/1981 Art. 2
+  category: plain_language
+  notes: 'Verified: Art. 2(3) -- the law does not apply to military airports/aircraft except by special provision.'
+- id: goldset-023
+  question: If I've worked for my employer for 5 years under an open-ended contract, how much advance written notice must they give before ending it?
+  jurisdiction: EG
+  expected_articles:
+  - 12/2003 Art. 111
+  category: plain_language
+  notes: 'Verified: Art. 111 -- 2 months'' notice if connected service is under 10 years.'
+- id: goldset-024
+  question: Does Egypt's Companies Law recognize single-person (one-owner) companies, or only companies with multiple shareholders?
+  jurisdiction: EG
+  expected_articles:
+  - 159/1981 Art. 1
+  category: plain_language
+  notes: 'Verified: Art. 1 explicitly covers شركات الشخص الواحد (single-person companies) alongside joint-stock, partnership-by-shares, and LLC forms.'
+- id: goldset-025
+  question: Under Egyptian law, is a new governorate created by an act of parliament or by a presidential decision?
+  jurisdiction: EG
+  expected_articles:
+  - 43/1979 Art. 1
+  category: plain_language
+  notes: 'Verified: Art. 1(a) -- governorates are created by presidential decision.'
+- id: goldset-026
+  question: Is maintaining price stability part of the Central Bank of Egypt's legal mandate?
+  jurisdiction: EG
+  expected_articles:
+  - 88/2003 Art. 5
+  category: plain_language
+  notes: 'Verified: Art. 5 -- the Central Bank works to achieve price stability and banking-system soundness.'
+- id: goldset-027
+  question: As a consumer in Egypt, do I have a legal right to accurate information about a product before buying it?
+  jurisdiction: EG
+  expected_articles:
+  - 181/2018 Art. 2
+  category: plain_language
+  notes: 'Verified: Art. 2(2) -- consumers have the right to correct information about products/services.'
+- id: goldset-028
+  question: Is there a dedicated government agency responsible for environmental protection under Egyptian law?
+  jurisdiction: EG
+  expected_articles:
+  - 4/1994 Art. 2
+  category: plain_language
+  notes: 'Verified: Art. 2 establishes جهاز شئون البيئة (EEAA) under the Cabinet.'
+- id: goldset-029
+  question: Can a lawsuit filing be legally valid in Egypt if it wasn't signed by a licensed lawyer?
+  jurisdiction: EG
+  expected_articles:
+  - 17/1983 Art. 76
+  category: plain_language
+  notes: 'Verified: Art. 76 -- filings not signed per the advocacy rules are inadmissible/void.'
+- id: goldset-030
+  question: What does Saudi Arabia's labor law say about the maximum probation period for new employees?
+  jurisdiction: EG
+  expected_articles: []
+  category: unanswerable
+  notes: 'Corpus is 100% jurisdiction=''EG'' (72 instruments, all Egyptian). Saudi Arabia is out of scope (Phase 3). Verified: no non-EG rows exist.'
+- id: goldset-031
+  question: What is the standard VAT rate under Saudi Arabian tax law?
+  jurisdiction: EG
+  expected_articles: []
+  category: unanswerable
+  notes: Egypt's own VAT law (67/2016) is ingested, but Saudi Arabia's VAT law is not -- corpus is EG-only.
+- id: goldset-032
+  question: ما هى العقوبة المقررة لجريمة السرقة فى قانون العقوبات المصري؟
+  jurisdiction: EG
+  expected_articles: []
+  category: unanswerable
+  notes: 'قانون العقوبات (Penal Code) is referenced by other ingested statutes (e.g. Sports Law 71/2017 Art. 83: ''مع عدم الإخلال بأى عقوبة أشد منصوص عليها فى قانون العقوبات'') but is not itself an ingested instrument -- confirmed absent from the 72-instrument list.'
+- id: goldset-033
+  question: ماذا يقول قانون الأحوال الشخصية المصري عن حضانة الأطفال بعد الطلاق؟
+  jurisdiction: EG
+  expected_articles: []
+  category: unanswerable
+  notes: 'Personal Status Law (1/2000, cross-referenced in Labour Law 12/2003 Art. 44: ''...مسائل الأحوال الشخصية الصادر بالقانون رقم 1 لسنة 2000...'') is not an ingested instrument.'
+- id: goldset-034
+  question: ماذا تنص المواد من 54 إلى 80 من القانون المدني عن تنظيم الجمعيات؟
+  jurisdiction: EG
+  expected_articles: []
+  category: unanswerable
+  notes: 'Civil Code Art. 53 itself states ''الجمعيات، المواد من 54 إلى 80 (ملغاة)''. Confirmed by direct query: 0 of the 27 article numbers 54-80 exist for instrument_id=86 (Civil Code).'
+- id: goldset-035
+  question: ماذا تنص المواد من 389 إلى 417 من القانون المدني عن الإثبات؟
+  jurisdiction: EG
+  expected_articles: []
+  category: unanswerable
+  notes: 'Civil Code Art. 388 states these articles were repealed by the 1968 Evidence Law. Confirmed by direct query: 0 of the 29 article numbers 389-417 exist for instrument_id=86. Evidence Law 25/1968 is itself not an ingested instrument.'
+- id: goldset-036
+  question: Under Egyptian law, what share of an estate does a daughter inherit compared to a son?
+  jurisdiction: EG
+  expected_articles: []
+  category: unanswerable
+  notes: Civil Code Art. 17 only sets the conflict-of-laws rule for succession (which country's law applies to an estate); the substantive Islamic inheritance-shares statute (Law 77/1943) is not an ingested instrument.
+- id: goldset-037
+  question: What does Egypt's Code of Criminal Procedure say about the maximum length of pre-trial detention?
+  jurisdiction: EG
+  expected_articles: []
+  category: unanswerable
+  notes: No Criminal Procedure Code instrument is ingested in this corpus (72 instruments cover civil/commercial/administrative/regulatory law, not criminal procedure).
+- id: goldset-038
+  question: Under UAE commercial law, what is the minimum capital required to form a limited liability company?
+  jurisdiction: EG
+  expected_articles: []
+  category: unanswerable
+  notes: Corpus is EG-only; UAE is out of scope.
