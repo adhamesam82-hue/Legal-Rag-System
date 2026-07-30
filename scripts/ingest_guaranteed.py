@@ -93,52 +93,53 @@ def ingest_instrument(
 
 def main() -> None:
     conn = get_connection()
-    for statute in GUARANTEED_STATUTES:
-        txt_path = RAW_DIR / f"{statute['slug']}.txt"
-        meta_path = RAW_DIR / f"{statute['slug']}.meta.json"
-        if not txt_path.exists():
-            print(f"SKIP {statute['slug']}: {txt_path} not found")
-            continue
+    try:
+        for statute in GUARANTEED_STATUTES:
+            txt_path = RAW_DIR / f"{statute['slug']}.txt"
+            meta_path = RAW_DIR / f"{statute['slug']}.meta.json"
+            if not txt_path.exists():
+                print(f"SKIP {statute['slug']}: {txt_path} not found")
+                continue
 
-        text = txt_path.read_text(encoding="utf-8")
-        meta = json.loads(meta_path.read_text(encoding="utf-8"))
-        fetched_at = datetime.fromisoformat(meta["fetched_at"])
+            text = txt_path.read_text(encoding="utf-8")
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            fetched_at = datetime.fromisoformat(meta["fetched_at"])
 
-        articles = parse_articles(text)
-        print(f"{statute['slug']}: parsed {len(articles)} articles")
+            articles = parse_articles(text)
+            print(f"{statute['slug']}: parsed {len(articles)} articles")
 
-        decree_articles, law_articles = split_promulgation_decree(articles)
+            decree_articles, law_articles = split_promulgation_decree(articles)
 
-        if decree_articles:
-            print(
-                f"  split detected: {len(decree_articles)} promulgation-decree "
-                f"article(s) + {len(law_articles)} substantive-law article(s)"
-            )
-            ingest_instrument(
-                conn,
-                statute=statute,
-                instrument_type="promulgation_decree",
-                articles=decree_articles,
-                fetched_at=fetched_at,
-            )
-            ingest_instrument(
-                conn,
-                statute=statute,
-                instrument_type="law",
-                articles=law_articles,
-                fetched_at=fetched_at,
-            )
-        else:
-            print("  no numbering restart detected: ingesting as a single instrument")
-            ingest_instrument(
-                conn,
-                statute=statute,
-                instrument_type=statute["instrument_type"],
-                articles=law_articles,
-                fetched_at=fetched_at,
-            )
-
-    conn.close()
+            if decree_articles:
+                print(
+                    f"  split detected: {len(decree_articles)} promulgation-decree "
+                    f"article(s) + {len(law_articles)} substantive-law article(s)"
+                )
+                ingest_instrument(
+                    conn,
+                    statute=statute,
+                    instrument_type="promulgation_decree",
+                    articles=decree_articles,
+                    fetched_at=fetched_at,
+                )
+                ingest_instrument(
+                    conn,
+                    statute=statute,
+                    instrument_type="law",
+                    articles=law_articles,
+                    fetched_at=fetched_at,
+                )
+            else:
+                print("  no numbering restart detected: ingesting as a single instrument")
+                ingest_instrument(
+                    conn,
+                    statute=statute,
+                    instrument_type=statute["instrument_type"],
+                    articles=law_articles,
+                    fetched_at=fetched_at,
+                )
+    finally:
+        conn.close()
 
 
 if __name__ == "__main__":

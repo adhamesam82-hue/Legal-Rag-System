@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+from collections import Counter
 from datetime import datetime
 
 import psycopg
@@ -55,6 +56,18 @@ def insert_articles(
     language: str,
     source_url: str,
 ) -> int:
+    number_counts = Counter(article.article_number for article in articles)
+    duplicates = {number: n for number, n in number_counts.items() if n > 1}
+    if duplicates:
+        detail = ", ".join(
+            f"{number!r} x{n}" for number, n in sorted(duplicates.items())
+        )
+        raise ValueError(
+            f"insert_articles: instrument_id={instrument_id} has duplicate "
+            f"article_number values, refusing to insert (would silently "
+            f"overwrite via ON CONFLICT): {detail}"
+        )
+
     count = 0
     try:
         with conn.cursor() as cur:

@@ -174,3 +174,51 @@ def test_insert_articles_upsert_refreshes_stale_columns(conn):
         article_text, chapter = cur.fetchone()
     assert article_text == updated_text
     assert chapter == updated_chapter
+
+
+def test_insert_articles_rejects_duplicate_article_numbers(conn):
+    instrument_id = upsert_instrument(
+        conn,
+        jurisdiction="EG",
+        instrument_type="law",
+        number="TEST-5",
+        year=2004,
+        title="قانون تجريبى ثالث",
+        source_url="https://example.com/test5",
+        fetched_at=datetime(2026, 7, 30, tzinfo=timezone.utc),
+    )
+    articles = [
+        ParsedArticle(
+            article_number="1",
+            article_sort_key=Decimal("1"),
+            article_text="first article text",
+        ),
+        ParsedArticle(
+            article_number="2",
+            article_sort_key=Decimal("2"),
+            article_text="second article text",
+        ),
+        ParsedArticle(
+            article_number="1",
+            article_sort_key=Decimal("1"),
+            article_text="duplicate first article text",
+        ),
+    ]
+
+    with pytest.raises(ValueError, match="duplicate"):
+        insert_articles(
+            conn,
+            instrument_id=instrument_id,
+            jurisdiction="EG",
+            articles=articles,
+            language="ar",
+            source_url="https://example.com/test5",
+        )
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT count(*) FROM articles WHERE instrument_id = %s",
+            (instrument_id,),
+        )
+        (count,) = cur.fetchone()
+    assert count == 0
