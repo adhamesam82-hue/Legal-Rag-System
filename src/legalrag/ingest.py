@@ -51,7 +51,6 @@ def insert_articles(
     conn: psycopg.Connection,
     *,
     instrument_id: int,
-    jurisdiction: str,
     articles: list[ParsedArticle],
     language: str,
     source_url: str,
@@ -71,6 +70,19 @@ def insert_articles(
     count = 0
     try:
         with conn.cursor() as cur:
+            # Derive jurisdiction from the parent instrument row rather than
+            # trusting a separately-passed value -- this is the only place
+            # articles.jurisdiction is set, so it can never disagree with
+            # instruments.jurisdiction (see migrations/0002 for the DB-level
+            # backstop on top of this).
+            cur.execute("SELECT jurisdiction FROM instruments WHERE id = %s", (instrument_id,))
+            row = cur.fetchone()
+            if row is None:
+                raise ValueError(
+                    f"insert_articles: no instrument with id={instrument_id}"
+                )
+            jurisdiction = row[0]
+
             for article in articles:
                 article_text_norm = normalize(article.article_text)
                 content_hash = hashlib.sha256(article.article_text.encode("utf-8")).hexdigest()

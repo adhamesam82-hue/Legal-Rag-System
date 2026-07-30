@@ -113,7 +113,6 @@ def ingest_group(
         count = insert_articles(
             conn,
             instrument_id=instrument_id,
-            jurisdiction=jurisdiction,
             articles=articles,
             language="ar",
             source_url=source_url,

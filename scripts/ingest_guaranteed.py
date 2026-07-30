@@ -80,7 +80,6 @@ def ingest_instrument(
     count = insert_articles(
         conn,
         instrument_id=instrument_id,
-        jurisdiction="EG",
         articles=articles,
         language="ar",
         source_url=statute["source_url"],

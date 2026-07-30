@@ -99,7 +99,6 @@ def test_insert_articles_writes_normalized_text_and_hash(conn):
     count = insert_articles(
         conn,
         instrument_id=instrument_id,
-        jurisdiction="EG",
         articles=articles,
         language="ar",
         source_url="https://example.com/test3",
@@ -141,7 +140,6 @@ def test_insert_articles_upsert_refreshes_stale_columns(conn):
     insert_articles(
         conn,
         instrument_id=instrument_id,
-        jurisdiction="EG",
         articles=articles,
         language="ar",
         source_url="https://example.com/test4",
@@ -160,7 +158,6 @@ def test_insert_articles_upsert_refreshes_stale_columns(conn):
     insert_articles(
         conn,
         instrument_id=instrument_id,
-        jurisdiction="EG",
         articles=updated_articles,
         language="ar",
         source_url="https://example.com/test4",
@@ -209,7 +206,6 @@ def test_insert_articles_rejects_duplicate_article_numbers(conn):
         insert_articles(
             conn,
             instrument_id=instrument_id,
-            jurisdiction="EG",
             articles=articles,
             language="ar",
             source_url="https://example.com/test5",
@@ -222,3 +218,45 @@ def test_insert_articles_rejects_duplicate_article_numbers(conn):
         )
         (count,) = cur.fetchone()
     assert count == 0
+
+
+def test_insert_articles_derives_jurisdiction_from_instrument(conn):
+    """insert_articles no longer takes a jurisdiction parameter -- it must
+    derive articles.jurisdiction from the parent instruments row, so the
+    two can never disagree (the exact mismatch migrations/0002's CHECK
+    constraint also guards against at the DB level).
+    """
+    instrument_id = upsert_instrument(
+        conn,
+        jurisdiction="EG",
+        instrument_type="law",
+        number="TEST-6",
+        year=2005,
+        title="قانون تجريبى ثالث",
+        source_url="https://example.com/test6",
+        fetched_at=datetime(2026, 7, 30, tzinfo=timezone.utc),
+    )
+    articles = [
+        ParsedArticle(
+            article_number="1",
+            article_sort_key=Decimal("1"),
+            article_text="نص المادة الأولى.",
+        )
+    ]
+
+    insert_articles(
+        conn,
+        instrument_id=instrument_id,
+        articles=articles,
+        language="ar",
+        source_url="https://example.com/test6",
+    )
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT i.jurisdiction, a.jurisdiction FROM instruments i "
+            "JOIN articles a ON a.instrument_id = i.id WHERE i.id = %s",
+            (instrument_id,),
+        )
+        instrument_jurisdiction, article_jurisdiction = cur.fetchone()
+    assert article_jurisdiction == instrument_jurisdiction == "EG"

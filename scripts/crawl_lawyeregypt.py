@@ -348,7 +348,6 @@ def ingest_qualified(conn, qualified: list[QualifyResult]) -> list[dict]:
             count = insert_articles(
                 conn,
                 instrument_id=instrument_id,
-                jurisdiction="EG",
                 articles=q.articles,
                 language="ar",
                 source_url=q.fetch.url,
