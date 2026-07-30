@@ -14,33 +14,48 @@ import re
 from legalrag.arabic import normalize_digits
 
 _LAW_NUMBER_YEAR = re.compile(
-    r"قانون\s+رقم\s*[:\-]?\s*(?P<number>[0-9٠-٩]+)\s*لسنة\s*(?P<year>[0-9٠-٩]{4})"
+    r"""قانون\s+رقم\s*[:\-]?\s*["'“”(]?\s*(?P<number>[0-9٠-٩]+)\s*["'“”)]?\s*لسنة\s*(?P<year>[0-9٠-٩]{4})"""
 )
 
 
+def find_all_law_number_years(text: str) -> list[tuple[str, int]]:
+    """Return all distinct (number, year) pairs found in text, in order of
+    first appearance. A text mentioning more than one law (e.g. a statute
+    plus the laws that amended it) yields multiple pairs; callers should
+    surface that ambiguity rather than silently picking one.
+    """
+    seen: list[tuple[str, int]] = []
+    for match in _LAW_NUMBER_YEAR.finditer(text):
+        number = normalize_digits(match.group("number"))
+        year = int(normalize_digits(match.group("year")))
+        pair = (number, year)
+        if pair not in seen:
+            seen.append(pair)
+    return seen
+
+
 def extract_law_number_year(text: str) -> tuple[str, int] | None:
-    match = _LAW_NUMBER_YEAR.search(text)
-    if not match:
-        return None
-    number = normalize_digits(match.group("number"))
-    year = int(normalize_digits(match.group("year")))
-    return number, year
+    pairs = find_all_law_number_years(text)
+    return pairs[0] if pairs else None
 
 
 def classify_rows(rows: list[dict], token_threshold: int = 10000) -> list[dict]:
     candidates = []
     for row in rows:
-        if row.get("tokens", 0) <= token_threshold:
+        tokens = row.get("tokens", 0)
+        if tokens <= token_threshold:
             continue
-        law_number_year = extract_law_number_year(row.get("text", ""))
+        text = row.get("text", "")
+        law_number_year = extract_law_number_year(text)
         candidates.append(
             {
-                "law_name": row["law_name"],
+                "law_name": row.get("law_name", ""),
                 "categories": row.get("categories", []),
-                "tokens": row["tokens"],
+                "tokens": tokens,
                 "law_number": law_number_year[0] if law_number_year else None,
                 "law_year": law_number_year[1] if law_number_year else None,
-                "text": row["text"],
+                "law_number_candidates": find_all_law_number_years(text),
+                "text": text,
             }
         )
     return candidates

@@ -36,3 +36,55 @@ def test_classify_rows_excludes_short_rows_even_with_law_pattern():
         {"law_name": "ذكر عابر", "categories": [], "text": "اشارة الى قانون رقم 1 لسنة 2000 فى سياق اخر", "tokens": 200},
     ]
     assert classify_rows(rows, token_threshold=10000) == []
+
+
+def test_extract_law_number_year_quoted_number_matches_own_law_not_amendment():
+    # Real snippet from dataflare row 0 (law_name='قوانين_الأحوال_الشخصية'): its own
+    # number is wrapped in quotes (" 25") and a later *amending* law
+    # (100 / 1985) also appears in the same text. The row's own law must win.
+    text = 'المال حسب احداث التعديلات القانون رقم " 25" لسنة 1920 باحكام النفقة وبعض مسائل الاحوال الشخصية المعدل بالقانون رقم 100 لسنة 1985 الباب الاول في النفقة القس'
+    assert extract_law_number_year(text) == ("25", 1920)
+
+
+def test_extract_law_number_year_handles_parenthesized_number():
+    # Real snippet from dataflare's Press/Printing/Publishing law row: the
+    # number is wrapped in parentheses, "(47)", which previously broke the match.
+    text = 'مرسوم بقانون رقم (47) لسنة 2002 بشان تنظيم الصحافة والطباع'
+    assert extract_law_number_year(text) == ("47", 2002)
+
+
+def test_find_all_law_number_years_exposes_both_references_in_order():
+    from legalrag.sources.dataflare import find_all_law_number_years
+
+    # Same real snippet as above: contains the row's own quoted law (25/1920)
+    # followed later by the amending law (100/1985). Both must be surfaced,
+    # in order of first appearance, rather than silently picking one.
+    text = 'المال حسب احداث التعديلات القانون رقم " 25" لسنة 1920 باحكام النفقة وبعض مسائل الاحوال الشخصية المعدل بالقانون رقم 100 لسنة 1985 الباب الاول في النفقة القس'
+    assert find_all_law_number_years(text) == [("25", 1920), ("100", 1985)]
+
+
+def test_classify_rows_populates_law_number_candidates_for_ambiguous_row():
+    rows = [
+        {"law_name": 'قوانين_الأحوال_الشخصية', "categories": [], "text": 'المال حسب احداث التعديلات القانون رقم " 25" لسنة 1920 باحكام النفقة وبعض مسائل الاحوال الشخصية المعدل بالقانون رقم 100 لسنة 1985 الباب الاول في النفقة القس', "tokens": 15000},
+    ]
+    candidates = classify_rows(rows, token_threshold=10000)
+    assert len(candidates) == 1
+    assert candidates[0]["law_number"] == "25"
+    assert candidates[0]["law_year"] == 1920
+    assert candidates[0]["law_number_candidates"] == [("25", 1920), ("100", 1985)]
+
+
+def test_classify_rows_excludes_row_at_exact_threshold():
+    rows = [
+        {"law_name": 'قانون بلا رقم واضح', "categories": [], "text": 'نص طويل بلا رقم قانون واضح فيه', "tokens": 10000},
+    ]
+    assert classify_rows(rows, token_threshold=10000) == []
+
+
+def test_classify_rows_includes_row_just_above_threshold():
+    rows = [
+        {"law_name": 'قانون بلا رقم واضح', "categories": [], "text": 'نص طويل بلا رقم قانون واضح فيه', "tokens": 10001},
+    ]
+    candidates = classify_rows(rows, token_threshold=10000)
+    assert len(candidates) == 1
+    assert candidates[0]["law_name"] == 'قانون بلا رقم واضح'
