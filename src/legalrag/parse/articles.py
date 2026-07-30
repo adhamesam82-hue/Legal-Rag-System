@@ -3,9 +3,13 @@
 Handles the three marker formats found across the Phase 0-acquired
 statutes: "مادة N –" (Civil Code), "مادة N:" (Labour Law), and
 "مادة (N):" (Companies Law), plus مكرر suffixes for added articles
-(e.g. "مادة (1 مكررًا):"). Development is iterative by design: run
-parse_report (parse/report.py) after any regex change and eyeball the
-gaps it flags.
+(e.g. "مادة (1 مكررًا):"). The marker no longer needs to reach end-of-line:
+some broad-corpus statutes carry a short inline title on the same line as
+the marker, after the trailing punctuation, before a colon (e.g.
+"مادة 131 – <title>:"). That title text is not part of the marker match --
+it flows into the following article's body text exactly as it would if it
+were on its own line. Development is iterative by design: run parse_report
+(parse/report.py) after any regex change and eyeball the gaps it flags.
 """
 from __future__ import annotations
 
@@ -17,8 +21,8 @@ from legalrag.arabic import normalize_digits
 
 ARTICLE_MARKER = re.compile(
     r"^(?:ال)?مادة\s*\(?\s*(?P<num>[0-9٠-٩]+)"
-    r"(?:\s*(?P<mukarrar>مكرر(?:[اةً]{0,2})?(?:\s+[ء-غف-ي])?))?"
-    r"\s*\)?\s*[:\-–]?\s*$",
+    r"(?:\s*(?P<mukarrar>مكرر(?:[اةً]{0,2})?(?:[^\S\n]+[ء-غف-ي])?))?"
+    r"\s*\)?\s*[:\-–]?",
     re.MULTILINE,
 )
 

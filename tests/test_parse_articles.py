@@ -1,6 +1,14 @@
 from decimal import Decimal
+from pathlib import Path
 
-from legalrag.parse.articles import parse_articles
+from legalrag.arabic import normalize_digits
+from legalrag.parse.articles import ARTICLE_MARKER, parse_articles
+
+RAW_DIR = Path(__file__).resolve().parent.parent / "data" / "raw"
+
+
+def _read_raw(slug: str) -> str:
+    return (RAW_DIR / f"{slug}.txt").read_text(encoding="utf-8")
 
 
 def test_parses_dash_style_marker():
@@ -127,3 +135,112 @@ def test_article_text_stops_before_next_marker():
     assert "مادة 2" not in articles[0].article_text
     assert "سطر اول" in articles[0].article_text
     assert "سطر ثان" in articles[0].article_text
+
+
+def test_inline_title_before_colon_kept_separate_from_next_article():
+    # Regression for the corpus-wide bug: many broad-corpus statutes put a
+    # short inline title on the *same* line as the marker, after the dash,
+    # before a terminating colon (e.g. "مادة 131 – <title>:"), instead of on
+    # its own line like the 3 guaranteed statutes do. Extracted
+    # programmatically from the real Civil Aviation Law (28/1981) raw file
+    # -- never hand-typed -- so the exact byte content is trustworthy.
+    text = _read_raw("eg-statute-7e98eee0a420")
+    markers = list(ARTICLE_MARKER.finditer(text))
+    nums = [normalize_digits(m.group("num")) for m in markers]
+    i = nums.index("131")
+
+    marker_131 = markers[i]
+    fixture = text[marker_131.start():markers[i + 2].start()]
+
+    # Sanity check on the real fixture: article 131's marker line does carry
+    # an inline title (non-empty text between the marker and the newline),
+    # which is exactly the shape that broke the old end-of-line-anchored regex.
+    title_line_end = text.index("\n", marker_131.end())
+    inline_title = text[marker_131.end():title_line_end].strip()
+    assert inline_title
+
+    articles = parse_articles(fixture)
+    assert len(articles) == 2
+    assert articles[0].article_number == "131"
+    assert articles[1].article_number == "132"
+
+    # The inline title text is not swallowed into the marker match -- it
+    # remains part of article 131's body text.
+    assert inline_title in articles[0].article_text
+    # Article 132's marker line must not leak into article 131's text, and
+    # article 131's body must not run past its own boundary into 132's.
+    assert f"مادة {articles[1].article_number}" not in articles[0].article_text
+
+
+def test_real_civil_aviation_130_to_134_all_recovered_distinctly():
+    # Regression for the confirmed corpus bug: Civil Aviation Law 28/1981
+    # was losing article 131 (merged into 130's text) because its marker
+    # line has an inline title before the colon. Extracted programmatically
+    # from the real raw file around articles 130-134 -- never hand-typed.
+    text = _read_raw("eg-statute-7e98eee0a420")
+    markers = list(ARTICLE_MARKER.finditer(text))
+    nums = [normalize_digits(m.group("num")) for m in markers]
+    i = nums.index("130")
+
+    start = markers[i].start()
+    end = markers[i + 5].start()  # up to (not including) article 135's marker
+    fixture = text[start:end]
+
+    articles = parse_articles(fixture)
+    assert [a.article_number for a in articles] == ["130", "131", "132", "133", "134"]
+
+    # No article's body absorbed the next marker's text (i.e. no merging).
+    for j in range(len(articles) - 1):
+        next_marker_text = f"مادة {articles[j + 1].article_number}"
+        assert next_marker_text not in articles[j].article_text
+        assert articles[j].article_text.strip()
+
+
+def test_mid_paragraph_cross_reference_is_not_a_new_article_boundary():
+    # Regression guard: widening ARTICLE_MARKER to not require end-of-line
+    # must not start matching "مادة N" occurrences embedded mid-sentence
+    # (e.g. "... طبقا للمادة 440." referencing another article from deep
+    # inside a body paragraph). These are still protected by the ^ anchor
+    # with re.MULTILINE, since they are never the first thing on their line.
+    # Extracted programmatically from the real Civil Code raw file --
+    # never hand-typed. Article 443's body cites article 440 mid-paragraph;
+    # this fixture spans articles 443 and 444 only.
+    text = _read_raw("eg-civil-code-131-1948")
+    markers = list(ARTICLE_MARKER.finditer(text))
+    nums = [normalize_digits(m.group("num")) for m in markers]
+    i = nums.index("443")
+
+    cross_ref_target = "طبقا للمادة"
+    body_search_start = markers[i].end()
+    body_search_end = markers[i + 1].start()
+    assert cross_ref_target in text[body_search_start:body_search_end]
+
+    fixture = text[markers[i].start():markers[i + 2].start()]
+    articles = parse_articles(fixture)
+
+    assert [a.article_number for a in articles] == ["443", "444"]
+    assert cross_ref_target in articles[0].article_text
+
+
+def test_mukarrar_suffix_letter_does_not_cross_line_boundary():
+    # Regression: dropping the end-of-line anchor let the mukarrar
+    # sub-pattern's optional trailing-letter group (meant for suffixes like
+    # "مكرر أ") greedily match across a newline when "مكرر" itself ends a
+    # marker line, swallowing the first letter of the *following* line's
+    # body text into article_number (observed as the literal value
+    # "22 مكرر\nي" for Law 359/1956's real "المادة 22 مكرر" marker, whose
+    # body happens to start with a word beginning with "ي"). Extracted
+    # programmatically from the real raw file -- never hand-typed.
+    text = _read_raw("eg-statute-7fa34c77a1a9")
+    markers = list(ARTICLE_MARKER.finditer(text))
+    nums = [normalize_digits(m.group("num")) for m in markers]
+    i = nums.index("22")
+    mukarrar_idx = next(j for j in range(i, i + 3) if markers[j].group("mukarrar"))
+
+    fixture = text[markers[i].start():markers[mukarrar_idx + 2].start()]
+    articles = parse_articles(fixture)
+
+    numbers = [a.article_number for a in articles]
+    assert "\n" not in "".join(numbers)
+    assert any(n.startswith("22") and "مكرر" in n for n in numbers)
+    assert "23" in numbers
