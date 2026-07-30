@@ -59,7 +59,7 @@ from pathlib import Path
 from legalrag.db import get_connection
 from legalrag.ingest import insert_articles, upsert_instrument
 from legalrag.parse.articles import ParsedArticle, parse_articles
-from scripts.crawl_lawyeregypt import REGULATION_TYPE_OVERRIDES
+from scripts.crawl_lawyeregypt import NON_EGYPTIAN_EXCLUSIONS, REGULATION_TYPE_OVERRIDES
 from scripts.ingest_guaranteed import split_promulgation_decree
 
 RAW_DIR = Path(__file__).resolve().parent.parent / "data" / "raw"
@@ -152,6 +152,13 @@ def main() -> None:
             title = meta["title_ar"]
             source_url = meta["source_url"]
             fetched_at = datetime.fromisoformat(meta["fetched_at"])
+
+            if (number, str(year)) in NON_EGYPTIAN_EXCLUSIONS:
+                print(
+                    f"SKIP {slug}: ({number}/{year}) is not Egyptian law "
+                    f"(UAE federal / Qatar) -- excluded from Egypt-only corpus"
+                )
+                continue
 
             articles = parse_articles(text)
             decree_articles, law_articles = split_promulgation_decree(articles)

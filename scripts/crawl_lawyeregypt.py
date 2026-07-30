@@ -314,26 +314,6 @@ def ingest_qualified(conn, qualified: list[QualifyResult]) -> list[dict]:
         cache_path = HTML_CACHE_DIR / f"{q.fetch.slug}.html"
         fetched_at = datetime.fromtimestamp(cache_path.stat().st_mtime, tz=timezone.utc)
 
-        raw_txt_path = RAW_DIR / f"{q.fetch.slug}.txt"
-        raw_meta_path = RAW_DIR / f"{q.fetch.slug}.meta.json"
-        raw_txt_path.write_text(q.text, encoding="utf-8")
-        raw_meta_path.write_text(
-            json.dumps(
-                {
-                    "slug": q.fetch.slug,
-                    "law_number": q.number,
-                    "law_year": q.year,
-                    "title_ar": q.title,
-                    "source": "lawyeregypt.net",
-                    "source_url": q.fetch.url,
-                    "fetched_at": fetched_at.isoformat(),
-                },
-                ensure_ascii=False,
-                indent=2,
-            ),
-            encoding="utf-8",
-        )
-
         try:
             instrument_id = upsert_instrument(
                 conn,
@@ -355,6 +335,30 @@ def ingest_qualified(conn, qualified: list[QualifyResult]) -> list[dict]:
         except ValueError as exc:
             print(f"SKIP ingest-failed {q.fetch.url}: {exc}")
             continue
+
+        # Only write the raw sidecar once ingestion has actually succeeded --
+        # a candidate that trips the duplicate-article-number guard (or any
+        # other ingest failure) must not leave a raw file behind, or a later
+        # reparse_and_reingest.py run would trust and re-admit it wholesale.
+        raw_txt_path = RAW_DIR / f"{q.fetch.slug}.txt"
+        raw_meta_path = RAW_DIR / f"{q.fetch.slug}.meta.json"
+        raw_txt_path.write_text(q.text, encoding="utf-8")
+        raw_meta_path.write_text(
+            json.dumps(
+                {
+                    "slug": q.fetch.slug,
+                    "law_number": q.number,
+                    "law_year": q.year,
+                    "title_ar": q.title,
+                    "source": "lawyeregypt.net",
+                    "source_url": q.fetch.url,
+                    "fetched_at": fetched_at.isoformat(),
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
 
         claimed[key] = q.fetch.url
         ingested.append(
