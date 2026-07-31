@@ -28,6 +28,8 @@ DISCLAIMER_AR = (
     "الاعتماد عليها."
 )
 
+JURISDICTION_NAMES = {"EG": "EGYPT", "SA": "SAUDI ARABIA"}
+
 _SYSTEM_PROMPT = f"""You are a legal research assistant for Egyptian and Saudi law.
 
 You answer ONLY from the articles supplied in the user message. You have no other \
@@ -53,6 +55,11 @@ that is still {REFUSAL_MARKER}. Being near the answer is not being the answer.
 English question, English answer.
 5. Quote the operative wording of the article when it matters to the answer.
 6. Be direct and brief. No preamble, no restating the question.
+7. Every supplied article is labelled '(Jurisdiction: COUNTRY)'. If the question names a \
+country and it does not match every supplied article's labelled jurisdiction, the supplied \
+articles cannot answer it -- this is {REFUSAL_MARKER}, no matter how closely the topic \
+matches. Topical similarity across the wrong country is not an answer. Check the label, \
+not the article's subject matter, to decide this.
 
 Do not add a disclaimer; one is appended automatically."""
 
@@ -73,10 +80,20 @@ class Answer:
         return not self.refused and not self.blocked
 
 
-def build_context(candidates: list[Candidate]) -> str:
+def build_context(candidates: list[Candidate], jurisdiction: str = "EG") -> str:
+    """Format retrieved articles, labelling each with its jurisdiction explicitly.
+
+    The label is a concrete fact for rule 7 to check rather than something the
+    model has to infer from an article's title or content -- inference proved
+    unreliable: a topically-similar Egyptian article was answering questions
+    asked about Saudi Arabia even though nothing in this project's corpus is
+    Saudi. Every candidate in one Retrieval shares the same jurisdiction (the
+    SQL WHERE clause guarantees it), so one label value applies to all of them.
+    """
+    country = JURISDICTION_NAMES.get(jurisdiction, jurisdiction)
     return "\n\n".join(
         f"[Law {c.instrument_number}/{c.instrument_year}, Art. {c.article_number}]"
-        f" ({c.instrument_title})\n{c.article_text}"
+        f" (Jurisdiction: {country}) ({c.instrument_title})\n{c.article_text}"
         for c in candidates
     )
 
@@ -140,7 +157,8 @@ def answer(
                 "content": (
                     f"Question: {question}\n\n"
                     f"Answer in {answer_language}.\n\n"
-                    f"Supplied articles:\n\n{build_context(retrieval.candidates)}"
+                    f"Supplied articles:\n\n"
+                    f"{build_context(retrieval.candidates, retrieval.jurisdiction)}"
                 ),
             },
         ],

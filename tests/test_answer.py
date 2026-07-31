@@ -1,7 +1,7 @@
 """Citation enforcement tests -- the guard against hallucinated article numbers."""
 from __future__ import annotations
 
-from legalrag.answer import REFUSAL_MARKER, answer, extract_citations
+from legalrag.answer import REFUSAL_MARKER, answer, build_context, extract_citations
 from legalrag.retrieve import Candidate, Retrieval
 
 
@@ -18,8 +18,10 @@ def make_candidate(number: str = "12", year: int = 2003, article: str = "80") ->
     )
 
 
-def make_retrieval(candidates: list[Candidate]) -> Retrieval:
-    return Retrieval(candidates=candidates, strategy="hybrid", search_text="x")
+def make_retrieval(candidates: list[Candidate], jurisdiction: str = "EG") -> Retrieval:
+    return Retrieval(
+        candidates=candidates, strategy="hybrid", search_text="x", jurisdiction=jurisdiction
+    )
 
 
 class FakeClient:
@@ -119,3 +121,33 @@ class TestAnswerEnforcement:
         client = FakeClient("ساعات العمل محدودة بثمان ساعات [Law 12/2003, Art. 80].")
         answer("كم ساعة يجوز تشغيل العامل؟", make_retrieval([make_candidate()]), client=client, model="fake")
         assert "Answer in Arabic" in client.last_kwargs["messages"][1]["content"]
+
+
+class TestJurisdictionLabeling:
+    """Regression: the model answered a Saudi-Arabia question using an Egyptian
+    article that was merely topically similar, once fabricating a specific
+    figure that appeared nowhere in the retrieved text. Several attempts to fix
+    this by tuning prompt wording alone were unreliable -- the same prompt swung
+    between safe and hallucinating depending on unrelated context. The fix that
+    held is structural: every article is labelled with its jurisdiction as a
+    concrete fact, rather than left for the model to infer from titles."""
+
+    def test_build_context_labels_every_article_with_its_jurisdiction(self):
+        context = build_context([make_candidate()], jurisdiction="EG")
+        assert "(Jurisdiction: EGYPT)" in context
+
+        context_sa = build_context([make_candidate()], jurisdiction="SA")
+        assert "(Jurisdiction: SAUDI ARABIA)" in context_sa
+
+    def test_answer_passes_the_retrieval_jurisdiction_to_the_model(self):
+        client = FakeClient("Hours are capped at eight [Law 12/2003, Art. 80].")
+        answer(
+            "How many hours can I be made to work?",
+            make_retrieval([make_candidate()], jurisdiction="EG"),
+            client=client,
+            model="fake",
+        )
+        assert "(Jurisdiction: EGYPT)" in client.last_kwargs["messages"][1]["content"]
+
+    def test_retrieval_defaults_to_egypt_when_unspecified(self):
+        assert make_retrieval([make_candidate()]).jurisdiction == "EG"

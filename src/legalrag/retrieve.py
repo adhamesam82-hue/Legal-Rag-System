@@ -72,6 +72,13 @@ class Retrieval:
     # difference between "not found" and "not searched" matters for refusal.
     missing_citation: bool = False
     debug: dict = field(default_factory=dict)
+    # The jurisdiction the caller filtered on. Every candidate in this batch
+    # shares it -- the SQL WHERE clause in every search function guarantees
+    # that -- so it is recorded once here rather than per row. answer.py uses
+    # it to label the context explicitly rather than expecting the model to
+    # infer jurisdiction from article titles, which it does not reliably do
+    # when a topically similar article from the wrong country is in the pool.
+    jurisdiction: str = "EG"
 
 
 # --- citation parsing -------------------------------------------------------
@@ -442,6 +449,7 @@ def search(
                     search_text=question,
                     parsed_citation=citation,
                     expansion=expansion,
+                    jurisdiction=jurisdiction,
                 )
             return Retrieval(
                 candidates=[],
@@ -450,6 +458,7 @@ def search(
                 parsed_citation=citation,
                 expansion=expansion,
                 missing_citation=True,
+                jurisdiction=jurisdiction,
             )
 
     question_norm = normalize(question)
@@ -488,6 +497,7 @@ def search(
             "list_sizes": [len(ranked) for ranked in ranked_lists],
             "hinted_instrument": hinted_instrument,
         },
+        jurisdiction=jurisdiction,
     )
 
 
