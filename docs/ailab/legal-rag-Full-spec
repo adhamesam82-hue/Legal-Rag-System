@@ -1,0 +1,441 @@
+# Project Spec — Arabic Legal Q&A System (Egypt + Saudi Arabia)
+
+Complete build specification. Hand this to Claude Code (or any coding agent) at the
+start of the project.
+
+Every phase ends in a **phase gate** with concrete acceptance criteria. Stop at each
+gate, show me results, and wait for confirmation before continuing.
+
+---
+
+## Context for the agent
+
+I am building a personal research tool that lets me ask questions in Arabic or English
+about Egyptian and Saudi law, and get answers grounded in the actual text of statutes,
+with exact article citations.
+
+I am not a lawyer. The tool exists to help me arrive at a lawyer's office already
+knowing which law and which article is relevant — it is not a substitute for legal
+advice, and it must never present itself as one.
+
+This is a solo side project. Prefer boring, debuggable technology over frameworks.
+I want to understand every line.
+
+---
+
+## Non-negotiable design rules
+
+1. **Article-level chunking.** Statutes are already divided into numbered articles.
+   Chunk on that boundary. Never split an article across chunks; never merge two
+   articles into one chunk.
+
+2. **Every answer cites law number + year + article number.** No citation, no claim.
+
+3. **Refusal beats guessing.** If retrieval confidence is low, the correct output is
+   "I could not find this in the corpus." Hallucinated article numbers are the primary
+   failure mode of legal RAG and they look completely convincing.
+
+4. **Jurisdiction is a hard pre-filter, not a ranking signal.** Egyptian and Saudi legal
+   Arabic uses near-identical vocabulary for materially different rules. A query scoped
+   to Egypt must never retrieve Saudi text.
+
+5. **Temporal validity is tracked from day one.** Every article carries effective dates
+   and a repealed flag. Saudi Arabia is mid-codification (Personal Status Law 2022,
+   Civil Transactions Law 2023), so stale text is a live risk, not a theoretical one.
+
+6. **Identical Arabic normalization on both indexed text and queries.** Mismatched
+   normalization silently destroys recall and produces no error message.
+
+7. **No LangChain, no LlamaIndex, no agent frameworks.** Write the retrieval loop
+   directly — roughly 300 lines. Framework abstractions hide retrieval bugs.
+
+8. **Raw files are immutable.** Save every downloaded file to disk untouched, keyed by
+   source URL and fetch date. Re-parsing is free; re-crawling is not.
+
+---
+
+## Stack
+
+- Python 3.11+, `uv` for dependency management
+- **Postgres 16 + pgvector + built-in full-text search** — one database for vectors,
+  keyword search, and metadata filters. Docker Compose locally.
+- `PyMuPDF` for PDF text extraction; **Surya OCR** or a vision LLM for scanned pages
+  (Tesseract's Arabic is not good enough)
+- `camel-tools` for Arabic normalization
+- `httpx` + `BeautifulSoup` for scraping; `Playwright` only where JS rendering is required
+- Embeddings: BGE-M3 (strong multilingual/Arabic, runs locally) or a hosted multilingual
+  model — behind an interface so it can be swapped without touching call sites
+- Reranker: `bge-reranker-v2-m3`
+- UI: **Streamlit** initially. FastAPI + React only if genuinely outgrown.
+- `pytest` for the eval harness
+
+---
+
+## Data sources
+
+**Saudi Arabia**
+- `laws.boe.gov.sa` — Bureau of Experts at the Council of Ministers. Statutes in Arabic
+  plus official English translations. Clean text, no OCR needed.
+- `ncar.gov.sa` — National Center for Archives and Records
+- Ministry of Justice monthly circulars on amendments
+
+**Egypt — start with the `fr3on` datasets on Hugging Face**
+
+These are purpose-built for exactly this task and may remove most of the acquisition
+and OCR work. Inspect all of them before writing a single scraper.
+
+- **`fr3on/eg-legal-rag`** — the primary candidate. Load it first and inspect its actual
+  schema before assuming anything about its shape. Report back: field names, row count,
+  whether articles are already split at article boundaries, and whether law
+  number/year/article number are present as structured fields or only embedded in text.
+  If it is already article-segmented with usable metadata, Phase 1's parser work shrinks
+  dramatically — say so and we will re-plan.
+- **`fr3on/eg-legal-instruction-following`** — 4,184 instruction-style examples over
+  Egyptian criminal, civil, procedural, and personal status law. Apache 2.0. Best used
+  as raw material for the eval gold set: mine it for realistic question phrasing, then
+  hand-verify the expected articles rather than trusting its labels.
+- Check the rest of the `fr3on` profile for other Egyptian legal releases and list what
+  you find. Also on the profile: `egyptian-dialogue` and `egyptian-songs` — not legal,
+  but `egyptian-dialogue` is worth noting if I later want the system to handle questions
+  asked in colloquial Egyptian rather than Modern Standard Arabic.
+
+**Validation gate on any of these before building on them:** pick one statute I know
+well, compare 20 articles character-by-character against the official gazette or
+Tashreaat text, and report a fidelity estimate. A corpus that is 95% right is still
+wrong in ways that will surface as confidently miscited law.
+
+- `dataflare/egypt-legal-corpus` — ~25M tokens of Egyptian legal text, MIT licensed,
+  with hierarchical category metadata. Good fallback or cross-check if the `fr3on`
+  coverage has gaps.
+- `TawasulAI/egyptian-law-articles` — another article-level Egyptian set worth comparing
+- `tashreaat.com` (LADIS) — laws, decrees, some court rulings. Use as the authority to
+  check the datasets against, and to fill gaps.
+- Al-Waqai al-Misriyya (Official Gazette) for authoritative text
+- Court of Cassation Technical Bureau for rulings. Egypt has no systematic case
+  reporter and coverage is incomplete — never assume the corpus is exhaustive.
+
+---
+
+## Repository layout
+
+```
+legalrag/
+  docker-compose.yml
+  pyproject.toml
+  .env.example
+  data/
+    raw/            # immutable downloads, never edited
+    interim/        # extracted text
+  migrations/       # plain .sql files, numbered
+  src/legalrag/
+    config.py
+    db.py
+    arabic.py       # normalization — single source of truth
+    sources/
+      boe.py
+      egypt_hf.py
+      tashreaat.py
+    parse/
+      articles.py   # article-boundary parser
+      amendments.py
+    embed.py        # embedding interface + implementations
+    index.py        # ingestion orchestration
+    retrieve.py     # hybrid search + RRF + rerank
+    answer.py       # prompt construction + citation enforcement
+    app.py          # Streamlit
+  evals/
+    goldset.yaml
+    test_retrieval.py
+    test_answers.py
+    report.py
+```
+
+---
+
+## Schema
+
+```sql
+CREATE TABLE instruments (
+  id                 BIGSERIAL PRIMARY KEY,
+  jurisdiction       TEXT NOT NULL CHECK (jurisdiction IN ('EG','SA')),
+  instrument_type    TEXT NOT NULL,   -- law | royal_decree | regulation | ministerial_decision
+  number             TEXT NOT NULL,
+  year               INT  NOT NULL,
+  title              TEXT NOT NULL,
+  title_norm         TEXT NOT NULL,
+  promulgated_on     DATE,
+  gazette_ref        TEXT,
+  source_url         TEXT NOT NULL,
+  fetched_at         TIMESTAMPTZ NOT NULL,
+  UNIQUE (jurisdiction, instrument_type, number, year)
+);
+
+CREATE TABLE articles (
+  id                    BIGSERIAL PRIMARY KEY,
+  instrument_id         BIGINT NOT NULL REFERENCES instruments(id),
+  jurisdiction          TEXT NOT NULL,          -- denormalized for fast filtering
+  book                  TEXT,
+  chapter               TEXT,
+  section               TEXT,
+  article_number        TEXT NOT NULL,          -- text: "77", "77 مكرر"
+  article_sort_key      NUMERIC NOT NULL,       -- for ordering: 77, 77.1
+  article_text          TEXT NOT NULL,          -- raw, as published
+  article_text_norm     TEXT NOT NULL,          -- normalized for search
+  language              TEXT NOT NULL,          -- ar | en
+  is_official_translation BOOLEAN DEFAULT FALSE,
+  effective_from        DATE,
+  effective_to          DATE,                   -- NULL = currently in force
+  is_repealed           BOOLEAN DEFAULT FALSE,
+  content_hash          TEXT NOT NULL,
+  source_url            TEXT NOT NULL,
+  embedding             vector(1024),
+  text_search           tsvector,
+  UNIQUE (instrument_id, article_number, language)
+);
+
+CREATE TABLE amendments (
+  id                  BIGSERIAL PRIMARY KEY,
+  target_article_id   BIGINT REFERENCES articles(id),
+  amending_instrument_id BIGINT REFERENCES instruments(id),
+  action              TEXT NOT NULL,   -- amended | replaced | repealed | added
+  effective_on        DATE,
+  note                TEXT
+);
+
+CREATE INDEX ON articles USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX ON articles USING gin (text_search);
+CREATE INDEX ON articles (jurisdiction, is_repealed);
+```
+
+---
+
+# PHASE 0 — Prove the value
+
+**Time: one weekend. No database. No embeddings. No retrieval.**
+
+Pick 3 statutes I actually have questions about. Get them as plain text by any means,
+including manual copy-paste. Load full text into a long-context model. Streamlit chat box.
+
+An Egyptian civil code is ~1,150 articles and fits in a long context window whole. If
+this already answers my real questions well, a large part of the rest of this spec may
+be unnecessary — say so rather than proceeding out of momentum.
+
+**Deliverables**
+- `scratch/phase0.py` — single file, under 150 lines
+- 3 statutes as `.txt` in `data/raw/`
+- A written list of 10 real questions I asked and how well it did
+
+**Phase gate**
+- I have asked it 10 genuine questions
+- We have jointly decided whether full retrieval is warranted
+- If yes: the failure modes observed here are written down and drive Phase 2 priorities
+
+---
+
+# PHASE 1 — Corpus, Egypt only
+
+**Time: 2–3 weeks.**
+
+## 1a. Infrastructure
+Docker Compose with Postgres + pgvector. Numbered SQL migrations, applied by a script.
+No ORM — plain SQL with `psycopg`.
+
+## 1b. Arabic normalization (`arabic.py`)
+Single source of truth, used by ingestion and query paths alike:
+- strip diacritics (tashkeel) and tatweel
+- unify alef forms: أ إ آ ٱ → ا
+- unify ta marbuta ة → ه, alef maqsura ى → ي
+- normalize Arabic-Indic digits ٠-٩ and Eastern ٰ۰-۹ to ASCII
+- collapse whitespace, normalize punctuation
+
+Unit tests with real article text. This function changing later invalidates the whole
+index — treat it as versioned, and store the version alongside each row.
+
+## 1c. Acquisition
+**Order matters. Do not write a scraper until this is exhausted.**
+
+1. Load `fr3on/eg-legal-rag`, print its schema and a dozen sample rows, and tell me what
+   shape it is actually in. If it is already article-segmented with law/article metadata,
+   the ingestion path is a mapping job rather than a parsing job — say so before writing
+   `parse/articles.py`.
+2. Survey the remaining `fr3on` legal datasets and `dataflare/egypt-legal-corpus`;
+   report coverage overlap and gaps against the statutes I care about.
+3. Run the fidelity check (20 articles against an official source) on whichever dataset
+   you propose to use as the spine. Report the number before proceeding.
+4. Only then: scrape and extract what remains missing. `PyMuPDF` first to detect an
+   existing text layer; OCR only when there isn't one.
+
+Even when a dataset supplies the text, `source_url` and `fetched_at` must record the
+dataset identity and revision — provenance still has to be traceable back to an
+official source.
+
+## 1d. Article parser (`parse/articles.py`)
+Match Arabic article markers: `مادة`, `المادة`, `مادة رقم`, with Arabic-Indic or ASCII
+digits, spelled-out ordinals, and `مكرر` / `مكرراً` suffixes (these produce sort keys
+like 77.1). Also capture book/chapter/section headers to populate hierarchy.
+
+Expect iteration: parse 100 articles, print them, eyeball, fix, repeat. Build a
+`parse_report` command that prints article count per instrument, gaps in numbering, and
+suspiciously short or long articles — numbering gaps are the fastest way to spot a
+broken parser.
+
+## 1e. Eval set (`evals/goldset.yaml`) — build it NOW, before any tuning
+30–50 entries:
+```yaml
+- id: eg-labour-notice
+  question: "ما هي مدة الإخطار المطلوبة لإنهاء عقد عمل غير محدد المدة؟"
+  jurisdiction: EG
+  expected_articles: ["EG/law/12/2003#111"]
+  must_include: ["إخطار"]
+  notes: "human-verified against official gazette text"
+```
+Mix: exact-citation lookups, plain-language questions, questions with no answer in the
+corpus (must produce refusal), and at least 3 pairs where Egypt and Saudi differ.
+
+**Phase gate**
+- Egyptian corpus ingested; article counts per statute verified against official ToCs
+- Parse report shows no unexplained numbering gaps
+- Normalization unit tests pass
+- Gold set exists with ≥30 human-verified entries
+- `SELECT` sanity queries return correct article text for 5 spot checks
+
+---
+
+# PHASE 2 — Retrieval and answering
+
+**Time: 2–3 weeks.**
+
+## 2a. Embedding (`embed.py`)
+Interface: `embed_documents(texts) -> vectors`, `embed_query(text) -> vector`. Two
+implementations (local BGE-M3, hosted). Batch, cache by content hash, record model name
+and normalization version per row so a model swap triggers targeted re-embedding.
+
+## 2b. Hybrid retrieval (`retrieve.py`)
+1. Parse the query for explicit citations (law number, article number). If found,
+   direct lookup wins — return it first, no ranking involved.
+2. Otherwise, run in parallel:
+   - Postgres full-text over `article_text_norm`
+   - pgvector cosine over `embedding`
+   Both with `WHERE jurisdiction = $1 AND is_repealed = FALSE` applied **before**
+   ranking, in SQL.
+3. Fuse with Reciprocal Rank Fusion, `k=60`. ~30 lines, no library.
+4. Rerank top 30 → top 8 with the cross-encoder.
+5. Return candidates with scores attached so the UI can show them.
+
+## 2c. Answering (`answer.py`)
+Prompt contract:
+- Answer **only** from supplied articles
+- Every claim carries `[Law N/YYYY, Art. M]`
+- If the articles don't answer it, say so plainly — do not reason from general legal
+  knowledge
+- Note when relevant text is a translation rather than the governing Arabic
+- Standing footer: research assistance, not legal advice
+
+Post-generation validation: extract every citation from the output and verify each one
+exists in the retrieved set. Any citation that doesn't resolve → block the answer and
+surface an error. This catch is cheap and stops the worst failure mode outright.
+
+## 2d. UI (`app.py`)
+Streamlit. Jurisdiction selector (required, no "both" default). Answer pane, with
+retrieved articles and their scores visible in an expander. A thumbs-down that appends
+the question to a triage file for later addition to the gold set.
+
+## 2e. Eval harness (`evals/`)
+- Retrieval metrics: recall@8, MRR against `expected_articles`
+- Answer metrics: citation-resolution rate, must-include accuracy, refusal correctness
+  on the unanswerable set
+- `report.py` prints a comparison against the last recorded run
+
+Run before and after every change. Record results in a committed `evals/history.md`.
+
+**Phase gate**
+- recall@8 ≥ 0.85 on the gold set
+- Citation resolution rate = 1.00 (no unresolvable citations, ever)
+- Correct refusal on 100% of the unanswerable set
+- Explicit citation queries resolve by direct lookup
+- Baseline numbers committed to `evals/history.md`
+
+---
+
+# PHASE 3 — Add Saudi Arabia
+
+**Time: 1–2 weeks.** Easier than Egypt: BOE publishes clean text.
+
+## 3a. Ingestion
+`sources/boe.py`. Walk the BOE catalogue, download Arabic text and official English
+translations where present. Store both languages as separate `articles` rows with the
+same `instrument_id`, `is_official_translation` set correctly. Saudi structure differs
+from Egypt's — `نظام` (system/statute) issued by royal decree, so `instrument_type` and
+the decree reference both matter.
+
+## 3b. Cross-jurisdiction isolation tests
+Add gold-set entries where the two countries genuinely differ on the same topic
+(employment termination, personal status, commercial agency). Test explicitly:
+- Query scoped EG returns zero SA articles, and vice versa — assert on row counts,
+  not on answer text
+- Same question asked under each jurisdiction yields materially different answers
+
+## 3c. Bilingual retrieval
+A query in English should reach Arabic articles. Test both directions. If recall is
+weak cross-lingually, translate the query to Arabic before embedding and search both —
+measure whether it helps before adopting it.
+
+**Phase gate**
+- Saudi statutes ingested with correct decree references
+- Zero cross-jurisdiction leakage across all isolation tests
+- Gold set extended to cover SA; recall@8 ≥ 0.85 on the SA subset
+- English queries retrieve relevant Arabic articles at measured recall
+
+---
+
+# PHASE 4 — Amendment and repeal tracking
+
+**Time: 2–3 weeks. This is what separates a useful tool from a dangerous one.**
+
+## 4a. Amendment extraction
+Amending instruments contain formulaic language — "تُستبدل بنص المادة …", "تُلغى المادة
+…", "يُضاف إلى …". Parse these into `amendments` rows linking amending instrument to
+target article. Formulaic phrasing means regex covers most of it; use an LLM extraction
+pass for the residue, and mark those rows `needs_review`.
+
+## 4b. Point-in-time state
+Given a date, resolve which version of an article was in force. Set `effective_to` and
+`is_repealed` from the amendment chain rather than by hand. Where the chain is
+ambiguous, mark the article `uncertain` and have the UI say so — silence about
+uncertainty is worse than the uncertainty itself.
+
+## 4c. Surfacing in answers
+- Repealed article retrieved → answer states the repeal and points to what replaced it
+- Amended article → answer notes the amending instrument and date
+- Optional "as of date" selector for historical questions
+
+## 4d. Refresh
+Scheduled re-crawl of BOE updates and the Egyptian gazette. Diff by `content_hash`,
+report changes for review rather than applying them silently.
+
+**Phase gate**
+- Querying a known-repealed article returns the repeal, not the old text
+- Amendment chains verified by hand for 10 articles known to have been amended
+- Refresh job runs and produces a readable change report
+- Ambiguous chains flagged rather than silently guessed
+
+---
+
+## Overall definition of done
+
+- I can ask a real question in Arabic or English, scoped to one country, and get an
+  answer with citations I can verify in the official source
+- The system refuses rather than inventing, every time
+- Repealed text never appears as current law
+- The eval harness lets me change things without breaking them blind
+- Every answer makes clear this is research assistance, not legal advice
+
+---
+
+## How to work with me
+
+Explain tradeoffs before implementing. When something is likely to fail — Arabic OCR
+quality, article parsing edge cases, embedding recall on legal Arabic, amendment
+chains that don't resolve cleanly — say so upfront rather than after I've built on top
+of it. Push back if I ask for something that adds complexity without evidence it's
+needed. Stop at each phase gate and show me the numbers.

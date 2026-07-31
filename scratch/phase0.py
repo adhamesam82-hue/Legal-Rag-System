@@ -18,7 +18,7 @@ load_dotenv()
 
 RAW_DIR = Path(__file__).resolve().parent.parent / "data" / "raw"
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-MODEL = "anthropic/claude-sonnet-5"
+MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
 
 SYSTEM_PROMPT_HEADER = (
     "أنت مساعد بحث قانوني. أجب فقط استنادًا إلى نصوص القوانين المرفقة أدناه، "
