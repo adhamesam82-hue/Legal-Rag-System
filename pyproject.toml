@@ -12,6 +12,7 @@ dependencies = [
     "python-dotenv>=1.0",
     "psycopg[binary]>=3.2",
     "pyyaml>=6.0",
+    "fastapi>=0.141.1",
 ]
 
 [tool.uv]
@@ -20,7 +21,8 @@ dev-dependencies = [
 ]
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
+pythonpath = [".", "evals"]
+testpaths = ["tests", "evals"]
 
 [build-system]
 requires = ["setuptools>=68"]
