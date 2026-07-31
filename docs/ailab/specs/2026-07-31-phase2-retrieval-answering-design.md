@@ -310,3 +310,99 @@ which model ran them. Vector retrieval is not.
 - **The gold set is still 38 entries.** 0.97 on 38 items is 28 of 29 answerable
   questions. That is a strong signal, not a precise number, and the tuning
   history in this document all happened against these same entries.
+
+---
+
+## Addendum: two production bugs, and why the fix had to be structural
+
+A user-reported regression ("this answered correctly yesterday, now it refuses")
+led to two distinct bugs in the answering step, not one. Both were found by
+reproducing against the real pipeline before touching anything, per the
+project's debugging discipline: no fix without a reproduced root cause.
+
+### Bug 1: silence as the answer
+
+**Report:** "ما هو الحد الأدنى لرأس مال الشركة ذات المسؤولية المحدودة؟" (what is
+the minimum capital for an LLC) returned a refusal.
+
+**Root cause:** the correct article, 159/1981 Art. 116, was retrieved every
+time -- but it states that capital is "determined by the partners in the
+constitutive contract," with no fixed floor. That silence *is* the correct
+answer (Egyptian law sets no statutory minimum), but recognizing it requires an
+inferential step the model would not reliably take, especially when the article
+sat at rank #6 of 8 among several similar-looking Companies Law provisions
+(single-person companies, share transfer, the members' register). Isolated with
+just that one article, the model got it right; in the real 8-candidate pool, it
+refused.
+
+**What didn't work:** a system-prompt rule instructing the model to treat
+explicit silence as an answer, plus a rule instructing it to check each
+supplied article individually rather than judging the batch at once. Together
+these fixed the LLC case -- but caused the model to answer a question about
+**Saudi Arabian VAT using Egypt's VAT law**, once fabricating a specific rate
+that appeared nowhere in the retrieved text. Three prompt-wording iterations
+here produced three different, unpredictable outcomes on the same underlying
+question depending on unrelated context in the same prompt. That instability,
+not any single failure, is what stopped further prompt tuning -- ever-more-
+careful wording is not a reliable way to compose two behaviors that are in
+tension inside one shared instruction.
+
+### Bug 2: jurisdiction inferred, not checked
+
+**Root cause:** the model was never given jurisdiction as a fact. It had to
+infer "this article is Egyptian" from titles and content, and that inference
+degraded under the same kind of distraction as bug 1 -- a topically similar
+article from the only jurisdiction in the corpus was enough to answer a
+question that named a different country entirely.
+
+**Fix, and why it holds:** `Retrieval` now carries the `jurisdiction` it was
+searched under (every candidate in one batch shares it, since the SQL `WHERE`
+clause guarantees that), and `build_context()` labels every article
+`(Jurisdiction: EGYPT)` explicitly. The system prompt tells the model to check
+that label, not the article's subject matter. This is a fact placed in front of
+the model rather than a nuance of wording, and it stayed correct across every
+retest -- including once the silence-as-answer rule from bug 1 was
+reintroduced, because the two are now independent: jurisdiction is a label to
+check, not a judgment call the same paragraph has to also get right.
+
+**Verified:** 9/9 across three repeated runs each on the LLC case, Saudi VAT,
+and UAE company law, plus the full offline suite and gold-set retrieval eval,
+after both fixes landed together.
+
+### Bug 1, revisited: a retrieval-side fix instead of more prompt tuning
+
+Rather than a fourth prompt iteration, the ranking itself was measured.
+Equal-weight RRF fusion combines lexical rank and vector rank per candidate --
+but Art. 116's lexical rank was weak (~30th) precisely because it doesn't use
+words like "minimum": it has none to use. Vector search alone ranked it #2.
+Fusing it against a rank in the 30s dragged an excellent semantic match down to
+#6.
+
+Weighting the vector list's contribution at `VECTOR_RANK_WEIGHT = 2.0` (see
+`retrieve.py`) was tested against the full gold set before being adopted:
+
+| | plain-language recall@8 | plain-language MRR | ANSWERABLE recall@8 |
+|---|---|---|---|
+| equal weight (1:1) | 15/16 | 0.81 | 28/29 |
+| vector weighted 2x | 16/16 | 0.85 | 29/29 |
+
+No category regressed. This is a deterministic, instantly-testable change --
+unlike prompt wording, sweeping the weight and rerunning the eval took seconds
+and gave the same answer every time, which is exactly why it was preferred over
+a fourth attempt at rephrasing the system prompt.
+
+It moved Art. 116 from #6 to #5 -- real, but not by itself enough to fix bug 1.
+The silence-as-answer prompt rule was still needed on top of it. Both changes
+were kept: the ranking weight is a general improvement (measured across the
+whole gold set), while the prompt rule addresses the specific reasoning gap.
+
+### Aside: a docker-compose incident, unrelated to any of the above
+
+Mid-investigation, `docker compose up` silently created a fresh, empty
+database instead of reusing the one holding the corpus and its embeddings. The
+project's directory had been renamed from `phase1-corpus-infra` to
+`legal-rag-system` after the data was loaded, and compose derives volume names
+from the project directory by default. No data was lost -- the original
+container was found stopped, not removed -- but nothing signaled the mismatch
+before an empty `articles` table did. `docker-compose.yml` now pins the volume
+name explicitly, independent of the directory the project happens to live in.

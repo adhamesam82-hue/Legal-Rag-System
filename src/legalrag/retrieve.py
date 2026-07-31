@@ -20,6 +20,14 @@ RRF_K = 60
 CANDIDATE_POOL = 50
 TITLE_OVERLAP_FLOOR = 0.5
 
+# Measured on the gold set (see design doc addendum): equal-weight fusion
+# buries a strong vector match under a weak lexical one when the correct
+# article shares little vocabulary with the question -- exactly what happens
+# when the answer is that the law imposes no such figure at all, so the
+# article never uses the question's terms. Weighting vector rank higher took
+# plain-language recall@8 from 15/16 to 16/16 with no regression elsewhere.
+VECTOR_RANK_WEIGHT = 2.0
+
 # A lexeme in more than this share of the corpus carries no discriminating
 # signal -- in legal Arabic that is words like قانون and أحكام, which otherwise
 # dominate an OR query and drag every long article to the top.
@@ -392,21 +400,30 @@ def vector_search(
 
 
 def reciprocal_rank_fusion(
-    ranked_lists: list[list[Candidate]], k: int = RRF_K
+    ranked_lists: list[list[Candidate]],
+    k: int = RRF_K,
+    weights: list[float] | None = None,
 ) -> list[Candidate]:
-    """Fuse ranked lists by summed 1/(k + rank). Rank position only, never scores.
+    """Fuse ranked lists by summed weight/(k + rank). Rank position only, never scores.
 
     IDF scores from different query texts are not on a comparable scale, so
     fusing on rank is what stops the longer expansion from swamping the
     question's own terms.
+
+    `weights` is positional, one per list, defaulting to 1.0. Unequal weights
+    exist for one reason: equal weighting buries a strong vector match under a
+    weak lexical one when the correct article uses none of the question's
+    words, which is exactly what happens when the answer is that the law
+    imposes no such figure at all -- see VECTOR_RANK_WEIGHT.
     """
+    weights = weights or [1.0] * len(ranked_lists)
     scores: dict[int, float] = {}
     seen: dict[int, Candidate] = {}
-    for ranked in ranked_lists:
+    for ranked, weight in zip(ranked_lists, weights):
         for rank, candidate in enumerate(ranked, start=1):
-            scores[candidate.article_id] = scores.get(candidate.article_id, 0.0) + 1.0 / (
-                k + rank
-            )
+            scores[candidate.article_id] = scores.get(
+                candidate.article_id, 0.0
+            ) + weight / (k + rank)
             seen.setdefault(candidate.article_id, candidate)
 
     ordered = sorted(scores.items(), key=lambda item: item[1], reverse=True)
@@ -463,17 +480,21 @@ def search(
 
     question_norm = normalize(question)
     ranked_lists = [lexical_search(conn, question_norm, jurisdiction)]
+    weights = [1.0]
     hinted_instrument = None
 
     # Vector search runs on the raw question, not the normalized or expanded
     # text: it is the one list that does not need the question rewritten into
-    # statutory Arabic, which is the whole reason for adding it.
+    # statutory Arabic, which is the whole reason for adding it. Weighted
+    # higher than the lexical lists -- see VECTOR_RANK_WEIGHT.
     if use_vectors:
         ranked_lists.append(vector_search(conn, question, jurisdiction))
+        weights.append(VECTOR_RANK_WEIGHT)
 
     if expansion and expansion.terms:
         terms_norm = normalize(expansion.terms)
         ranked_lists.append(lexical_search(conn, terms_norm, jurisdiction))
+        weights.append(1.0)
 
         if expansion.law_hint:
             hinted_instrument = resolve_instrument_by_title(
@@ -485,8 +506,9 @@ def search(
                         conn, terms_norm, jurisdiction, instrument_id=hinted_instrument
                     )
                 )
+                weights.append(1.0)
 
-    fused = reciprocal_rank_fusion(ranked_lists)
+    fused = reciprocal_rank_fusion(ranked_lists, weights=weights)
     return Retrieval(
         candidates=fused[:limit],
         strategy="hybrid",

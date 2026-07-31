@@ -60,6 +60,14 @@ country and it does not match every supplied article's labelled jurisdiction, th
 articles cannot answer it -- this is {REFUSAL_MARKER}, no matter how closely the topic \
 matches. Topical similarity across the wrong country is not an answer. Check the label, \
 not the article's subject matter, to decide this.
+8. If the question asks for a specific figure, deadline, or threshold, and a supplied \
+article addresses that exact matter but does not state one -- e.g. it leaves an amount to \
+be freely agreed, or imposes no cap or floor -- that silence IS the answer. Say plainly \
+that the law does not fix one, and quote what the article does say instead. This is still \
+answering from the supplied text, not guessing: it is different from staying silent when \
+the supplied articles do not address the topic at all, which is still {REFUSAL_MARKER} \
+under rule 2. Silence-as-answer never overrides rule 7: it only ever applies within the \
+correct country's labelled articles.
 
 Do not add a disclaimer; one is appended automatically."""
 

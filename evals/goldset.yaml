@@ -255,3 +255,10 @@
   expected_articles: []
   category: unanswerable
   notes: Corpus is EG-only; UAE is out of scope.
+- id: goldset-039
+  question: ما هو الحد الأدنى لرأس مال الشركة ذات المسؤولية المحدودة؟
+  jurisdiction: EG
+  expected_articles:
+  - 159/1981 Art. 116
+  category: plain_language
+  notes: 'Verified text: Art. 116 sets no fixed minimum -- capital is left to be determined by the partners in the constitutive contract (''يكون للشركة ذات المسئولية المحدودة رأس مال يحدد بمعرفة الشركاء''). The correct answer IS that absence of a fixed minimum, not a number. Regression case: this was reported as a false refusal even though the article was retrieved, because it ranked #6/8 among several similar company-law articles and required recognizing that silence states the answer.'
