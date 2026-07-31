@@ -207,6 +207,18 @@ class MembershipOut(BaseModel):
     role: str
 
 
+class OrgMemberOut(BaseModel):
+    """One row of an organization's member roster.
+
+    Unlike MembershipOut (shaped for "orgs I belong to," where the member is
+    implicitly "me"), a roster lists other people, so each row must say
+    *which* member it is.
+    """
+
+    clerk_user_id: str
+    role: str
+
+
 class CreateInviteRequest(BaseModel):
     email: str = Field(min_length=3, max_length=320)
     role: Literal["lawyer", "staff"]
@@ -453,6 +465,27 @@ def post_accept_invite(token: str, clerk_user_id: str = Depends(get_current_user
         organization_name=org_name,
         role=invitation.role,
     )
+
+
+@app.get("/api/orgs/{organization_id}/members", response_model=list[OrgMemberOut])
+def get_org_members(
+    organization_id: int,
+    membership: Membership = Depends(get_current_membership),
+):
+    """The organization's member roster. Any member may view it -- viewing
+    who's on your team is not the sensitive operation; inviting and removing
+    people are, and those already require require_owner below.
+
+    No separate 404-for-missing-org check: get_current_membership already
+    403s when the caller has no membership row for this organization_id, and
+    that's indistinguishable from the organization not existing at all (same
+    as require_owner-gated routes elsewhere in this file). Reaching this
+    handler means the caller passed that gate, so the org exists and the
+    roster is non-empty by construction.
+    """
+    with db() as conn:
+        members = list_org_members(conn, organization_id)
+    return [OrgMemberOut(clerk_user_id=m.clerk_user_id, role=m.role) for m in members]
 
 
 @app.delete("/api/orgs/{organization_id}/members/{clerk_user_id}", status_code=204)

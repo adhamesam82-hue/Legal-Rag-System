@@ -102,6 +102,31 @@ class TestInvites:
         assert response.json()["role"] == "lawyer"
 
 
+class TestListOrgMembers:
+    def test_member_can_list_the_roster(self, client, conn):
+        from legalrag.orgs import add_membership
+
+        org_id = client.post("/api/orgs", json={"name": "Firm"}).json()["id"]
+        add_membership(conn, org_id, "user_lawyer", "lawyer")
+        add_membership(conn, org_id, "user_staff", "staff")
+
+        response = client.get(f"/api/orgs/{org_id}/members")
+        assert response.status_code == 200
+        roster = {m["clerk_user_id"]: m["role"] for m in response.json()}
+        assert roster == {
+            "user_owner": "owner",
+            "user_lawyer": "lawyer",
+            "user_staff": "staff",
+        }
+
+    def test_non_member_cannot_list_the_roster(self, client, conn):
+        org_id = client.post("/api/orgs", json={"name": "Firm"}).json()["id"]
+
+        app.dependency_overrides[get_current_user_id] = lambda: "user_outsider"
+        response = client.get(f"/api/orgs/{org_id}/members")
+        assert response.status_code == 403
+
+
 class TestRemoveMember:
     def test_owner_can_remove_a_member(self, client, conn):
         from legalrag.orgs import add_membership
