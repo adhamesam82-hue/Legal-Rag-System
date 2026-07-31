@@ -129,12 +129,21 @@ def remove_membership(
         role = row[0]
 
         if role == "owner":
+            # Lock the org's owner-role rows before counting them, so a
+            # concurrent remove_membership call for another owner of the
+            # same organization blocks here until this transaction commits
+            # or rolls back -- otherwise both could read the same
+            # pre-removal owner count under READ COMMITTED and both pass
+            # the "at least one Owner" check. (Postgres disallows FOR
+            # UPDATE directly on an aggregate query, so lock the rows and
+            # count them in Python instead of using SELECT count(*).)
             cur.execute(
-                "SELECT count(*) FROM memberships "
-                "WHERE organization_id = %s AND role = 'owner'",
+                "SELECT id FROM memberships "
+                "WHERE organization_id = %s AND role = 'owner' "
+                "FOR UPDATE",
                 (organization_id,),
             )
-            if cur.fetchone()[0] <= 1:
+            if len(cur.fetchall()) <= 1:
                 raise LastOwnerError(
                     "cannot remove the only Owner of an organization"
                 )
