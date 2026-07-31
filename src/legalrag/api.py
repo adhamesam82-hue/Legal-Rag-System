@@ -10,14 +10,27 @@ from __future__ import annotations
 from contextlib import contextmanager
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAIError
 from pydantic import BaseModel, Field
 
 from legalrag.answer import Answer
+from legalrag.clerk import (
+    get_current_membership,
+    get_current_user_id,
+    get_user_primary_email,
+    require_owner,
+)
 from legalrag.db import get_connection
+from legalrag.email import send_invite_email
 from legalrag.explain import explain_article
+from legalrag.invites import (
+    InvitationError,
+    accept_invitation,
+    create_invitation,
+    get_invitation_by_token,
+)
 from legalrag.library import (
     article_neighbours,
     corpus_stats,
@@ -25,6 +38,16 @@ from legalrag.library import (
     get_instrument,
     list_articles,
     list_instruments,
+)
+from legalrag.orgs import (
+    LastOwnerError,
+    Membership,
+    add_membership,
+    create_organization,
+    get_membership,
+    list_memberships_for_user,
+    list_org_members,
+    remove_membership,
 )
 from legalrag.pipeline import ask, retrieve_for
 from legalrag.retrieve import Candidate
@@ -169,6 +192,39 @@ class ExplainRequest(BaseModel):
     language: Literal["en", "ar"] = "en"
 
 
+class OrganizationOut(BaseModel):
+    id: int
+    name: str
+
+
+class CreateOrganizationRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+
+
+class MembershipOut(BaseModel):
+    organization_id: int
+    organization_name: str
+    role: str
+
+
+class CreateInviteRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=320)
+    role: Literal["lawyer", "staff"]
+
+
+class InvitationOut(BaseModel):
+    token: str
+    email: str
+    role: str
+    organization_name: str
+
+
+class InvitationPreview(BaseModel):
+    organization_name: str
+    role: str
+    status: str
+
+
 # --- endpoints --------------------------------------------------------------
 
 
@@ -298,3 +354,115 @@ def post_explain(article_id: int, request: ExplainRequest):
         "language": explanation.language,
         "text": explanation.text,
     }
+
+
+# --- organizations, invites, team management --------------------------------
+
+
+@app.post("/api/orgs", response_model=OrganizationOut)
+def post_create_organization(
+    request: CreateOrganizationRequest,
+    clerk_user_id: str = Depends(get_current_user_id),
+):
+    with db() as conn:
+        org = create_organization(conn, request.name, clerk_user_id)
+    return OrganizationOut(id=org.id, name=org.name)
+
+
+@app.get("/api/orgs/me", response_model=list[MembershipOut])
+def get_my_organizations(clerk_user_id: str = Depends(get_current_user_id)):
+    with db() as conn:
+        memberships = list_memberships_for_user(conn, clerk_user_id)
+        result = []
+        for m in memberships:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT name FROM organizations WHERE id = %s", (m.organization_id,)
+                )
+                org_name = cur.fetchone()[0]
+            result.append(
+                MembershipOut(
+                    organization_id=m.organization_id,
+                    organization_name=org_name,
+                    role=m.role,
+                )
+            )
+    return result
+
+
+@app.post("/api/orgs/{organization_id}/invites", response_model=InvitationOut)
+def post_create_invite(
+    organization_id: int,
+    request: CreateInviteRequest,
+    owner: Membership = Depends(require_owner),
+):
+    with db() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT name FROM organizations WHERE id = %s", (organization_id,)
+            )
+            org_name = cur.fetchone()[0]
+        invite = create_invitation(
+            conn, organization_id, request.email, request.role, owner.clerk_user_id
+        )
+    accept_url = f"https://app.legalrag.example/invite/{invite.token}"
+    send_invite_email(
+        to_email=invite.email, organization_name=org_name, accept_url=accept_url
+    )
+    return InvitationOut(
+        token=invite.token,
+        email=invite.email,
+        role=invite.role,
+        organization_name=org_name,
+    )
+
+
+@app.get("/api/invites/{token}", response_model=InvitationPreview)
+def get_invite_preview(token: str):
+    with db() as conn:
+        invitation = get_invitation_by_token(conn, token)
+        if invitation is None:
+            raise HTTPException(status_code=404, detail="Invitation not found")
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT name FROM organizations WHERE id = %s",
+                (invitation.organization_id,),
+            )
+            org_name = cur.fetchone()[0]
+    return InvitationPreview(
+        organization_name=org_name, role=invitation.role, status=invitation.status
+    )
+
+
+@app.post("/api/invites/{token}/accept", response_model=MembershipOut)
+def post_accept_invite(token: str, clerk_user_id: str = Depends(get_current_user_id)):
+    email = get_user_primary_email(clerk_user_id)
+    with db() as conn:
+        try:
+            invitation = accept_invitation(conn, token, clerk_user_id, email)
+        except InvitationError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT name FROM organizations WHERE id = %s",
+                (invitation.organization_id,),
+            )
+            org_name = cur.fetchone()[0]
+    return MembershipOut(
+        organization_id=invitation.organization_id,
+        organization_name=org_name,
+        role=invitation.role,
+    )
+
+
+@app.delete("/api/orgs/{organization_id}/members/{clerk_user_id}", status_code=204)
+def delete_member(
+    organization_id: int,
+    clerk_user_id: str,
+    owner: Membership = Depends(require_owner),
+):
+    with db() as conn:
+        try:
+            remove_membership(conn, organization_id, clerk_user_id)
+        except LastOwnerError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
