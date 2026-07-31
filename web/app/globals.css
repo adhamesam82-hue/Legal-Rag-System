@@ -1,0 +1,50 @@
+/* Order matters: reset (@layer reset) -> components (@layer astryx-base)
+   -> theme tokens (@layer astryx-theme). */
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/core/astryx.css";
+@import "@astryxdesign/theme-neutral/theme.css";
+
+/*
+  Project-specific additions only. Astryx already handles layout, colour,
+  elevation, and RTL (its CSS is written entirely in logical properties), so
+  nothing here re-implements those -- this is just what a statute corpus needs
+  on top.
+*/
+
+/*
+  Arabic statute text needs more leading than Latin UI copy: the script has tall
+  ascenders and diacritics, and the corpus preserves its original line breaks.
+  Scoped to [dir="rtl"] so it follows the content rather than the page -- an
+  Arabic article renders correctly inside an English page and vice versa.
+*/
+[dir="rtl"] {
+  font-family: "SF Arabic", "Geeza Pro", "Noto Naskh Arabic", "Al Bayan",
+    var(--font-family-base, system-ui), sans-serif;
+}
+
+.statute-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 2;
+}
+
+[dir="ltr"] .statute-text {
+  line-height: 1.7;
+}
+
+/* Answer prose: paragraphs come back as plain text from the model. */
+.answer-prose > p {
+  margin-block-end: 0.85em;
+}
+.answer-prose > p:last-child {
+  margin-block-end: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
