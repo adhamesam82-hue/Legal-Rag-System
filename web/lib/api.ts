@@ -52,6 +52,35 @@ export interface ArticleDetail {
   next_id: number | null;
 }
 
+export interface Organization {
+  id: number;
+  name: string;
+}
+
+export interface Membership {
+  organization_id: number;
+  organization_name: string;
+  role: "owner" | "lawyer" | "staff";
+}
+
+export interface Invitation {
+  token: string;
+  email: string;
+  role: "lawyer" | "staff";
+  organization_name: string;
+}
+
+export interface InvitationPreview {
+  organization_name: string;
+  role: "lawyer" | "staff";
+  status: "pending" | "accepted" | "expired" | "revoked";
+}
+
+export interface OrgMember {
+  clerk_user_id: string;
+  role: "owner" | "lawyer" | "staff";
+}
+
 /** Carries the HTTP status so callers can tell "out of credits" from a real fault. */
 export class ApiError extends Error {
   constructor(
@@ -67,12 +96,28 @@ export class ApiError extends Error {
   }
 }
 
+type TokenGetter = () => Promise<string | null>;
+
+let getAuthToken: TokenGetter = async () => null;
+
+/** Called once from a client component after ClerkProvider mounts, so every
+ *  api.* call can attach the current session's bearer token without every
+ *  call site having to thread it through by hand. */
+export function configureAuthToken(getter: TokenGetter) {
+  getAuthToken = getter;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = await getAuthToken();
   let response: Response;
   try {
     response = await fetch(`${API_BASE}${path}`, {
       ...init,
-      headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
+      headers: {
+        "content-type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(init?.headers ?? {}),
+      },
       cache: "no-store",
     });
   } catch {
@@ -92,6 +137,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     }
     throw new ApiError(response.status, detail);
   }
+  if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
 
@@ -141,6 +187,34 @@ export const api = {
       `/api/articles/${id}/explain`,
       { method: "POST", body: JSON.stringify({ language }) },
     ),
+
+  createOrganization: (name: string) =>
+    request<Organization>("/api/orgs", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    }),
+
+  myOrganizations: () => request<Membership[]>("/api/orgs/me"),
+
+  createInvite: (organizationId: number, email: string, role: "lawyer" | "staff") =>
+    request<Invitation>(`/api/orgs/${organizationId}/invites`, {
+      method: "POST",
+      body: JSON.stringify({ email, role }),
+    }),
+
+  previewInvite: (token: string) =>
+    request<InvitationPreview>(`/api/invites/${token}`),
+
+  acceptInvite: (token: string) =>
+    request<Membership>(`/api/invites/${token}/accept`, { method: "POST" }),
+
+  listOrgMembers: (organizationId: number) =>
+    request<OrgMember[]>(`/api/orgs/${organizationId}/members`),
+
+  removeMember: (organizationId: number, clerkUserId: string) =>
+    request<void>(`/api/orgs/${organizationId}/members/${clerkUserId}`, {
+      method: "DELETE",
+    }),
 };
 
 const ARABIC = /[؀-ۿ]/;
