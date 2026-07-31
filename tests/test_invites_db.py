@@ -107,3 +107,72 @@ class TestAcceptInvitation:
 
         with pytest.raises(InvitationError, match="expired"):
             accept_invitation(conn, invite.token, "user_new", "new@example.com")
+
+    def test_already_accepted_token_with_a_since_passed_expiry_is_not_reclassified_as_expired(
+        self, conn
+    ):
+        """Regression test for Bug 1: the not-pending check must run and
+        reject before the expiry check, so an invitation that's already
+        'accepted' (a permanent terminal state) is never silently
+        overwritten to 'expired' just because its original 7-day window has
+        since passed.
+        """
+        org = create_organization(conn, "Firm", "user_owner")
+        invite = create_invitation(
+            conn, org.id, "new@example.com", "lawyer", "user_owner"
+        )
+        accept_invitation(conn, invite.token, "user_new", "new@example.com")
+
+        # Backdate expires_at into the past, as if a long time has gone by
+        # since this invitation was accepted.
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE invitations SET expires_at = %s WHERE id = %s",
+                (datetime.now(timezone.utc) - timedelta(days=1), invite.id),
+            )
+        conn.commit()
+
+        with pytest.raises(InvitationError, match="accepted, not pending"):
+            accept_invitation(conn, invite.token, "user_other", "new@example.com")
+
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT status FROM invitations WHERE id = %s", (invite.id,)
+            )
+            (status,) = cur.fetchone()
+        assert status == "accepted"
+
+    def test_accept_rolls_back_when_membership_creation_fails(self, conn):
+        """Regression test for Bug 2: the CAS update to 'accepted' and the
+        membership INSERT must succeed or fail together. If add_membership
+        fails (here, a UniqueViolation because this clerk_user_id is already
+        a member of the organization via a separately-accepted invitation),
+        the invitation's status must roll back to 'pending' rather than
+        being left stranded as 'accepted' with no membership created, and no
+        raw psycopg exception should escape accept_invitation.
+        """
+        org = create_organization(conn, "Firm", "user_owner")
+        first_invite = create_invitation(
+            conn, org.id, "new@example.com", "lawyer", "user_owner"
+        )
+        second_invite = create_invitation(
+            conn, org.id, "new@example.com", "lawyer", "user_owner"
+        )
+
+        # Accept the first invite -- this creates the membership.
+        accept_invitation(conn, first_invite.token, "user_new", "new@example.com")
+
+        # Accepting the second invite for the same org + clerk_user_id must
+        # fail cleanly instead of leaking a raw psycopg UniqueViolation.
+        with pytest.raises(InvitationError):
+            accept_invitation(
+                conn, second_invite.token, "user_new", "new@example.com"
+            )
+
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT status FROM invitations WHERE id = %s",
+                (second_invite.id,),
+            )
+            (status,) = cur.fetchone()
+        assert status == "pending"

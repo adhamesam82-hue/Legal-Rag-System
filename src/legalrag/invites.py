@@ -104,6 +104,13 @@ def accept_invitation(
     invitation = get_invitation_by_token(conn, token)
     if invitation is None:
         raise InvitationError("invitation not found")
+    # Reject on the invitation's actual current status before ever touching
+    # expiry. This must run first: a long-expired 7-day window on an
+    # invitation that's already 'accepted' or 'revoked' is irrelevant --
+    # those are permanent terminal states and must never be reclassified as
+    # 'expired' just because time has passed since they were reached.
+    if invitation.status != "pending":
+        raise InvitationError(f"invitation is {invitation.status}, not pending")
     if invitation.expires_at < datetime.now(timezone.utc):
         with conn.cursor() as cur:
             cur.execute(
@@ -123,6 +130,10 @@ def accept_invitation(
     # second on the row lock until the first commits, then re-evaluates the
     # WHERE clause against the now-'accepted' row and matches zero rows --
     # so only one caller ever proceeds to add_membership below.
+    #
+    # We already confirmed invitation.status == "pending" above, so zero
+    # rows here means a genuine race occurred between that read and this
+    # UPDATE -- the rare case this CAS exists to catch.
     with conn.cursor() as cur:
         cur.execute(
             "UPDATE invitations SET status = 'accepted', accepted_at = now() "
@@ -132,8 +143,10 @@ def accept_invitation(
         )
         row = cur.fetchone()
     if row is None:
-        raise InvitationError("invitation is not pending")
-    conn.commit()
+        # Nothing of ours to undo, but the failed CAS attempt may have left
+        # an implicit transaction open -- leave the connection clean.
+        conn.rollback()
+        raise InvitationError("invitation is no longer pending")
 
     accepted = Invitation(
         id=row[0],
@@ -144,7 +157,26 @@ def accept_invitation(
         status=row[5],
         expires_at=row[6],
     )
-    add_membership(
-        conn, accepted.organization_id, accepting_clerk_user_id, accepted.role
-    )
+
+    # Deliberately no commit here. add_membership() commits internally, and
+    # we want that single commit to durably apply both the CAS update above
+    # and the membership insert together, atomically, as one transaction on
+    # this connection. If add_membership fails, roll back the whole
+    # transaction -- including the CAS -- so the invitation reverts to its
+    # actual pre-accept state instead of being stranded as 'accepted' with
+    # no membership ever created.
+    try:
+        add_membership(
+            conn, accepted.organization_id, accepting_clerk_user_id, accepted.role
+        )
+    except Exception as exc:
+        conn.rollback()
+        if isinstance(exc, psycopg.errors.UniqueViolation):
+            raise InvitationError(
+                "you are already a member of this organization"
+            ) from exc
+        raise InvitationError(
+            "could not accept invitation: membership could not be created"
+        ) from exc
+
     return accepted
