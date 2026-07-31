@@ -16,4 +16,11 @@ services:
       retries: 5
 
 volumes:
+  # Pinned rather than left to derive from the compose project name (the
+  # directory name). This project was created under the directory name
+  # phase1-corpus-infra before being renamed to legal-rag-system; without this
+  # pin, `docker compose up` from the current directory silently creates a
+  # fresh, empty legal-rag-system_pgdata volume instead of reusing the one
+  # holding the real corpus + embeddings, with no error to signal the mismatch.
   pgdata:
+    name: phase1-corpus-infra_pgdata
