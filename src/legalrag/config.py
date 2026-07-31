@@ -73,6 +73,27 @@ def get_database_url() -> str:
     return url
 
 
+def get_clerk_jwks_url() -> str:
+    url = os.environ.get("CLERK_JWKS_URL")
+    if not url:
+        raise RuntimeError("CLERK_JWKS_URL not set in .env")
+    return url
+
+
+def get_clerk_secret_key() -> str:
+    key = os.environ.get("CLERK_SECRET_KEY")
+    if not key:
+        raise RuntimeError("CLERK_SECRET_KEY not set in .env")
+    return key
+
+
+def get_resend_api_key() -> str:
+    key = os.environ.get("RESEND_API_KEY")
+    if not key:
+        raise RuntimeError("RESEND_API_KEY not set in .env")
+    return key
+
+
 def get_model_spec(stage: str) -> ModelSpec:
     """Resolve `LEGALRAG_<STAGE>_MODEL` into a provider and model id."""
     if stage not in DEFAULT_MODELS:
