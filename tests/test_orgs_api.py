@@ -119,6 +119,29 @@ class TestListOrgMembers:
             "user_staff": "staff",
         }
 
+    def test_non_owner_member_can_list_the_roster(self, client, conn):
+        """The route is deliberately gated with get_current_membership (any
+        member may view the roster), not require_owner (which gates
+        invite/remove). This proves a lawyer/staff member -- not just the
+        owner -- is genuinely granted access, so a regression that swapped
+        the dependency back to require_owner would be caught here.
+        """
+        from legalrag.orgs import add_membership
+
+        org_id = client.post("/api/orgs", json={"name": "Firm"}).json()["id"]
+        add_membership(conn, org_id, "user_lawyer", "lawyer")
+        add_membership(conn, org_id, "user_staff", "staff")
+
+        app.dependency_overrides[get_current_user_id] = lambda: "user_lawyer"
+        response = client.get(f"/api/orgs/{org_id}/members")
+        assert response.status_code == 200
+        roster = {m["clerk_user_id"]: m["role"] for m in response.json()}
+        assert roster == {
+            "user_owner": "owner",
+            "user_lawyer": "lawyer",
+            "user_staff": "staff",
+        }
+
     def test_non_member_cannot_list_the_roster(self, client, conn):
         org_id = client.post("/api/orgs", json={"name": "Firm"}).json()["id"]
 
