@@ -34,7 +34,9 @@ import {
 } from "@heroicons/react/24/outline";
 import { useOrg, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
-import { formatDate, formatEGP, label, type InvoiceStatus } from "@/lib/practice";
+import { formatDate, formatEGP, type InvoiceStatus } from "@/lib/practice";
+import { useTranslator } from "@astryxdesign/core/i18n";
+import { useEnumLabel } from "@/lib/i18n/enum-label";
 
 // Retainer balances and disbursements/expenses were part of the UI concept but
 // have no backend and no schema, so they are not rendered here rather than
@@ -64,6 +66,8 @@ function egpShort(value: number) {
 }
 
 export default function BillingPage() {
+  const t = useTranslator();
+  const enumLabel = useEnumLabel();
   const { practice } = useOrg();
   const [isGenerating, setIsGenerating] = useState(false);
   const [pendingId, setPendingId] = useState<number | null>(null);
@@ -128,7 +132,7 @@ export default function BillingPage() {
       await practice.invoices.setStatus(invoice.id, status);
       resource.reload();
     } catch (exc) {
-      setError(exc instanceof Error ? exc.message : "Could not update this invoice.");
+      setError(exc instanceof Error ? exc.message : t("@legalos.billing.error.updateInvoice"));
     } finally {
       setPendingId(null);
     }
@@ -137,34 +141,41 @@ export default function BillingPage() {
   const kpis = summary
     ? [
         {
-          label: "Total Outstanding",
+          label: t("@legalos.billing.kpi.outstanding"),
           value: formatEGP(summary.outstanding),
-          change: `${invoices.filter((i) => i.status === "sent" || i.status === "overdue").length} open invoices`,
+          change: t("@legalos.billing.kpi.openInvoices", {
+            count: invoices.filter((i) => i.status === "sent" || i.status === "overdue")
+              .length,
+          }),
           icon: BanknotesIcon,
           warn: false,
         },
         {
-          label: "Overdue",
+          label: t("@legalos.billing.kpi.overdue"),
           value: formatEGP(summary.overdue),
-          change: `${invoices.filter((i) => i.status === "overdue").length} invoices past due`,
+          change: t("@legalos.billing.kpi.pastDue", {
+            count: invoices.filter((i) => i.status === "overdue").length,
+          }),
           icon: ExclamationTriangleIcon,
           warn: true,
         },
         {
-          label: "Draft — Pending Send",
+          label: t("@legalos.billing.kpi.draft"),
           value: formatEGP(
             invoices
               .filter((i) => i.status === "draft")
               .reduce((sum, i) => sum + Number(i.amount), 0),
           ),
-          change: `${summary.draft_count} not yet sent`,
+          change: t("@legalos.billing.kpi.notYetSent", { count: summary.draft_count }),
           icon: DocumentTextIcon,
           warn: false,
         },
         {
-          label: "Collected this year",
+          label: t("@legalos.billing.kpi.collected"),
           value: formatEGP(summary.paid_this_year),
-          change: `${invoices.filter((i) => i.status === "paid").length} invoices paid`,
+          change: t("@legalos.billing.kpi.invoicesPaid", {
+            count: invoices.filter((i) => i.status === "paid").length,
+          }),
           icon: BuildingOffice2Icon,
           warn: false,
         },
@@ -174,7 +185,7 @@ export default function BillingPage() {
   const invoiceColumns: TableColumn<InvoiceRow>[] = [
     {
       key: "number",
-      header: "Invoice",
+      header: t("@legalos.billing.table.invoice"),
       width: pixel(150),
       renderCell: (row) => (
         <Link href={`/billing/${row.id}`}>
@@ -186,23 +197,23 @@ export default function BillingPage() {
     },
     {
       key: "client",
-      header: "Client",
+      header: t("@legalos.billing.table.client"),
       width: proportional(1.6),
       renderCell: (row) => <Text type="body">{row.client}</Text>,
     },
     {
       key: "matter",
-      header: "Matter",
+      header: t("@legalos.billing.table.matter"),
       width: proportional(2),
       renderCell: (row) => (
-        <Text type="body" color="secondary" maxLines={1}>
+        <Text type="body" color="secondary" maxLines={2}>
           {row.matter}
         </Text>
       ),
     },
     {
       key: "issued",
-      header: "Issued",
+      header: t("@legalos.billing.table.issued"),
       width: pixel(120),
       renderCell: (row) => (
         <Text type="body" color="secondary">
@@ -212,7 +223,7 @@ export default function BillingPage() {
     },
     {
       key: "due",
-      header: "Due",
+      header: t("@legalos.billing.table.due"),
       width: pixel(120),
       renderCell: (row) => (
         <Text type="body" color="secondary">
@@ -222,31 +233,31 @@ export default function BillingPage() {
     },
     {
       key: "status",
-      header: "Status",
+      header: t("@legalos.billing.table.status"),
       width: pixel(210),
       renderCell: (row) => (
         <HStack gap={2} vAlign="center">
-          <Badge variant={STATUS_VARIANT[row.status]} label={label(row.status)} />
+          <Badge variant={STATUS_VARIANT[row.status]} label={enumLabel(row.status)} />
           {row.status === "draft" && (
             <Button
-              label="Send"
+              label={t("@legalos.billing.action.send")}
               variant="ghost"
               size="sm"
               isDisabled={pendingId === row.id}
               onClick={() => setStatus(row, "sent")}
             >
-              Send
+              {t("@legalos.billing.action.send")}
             </Button>
           )}
           {(row.status === "sent" || row.status === "overdue") && (
             <Button
-              label="Mark paid"
+              label={t("@legalos.billing.action.markPaid")}
               variant="ghost"
               size="sm"
               isDisabled={pendingId === row.id}
               onClick={() => setStatus(row, "paid")}
             >
-              Mark paid
+              {t("@legalos.billing.action.markPaid")}
             </Button>
           )}
         </HStack>
@@ -254,7 +265,7 @@ export default function BillingPage() {
     },
     {
       key: "amount",
-      header: "Amount",
+      header: t("@legalos.billing.table.amount"),
       width: pixel(130),
       align: "end",
       renderCell: (row) => (
@@ -274,23 +285,23 @@ export default function BillingPage() {
             <VStack gap={6}>
               <HStack hAlign="between" vAlign="center">
                 <VStack gap={1}>
-                  <Heading level={2}>Billing</Heading>
+                  <Heading level={2}>{t("@legalos.billing.heading")}</Heading>
                   <Text type="body" color="secondary">
-                    Invoices raised against matters and clients
+                    {t("@legalos.billing.subheading")}
                   </Text>
                 </VStack>
                 <Button
-                  label="Invoice unbilled time"
+                  label={t("@legalos.billing.invoiceUnbilled")}
                   variant="primary"
                   icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
                   onClick={() => setIsGenerating(true)}
                   isDisabled={!practice}
                 >
-                  Invoice unbilled time
+                  {t("@legalos.billing.invoiceUnbilled")}
                 </Button>
               </HStack>
 
-              <DataView resource={resource} loadingLabel="Loading billing…">
+              <DataView resource={resource} loadingLabel={t("@legalos.billing.loading")}>
                 {() => (
                   <VStack gap={6}>
                     <InlineError message={error} onDismiss={() => setError(null)} />
@@ -322,10 +333,11 @@ export default function BillingPage() {
                       <Card>
                         <VStack gap={4}>
                           <HStack hAlign="between" vAlign="center">
-                            <Heading level={4}>Invoiced vs. collected</Heading>
+                            <Heading level={4}>{t("@legalos.billing.chart.heading")}</Heading>
                             <Text type="supporting" color="secondary">
-                              Last {chart.length}{" "}
-                              {chart.length === 1 ? "month" : "months"}
+                              {t("@legalos.billing.chart.lastMonths", {
+                                count: chart.length,
+                              })}
                             </Text>
                           </HStack>
                           <ResponsiveContainer width="100%" height={240}>
@@ -362,13 +374,13 @@ export default function BillingPage() {
                               <Legend wrapperStyle={{ fontSize: 12 }} />
                               <Bar
                                 dataKey="invoiced"
-                                name="Invoiced"
+                                name={t("@legalos.billing.chart.invoiced")}
                                 fill="var(--color-accent)"
                                 radius={[4, 4, 0, 0]}
                               />
                               <Bar
                                 dataKey="collected"
-                                name="Collected"
+                                name={t("@legalos.billing.chart.collected")}
                                 fill="var(--color-border-strong)"
                                 radius={[4, 4, 0, 0]}
                               />
@@ -380,7 +392,7 @@ export default function BillingPage() {
 
                     <Card>
                       <VStack gap={4}>
-                        <Heading level={4}>Invoices</Heading>
+                        <Heading level={4}>{t("@legalos.billing.invoices.heading")}</Heading>
                         {rows.length > 0 ? (
                           <Table<InvoiceRow>
                             data={rows}
@@ -393,8 +405,8 @@ export default function BillingPage() {
                             icon={
                               <Icon icon={BanknotesIcon} size="lg" color="secondary" />
                             }
-                            title="No invoices yet"
-                            description="Log billable time against a matter, then raise an invoice for it."
+                            title={t("@legalos.billing.invoices.emptyTitle")}
+                            description={t("@legalos.billing.invoices.emptyDescription")}
                           />
                         )}
                       </VStack>
@@ -425,6 +437,7 @@ function GenerateInvoiceDialog({
   onOpenChange: (open: boolean) => void;
   onCreated: () => void;
 }) {
+  const t = useTranslator();
   const { practice } = useOrg();
   const [matterId, setMatterId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -464,7 +477,7 @@ function GenerateInvoiceDialog({
       onOpenChange(false);
       onCreated();
     } catch (exc) {
-      setError(exc instanceof Error ? exc.message : "Could not draft this invoice.");
+      setError(exc instanceof Error ? exc.message : t("@legalos.billing.dialog.error"));
     } finally {
       setSaving(false);
     }
@@ -474,7 +487,7 @@ function GenerateInvoiceDialog({
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
       <Layout
         header={
-          <DialogHeader title="Invoice unbilled time" onOpenChange={onOpenChange} />
+          <DialogHeader title={t("@legalos.billing.dialog.title")} onOpenChange={onOpenChange} />
         }
         content={
           <LayoutContent>
@@ -490,13 +503,15 @@ function GenerateInvoiceDialog({
                 </Text>
               ) : (
                 <Selector
-                  label="Matter"
+                  label={t("@legalos.billing.dialog.matterLabel")}
                   hasClear
                   isRequired
                   value={matterId}
                   onChange={setMatterId}
                   placeholder={
-                    unbilled.loading ? "Loading…" : "Select a matter to bill"
+                    unbilled.loading
+                      ? t("@legalos.billing.dialog.loadingPlaceholder")
+                      : t("@legalos.billing.dialog.matterPlaceholder")
                   }
                   options={options}
                 />
@@ -508,12 +523,12 @@ function GenerateInvoiceDialog({
           <LayoutFooter hasDivider>
             <HStack gap={3} hAlign="end">
               <Button
-                label="Cancel"
+                label={t("@legalos.billing.dialog.cancel")}
                 variant="secondary"
                 onClick={() => onOpenChange(false)}
               />
               <Button
-                label={saving ? "Drafting…" : "Draft invoice"}
+                label={saving ? t("@legalos.billing.dialog.drafting") : t("@legalos.billing.dialog.draftInvoice")}
                 variant="primary"
                 onClick={submit}
                 isDisabled={saving || !matterId}

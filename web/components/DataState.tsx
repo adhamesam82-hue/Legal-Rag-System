@@ -8,6 +8,7 @@
  */
 
 import { useState } from "react";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import { VStack, HStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { Button } from "@astryxdesign/core/Button";
@@ -23,12 +24,13 @@ import { TextInput } from "@astryxdesign/core/TextInput";
 import { api } from "@/lib/api";
 import { useOrg } from "@/lib/org";
 
-export function LoadingState({ label = "Loading…" }: { label?: string }) {
+export function LoadingState({ label }: { label?: string }) {
+  const t = useTranslator();
   return (
     <HStack gap={3} vAlign="center" hAlign="center" padding={8}>
       <Spinner size="md" />
       <Text type="body" color="secondary">
-        {label}
+        {label ?? t("@legalos.common.loading")}
       </Text>
     </HStack>
   );
@@ -41,14 +43,20 @@ export function ErrorState({
   message: string;
   onRetry?: () => void;
 }) {
+  const t = useTranslator();
   return (
     <EmptyState
       icon={<Icon icon={ExclamationTriangleIcon} size="lg" color="secondary" />}
-      title="Could not load this data"
-      description={message}
+      title={t("@legalos.common.errorTitle")}
+      // API/server messages arrive in English regardless of interface
+      // language. Wrapped in a Unicode bidi isolate (FSI…PDI) because on an
+      // RTL page an unisolated Latin string throws its trailing punctuation
+      // to the wrong end — "...:8000?" renders as "?...:8000". The prop is a
+      // plain string, so this has to be done in the text, not with dir="".
+      description={`⁨${message}⁩`}
       actions={
         onRetry ? (
-          <Button label="Try again" variant="secondary" onClick={onRetry} />
+          <Button label={t("@legalos.common.tryAgain")} variant="secondary" onClick={onRetry} />
         ) : undefined
       }
     />
@@ -73,8 +81,9 @@ export function DataView<T>({
   loadingLabel?: string;
 }) {
   const { organizationId, loading: orgLoading, error: orgError } = useOrg();
+  const t = useTranslator();
 
-  if (orgLoading) return <LoadingState label="Loading your firm…" />;
+  if (orgLoading) return <LoadingState label={t("@legalos.common.loadingFirm")} />;
   if (orgError) return <ErrorState message={orgError} />;
   if (organizationId === null) return <NoOrganizationState />;
   if (resource.loading && resource.data === null) {
@@ -95,6 +104,7 @@ export function DataView<T>({
  */
 export function NoOrganizationState() {
   const { reloadOrganizations } = useOrg();
+  const t = useTranslator();
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,7 +119,7 @@ export function NoOrganizationState() {
       // picks the new firm up.
       reloadOrganizations();
     } catch (exc) {
-      setError(exc instanceof Error ? exc.message : "Could not create the firm.");
+      setError(exc instanceof Error ? exc.message : t("@legalos.common.noOrg.createFailed"));
       setSaving(false);
     }
   }
@@ -118,27 +128,26 @@ export function NoOrganizationState() {
     <VStack gap={5} padding={8} hAlign="center">
       <EmptyState
         icon={<Icon icon={BuildingOffice2Icon} size="lg" color="secondary" />}
-        title="Set up your firm"
-        description="This account isn't part of a firm yet. Name it to get started — you'll be its Owner."
+        title={t("@legalos.common.noOrg.title")}
+        description={t("@legalos.common.noOrg.description")}
       />
       <VStack gap={3} width={360}>
         <InlineError message={error} onDismiss={() => setError(null)} />
         <TextInput
-          label="Firm name"
+          label={t("@legalos.common.noOrg.firmNameLabel")}
           value={name}
           onChange={setName}
-          placeholder="Al-Sayed & Partners"
+          placeholder={t("@legalos.common.noOrg.firmNamePlaceholder")}
           isRequired
         />
         <Button
-          label={saving ? "Creating…" : "Create firm"}
+          label={saving ? t("@legalos.common.noOrg.creating") : t("@legalos.common.noOrg.createFirm")}
           variant="primary"
           isDisabled={saving || !name.trim()}
           onClick={createFirm}
         />
         <Text type="supporting" color="secondary">
-          To take over the seeded sample firm instead, run: uv run python
-          scripts/seed_demo_firm.py --reset --owner-clerk-id &lt;your Clerk user id&gt;
+          {t("@legalos.common.noOrg.seedHint")}
         </Text>
       </VStack>
     </VStack>

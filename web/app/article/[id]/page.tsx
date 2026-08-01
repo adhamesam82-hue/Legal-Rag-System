@@ -10,6 +10,9 @@ import { Button } from "@astryxdesign/core/Button";
 import { Banner } from "@astryxdesign/core/Banner";
 import { Spinner } from "@astryxdesign/core/Spinner";
 import { ToggleButton, ToggleButtonGroup } from "@astryxdesign/core/ToggleButton";
+import { Icon } from "@astryxdesign/core/Icon";
+import { ArrowLeftIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
+import { useTranslator, useDirection } from "@astryxdesign/core/i18n";
 import { api, ApiError, ArticleDetail, dirOf } from "@/lib/api";
 
 export default function ArticlePage({
@@ -18,6 +21,8 @@ export default function ArticlePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const t = useTranslator();
+  const direction = useDirection();
   const articleId = Number(id);
 
   const [detail, setDetail] = useState<ArticleDetail | null>(null);
@@ -62,14 +67,18 @@ export default function ArticlePage({
   if (error) {
     return (
       <div style={{ maxWidth: 780, margin: "0 auto", padding: "32px 20px" }}>
-        <Banner status="error" title="Could not load this article" description={error} />
+        <Banner
+          status="error"
+          title={t("@legalos.article.error.title")}
+          description={error}
+        />
       </div>
     );
   }
   if (!detail) {
     return (
       <div style={{ maxWidth: 780, margin: "0 auto", padding: "32px 20px" }}>
-        <Spinner label="Loading article…" />
+        <Spinner label={t("@legalos.article.loading")} />
       </div>
     );
   }
@@ -90,7 +99,9 @@ export default function ArticlePage({
         <Badge variant="info" label={article.citation} />
       </div>
 
-      <Heading level={1}>Article {article.article_number}</Heading>
+      <Heading level={1}>
+        {t("@legalos.article.heading", { number: article.article_number })}
+      </Heading>
 
       <div style={{ marginBlockStart: 16 }}>
         <Card padding={5}>
@@ -111,10 +122,10 @@ export default function ArticlePage({
             marginBlockEnd: 12,
           }}
         >
-          <Heading level={2}>Plain language</Heading>
+          <Heading level={2}>{t("@legalos.article.plainLanguage.heading")}</Heading>
           <div style={{ marginInlineStart: "auto", display: "flex", gap: 8 }}>
             <ToggleButtonGroup
-              label="Explanation language"
+              label={t("@legalos.article.explanationLanguage.ariaLabel")}
               type="single"
               value={language}
               onChange={(value) =>
@@ -125,7 +136,11 @@ export default function ArticlePage({
               <ToggleButton value="ar" label="العربية" />
             </ToggleButtonGroup>
             <Button
-              label={explanation ? "Regenerate" : "Explain this article"}
+              label={
+                explanation
+                  ? t("@legalos.article.explain.regenerate")
+                  : t("@legalos.article.explain.cta")
+              }
               variant="primary"
               isLoading={explaining}
               onClick={() => explain(language)}
@@ -138,8 +153,8 @@ export default function ArticlePage({
             status={explainError.isCredits ? "warning" : "error"}
             title={
               explainError.isCredits
-                ? "Model provider out of credits"
-                : "Could not explain this article"
+                ? t("@legalos.article.explain.creditsTitle")
+                : t("@legalos.article.explain.errorTitle")
             }
             description={explainError.message}
           />
@@ -156,8 +171,7 @@ export default function ArticlePage({
             </div>
             <div style={{ marginBlockStart: 14 }}>
               <Text type="supporting">
-                Generated from the text of this article alone. Research
-                assistance, not legal advice.
+                {t("@legalos.article.explain.footerNote")}
               </Text>
             </div>
           </Card>
@@ -165,8 +179,7 @@ export default function ArticlePage({
           !explaining &&
           !explainError && (
             <Text type="supporting">
-              Turns this article&apos;s legal language into a plain explanation,
-              using only the text above.
+              {t("@legalos.article.explain.helper")}
             </Text>
           )
         )}
@@ -183,14 +196,34 @@ export default function ArticlePage({
       >
         {previous_id ? (
           <NextLink href={`/article/${previous_id}`}>
-            <Button label="← Previous article" variant="secondary" />
+            <Button
+              label={t("@legalos.article.previousArticle")}
+              variant="secondary"
+              icon={
+                <Icon
+                  icon={direction === "rtl" ? ArrowRightIcon : ArrowLeftIcon}
+                  size="sm"
+                  color="inherit"
+                />
+              }
+            />
           </NextLink>
         ) : (
           <span />
         )}
         {next_id && (
           <NextLink href={`/article/${next_id}`}>
-            <Button label="Next article →" variant="secondary" />
+            <Button
+              label={t("@legalos.article.nextArticle")}
+              variant="secondary"
+              endContent={
+                <Icon
+                  icon={direction === "rtl" ? ArrowLeftIcon : ArrowRightIcon}
+                  size="sm"
+                  color="inherit"
+                />
+              }
+            />
           </NextLink>
         )}
       </div>

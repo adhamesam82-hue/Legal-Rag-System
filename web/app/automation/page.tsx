@@ -221,7 +221,11 @@ export default function AutomationPage() {
                     <ListItem
                       key={automation.id}
                       label={automation.name}
-                      description={`${automation.trigger} · ${automation.steps.length} steps`}
+                      description={
+                        <Text type="supporting" color="secondary" maxLines={2}>
+                          {`${automation.trigger} · ${automation.steps.length} steps`}
+                        </Text>
+                      }
                       isSelected={automation.id === selectedId}
                       onClick={() => setSelectedId(automation.id)}
                       startContent={

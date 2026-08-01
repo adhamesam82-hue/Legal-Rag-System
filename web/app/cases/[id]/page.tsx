@@ -14,20 +14,35 @@ import { Link } from "@astryxdesign/core/Link";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import {
   ArrowLeftIcon,
+  ArrowRightIcon,
   ScaleIcon,
   ClockIcon,
   DocumentTextIcon,
   SparklesIcon,
   FlagIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslator, useDirection, type TranslatorFn } from "@astryxdesign/core/i18n";
 import { useResource } from "@/lib/org";
 import { DataView } from "@/components/DataState";
-import { daysUntil, formatDate, label } from "@/lib/practice";
+import { daysUntil, formatDate } from "@/lib/practice";
+import { enumLabelWith } from "@/lib/i18n/enum-label";
 
 function statusVariant(status: string): "success" | "warning" | "neutral" {
   if (status.startsWith("Active")) return "success";
   if (status.startsWith("On Hold")) return "warning";
   return "neutral";
+}
+
+const SUBMITTED_BY_KEYS: Record<string, string> = {
+  us: "@legalos.cases.detail.submittedBy.us",
+  opposing_party: "@legalos.cases.detail.submittedBy.opposingParty",
+  court: "@legalos.cases.detail.submittedBy.court",
+};
+
+function submittedByLabel(t: TranslatorFn, value: string | null | undefined): string {
+  if (!value) return "—";
+  const key = SUBMITTED_BY_KEYS[value];
+  return key ? t(key) : enumLabelWith(t, value);
 }
 
 export default function CaseDetailPage({
@@ -37,6 +52,9 @@ export default function CaseDetailPage({
 }) {
   const { id } = use(params);
   const caseId = Number(id);
+  const t = useTranslator();
+  const direction = useDirection();
+  const BackIcon = direction === "rtl" ? ArrowRightIcon : ArrowLeftIcon;
 
   const resource = useResource((api) => api.cases.get(caseId), [caseId]);
 
@@ -45,14 +63,14 @@ export default function CaseDetailPage({
       height="fill"
       content={
         <LayoutContent padding={0} isScrollable>
-          <DataView resource={resource} loadingLabel="Loading case…">
+          <DataView resource={resource} loadingLabel={t("@legalos.cases.detail.loading")}>
             {(record) => (
               <VStack gap={6}>
                 <Link href="/cases">
                   <HStack gap={1.5} vAlign="center">
-                    <Icon icon={ArrowLeftIcon} size="sm" color="secondary" />
+                    <Icon icon={BackIcon} size="sm" color="secondary" />
                     <Text type="body" color="secondary">
-                      Cases
+                      {t("@legalos.cases.detail.backLink")}
                     </Text>
                   </HStack>
                 </Link>
@@ -85,12 +103,12 @@ export default function CaseDetailPage({
                           className="text-purple-vivid"
                         />
                         <Text type="label" weight="semibold">
-                          Case summary
+                          {t("@legalos.cases.detail.summaryHeading")}
                         </Text>
                       </HStack>
                       <Text type="body">{record.ai_summary}</Text>
                       <Text type="supporting" color="secondary">
-                        A starting point for review, not final legal advice.
+                        {t("@legalos.cases.detail.summaryDisclaimer")}
                       </Text>
                     </VStack>
                   </Card>
@@ -101,10 +119,10 @@ export default function CaseDetailPage({
                     <VStack gap={6}>
                       <Card>
                         <VStack gap={4}>
-                          <Heading level={4}>Timeline</Heading>
+                          <Heading level={4}>{t("@legalos.cases.detail.timelineHeading")}</Heading>
                           {record.timeline.length === 0 ? (
                             <Text type="body" color="secondary">
-                              No events recorded yet.
+                              {t("@legalos.cases.detail.timelineEmpty")}
                             </Text>
                           ) : (
                             <List hasDividers density="compact">
@@ -153,7 +171,7 @@ export default function CaseDetailPage({
                                     <HStack gap={3} vAlign="center">
                                       <Badge
                                         variant="neutral"
-                                        label={label(item.submitted_by)}
+                                        label={submittedByLabel(t, item.submitted_by)}
                                       />
                                       <Text type="supporting" color="secondary">
                                         {formatDate(item.submitted_date)}

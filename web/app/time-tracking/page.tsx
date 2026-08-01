@@ -38,6 +38,7 @@ import {
   BriefcaseIcon,
   PlusIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import { useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import {
@@ -50,10 +51,11 @@ import {
 } from "@/lib/practice";
 
 const WEEKLY_TARGET_HOURS = 40;
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+type DayKey = (typeof DAY_KEYS)[number];
 
 /** Monday-anchored week containing `iso`. */
-function weekDays(iso: string): { day: string; date: string; iso: string }[] {
+function weekDays(iso: string): { dayKey: DayKey; date: string; iso: string }[] {
   const anchor = new Date(`${iso}T00:00:00`);
   const offsetToMonday = (anchor.getDay() + 6) % 7;
   const monday = new Date(anchor);
@@ -63,7 +65,7 @@ function weekDays(iso: string): { day: string; date: string; iso: string }[] {
     date.setDate(monday.getDate() + index);
     const key = `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, "0")}-${`${date.getDate()}`.padStart(2, "0")}`;
     return {
-      day: DAY_NAMES[date.getDay()],
+      dayKey: DAY_KEYS[date.getDay()],
       date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
       iso: key,
     };
@@ -90,6 +92,7 @@ interface EntryRow extends Record<string, unknown> {
 }
 
 export default function TimeTrackingPage() {
+  const t = useTranslator();
   const memberName = useMemberName();
   const [view, setView] = useState<"day" | "week">("week");
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -119,7 +122,7 @@ export default function TimeTrackingPage() {
       week.map((d) => {
         const forDay = entries.filter((e) => e.entry_date === d.iso);
         return {
-          day: d.day,
+          day: t(`@legalos.timeTracking.day.${d.dayKey}`),
           billable: forDay
             .filter((e) => e.billable)
             .reduce((sum, e) => sum + Number(e.hours), 0),
@@ -128,7 +131,7 @@ export default function TimeTrackingPage() {
             .reduce((sum, e) => sum + Number(e.hours), 0),
         };
       }),
-    [week, entries],
+    [week, entries, t],
   );
 
   const visibleEntries = useMemo<EntryRow[]>(() => {
@@ -167,7 +170,7 @@ export default function TimeTrackingPage() {
   const columns: TableColumn<EntryRow>[] = [
     {
       key: "date",
-      header: "Date",
+      header: t("@legalos.timeTracking.table.date"),
       width: pixel(110),
       renderCell: (item) => (
         <Text type="body" color="secondary">
@@ -177,23 +180,23 @@ export default function TimeTrackingPage() {
     },
     {
       key: "matter",
-      header: "Matter",
+      header: t("@legalos.timeTracking.table.matter"),
       width: proportional(2),
       renderCell: (item) => (
-        <Text type="body" weight="semibold" maxLines={1}>
+        <Text type="body" weight="semibold" maxLines={2}>
           {item.matter}
         </Text>
       ),
     },
     {
       key: "description",
-      header: "Description",
+      header: t("@legalos.timeTracking.table.description"),
       width: proportional(3),
       renderCell: (item) => <Text type="body">{item.description || "—"}</Text>,
     },
     {
       key: "lawyer",
-      header: "Lawyer",
+      header: t("@legalos.timeTracking.table.lawyer"),
       width: proportional(1.5),
       renderCell: (item) => (
         <Text type="body" color="secondary">
@@ -203,13 +206,13 @@ export default function TimeTrackingPage() {
     },
     {
       key: "billable",
-      header: "Billable",
-      width: pixel(130),
+      header: t("@legalos.timeTracking.table.billable"),
+      width: pixel(150),
       renderCell: (item) =>
         !item.billable ? (
-          <Badge variant="neutral" label="Non-billable" />
+          <Badge variant="neutral" label={t("@legalos.timeTracking.badge.nonBillable")} />
         ) : item.invoiced ? (
-          <Badge variant="info" label="Invoiced" />
+          <Badge variant="info" label={t("@legalos.timeTracking.badge.invoiced")} />
         ) : (
           <Text type="body" color="secondary">
             {formatEGP(item.amount)}
@@ -218,12 +221,12 @@ export default function TimeTrackingPage() {
     },
     {
       key: "hours",
-      header: "Duration",
+      header: t("@legalos.timeTracking.table.duration"),
       width: pixel(90),
       align: "end",
       renderCell: (item) => (
         <Text type="body" weight="semibold">
-          {item.hours.toFixed(1)}h
+          {t("@legalos.timeTracking.hoursShort", { hours: item.hours.toFixed(1) })}
         </Text>
       ),
     },
@@ -238,22 +241,25 @@ export default function TimeTrackingPage() {
             <VStack gap={6}>
               <HStack hAlign="between" vAlign="center">
                 <VStack gap={1}>
-                  <Heading level={2}>Time Tracking</Heading>
+                  <Heading level={2}>{t("@legalos.timeTracking.heading")}</Heading>
                   <Text type="body" color="secondary">
-                    Week of {week[0].date} – {week[6].date}
+                    {t("@legalos.timeTracking.weekOf", {
+                      start: week[0].date,
+                      end: week[6].date,
+                    })}
                   </Text>
                 </VStack>
                 <Button
-                  label="New time entry"
+                  label={t("@legalos.timeTracking.newTimeEntry")}
                   variant="primary"
                   icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
                   onClick={() => setIsCreating(true)}
                 >
-                  New time entry
+                  {t("@legalos.timeTracking.newTimeEntry")}
                 </Button>
               </HStack>
 
-              <DataView resource={resource} loadingLabel="Loading this week…">
+              <DataView resource={resource} loadingLabel={t("@legalos.timeTracking.loading")}>
                 {() => (
                   <VStack gap={6}>
                     <Grid columns={3} gap={6}>
@@ -263,10 +269,10 @@ export default function TimeTrackingPage() {
                           <VStack gap={4}>
                             <HStack hAlign="between" vAlign="center">
                               <Heading level={4}>
-                                Billable vs. non-billable hours
+                                {t("@legalos.timeTracking.chart.heading")}
                               </Heading>
                               <Text type="supporting" color="secondary">
-                                This week
+                                {t("@legalos.timeTracking.chart.thisWeek")}
                               </Text>
                             </HStack>
                             <ResponsiveContainer width="100%" height={220}>
@@ -292,7 +298,10 @@ export default function TimeTrackingPage() {
                                   width={32}
                                 />
                                 <Tooltip
-                                  formatter={(value, name) => [`${value}h`, name]}
+                                  formatter={(value, name) => [
+                                    t("@legalos.timeTracking.hoursShort", { hours: value }),
+                                    name,
+                                  ]}
                                   contentStyle={{
                                     background: "var(--color-background-popover)",
                                     border: "1px solid var(--color-border)",
@@ -302,14 +311,14 @@ export default function TimeTrackingPage() {
                                 <Legend wrapperStyle={{ fontSize: 12 }} />
                                 <Bar
                                   dataKey="billable"
-                                  name="Billable"
+                                  name={t("@legalos.timeTracking.chart.billable")}
                                   fill="var(--color-accent)"
                                   radius={[4, 4, 0, 0]}
                                   stackId="hours"
                                 />
                                 <Bar
                                   dataKey="nonBillable"
-                                  name="Non-billable"
+                                  name={t("@legalos.timeTracking.chart.nonBillable")}
                                   fill="var(--color-border-strong)"
                                   radius={[4, 4, 0, 0]}
                                   stackId="hours"
@@ -324,9 +333,11 @@ export default function TimeTrackingPage() {
                     <Card>
                       <VStack gap={4}>
                         <HStack hAlign="between" vAlign="center">
-                          <Heading level={4}>Week overview</Heading>
+                          <Heading level={4}>
+                            {t("@legalos.timeTracking.weekOverview.heading")}
+                          </Heading>
                           <SegmentedControl
-                            label="Calendar view"
+                            label={t("@legalos.timeTracking.weekOverview.calendarViewLabel")}
                             value={view}
                             onChange={(v) => {
                               setView(v as "day" | "week");
@@ -334,8 +345,14 @@ export default function TimeTrackingPage() {
                             }}
                             size="sm"
                           >
-                            <SegmentedControlItem value="week" label="Week" />
-                            <SegmentedControlItem value="day" label="Day" />
+                            <SegmentedControlItem
+                              value="week"
+                              label={t("@legalos.timeTracking.weekOverview.week")}
+                            />
+                            <SegmentedControlItem
+                              value="day"
+                              label={t("@legalos.timeTracking.weekOverview.day")}
+                            />
                           </SegmentedControl>
                         </HStack>
                         <Grid columns={7} gap={2}>
@@ -345,6 +362,7 @@ export default function TimeTrackingPage() {
                               .reduce((sum, e) => sum + Number(e.hours), 0);
                             const isSelected = selectedDay === d.iso;
                             const isToday = d.iso === today;
+                            const dayLabel = t(`@legalos.timeTracking.day.${d.dayKey}`);
                             return (
                               <Card
                                 key={d.iso}
@@ -355,26 +373,39 @@ export default function TimeTrackingPage() {
                                 <VStack gap={2}>
                                   <HStack hAlign="between" vAlign="center">
                                     <Text type="label" weight="semibold">
-                                      {d.day}
+                                      {dayLabel}
                                     </Text>
-                                    {isToday && <Badge variant="info" label="Today" />}
+                                    {isToday && (
+                                      <Badge
+                                        variant="info"
+                                        label={t("@legalos.timeTracking.weekOverview.today")}
+                                      />
+                                    )}
                                   </HStack>
                                   <Text type="supporting" color="secondary">
                                     {d.date}
                                   </Text>
                                   <Divider />
                                   <Text type="body" weight="semibold">
-                                    {total > 0 ? `${total.toFixed(1)}h` : "—"}
+                                    {total > 0
+                                      ? t("@legalos.timeTracking.hoursShort", {
+                                          hours: total.toFixed(1),
+                                        })
+                                      : "—"}
                                   </Text>
                                   <Button
-                                    label={`View ${d.day}`}
+                                    label={t("@legalos.timeTracking.weekOverview.viewDay", {
+                                      day: dayLabel,
+                                    })}
                                     variant="ghost"
                                     size="sm"
                                     onClick={() =>
                                       setSelectedDay(isSelected ? null : d.iso)
                                     }
                                   >
-                                    {isSelected ? "Clear" : "View"}
+                                    {isSelected
+                                      ? t("@legalos.timeTracking.weekOverview.clear")
+                                      : t("@legalos.timeTracking.weekOverview.view")}
                                   </Button>
                                 </VStack>
                               </Card>
@@ -389,13 +420,19 @@ export default function TimeTrackingPage() {
                         <Card>
                           <VStack gap={4}>
                             <HStack hAlign="between" vAlign="center">
-                              <Heading level={4}>Time entries</Heading>
+                              <Heading level={4}>
+                                {t("@legalos.timeTracking.entries.heading")}
+                              </Heading>
                               <Text type="supporting" color="secondary">
                                 {selectedDay
-                                  ? `Showing ${formatDate(selectedDay)}`
+                                  ? t("@legalos.timeTracking.entries.showingDate", {
+                                      date: formatDate(selectedDay),
+                                    })
                                   : view === "day"
-                                    ? `Showing today, ${formatDate(today)}`
-                                    : "Showing full week"}
+                                    ? t("@legalos.timeTracking.entries.showingToday", {
+                                        date: formatDate(today),
+                                      })
+                                    : t("@legalos.timeTracking.entries.showingFullWeek")}
                               </Text>
                             </HStack>
                             {visibleEntries.length > 0 ? (
@@ -408,7 +445,7 @@ export default function TimeTrackingPage() {
                               />
                             ) : (
                               <Text type="body" color="secondary">
-                                No time logged for this period yet.
+                                {t("@legalos.timeTracking.entries.empty")}
                               </Text>
                             )}
                           </VStack>
@@ -418,15 +455,21 @@ export default function TimeTrackingPage() {
                       <Card>
                         <VStack gap={4}>
                           <HStack hAlign="between" vAlign="center">
-                            <Heading level={4}>Timesheet summary</Heading>
-                            <Link href="/reports">Full report</Link>
+                            <Heading level={4}>
+                              {t("@legalos.timeTracking.summary.heading")}
+                            </Heading>
+                            <Link href="/reports">
+                              {t("@legalos.timeTracking.summary.fullReport")}
+                            </Link>
                           </HStack>
                           <Text type="supporting" color="secondary">
-                            Week to date, target {WEEKLY_TARGET_HOURS}h billable
+                            {t("@legalos.timeTracking.summary.targetLabel", {
+                              hours: WEEKLY_TARGET_HOURS,
+                            })}
                           </Text>
                           {perMember.length === 0 ? (
                             <Text type="body" color="secondary">
-                              No time logged this week.
+                              {t("@legalos.timeTracking.summary.empty")}
                             </Text>
                           ) : (
                             <VStack gap={4}>
@@ -442,14 +485,21 @@ export default function TimeTrackingPage() {
                                       <Text type="label">{member.name}</Text>
                                     </HStack>
                                     <Text type="supporting" color="secondary">
-                                      {member.billable.toFixed(1)}h billable
+                                      {t("@legalos.timeTracking.summary.billableHours", {
+                                        hours: member.billable.toFixed(1),
+                                      })}
                                       {member.nonBillable > 0
-                                        ? ` · ${member.nonBillable.toFixed(1)}h other`
+                                        ? ` · ${t("@legalos.timeTracking.summary.otherHours", {
+                                            hours: member.nonBillable.toFixed(1),
+                                          })}`
                                         : ""}
                                     </Text>
                                   </HStack>
                                   <ProgressBar
-                                    label={`${member.name} weekly utilization`}
+                                    label={t(
+                                      "@legalos.timeTracking.summary.utilizationAriaLabel",
+                                      { name: member.name },
+                                    )}
                                     isLabelHidden
                                     value={Math.round(
                                       (member.billable / WEEKLY_TARGET_HOURS) * 100,
@@ -490,6 +540,7 @@ function LiveTimer({
   matters: Matter[];
   onLogged: () => void;
 }) {
+  const t = useTranslator();
   const { practice } = useOrg();
   const [isRunning, setIsRunning] = useState(false);
   const [seconds, setSeconds] = useState(0);
@@ -525,7 +576,7 @@ function LiveTimer({
       setDescription("");
       onLogged();
     } catch (exc) {
-      setError(exc instanceof Error ? exc.message : "Could not log this time.");
+      setError(exc instanceof Error ? exc.message : t("@legalos.timeTracking.timer.error"));
     } finally {
       setSaving(false);
     }
@@ -535,11 +586,11 @@ function LiveTimer({
     <Card>
       <VStack gap={4}>
         <HStack hAlign="between" vAlign="center">
-          <Heading level={4}>Timer</Heading>
+          <Heading level={4}>{t("@legalos.timeTracking.timer.heading")}</Heading>
           {isRunning && (
             <Badge
               variant="success"
-              label="Running"
+              label={t("@legalos.timeTracking.timer.running")}
               icon={<Icon icon={ClockIcon} size="xsm" color="inherit" />}
             />
           )}
@@ -547,18 +598,18 @@ function LiveTimer({
         <InlineError message={error} onDismiss={() => setError(null)} />
         <Grid columns={{ minWidth: 200, repeat: "fit" }} gap={3}>
           <Selector
-            label="Matter"
+            label={t("@legalos.timeTracking.timer.matterLabel")}
             hasClear
             options={matters.map((m) => ({ value: String(m.id), label: m.name }))}
             value={matterId}
             onChange={setMatterId}
-            placeholder="Select a matter"
+            placeholder={t("@legalos.timeTracking.timer.matterPlaceholder")}
           />
           <TextInput
-            label="Description"
+            label={t("@legalos.timeTracking.timer.descriptionLabel")}
             value={description}
             onChange={setDescription}
-            placeholder="What are you working on?"
+            placeholder={t("@legalos.timeTracking.timer.descriptionPlaceholder")}
           />
         </Grid>
         <HStack hAlign="between" vAlign="center">
@@ -566,7 +617,11 @@ function LiveTimer({
             {formatDuration(seconds)}
           </Text>
           <Button
-            label={isRunning ? "Stop timer and log" : "Start timer"}
+            label={
+              isRunning
+                ? t("@legalos.timeTracking.timer.stopAndLog")
+                : t("@legalos.timeTracking.timer.start")
+            }
             variant={isRunning ? "destructive" : "primary"}
             icon={
               <Icon icon={isRunning ? StopIcon : PlayIcon} size="sm" color="inherit" />
@@ -574,12 +629,14 @@ function LiveTimer({
             isDisabled={saving || (!isRunning && !matterId)}
             onClick={() => (isRunning ? stopAndLog() : setIsRunning(true))}
           >
-            {isRunning ? "Stop" : "Start"}
+            {isRunning
+              ? t("@legalos.timeTracking.timer.stopShort")
+              : t("@legalos.timeTracking.timer.startShort")}
           </Button>
         </HStack>
         {!matterId && !isRunning && (
           <Text type="supporting" color="secondary">
-            Pick a matter to start the timer.
+            {t("@legalos.timeTracking.timer.pickMatterHint")}
           </Text>
         )}
       </VStack>
@@ -598,6 +655,7 @@ function TimeEntryDialog({
   matters: Matter[];
   onSaved: () => void;
 }) {
+  const t = useTranslator();
   const { practice } = useOrg();
   const [matterId, setMatterId] = useState<string | null>(null);
   const [entryDate, setEntryDate] = useState<ISODateString>(todayIso);
@@ -626,7 +684,7 @@ function TimeEntryDialog({
       onOpenChange(false);
       onSaved();
     } catch (exc) {
-      setError(exc instanceof Error ? exc.message : "Could not save this entry.");
+      setError(exc instanceof Error ? exc.message : t("@legalos.timeTracking.dialog.error"));
     } finally {
       setSaving(false);
     }
@@ -635,28 +693,33 @@ function TimeEntryDialog({
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
       <Layout
-        header={<DialogHeader title="New time entry" onOpenChange={onOpenChange} />}
+        header={
+          <DialogHeader
+            title={t("@legalos.timeTracking.dialog.title")}
+            onOpenChange={onOpenChange}
+          />
+        }
         content={
           <LayoutContent>
             <VStack gap={4}>
               <InlineError message={error} onDismiss={() => setError(null)} />
               <Selector
-                label="Matter"
+                label={t("@legalos.timeTracking.dialog.matterLabel")}
                 hasClear
                 isRequired
                 value={matterId}
                 onChange={setMatterId}
-                placeholder="Select a matter"
+                placeholder={t("@legalos.timeTracking.dialog.matterPlaceholder")}
                 options={matters.map((m) => ({ value: String(m.id), label: m.name }))}
               />
               <HStack gap={3}>
                 <DateInput
-                  label="Date"
+                  label={t("@legalos.timeTracking.dialog.dateLabel")}
                   value={entryDate}
                   onChange={(v) => setEntryDate(v ?? entryDate)}
                 />
                 <NumberInput
-                  label="Hours"
+                  label={t("@legalos.timeTracking.dialog.hoursLabel")}
                   value={hours}
                   onChange={(v) => setHours(v ?? 0)}
                   min={0.25}
@@ -664,7 +727,7 @@ function TimeEntryDialog({
                   step={0.25}
                 />
                 <NumberInput
-                  label="Rate"
+                  label={t("@legalos.timeTracking.dialog.rateLabel")}
                   value={rate}
                   onChange={(v) => setRate(v ?? 0)}
                   min={0}
@@ -672,13 +735,13 @@ function TimeEntryDialog({
                 />
               </HStack>
               <TextInput
-                label="Description"
+                label={t("@legalos.timeTracking.dialog.descriptionLabel")}
                 value={description}
                 onChange={setDescription}
-                placeholder="Drafted appeal brief"
+                placeholder={t("@legalos.timeTracking.dialog.descriptionPlaceholder")}
               />
               <CheckboxInput
-                label="Billable"
+                label={t("@legalos.timeTracking.dialog.billableLabel")}
                 value={billable}
                 onChange={setBillable}
               />
@@ -689,12 +752,16 @@ function TimeEntryDialog({
           <LayoutFooter hasDivider>
             <HStack gap={3} hAlign="end">
               <Button
-                label="Cancel"
+                label={t("@legalos.timeTracking.dialog.cancel")}
                 variant="secondary"
                 onClick={() => onOpenChange(false)}
               />
               <Button
-                label={saving ? "Saving…" : "Log time"}
+                label={
+                  saving
+                    ? t("@legalos.timeTracking.dialog.saving")
+                    : t("@legalos.timeTracking.dialog.logTime")
+                }
                 variant="primary"
                 onClick={submit}
                 isDisabled={saving || !matterId || hours <= 0}

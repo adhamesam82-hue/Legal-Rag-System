@@ -9,6 +9,8 @@ import { legalosTheme } from "@/lib/legalos";
 import { USING_CLERK } from "@/lib/auth-mode";
 import { AuthTokenBridge } from "@/components/AuthTokenBridge";
 import { OrgProvider } from "@/lib/org";
+import { LocaleProvider } from "@/lib/i18n/provider";
+import type { Locale } from "@/lib/i18n/locale";
 
 type ColorMode = "light" | "dark" | "system";
 
@@ -25,20 +27,28 @@ export function useThemeMode() {
   return ctx;
 }
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({
+  children,
+  initialLocale,
+}: {
+  children: React.ReactNode;
+  initialLocale?: Locale;
+}) {
   const [mode, setMode] = useState<ColorMode>("system");
   const ctxValue = useMemo(() => ({ mode, setMode }), [mode]);
 
   const inner = (
-    <ThemeModeContext.Provider value={ctxValue}>
-      <Theme theme={legalosTheme} mode={mode}>
-        {/* Routes every Astryx Link through the Next router. */}
-        <LinkProvider component={Link}>
-          {USING_CLERK && <AuthTokenBridge />}
-          <OrgProvider>{children}</OrgProvider>
-        </LinkProvider>
-      </Theme>
-    </ThemeModeContext.Provider>
+    <LocaleProvider initialLocale={initialLocale}>
+      <ThemeModeContext.Provider value={ctxValue}>
+        <Theme theme={legalosTheme} mode={mode}>
+          {/* Routes every Astryx Link through the Next router. */}
+          <LinkProvider component={Link}>
+            {USING_CLERK && <AuthTokenBridge />}
+            <OrgProvider>{children}</OrgProvider>
+          </LinkProvider>
+        </Theme>
+      </ThemeModeContext.Provider>
+    </LocaleProvider>
   );
 
   // ClerkProvider throws without a publishable key, so it is only mounted

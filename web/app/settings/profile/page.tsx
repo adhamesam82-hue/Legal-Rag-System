@@ -17,6 +17,8 @@ import { Divider } from "@astryxdesign/core/Divider";
 import { Link } from "@astryxdesign/core/Link";
 import { List, ListItem } from "@astryxdesign/core/List";
 import { ArrowLeftIcon, ArrowUpTrayIcon, KeyIcon } from "@heroicons/react/24/outline";
+import { useLocale } from "@/lib/i18n/provider";
+import type { Locale } from "@/lib/i18n/locale";
 
 const SESSIONS = [
   { device: "MacBook Pro · Cairo, Egypt", detail: "Chrome · current session", current: true },
@@ -28,7 +30,10 @@ export default function ProfileSettingsPage() {
   const [email, setEmail] = useState("ahmed@alsayed-partners.eg");
   const [phone, setPhone] = useState("+20 100 555 0142");
   const [title, setTitle] = useState("Managing Partner");
-  const [language, setLanguage] = useState("en");
+  // Unlike the other fields on this page, language switches the whole app
+  // live rather than waiting on "Save changes" — matching how the Astryx
+  // InternationalizationProvider is meant to be driven (see lib/i18n).
+  const { locale, setLocale } = useLocale();
   const [emailDigest, setEmailDigest] = useState(true);
   const [hearingAlerts, setHearingAlerts] = useState(true);
   const [mentionAlerts, setMentionAlerts] = useState(false);
@@ -96,8 +101,8 @@ export default function ProfileSettingsPage() {
                 </Grid>
                 <Selector
                   label="Interface language"
-                  value={language}
-                  onChange={setLanguage}
+                  value={locale}
+                  onChange={(value) => setLocale(value as Locale)}
                   options={[
                     { value: "en", label: "English" },
                     { value: "ar", label: "العربية (Arabic)" },

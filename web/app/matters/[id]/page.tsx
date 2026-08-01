@@ -40,18 +40,19 @@ import {
   formatDate,
   formatDateTime,
   formatEGP,
-  label,
   type MatterStatus,
 } from "@/lib/practice";
+import { useTranslator } from "@astryxdesign/core/i18n";
+import { useEnumLabel } from "@/lib/i18n/enum-label";
 
 const TABS = [
-  { value: "overview", label: "Overview" },
-  { value: "timeline", label: "Timeline" },
-  { value: "documents", label: "Documents" },
-  { value: "tasks", label: "Tasks" },
-  { value: "time", label: "Time & billing" },
-  { value: "notes", label: "Notes" },
-];
+  { value: "overview", labelKey: "@legalos.matters.detail.tab.overview" },
+  { value: "timeline", labelKey: "@legalos.matters.detail.tab.timeline" },
+  { value: "documents", labelKey: "@legalos.matters.detail.tab.documents" },
+  { value: "tasks", labelKey: "@legalos.matters.detail.tab.tasks" },
+  { value: "time", labelKey: "@legalos.matters.detail.tab.time" },
+  { value: "notes", labelKey: "@legalos.matters.detail.tab.notes" },
+] as const;
 
 const STATUS_VARIANT: Record<MatterStatus, "success" | "warning" | "neutral"> = {
   active: "success",
@@ -66,6 +67,8 @@ export default function MatterDetailPage({
 }) {
   const { id } = use(params);
   const matterId = Number(id);
+  const t = useTranslator();
+  const enumLabel = useEnumLabel();
   const { practice } = useOrg();
   const memberName = useMemberName();
   const [tab, setTab] = useState("overview");
@@ -125,7 +128,11 @@ export default function MatterDetailPage({
       setNote("");
       resource.reload();
     } catch (exc) {
-      setError(exc instanceof Error ? exc.message : "Could not save this note.");
+      setError(
+        exc instanceof Error
+          ? exc.message
+          : t("@legalos.matters.detail.errors.note"),
+      );
     } finally {
       setSaving(false);
     }
@@ -138,7 +145,11 @@ export default function MatterDetailPage({
       await practice.matters.update(matterId, { status });
       resource.reload();
     } catch (exc) {
-      setError(exc instanceof Error ? exc.message : "Could not update this matter.");
+      setError(
+        exc instanceof Error
+          ? exc.message
+          : t("@legalos.matters.detail.errors.status"),
+      );
     }
   }
 
@@ -148,12 +159,19 @@ export default function MatterDetailPage({
       await practice.tasks.update(taskId, { status: done ? "done" : "todo" });
       resource.reload();
     } catch (exc) {
-      setError(exc instanceof Error ? exc.message : "Could not update this task.");
+      setError(
+        exc instanceof Error
+          ? exc.message
+          : t("@legalos.matters.detail.errors.task"),
+      );
     }
   }
 
   return (
-    <DataView resource={resource} loadingLabel="Loading matter…">
+    <DataView
+      resource={resource}
+      loadingLabel={t("@legalos.matters.detail.loading")}
+    >
       {({
         matter,
         documents,
@@ -185,7 +203,7 @@ export default function MatterDetailPage({
                     <HStack gap={1.5} vAlign="center">
                       <Icon icon={ArrowLeftIcon} size="sm" color="secondary" />
                       <Text type="body" color="secondary">
-                        Matters
+                        {t("@legalos.matters.heading")}
                       </Text>
                     </HStack>
                   </Link>
@@ -196,38 +214,51 @@ export default function MatterDetailPage({
                         <Heading level={2}>{matter.name}</Heading>
                         <Badge
                           variant={STATUS_VARIANT[matter.status]}
-                          label={label(matter.status)}
+                          label={enumLabel(matter.status)}
                         />
                       </HStack>
                       <Text type="body" color="secondary">
                         <Link href={`/clients/${matter.client_id}`}>
                           {matter.client_name}
                         </Link>
-                        {` · ${label(matter.matter_type)} · opened ${formatDate(matter.opened_date)}`}
+                        {" · "}
+                        {t("@legalos.matters.detail.subtitle", {
+                          type: enumLabel(matter.matter_type),
+                          date: formatDate(matter.opened_date),
+                        })}
                       </Text>
                     </VStack>
                     <Selector
-                      label="Status"
+                      label={t("@legalos.matters.field.status")}
                       isLabelHidden
                       value={matter.status}
                       onChange={setStatus}
                       width={160}
                       options={[
-                        { value: "active", label: "Active" },
-                        { value: "on_hold", label: "On Hold" },
-                        { value: "closed", label: "Closed" },
+                        {
+                          value: "active",
+                          label: t("@legalos.matters.status.active"),
+                        },
+                        {
+                          value: "on_hold",
+                          label: t("@legalos.matters.status.onHold"),
+                        },
+                        {
+                          value: "closed",
+                          label: t("@legalos.matters.status.closed"),
+                        },
                       ]}
                     />
                   </HStack>
 
                   <TabList value={tab} onChange={setTab} hasDivider>
-                    {TABS.map((t) => (
+                    {TABS.map((tabDef) => (
                       <Tab
-                        key={t.value}
-                        value={t.value}
-                        label={t.label}
+                        key={tabDef.value}
+                        value={tabDef.value}
+                        label={t(tabDef.labelKey)}
                         endContent={
-                          t.value === "tasks" && openTasks.length > 0 ? (
+                          tabDef.value === "tasks" && openTasks.length > 0 ? (
                             <Badge
                               variant="neutral"
                               label={String(openTasks.length)}
@@ -251,9 +282,14 @@ export default function MatterDetailPage({
                         <VStack gap={6}>
                           <Card>
                             <VStack gap={3}>
-                              <Heading level={4}>Summary</Heading>
+                              <Heading level={4}>
+                                {t("@legalos.matters.detail.summary.heading")}
+                              </Heading>
                               <Text type="body">
-                                {matter.description || "No description recorded."}
+                                {matter.description ||
+                                  t(
+                                    "@legalos.matters.detail.summary.noDescription",
+                                  )}
                               </Text>
                               {matter.tags.length > 0 && (
                                 <HStack gap={2} wrap="wrap">
@@ -269,19 +305,37 @@ export default function MatterDetailPage({
                             <Card>
                               <VStack gap={4}>
                                 <HStack hAlign="between" vAlign="center">
-                                  <Heading level={4}>Linked court case</Heading>
+                                  <Heading level={4}>
+                                    {t(
+                                      "@legalos.matters.detail.linkedCase.heading",
+                                    )}
+                                  </Heading>
                                   <Link href={`/cases/${linkedCase.id}`}>
-                                    Open case
+                                    {t(
+                                      "@legalos.matters.detail.linkedCase.openCase",
+                                    )}
                                   </Link>
                                 </HStack>
                                 <MetadataList>
-                                  <MetadataListItem label="Case number">
+                                  <MetadataListItem
+                                    label={t(
+                                      "@legalos.matters.detail.linkedCase.caseNumber",
+                                    )}
+                                  >
                                     {linkedCase.case_number}
                                   </MetadataListItem>
-                                  <MetadataListItem label="Court">
+                                  <MetadataListItem
+                                    label={t(
+                                      "@legalos.matters.detail.linkedCase.court",
+                                    )}
+                                  >
                                     {linkedCase.court}
                                   </MetadataListItem>
-                                  <MetadataListItem label="Opposing party">
+                                  <MetadataListItem
+                                    label={t(
+                                      "@legalos.matters.detail.linkedCase.opposingParty",
+                                    )}
+                                  >
                                     {linkedCase.opposing_party || "—"}
                                   </MetadataListItem>
                                 </MetadataList>
@@ -291,10 +345,12 @@ export default function MatterDetailPage({
 
                           <Card>
                             <VStack gap={4}>
-                              <Heading level={4}>Open tasks</Heading>
+                              <Heading level={4}>
+                                {t("@legalos.matters.detail.openTasks.heading")}
+                              </Heading>
                               {openTasks.length === 0 ? (
                                 <Text type="body" color="secondary">
-                                  Nothing outstanding.
+                                  {t("@legalos.matters.detail.openTasks.empty")}
                                 </Text>
                               ) : (
                                 <List hasDividers density="compact">
@@ -326,10 +382,12 @@ export default function MatterDetailPage({
 
                           <Card>
                             <VStack gap={4}>
-                              <Heading level={4}>Recent activity</Heading>
+                              <Heading level={4}>
+                                {t("@legalos.matters.detail.activity.heading")}
+                              </Heading>
                               {activity.length === 0 ? (
                                 <Text type="body" color="secondary">
-                                  No activity yet.
+                                  {t("@legalos.matters.detail.activity.empty")}
                                 </Text>
                               ) : (
                                 <List hasDividers density="compact">
@@ -362,31 +420,61 @@ export default function MatterDetailPage({
                       <VStack gap={6}>
                         <Card>
                           <VStack gap={4}>
-                            <Heading level={4}>At a glance</Heading>
+                            <Heading level={4}>
+                              {t("@legalos.matters.detail.glance.heading")}
+                            </Heading>
                             <MetadataList>
-                              <MetadataListItem label="Billing">
-                                {label(matter.billing_type)}
+                              <MetadataListItem
+                                label={t("@legalos.matters.field.billing")}
+                              >
+                                {enumLabel(matter.billing_type)}
                               </MetadataListItem>
                               {matter.budget_amount !== null && (
-                                <MetadataListItem label="Budget">
+                                <MetadataListItem
+                                  label={t(
+                                    "@legalos.matters.detail.glance.budget",
+                                  )}
+                                >
                                   {formatEGP(Number(matter.budget_amount))}
-                                  {matter.budget_is_estimate ? " (est.)" : ""}
+                                  {matter.budget_is_estimate
+                                    ? t(
+                                        "@legalos.matters.detail.glance.estimateSuffix",
+                                      )
+                                    : ""}
                                 </MetadataListItem>
                               )}
-                              <MetadataListItem label="Hours logged">
-                                {totalHours.toFixed(1)}h
+                              <MetadataListItem
+                                label={t(
+                                  "@legalos.matters.detail.glance.hoursLogged",
+                                )}
+                              >
+                                {t("@legalos.matters.detail.hoursValue", {
+                                  hours: totalHours.toFixed(1),
+                                })}
                               </MetadataListItem>
-                              <MetadataListItem label="Unbilled">
+                              <MetadataListItem
+                                label={t(
+                                  "@legalos.matters.detail.glance.unbilled",
+                                )}
+                              >
                                 {formatEGP(unbilledAmount)}
                               </MetadataListItem>
                               {matter.next_deadline && (
-                                <MetadataListItem label="Next deadline">
-                                  {matter.next_deadline.label} ·{" "}
-                                  {formatDate(matter.next_deadline.due_date)}
+                                <MetadataListItem
+                                  label={t("@legalos.matters.field.nextDeadline")}
+                                >
+                                  {t("@legalos.matters.detail.metaNameDate", {
+                                    name: matter.next_deadline.label,
+                                    date: formatDate(
+                                      matter.next_deadline.due_date,
+                                    ),
+                                  })}
                                 </MetadataListItem>
                               )}
                               {matter.closed_date && (
-                                <MetadataListItem label="Closed">
+                                <MetadataListItem
+                                  label={t("@legalos.matters.field.closed")}
+                                >
                                   {formatDate(matter.closed_date)}
                                 </MetadataListItem>
                               )}
@@ -396,11 +484,15 @@ export default function MatterDetailPage({
 
                         <Card>
                           <VStack gap={4}>
-                            <Heading level={4}>Team</Heading>
+                            <Heading level={4}>
+                              {t("@legalos.matters.detail.team.heading")}
+                            </Heading>
                             <List hasDividers density="compact">
                               <ListItem
                                 label={memberName(matter.responsible_user)}
-                                description="Responsible"
+                                description={t(
+                                  "@legalos.matters.field.responsible",
+                                )}
                                 startContent={
                                   <Avatar
                                     name={memberName(matter.responsible_user)}
@@ -413,7 +505,9 @@ export default function MatterDetailPage({
                                 <ListItem
                                   key={userId}
                                   label={memberName(userId)}
-                                  description="Supporting"
+                                  description={t(
+                                    "@legalos.matters.detail.team.supporting",
+                                  )}
                                   startContent={
                                     <Avatar
                                       name={memberName(userId)}
@@ -429,17 +523,24 @@ export default function MatterDetailPage({
 
                         <Card>
                           <VStack gap={4}>
-                            <Heading level={4}>Hearings</Heading>
+                            <Heading level={4}>
+                              {t("@legalos.matters.detail.hearings.heading")}
+                            </Heading>
                             {hearings.length === 0 ? (
                               <Text type="body" color="secondary">
-                                None scheduled.
+                                {t("@legalos.matters.detail.hearings.empty")}
                               </Text>
                             ) : (
                               <List hasDividers density="compact">
                                 {hearings.map((hearing) => (
                                   <ListItem
                                     key={hearing.id}
-                                    label={hearing.purpose || "Hearing"}
+                                    label={
+                                      hearing.purpose ||
+                                      t(
+                                        "@legalos.matters.detail.hearings.defaultPurpose",
+                                      )
+                                    }
                                     description={hearing.court}
                                     startContent={
                                       <Icon
@@ -466,12 +567,18 @@ export default function MatterDetailPage({
                   {tab === "timeline" && (
                     <Card>
                       <VStack gap={4}>
-                        <Heading level={4}>Matter timeline</Heading>
+                        <Heading level={4}>
+                          {t("@legalos.matters.detail.timeline.heading")}
+                        </Heading>
                         {timeline.length === 0 ? (
                           <EmptyState
                             icon={<Icon icon={FlagIcon} size="lg" color="secondary" />}
-                            title="No milestones yet"
-                            description="Filings, communications and billing events appear here."
+                            title={t(
+                              "@legalos.matters.detail.timeline.emptyTitle",
+                            )}
+                            description={t(
+                              "@legalos.matters.detail.timeline.emptyDescription",
+                            )}
                           />
                         ) : (
                           <List hasDividers density="compact">
@@ -487,7 +594,7 @@ export default function MatterDetailPage({
                                   <HStack gap={3} vAlign="center">
                                     <Badge
                                       variant="neutral"
-                                      label={label(event.kind)}
+                                      label={enumLabel(event.kind)}
                                     />
                                     <Text type="supporting" color="secondary">
                                       {formatDate(event.event_date)}
@@ -506,8 +613,12 @@ export default function MatterDetailPage({
                     <Card>
                       <VStack gap={4}>
                         <HStack hAlign="between" vAlign="center">
-                          <Heading level={4}>Documents</Heading>
-                          <Link href="/documents">All documents</Link>
+                          <Heading level={4}>
+                            {t("@legalos.matters.detail.documents.heading")}
+                          </Heading>
+                          <Link href="/documents">
+                            {t("@legalos.matters.detail.documents.allDocuments")}
+                          </Link>
                         </HStack>
                         {documents.length === 0 ? (
                           <EmptyState
@@ -518,8 +629,12 @@ export default function MatterDetailPage({
                                 color="secondary"
                               />
                             }
-                            title="No documents"
-                            description="Upload documents from the Documents screen to file them here."
+                            title={t(
+                              "@legalos.matters.detail.documents.emptyTitle",
+                            )}
+                            description={t(
+                              "@legalos.matters.detail.documents.emptyDescription",
+                            )}
                           />
                         ) : (
                           <List hasDividers density="compact">
@@ -528,7 +643,13 @@ export default function MatterDetailPage({
                                 key={doc.id}
                                 label={doc.name}
                                 href={`/documents/${doc.id}`}
-                                description={`${memberName(doc.uploaded_by)} · ${formatDate(doc.uploaded_at)}`}
+                                description={t(
+                                  "@legalos.matters.detail.metaNameDate",
+                                  {
+                                    name: memberName(doc.uploaded_by),
+                                    date: formatDate(doc.uploaded_at),
+                                  },
+                                )}
                                 startContent={
                                   <Icon
                                     icon={DocumentTextIcon}
@@ -540,7 +661,7 @@ export default function MatterDetailPage({
                                   <HStack gap={3} vAlign="center">
                                     <Badge
                                       variant="neutral"
-                                      label={label(doc.status)}
+                                      label={enumLabel(doc.status)}
                                     />
                                     <Text type="supporting" color="secondary">
                                       {doc.size_bytes
@@ -561,8 +682,12 @@ export default function MatterDetailPage({
                     <Card>
                       <VStack gap={4}>
                         <HStack hAlign="between" vAlign="center">
-                          <Heading level={4}>Tasks</Heading>
-                          <Link href="/tasks">All tasks</Link>
+                          <Heading level={4}>
+                            {t("@legalos.matters.detail.tasks.heading")}
+                          </Heading>
+                          <Link href="/tasks">
+                            {t("@legalos.matters.detail.tasks.allTasks")}
+                          </Link>
                         </HStack>
                         {tasks.length === 0 ? (
                           <EmptyState
@@ -573,8 +698,10 @@ export default function MatterDetailPage({
                                 color="secondary"
                               />
                             }
-                            title="No tasks"
-                            description="Add tasks from the Tasks screen and assign them to this matter."
+                            title={t("@legalos.matters.detail.tasks.emptyTitle")}
+                            description={t(
+                              "@legalos.matters.detail.tasks.emptyDescription",
+                            )}
                           />
                         ) : (
                           <List hasDividers density="compact">
@@ -585,11 +712,17 @@ export default function MatterDetailPage({
                                 <ListItem
                                   key={task.id}
                                   label={task.title}
-                                  description={`${memberName(task.assignee)}${
+                                  description={
                                     task.due_date
-                                      ? ` · due ${formatDate(task.due_date)}`
-                                      : ""
-                                  }`}
+                                      ? t(
+                                          "@legalos.matters.detail.tasks.dueDate",
+                                          {
+                                            name: memberName(task.assignee),
+                                            date: formatDate(task.due_date),
+                                          },
+                                        )
+                                      : memberName(task.assignee)
+                                  }
                                   startContent={
                                     <Icon
                                       icon={CheckCircleIcon}
@@ -600,15 +733,34 @@ export default function MatterDetailPage({
                                   endContent={
                                     <HStack gap={3} vAlign="center">
                                       {overdue && (
-                                        <Badge variant="error" label="Overdue" />
+                                        <Badge
+                                          variant="error"
+                                          label={t(
+                                            "@legalos.matters.detail.tasks.overdue",
+                                          )}
+                                        />
                                       )}
                                       <Button
-                                        label={done ? "Reopen" : "Mark done"}
+                                        label={
+                                          done
+                                            ? t(
+                                                "@legalos.matters.detail.tasks.reopen",
+                                              )
+                                            : t(
+                                                "@legalos.matters.detail.tasks.markDone",
+                                              )
+                                        }
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => toggleTask(task.id, !done)}
                                       >
-                                        {done ? "Reopen" : "Mark done"}
+                                        {done
+                                          ? t(
+                                              "@legalos.matters.detail.tasks.reopen",
+                                            )
+                                          : t(
+                                              "@legalos.matters.detail.tasks.markDone",
+                                            )}
                                       </Button>
                                     </HStack>
                                   }
@@ -627,20 +779,35 @@ export default function MatterDetailPage({
                         <Card>
                           <VStack gap={4}>
                             <HStack hAlign="between" vAlign="center">
-                              <Heading level={4}>Time entries</Heading>
-                              <Link href="/time-tracking">Time tracking</Link>
+                              <Heading level={4}>
+                                {t("@legalos.matters.detail.time.heading")}
+                              </Heading>
+                              <Link href="/time-tracking">
+                                {t("@legalos.matters.detail.time.link")}
+                              </Link>
                             </HStack>
                             {time.length === 0 ? (
                               <Text type="body" color="secondary">
-                                No time logged against this matter.
+                                {t("@legalos.matters.detail.time.empty")}
                               </Text>
                             ) : (
                               <List hasDividers density="compact">
                                 {time.map((entry) => (
                                   <ListItem
                                     key={entry.id}
-                                    label={entry.description || "Legal services"}
-                                    description={`${memberName(entry.clerk_user_id)} · ${formatDate(entry.entry_date)}`}
+                                    label={
+                                      entry.description ||
+                                      t(
+                                        "@legalos.matters.detail.time.defaultDescription",
+                                      )
+                                    }
+                                    description={t(
+                                      "@legalos.matters.detail.metaNameDate",
+                                      {
+                                        name: memberName(entry.clerk_user_id),
+                                        date: formatDate(entry.entry_date),
+                                      },
+                                    )}
                                     startContent={
                                       <Icon
                                         icon={ClockIcon}
@@ -651,10 +818,22 @@ export default function MatterDetailPage({
                                     endContent={
                                       <HStack gap={3} vAlign="center">
                                         {entry.invoice_id && (
-                                          <Badge variant="info" label="Invoiced" />
+                                          <Badge
+                                            variant="info"
+                                            label={t(
+                                              "@legalos.matters.detail.time.invoiced",
+                                            )}
+                                          />
                                         )}
                                         <Text type="body" weight="semibold">
-                                          {Number(entry.hours).toFixed(1)}h
+                                          {t(
+                                            "@legalos.matters.detail.hoursValue",
+                                            {
+                                              hours: Number(
+                                                entry.hours,
+                                              ).toFixed(1),
+                                            },
+                                          )}
                                         </Text>
                                       </HStack>
                                     }
@@ -669,15 +848,31 @@ export default function MatterDetailPage({
                       <VStack gap={6}>
                         <Card>
                           <VStack gap={4}>
-                            <Heading level={4}>Billing</Heading>
+                            <Heading level={4}>
+                              {t("@legalos.matters.field.billing")}
+                            </Heading>
                             <MetadataList>
-                              <MetadataListItem label="Hours">
-                                {totalHours.toFixed(1)}h
+                              <MetadataListItem
+                                label={t(
+                                  "@legalos.matters.detail.billing.hours",
+                                )}
+                              >
+                                {t("@legalos.matters.detail.hoursValue", {
+                                  hours: totalHours.toFixed(1),
+                                })}
                               </MetadataListItem>
-                              <MetadataListItem label="Billable value">
+                              <MetadataListItem
+                                label={t(
+                                  "@legalos.matters.detail.billing.billableValue",
+                                )}
+                              >
                                 {formatEGP(billableAmount)}
                               </MetadataListItem>
-                              <MetadataListItem label="Unbilled">
+                              <MetadataListItem
+                                label={t(
+                                  "@legalos.matters.detail.glance.unbilled",
+                                )}
+                              >
                                 {formatEGP(unbilledAmount)}
                               </MetadataListItem>
                             </MetadataList>
@@ -686,10 +881,12 @@ export default function MatterDetailPage({
 
                         <Card>
                           <VStack gap={4}>
-                            <Heading level={4}>Invoices</Heading>
+                            <Heading level={4}>
+                              {t("@legalos.matters.detail.invoices.heading")}
+                            </Heading>
                             {invoices.length === 0 ? (
                               <Text type="body" color="secondary">
-                                No invoices raised.
+                                {t("@legalos.matters.detail.invoices.empty")}
                               </Text>
                             ) : (
                               <List hasDividers density="compact">
@@ -724,18 +921,26 @@ export default function MatterDetailPage({
                   {tab === "notes" && (
                     <Card>
                       <VStack gap={4}>
-                        <Heading level={4}>Notes</Heading>
+                        <Heading level={4}>
+                          {t("@legalos.matters.detail.notes.heading")}
+                        </Heading>
                         <VStack gap={3}>
                           <TextArea
-                            label="Add a note"
+                            label={t("@legalos.matters.detail.notes.addLabel")}
                             value={note}
                             onChange={setNote}
                             rows={3}
-                            placeholder="What should the team know about this matter?"
+                            placeholder={t(
+                              "@legalos.matters.detail.notes.placeholder",
+                            )}
                           />
                           <HStack hAlign="end">
                             <Button
-                              label={saving ? "Saving…" : "Add note"}
+                              label={
+                                saving
+                                  ? t("@legalos.matters.savingEllipsis")
+                                  : t("@legalos.matters.detail.notes.addButton")
+                              }
                               variant="primary"
                               isDisabled={saving || !note.trim()}
                               onClick={addNote}
@@ -751,8 +956,10 @@ export default function MatterDetailPage({
                                 color="secondary"
                               />
                             }
-                            title="No notes yet"
-                            description="Notes are visible to everyone on the matter."
+                            title={t("@legalos.matters.detail.notes.emptyTitle")}
+                            description={t(
+                              "@legalos.matters.detail.notes.emptyDescription",
+                            )}
                           />
                         ) : (
                           <List hasDividers density="compact">

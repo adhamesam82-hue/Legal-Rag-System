@@ -14,6 +14,7 @@ import type { TableColumn } from "@astryxdesign/core/Table";
 import { Link } from "@astryxdesign/core/Link";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { MagnifyingGlassIcon, ScaleIcon } from "@heroicons/react/24/outline";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import { useResource } from "@/lib/org";
 import { DataView } from "@/components/DataState";
 import { formatDate, todayIso } from "@/lib/practice";
@@ -37,6 +38,7 @@ function statusVariant(status: string): "success" | "warning" | "neutral" {
 }
 
 export default function CasesPage() {
+  const t = useTranslator();
   const [query, setQuery] = useState("");
   const [courtFilter, setCourtFilter] = useState<string>("all");
 
@@ -99,7 +101,7 @@ export default function CasesPage() {
   const columns: TableColumn<CaseRow>[] = [
     {
       key: "caseNumber",
-      header: "Case",
+      header: t("@legalos.cases.field.case"),
       width: proportional(1.6),
       renderCell: (row) => (
         <Link href={`/cases/${row.id}`}>
@@ -116,29 +118,29 @@ export default function CasesPage() {
     },
     {
       key: "court",
-      header: "Court",
+      header: t("@legalos.cases.field.court"),
       width: proportional(1.6),
       renderCell: (row) => <Text type="body">{row.court}</Text>,
     },
     {
       key: "judge",
-      header: "Judge",
+      header: t("@legalos.cases.field.judge"),
       width: proportional(1.4),
       renderCell: (row) => <Text type="body">{row.judge}</Text>,
     },
     {
       key: "opposingParty",
-      header: "Opposing party",
+      header: t("@legalos.cases.field.opposingParty"),
       width: proportional(1.8),
       renderCell: (row) => (
-        <Text type="body" maxLines={1}>
+        <Text type="body" maxLines={2}>
           {row.opposingParty}
         </Text>
       ),
     },
     {
       key: "nextHearingDate",
-      header: "Next hearing",
+      header: t("@legalos.cases.field.nextHearing"),
       width: pixel(150),
       renderCell: (row) =>
         row.nextHearingDate ? (
@@ -150,13 +152,13 @@ export default function CasesPage() {
           </VStack>
         ) : (
           <Text type="body" color="secondary">
-            None scheduled
+            {t("@legalos.cases.noHearingScheduled")}
           </Text>
         ),
     },
     {
       key: "status",
-      header: "Status",
+      header: t("@legalos.cases.field.status"),
       width: pixel(170),
       renderCell: (row) => (
         <Badge variant={statusVariant(row.status)} label={row.status || "—"} />
@@ -171,29 +173,28 @@ export default function CasesPage() {
         <LayoutHeader hasDivider padding={0}>
           <VStack gap={4}>
             <VStack gap={1}>
-              <Heading level={2}>Cases</Heading>
+              <Heading level={2}>{t("@legalos.cases.heading")}</Heading>
               <Text type="body" color="secondary">
-                {allRows.length} litigation{" "}
-                {allRows.length === 1 ? "case" : "cases"} on file
+                {t("@legalos.cases.subtitle", { count: allRows.length })}
               </Text>
             </VStack>
             <HStack gap={3} wrap="wrap">
               <TextInput
-                label="Search cases"
+                label={t("@legalos.cases.search.label")}
                 isLabelHidden
                 value={query}
                 onChange={setQuery}
-                placeholder="Search by case number, matter, judge, or opposing party"
+                placeholder={t("@legalos.cases.search.placeholder")}
                 startIcon={MagnifyingGlassIcon}
                 width={360}
               />
               <Selector
-                label="Court"
+                label={t("@legalos.cases.field.court")}
                 isLabelHidden
                 value={courtFilter}
                 onChange={(v) => setCourtFilter(v ?? "all")}
                 options={[
-                  { value: "all", label: "All courts" },
+                  { value: "all", label: t("@legalos.cases.court.all") },
                   ...courts.map((c) => ({ value: c, label: c })),
                 ]}
                 width={220}
@@ -204,7 +205,7 @@ export default function CasesPage() {
       }
       content={
         <LayoutContent padding={0}>
-          <DataView resource={resource} loadingLabel="Loading cases…">
+          <DataView resource={resource} loadingLabel={t("@legalos.cases.loading")}>
             {() =>
               rows.length > 0 ? (
                 <Table<CaseRow> data={rows} columns={columns} idKey="id" hasHover />
@@ -213,18 +214,18 @@ export default function CasesPage() {
                   icon={<Icon icon={ScaleIcon} size="lg" color="secondary" />}
                   title={
                     allRows.length === 0
-                      ? "No cases on file"
-                      : "No cases match your filters"
+                      ? t("@legalos.cases.empty.noneTitle")
+                      : t("@legalos.cases.empty.noMatchTitle")
                   }
                   description={
                     allRows.length === 0
-                      ? "A case is added to a matter once it goes into litigation."
-                      : "Try a different search term or clear the court filter."
+                      ? t("@legalos.cases.empty.noneDescription")
+                      : t("@legalos.cases.empty.noMatchDescription")
                   }
                   actions={
                     allRows.length > 0 ? (
                       <Button
-                        label="Clear filters"
+                        label={t("@legalos.cases.clearFilters")}
                         variant="secondary"
                         onClick={() => {
                           setQuery("");

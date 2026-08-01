@@ -28,10 +28,10 @@ import { DataView, InlineError } from "@/components/DataState";
 import {
   formatBytes,
   formatDate,
-  label,
   type DocumentStatus,
   type MatterDocument,
 } from "@/lib/practice";
+import { useEnumLabel } from "@/lib/i18n/enum-label";
 
 // OCR state, sharing scope, comment threads and document tags were part of the
 // UI concept but have no backend, so they are not rendered here. What is shown
@@ -72,6 +72,7 @@ interface DocRow extends Record<string, unknown> {
 }
 
 export default function DocumentsPage() {
+  const enumLabel = useEnumLabel();
   const { practice, organizationId } = useOrg();
   const memberName = useMemberName();
   const [query, setQuery] = useState("");
@@ -222,7 +223,7 @@ export default function DocumentsPage() {
       header: "Status",
       width: pixel(130),
       renderCell: (row) => (
-        <Badge variant={STATUS_VARIANT[row.status]} label={label(row.status)} />
+        <Badge variant={STATUS_VARIANT[row.status]} label={enumLabel(row.status)} />
       ),
     },
     {

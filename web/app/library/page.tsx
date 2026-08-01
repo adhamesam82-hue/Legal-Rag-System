@@ -11,8 +11,10 @@ import { Spinner } from "@astryxdesign/core/Spinner";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { api, ApiError, Instrument, dirOf } from "@/lib/api";
+import { useTranslator } from "@astryxdesign/core/i18n";
 
 export default function LibraryPage() {
+  const t = useTranslator();
   const [instruments, setInstruments] = useState<Instrument[] | null>(null);
   const [filter, setFilter] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -41,34 +43,41 @@ export default function LibraryPage() {
 
   return (
     <div style={{ maxWidth: 980, margin: "0 auto", padding: "32px 20px 64px" }}>
-      <Heading level={1}>Legal library</Heading>
+      <Heading level={1}>{t("@legalos.library.heading")}</Heading>
       <div style={{ marginBlock: 8 }}>
         <Text type="supporting">
           {instruments
-            ? `${instruments.length} instruments · ${totalArticles.toLocaleString()} articles in force`
-            : "Loading the corpus…"}
+            ? t("@legalos.library.summary", {
+                count: instruments.length,
+                articles: totalArticles.toLocaleString(),
+              })
+            : t("@legalos.library.loadingCorpus")}
         </Text>
       </div>
 
       <div style={{ marginBlockEnd: 20, maxWidth: 420 }}>
         <TextInput
-          label="Filter laws"
+          label={t("@legalos.library.filter.label")}
           isLabelHidden
           value={filter}
           onChange={setFilter}
-          placeholder="Filter by title or number, e.g. 12/2003"
+          placeholder={t("@legalos.library.filter.placeholder")}
         />
       </div>
 
       {error && (
-        <Banner status="error" title="Could not load the library" description={error} />
+        <Banner
+          status="error"
+          title={t("@legalos.library.error.title")}
+          description={error}
+        />
       )}
-      {!instruments && !error && <Spinner label="Loading…" />}
+      {!instruments && !error && <Spinner label={t("@legalos.library.spinner")} />}
 
       {visible?.length === 0 && (
         <EmptyState
-          title="No matching law"
-          description={`Nothing matches "${filter}".`}
+          title={t("@legalos.library.empty.title")}
+          description={t("@legalos.library.empty.description", { filter })}
         />
       )}
 
@@ -98,7 +107,9 @@ export default function LibraryPage() {
                   </Text>
                 </div>
                 <Text type="supporting">
-                  {instrument.article_count.toLocaleString()} articles
+                  {t("@legalos.library.articleCount", {
+                    count: instrument.article_count,
+                  })}
                 </Text>
               </div>
             </Card>

@@ -21,12 +21,12 @@ import {
   BanknotesIcon,
   DocumentTextIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import { useOrg, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import {
   formatDate,
   formatEGP,
-  label,
   type InvoiceStatus,
 } from "@/lib/practice";
 
@@ -44,6 +44,13 @@ const STATUS_VARIANT: Record<InvoiceStatus, "neutral" | "info" | "success" | "er
   overdue: "error",
 };
 
+const STATUS_LABEL_KEY: Record<InvoiceStatus, string> = {
+  draft: "@legalos.billingDetail.status.draft",
+  sent: "@legalos.billingDetail.status.sent",
+  paid: "@legalos.billingDetail.status.paid",
+  overdue: "@legalos.billingDetail.status.overdue",
+};
+
 export default function InvoiceDetailPage({
   params,
 }: {
@@ -52,6 +59,7 @@ export default function InvoiceDetailPage({
   const { id } = use(params);
   const invoiceId = Number(id);
   const { practice } = useOrg();
+  const t = useTranslator();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,7 +77,7 @@ export default function InvoiceDetailPage({
       await practice.invoices.setStatus(invoiceId, status);
       resource.reload();
     } catch (exc) {
-      setError(exc instanceof Error ? exc.message : "Could not update this invoice.");
+      setError(exc instanceof Error ? exc.message : t("@legalos.billingDetail.updateError"));
     } finally {
       setPending(false);
     }
@@ -78,13 +86,13 @@ export default function InvoiceDetailPage({
   const columns: TableColumn<LineRow>[] = [
     {
       key: "description",
-      header: "Description",
+      header: t("@legalos.billingDetail.column.description"),
       width: proportional(3),
       renderCell: (row) => <Text type="body">{row.description}</Text>,
     },
     {
       key: "qty",
-      header: "Quantity",
+      header: t("@legalos.billingDetail.column.quantity"),
       width: proportional(1.2),
       renderCell: (row) => (
         <Text type="body" color="secondary">
@@ -94,7 +102,7 @@ export default function InvoiceDetailPage({
     },
     {
       key: "amount",
-      header: "Amount",
+      header: t("@legalos.billingDetail.column.amount"),
       width: pixel(140),
       align: "end",
       renderCell: (row) => (
@@ -110,7 +118,7 @@ export default function InvoiceDetailPage({
       height="fill"
       content={
         <LayoutContent padding={0}>
-          <DataView resource={resource} loadingLabel="Loading invoice…">
+          <DataView resource={resource} loadingLabel={t("@legalos.billingDetail.loading")}>
             {(loaded) => {
               const rows: LineRow[] = loaded.lines.map((line) => ({
                 id: line.id,
@@ -130,7 +138,7 @@ export default function InvoiceDetailPage({
                       <HStack gap={1.5} vAlign="center">
                         <Icon icon={ArrowLeftIcon} size="sm" color="secondary" />
                         <Text type="body" color="secondary">
-                          Billing
+                          {t("@legalos.billingDetail.backToBilling")}
                         </Text>
                       </HStack>
                     </Link>
@@ -142,7 +150,7 @@ export default function InvoiceDetailPage({
                         <Heading level={2}>{loaded.number}</Heading>
                         <Badge
                           variant={STATUS_VARIANT[loaded.status]}
-                          label={label(loaded.status)}
+                          label={t(STATUS_LABEL_KEY[loaded.status])}
                         />
                       </HStack>
                       <Text type="body" color="secondary">
@@ -153,7 +161,7 @@ export default function InvoiceDetailPage({
                     <HStack gap={3}>
                       {loaded.status === "draft" && (
                         <Button
-                          label="Send invoice"
+                          label={t("@legalos.billingDetail.sendInvoice")}
                           variant="primary"
                           isDisabled={pending}
                           icon={
@@ -165,12 +173,12 @@ export default function InvoiceDetailPage({
                           }
                           onClick={() => setStatus("sent")}
                         >
-                          Send invoice
+                          {t("@legalos.billingDetail.sendInvoice")}
                         </Button>
                       )}
                       {(loaded.status === "sent" || loaded.status === "overdue") && (
                         <Button
-                          label="Mark as paid"
+                          label={t("@legalos.billingDetail.markAsPaid")}
                           variant="primary"
                           isDisabled={pending}
                           icon={
@@ -178,7 +186,7 @@ export default function InvoiceDetailPage({
                           }
                           onClick={() => setStatus("paid")}
                         >
-                          Mark as paid
+                          {t("@legalos.billingDetail.markAsPaid")}
                         </Button>
                       )}
                     </HStack>

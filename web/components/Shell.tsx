@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AppShell } from "@astryxdesign/core/AppShell";
 import { Theme } from "@astryxdesign/core/theme";
@@ -8,6 +8,7 @@ import { TopNav, TopNavHeading } from "@astryxdesign/core/TopNav";
 import { NavIcon } from "@astryxdesign/core/NavIcon";
 import {
   SideNav,
+  SideNavCollapseButton,
   SideNavHeading,
   SideNavItem,
   SideNavSection,
@@ -44,6 +45,7 @@ import {
   MoonIcon,
   SunIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslator, type TranslatorFn } from "@astryxdesign/core/i18n";
 import { legalosTheme } from "@/lib/legalos";
 import { useThemeMode } from "@/app/providers";
 
@@ -53,88 +55,88 @@ const AI_ICON_CLASS = "text-purple-vivid";
 
 type NavItem = {
   href: string;
-  label: string;
+  labelKey: string;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   ai?: boolean;
 };
 
-const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
+const NAV_SECTIONS: { titleKey: string; items: NavItem[] }[] = [
   {
-    title: "Overview",
-    items: [{ href: "/dashboard", label: "Dashboard", icon: Squares2X2Icon }],
+    titleKey: "@legalos.shell.nav.section.overview",
+    items: [{ href: "/dashboard", labelKey: "@legalos.shell.nav.dashboard", icon: Squares2X2Icon }],
   },
   {
-    title: "Clients",
+    titleKey: "@legalos.shell.nav.section.clients",
     items: [
-      { href: "/crm", label: "CRM", icon: UserGroupIcon },
-      { href: "/clients", label: "Clients", icon: BuildingOffice2Icon },
+      { href: "/crm", labelKey: "@legalos.shell.nav.crm", icon: UserGroupIcon },
+      { href: "/clients", labelKey: "@legalos.shell.nav.clients", icon: BuildingOffice2Icon },
     ],
   },
   {
-    title: "Practice",
+    titleKey: "@legalos.shell.nav.section.practice",
     items: [
-      { href: "/matters", label: "Matters", icon: BriefcaseIcon },
-      { href: "/cases", label: "Cases", icon: ScaleIcon },
-      { href: "/calendar", label: "Calendar", icon: CalendarDaysIcon },
-      { href: "/tasks", label: "Tasks", icon: CheckCircleIcon },
+      { href: "/matters", labelKey: "@legalos.shell.nav.matters", icon: BriefcaseIcon },
+      { href: "/cases", labelKey: "@legalos.shell.nav.cases", icon: ScaleIcon },
+      { href: "/calendar", labelKey: "@legalos.shell.nav.calendar", icon: CalendarDaysIcon },
+      { href: "/tasks", labelKey: "@legalos.shell.nav.tasks", icon: CheckCircleIcon },
     ],
   },
   {
-    title: "Content",
+    titleKey: "@legalos.shell.nav.section.content",
     items: [
-      { href: "/documents", label: "Documents", icon: FolderIcon },
-      { href: "/knowledge-base", label: "Knowledge Base", icon: LightBulbIcon },
+      { href: "/documents", labelKey: "@legalos.shell.nav.documents", icon: FolderIcon },
+      { href: "/knowledge-base", labelKey: "@legalos.shell.nav.knowledgeBase", icon: LightBulbIcon },
     ],
   },
   {
-    title: "AI",
+    titleKey: "@legalos.shell.nav.section.ai",
     items: [
-      { href: "/ai-assistant", label: "AI Assistant", icon: SparklesIcon, ai: true },
-      { href: "/legal-research", label: "Legal Research", icon: BookOpenIcon, ai: true },
+      { href: "/ai-assistant", labelKey: "@legalos.shell.nav.aiAssistant", icon: SparklesIcon, ai: true },
+      { href: "/legal-research", labelKey: "@legalos.shell.nav.legalResearch", icon: BookOpenIcon, ai: true },
       {
         href: "/contract-review",
-        label: "Contract Review",
+        labelKey: "@legalos.shell.nav.contractReview",
         icon: DocumentMagnifyingGlassIcon,
         ai: true,
       },
     ],
   },
   {
-    title: "Finance",
+    titleKey: "@legalos.shell.nav.section.finance",
     items: [
-      { href: "/time-tracking", label: "Time Tracking", icon: ClockIcon },
-      { href: "/billing", label: "Billing", icon: CreditCardIcon },
-      { href: "/accounting", label: "Accounting", icon: BanknotesIcon },
-      { href: "/reports", label: "Reports", icon: ChartBarIcon },
+      { href: "/time-tracking", labelKey: "@legalos.shell.nav.timeTracking", icon: ClockIcon },
+      { href: "/billing", labelKey: "@legalos.shell.nav.billing", icon: CreditCardIcon },
+      { href: "/accounting", labelKey: "@legalos.shell.nav.accounting", icon: BanknotesIcon },
+      { href: "/reports", labelKey: "@legalos.shell.nav.reports", icon: ChartBarIcon },
     ],
   },
   {
-    title: "Team",
+    titleKey: "@legalos.shell.nav.section.team",
     items: [
-      { href: "/messages", label: "Messages", icon: ChatBubbleLeftRightIcon },
-      { href: "/automation", label: "Automation", icon: BoltIcon },
+      { href: "/messages", labelKey: "@legalos.shell.nav.messages", icon: ChatBubbleLeftRightIcon },
+      { href: "/automation", labelKey: "@legalos.shell.nav.automation", icon: BoltIcon },
     ],
   },
 ];
 
 const FIRMS = [
-  { id: "al-sayed", name: "Al-Sayed & Partners" },
-  { id: "cairo-legal", name: "Cairo Legal Group" },
+  { id: "al-sayed", nameKey: "@legalos.shell.firm.alSayed" },
+  { id: "cairo-legal", nameKey: "@legalos.shell.firm.cairoLegal" },
 ];
 
-function useCommandSource() {
+function useCommandSource(t: TranslatorFn) {
   return useMemo(
     () =>
       createStaticSource(
         NAV_SECTIONS.flatMap((section) =>
           section.items.map((item) => ({
             id: item.href,
-            label: item.label,
-            auxiliaryData: { group: section.title, href: item.href },
+            label: t(item.labelKey),
+            auxiliaryData: { group: t(section.titleKey), href: item.href },
           })),
         ),
       ),
-    [],
+    [t],
   );
 }
 
@@ -152,10 +154,11 @@ function LegalOSLogo() {
 
 function ThemeToggle() {
   const { mode, setMode } = useThemeMode();
+  const t = useTranslator();
   const isDark = mode === "dark";
   return (
     <Button
-      label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      label={t(isDark ? "@legalos.shell.themeToggle.toLight" : "@legalos.shell.themeToggle.toDark")}
       variant="ghost"
       isIconOnly
       icon={<Icon icon={isDark ? SunIcon : MoonIcon} size="sm" />}
@@ -168,11 +171,27 @@ function ThemeToggle() {
  *  no matters and nothing to navigate to, so the nav would be dead links. */
 const BARE_ROUTES = ["/sign-in", "/sign-up", "/invite"];
 
+const SIDENAV_COLLAPSED_KEY = "legalos-sidenav-collapsed";
+
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const t = useTranslator();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const commandSource = useCommandSource();
+  const [isSideNavCollapsed, setIsSideNavCollapsed] = useState(false);
+  const commandSource = useCommandSource(t);
+
+  // Read the saved preference after mount rather than lazily in useState, so
+  // server and first client render agree (no localStorage on the server) and
+  // React doesn't flag a hydration mismatch.
+  useEffect(() => {
+    setIsSideNavCollapsed(window.localStorage.getItem(SIDENAV_COLLAPSED_KEY) === "1");
+  }, []);
+
+  const handleCollapsedChange = (collapsed: boolean) => {
+    setIsSideNavCollapsed(collapsed);
+    window.localStorage.setItem(SIDENAV_COLLAPSED_KEY, collapsed ? "1" : "0");
+  };
 
   if (BARE_ROUTES.some((route) => pathname.startsWith(route))) {
     return <>{children}</>;
@@ -180,60 +199,80 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   const sideNav = (
     <Theme theme={legalosTheme} mode="dark">
-      <SideNav
-        resizable={{ defaultWidth: 248, minWidth: 220, maxWidth: 320, autoSaveId: "legalos-sidenav" }}
-        header={
-          <SideNavHeading
-            heading="LegalOS"
-            icon={<LegalOSLogo />}
-            menu={
-              <NavHeadingMenu size="lg">
-                {FIRMS.map((firm) => (
-                  <NavHeadingMenuItem key={firm.id} label={firm.name} href="#" />
-                ))}
-              </NavHeadingMenu>
-            }
-          />
-        }
-      >
-        {NAV_SECTIONS.map((section) => (
-          <SideNavSection key={section.title} title={section.title}>
-            {section.items.map((item) => {
-              const isSelected = pathname.startsWith(item.href);
-              return (
-                <SideNavItem
-                  key={item.href}
-                  label={item.label}
-                  href={item.href}
-                  isSelected={isSelected}
-                  icon={<Icon icon={item.icon} size="sm" className={item.ai ? AI_ICON_CLASS : undefined} />}
-                />
-              );
-            })}
-          </SideNavSection>
-        ))}
-      </SideNav>
+      {/* AppShell paints the nav rail's surface using the *ambient* (outer)
+       * theme before this Theme override ever runs, and SideNav itself
+       * inherits its background rather than setting one — so without an
+       * explicit repaint here the rail stays the outer light/dark surface
+       * color while its text switches to dark-mode tokens, i.e. unreadable
+       * near-white text on a near-white rail. Painting the surface color
+       * explicitly, inside the override, is what actually makes the rail
+       * render as the brand's deep-navy regardless of the app's own mode. */}
+      <div style={{ backgroundColor: "var(--color-background-surface)", height: "100%" }}>
+        <SideNav
+          resizable={{ defaultWidth: 248, minWidth: 220, maxWidth: 320, autoSaveId: "legalos-sidenav" }}
+          collapsible={{
+            isCollapsed: isSideNavCollapsed,
+            onCollapsedChange: handleCollapsedChange,
+            hasButton: false,
+          }}
+          footerIcons={
+            <SideNavCollapseButton
+              label={isSideNavCollapsed ? undefined : t("@legalos.shell.collapse")}
+            />
+          }
+          header={
+            <SideNavHeading
+              heading={t("@legalos.shell.brand")}
+              icon={<LegalOSLogo />}
+              menu={
+                <NavHeadingMenu size="lg">
+                  {FIRMS.map((firm) => (
+                    <NavHeadingMenuItem key={firm.id} label={t(firm.nameKey)} href="#" />
+                  ))}
+                </NavHeadingMenu>
+              }
+            />
+          }
+        >
+          {NAV_SECTIONS.map((section) => (
+            <SideNavSection key={section.titleKey} title={t(section.titleKey)}>
+              {section.items.map((item) => {
+                const isSelected = pathname.startsWith(item.href);
+                return (
+                  <SideNavItem
+                    key={item.href}
+                    label={t(item.labelKey)}
+                    href={item.href}
+                    isSelected={isSelected}
+                    icon={<Icon icon={item.icon} size="sm" className={item.ai ? AI_ICON_CLASS : undefined} />}
+                  />
+                );
+              })}
+            </SideNavSection>
+          ))}
+        </SideNav>
+      </div>
     </Theme>
   );
 
   const topNav = (
     <TopNav
-      label="Main navigation"
+      label={t("@legalos.shell.mainNavAriaLabel")}
       heading={<TopNavHeading heading="" logo={<NavIcon icon={<LegalOSLogo />} />} href="/dashboard" />}
       endContent={
         <HStack gap={1} align="center">
           <Button
-            label="Search LegalOS and ask AI"
+            label={t("@legalos.shell.search.ariaLabel")}
             variant="ghost"
             icon={<Icon icon="search" color="inherit" />}
             onClick={() => setIsSearchOpen(true)}
           >
-            Search or ask AI
+            {t("@legalos.shell.search.button")}
           </Button>
           <ThemeToggle />
           <DropdownMenu
             button={{
-              label: "Notifications",
+              label: t("@legalos.shell.notifications.button"),
               variant: "ghost",
               isIconOnly: true,
               icon: <Icon icon={BellIcon} size="sm" />,
@@ -242,18 +281,18 @@ export function Shell({ children }: { children: React.ReactNode }) {
             items={[
               {
                 type: "section",
-                title: "Today",
+                title: t("@legalos.shell.notifications.today"),
                 items: [
-                  { label: "Hearing reminder — Nabil vs. Nile Trading, 2:00 PM" },
-                  { label: "Mona Farouk accepted your invite" },
-                  { label: "Contract review finished: NDA — Delta Foods" },
+                  { label: t("@legalos.shell.notifications.hearingReminder") },
+                  { label: t("@legalos.shell.notifications.inviteAccepted") },
+                  { label: t("@legalos.shell.notifications.contractReviewFinished") },
                 ],
               },
             ]}
           />
           <DropdownMenu
             button={{
-              label: "Ahmed Al-Sayed account menu",
+              label: t("@legalos.shell.account.menuAriaLabel"),
               variant: "ghost",
               isIconOnly: true,
               icon: <Avatar name="Ahmed Al-Sayed" size="sm" tooltip={false} />,
@@ -263,13 +302,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
               {
                 type: "section",
                 items: [
-                  { label: "Profile", onClick: () => router.push("/settings/profile") },
-                  { label: "Firm settings", onClick: () => router.push("/settings") },
+                  { label: t("@legalos.shell.account.profile"), onClick: () => router.push("/settings/profile") },
+                  { label: t("@legalos.shell.account.firmSettings"), onClick: () => router.push("/settings") },
                 ],
               },
               { type: "divider" },
               {
-                label: "Sign out",
+                label: t("@legalos.shell.account.signOut"),
                 icon: <Icon icon={ArrowRightOnRectangleIcon} size="sm" />,
                 onClick: () => {},
               },
@@ -289,7 +328,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         isOpen={isSearchOpen}
         onOpenChange={setIsSearchOpen}
         searchSource={commandSource}
-        emptyBootstrapText="Search matters, clients, documents — or ask AI a legal question"
+        emptyBootstrapText={t("@legalos.shell.search.emptyBootstrap")}
         renderItem={(item) => (
           <HStack gap={2} align="center">
             <Icon icon={SparklesIcon} size="sm" className={AI_ICON_CLASS} />

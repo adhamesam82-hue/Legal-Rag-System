@@ -20,6 +20,7 @@ import {
   ScaleIcon,
   DocumentTextIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslator } from "@astryxdesign/core/i18n";
 
 const AI_ICON_CLASS = "text-purple-vivid";
 
@@ -29,16 +30,23 @@ const AI_ICON_CLASS = "text-purple-vivid";
 // system refuses rather than guessing when the corpus cannot support an answer.
 // ---------------------------------------------------------------------------
 
-const EXAMPLE_QUERIES = [
-  "ما هي مدة الإجازة السنوية للعامل؟",
-  "What notice period applies to terminating an indefinite employment contract?",
-  "متى يجوز للشركة إصدار أسهم ممتازة؟",
+const EXAMPLE_QUERY_KEYS = [
+  "@legalos.legalResearch.exampleQueries.q1",
+  "@legalos.legalResearch.exampleQueries.q2",
+  "@legalos.legalResearch.exampleQueries.q3",
 ];
 
 const ANSWER = {
   query: "What notice period applies to terminating an indefinite employment contract?",
   text: "For an employment contract of indefinite duration, either party may terminate it provided written notice is given to the other party. The notice period is two months where the worker has been employed for ten years or less, and three months where employment exceeds ten years [Law 12/2003, Art. 111]. Terminating without observing the notice period obliges the terminating party to pay the other party an amount equal to the worker's wage for the notice period, or the remainder of it [Law 12/2003, Art. 112]. Notice may not be given while the worker is on a legally granted leave [Law 12/2003, Art. 111].",
   jurisdiction: "Egypt",
+};
+
+// The refused-query example. Like ANSWER above, this is seeded engine output
+// rather than UI copy, so it stays in its source language.
+const REFUSAL = {
+  query: "What is the minimum wage for offshore drilling contractors?",
+  text: "I could not find this in the corpus. The indexed Egyptian legislation does not contain a provision setting a sector-specific minimum wage for offshore drilling contractors. Rather than infer from general wage provisions, this query is being refused — check the National Wage Council's periodic decisions, which are outside the indexed corpus.",
 };
 
 const LEGISLATION = [
@@ -77,11 +85,15 @@ const DECISIONS = [
 ];
 
 const PRECEDENTS = [
-  { label: "Delta Foods Labour Dispute — severance calculation", href: "/matters/delta-foods-labour-dispute" },
-  { label: "Firm template: Termination notice letter (indefinite contract)", href: "/knowledge-base" },
+  {
+    labelKey: "@legalos.legalResearch.precedents.item1",
+    href: "/matters/delta-foods-labour-dispute",
+  },
+  { labelKey: "@legalos.legalResearch.precedents.item2", href: "/knowledge-base" },
 ];
 
 export default function LegalResearchPage() {
+  const t = useTranslator();
   const [query, setQuery] = useState(ANSWER.query);
   const [jurisdiction, setJurisdiction] = useState("EG");
   const [instrument, setInstrument] = useState("all");
@@ -95,53 +107,67 @@ export default function LegalResearchPage() {
         <LayoutHeader hasDivider padding={0}>
           <VStack gap={4}>
             <VStack gap={1}>
-              <Heading level={2}>Legal research</Heading>
+              <Heading level={2}>{t("@legalos.legalResearch.heading")}</Heading>
               <Text type="body" color="secondary">
-                Search Egyptian and Saudi statutes and judgments. Every answer cites the
-                articles it relies on.
+                {t("@legalos.legalResearch.description")}
               </Text>
             </VStack>
 
             <TextInput
-              label="Search legislation and judgments"
+              label={t("@legalos.legalResearch.searchLabel")}
               isLabelHidden
               value={query}
               onChange={setQuery}
-              placeholder="Ask a question, or search by law number and article…"
+              placeholder={t("@legalos.legalResearch.searchPlaceholder")}
               />
 
             <HStack gap={2} vAlign="center" wrap="wrap">
               <Selector
-                label="Jurisdiction"
+                label={t("@legalos.legalResearch.jurisdictionLabel")}
                 value={jurisdiction}
                 onChange={setJurisdiction}
                 options={[
-                  { value: "EG", label: "Egypt" },
-                  { value: "SA", label: "Saudi Arabia" },
+                  { value: "EG", label: t("@legalos.legalResearch.jurisdiction.egypt") },
+                  { value: "SA", label: t("@legalos.legalResearch.jurisdiction.saudi") },
                 ]}
               />
               <Selector
-                label="Instrument type"
+                label={t("@legalos.legalResearch.instrumentTypeLabel")}
                 value={instrument}
                 onChange={setInstrument}
                 options={[
-                  { value: "all", label: "All instruments" },
-                  { value: "law", label: "Laws" },
-                  { value: "decree", label: "Decrees" },
-                  { value: "regulation", label: "Regulations" },
+                  { value: "all", label: t("@legalos.legalResearch.instrumentType.all") },
+                  { value: "law", label: t("@legalos.legalResearch.instrumentType.law") },
+                  { value: "decree", label: t("@legalos.legalResearch.instrumentType.decree") },
+                  {
+                    value: "regulation",
+                    label: t("@legalos.legalResearch.instrumentType.regulation"),
+                  },
                 ]}
               />
-              <SegmentedControl value={mode} onChange={setMode} label="Result mode">
-                <SegmentedControlItem value="answer" label="AI answer" />
-                <SegmentedControlItem value="articles" label="Articles only" />
+              <SegmentedControl
+                value={mode}
+                onChange={setMode}
+                label={t("@legalos.legalResearch.resultModeLabel")}
+              >
+                <SegmentedControlItem
+                  value="answer"
+                  label={t("@legalos.legalResearch.resultMode.answer")}
+                />
+                <SegmentedControlItem
+                  value="articles"
+                  label={t("@legalos.legalResearch.resultMode.articles")}
+                />
               </SegmentedControl>
               <Button
-                label="Show a refused query example"
+                label={t("@legalos.legalResearch.refusalToggle.ariaLabel")}
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowRefusal((v) => !v)}
               >
-                {showRefusal ? "Show answered example" : "Show refusal example"}
+                {showRefusal
+                  ? t("@legalos.legalResearch.refusalToggle.showAnswered")
+                  : t("@legalos.legalResearch.refusalToggle.showRefusal")}
               </Button>
             </HStack>
           </VStack>
@@ -154,31 +180,31 @@ export default function LegalResearchPage() {
               <VStack gap={4}>
                 <HStack gap={2} vAlign="center">
                   <Icon icon={SparklesIcon} size="sm" className={AI_ICON_CLASS} />
-                  <Heading level={4}>AI answer</Heading>
-                  <Badge variant="purple" label={jurisdiction === "EG" ? "Egypt" : "Saudi Arabia"} />
+                  <Heading level={4}>{t("@legalos.legalResearch.aiAnswerHeading")}</Heading>
+                  <Badge
+                    variant="purple"
+                    label={
+                      jurisdiction === "EG"
+                        ? t("@legalos.legalResearch.jurisdiction.egypt")
+                        : t("@legalos.legalResearch.jurisdiction.saudi")
+                    }
+                  />
                 </HStack>
 
                 {showRefusal ? (
                   <VStack gap={3}>
                     <Text type="supporting" color="secondary">
-                      Query: &ldquo;What is the minimum wage for offshore drilling contractors?&rdquo;
+                      {t("@legalos.legalResearch.queryPrefix", { query: REFUSAL.query })}
                     </Text>
-                    <Text type="body">
-                      I could not find this in the corpus. The indexed Egyptian legislation does
-                      not contain a provision setting a sector-specific minimum wage for offshore
-                      drilling contractors. Rather than infer from general wage provisions, this
-                      query is being refused — check the National Wage Council&apos;s periodic
-                      decisions, which are outside the indexed corpus.
-                    </Text>
+                    <Text type="body">{REFUSAL.text}</Text>
                     <Text type="supporting" color="secondary">
-                      Refusing beats guessing: an invented article number is the failure mode this
-                      system is built to prevent.
+                      {t("@legalos.legalResearch.refusalNote")}
                     </Text>
                   </VStack>
                 ) : (
                   <VStack gap={3}>
                     <Text type="supporting" color="secondary">
-                      Query: &ldquo;{ANSWER.query}&rdquo;
+                      {t("@legalos.legalResearch.queryPrefix", { query: ANSWER.query })}
                     </Text>
                     <Text type="body">{ANSWER.text}</Text>
                   </VStack>
@@ -186,8 +212,7 @@ export default function LegalResearchPage() {
 
                 <Divider />
                 <Text type="supporting" color="secondary">
-                  Research assistance, not legal advice. Verify every citation against the
-                  official gazette before relying on it.
+                  {t("@legalos.legalResearch.disclaimersFooter")}
                 </Text>
               </VStack>
             </Card>
@@ -198,7 +223,9 @@ export default function LegalResearchPage() {
                   <VStack gap={4}>
                     <HStack gap={2} vAlign="center">
                       <Icon icon={BookOpenIcon} size="sm" color="secondary" />
-                      <Heading level={4}>Referenced legislation</Heading>
+                      <Heading level={4}>
+                        {t("@legalos.legalResearch.referencedLegislationHeading")}
+                      </Heading>
                     </HStack>
                     <List hasDividers density="balanced">
                       {LEGISLATION.map((l) => (
@@ -226,14 +253,20 @@ export default function LegalResearchPage() {
                   <VStack gap={4}>
                     <HStack gap={2} vAlign="center">
                       <Icon icon={ScaleIcon} size="sm" color="secondary" />
-                      <Heading level={4}>Referenced court decisions</Heading>
+                      <Heading level={4}>
+                        {t("@legalos.legalResearch.referencedDecisionsHeading")}
+                      </Heading>
                     </HStack>
                     <List hasDividers density="balanced">
                       {DECISIONS.map((d) => (
                         <ListItem
                           key={d.ref}
                           label={d.ref}
-                          description={d.holding}
+                          description={
+                            <Text type="supporting" color="secondary" maxLines={3}>
+                              {d.holding}
+                            </Text>
+                          }
                           startContent={<Icon icon={ScaleIcon} size="sm" color="secondary" />}
                           endContent={
                             <Text type="supporting" color="secondary">
@@ -255,44 +288,48 @@ export default function LegalResearchPage() {
           <VStack gap={6}>
             <Card>
               <VStack gap={3}>
-                <Heading level={4}>Try a question</Heading>
-                {EXAMPLE_QUERIES.map((q) => (
-                  <Button
-                    key={q}
-                    label={q}
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => {
-                      setQuery(q);
-                      setShowRefusal(false);
-                    }}
-                  >
-                    {q}
-                  </Button>
-                ))}
+                <Heading level={4}>{t("@legalos.legalResearch.tryQuestionHeading")}</Heading>
+                {EXAMPLE_QUERY_KEYS.map((key) => {
+                  const q = t(key);
+                  return (
+                    <Card key={key} padding={2} variant="muted">
+                      <button
+                        onClick={() => {
+                          setQuery(q);
+                          setShowRefusal(false);
+                        }}
+                        style={{ textAlign: "start", width: "100%" }}
+                      >
+                        <Text type="supporting">{q}</Text>
+                      </button>
+                    </Card>
+                  );
+                })}
               </VStack>
             </Card>
 
             <Card>
               <VStack gap={4}>
-                <Heading level={4}>Related precedents</Heading>
-                <List hasDividers density="compact">
+                <Heading level={4}>{t("@legalos.legalResearch.relatedPrecedentsHeading")}</Heading>
+                <VStack gap={2}>
                   {PRECEDENTS.map((p) => (
-                    <ListItem key={p.href} label={p.label} href={p.href} />
+                    <Link key={p.href} href={p.href}>
+                      <Text type="supporting">{t(p.labelKey)}</Text>
+                    </Link>
                   ))}
-                </List>
+                </VStack>
               </VStack>
             </Card>
 
             <Card>
               <VStack gap={3}>
-                <Heading level={4}>Corpus</Heading>
+                <Heading level={4}>{t("@legalos.legalResearch.corpusHeading")}</Heading>
                 <Text type="supporting" color="secondary">
-                  Egypt · 6,985 articles indexed across the Civil Code, Labour Law, and
-                  Companies Law. Jurisdiction is a hard filter — an Egypt-scoped query never
-                  returns Saudi text.
+                  {t("@legalos.legalResearch.corpusDescription")}
                 </Text>
-                <Link href="/ai-assistant">Open AI Assistant</Link>
+                <Link href="/ai-assistant">
+                  {t("@legalos.legalResearch.openAiAssistantLink")}
+                </Link>
               </VStack>
             </Card>
           </VStack>

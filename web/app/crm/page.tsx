@@ -45,7 +45,7 @@ function LeadCard({ lead }: { lead: Lead }) {
       >
         <VStack gap={2}>
           <HStack hAlign="between" vAlign="start" gap={2}>
-            <Text type="label" weight="semibold" maxLines={1}>
+            <Text type="label" weight="semibold" maxLines={2}>
               {lead.name}
             </Text>
             <Icon
@@ -58,14 +58,14 @@ function LeadCard({ lead }: { lead: Lead }) {
             {lead.matterType}
           </Text>
           <Divider />
-          <HStack hAlign="between" vAlign="center" gap={2}>
-            <Text type="supporting" color="secondary" maxLines={1}>
+          <VStack gap={0.5}>
+            <Text type="supporting" color="secondary" maxLines={2}>
               {lead.source}
             </Text>
             <Text type="label" weight="semibold">
               {formatEGPCompact(lead.estValue)}
             </Text>
-          </HStack>
+          </VStack>
           {lead.conflictStatus === "flagged" && (
             <Badge
               variant="warning"
@@ -86,14 +86,18 @@ function PipelineColumn({ stage }: { stage: (typeof STAGE_ORDER)[number] }) {
 
   return (
     <VStack width={272} gap={3}>
-      <VStack gap={0.5}>
-        <HStack hAlign="between" vAlign="center">
-          <Text type="label" weight="semibold">
+      {/* Fixed height: the longest stage name ("Consultation Scheduled")
+       *  wraps to two lines while its neighbours stay on one, which would
+       *  otherwise start each column's cards at a different y and leave the
+       *  board's card tops ragged. */}
+      <VStack gap={0.5} height={68}>
+        <HStack hAlign="between" vAlign="start" gap={2}>
+          <Text type="label" weight="semibold" maxLines={2}>
             {meta.label}
           </Text>
           <Badge variant="neutral" label={String(leads.length)} />
         </HStack>
-        <Text type="supporting" color="secondary">
+        <Text type="supporting" color="secondary" maxLines={1}>
           {formatEGPCompact(total)} in this stage
         </Text>
       </VStack>

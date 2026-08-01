@@ -18,12 +18,12 @@ import { Link } from "@astryxdesign/core/Link";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
 import { PlusIcon, MagnifyingGlassIcon, BriefcaseIcon, ScaleIcon } from "@heroicons/react/24/outline";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import { useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import {
   daysUntil,
   formatDate,
-  label,
   todayIso,
   type ISODateString,
   type MatterStatus,
@@ -57,9 +57,25 @@ const STATUS_VARIANT: Record<MatterStatus, "success" | "warning" | "neutral"> = 
   closed: "neutral",
 };
 
+const MATTER_STATUS_KEY: Record<MatterStatus, string> = {
+  active: "@legalos.matters.status.active",
+  on_hold: "@legalos.matters.status.onHold",
+  closed: "@legalos.matters.status.closed",
+};
+
+const MATTER_TYPE_KEY: Record<MatterType, string> = {
+  litigation: "@legalos.matters.type.litigation",
+  corporate: "@legalos.matters.type.corporate",
+  tax: "@legalos.matters.type.tax",
+  labour: "@legalos.matters.type.labour",
+  family_probate: "@legalos.matters.type.familyProbate",
+  contract_review: "@legalos.matters.type.contractReview",
+};
+
 export default function MattersPage() {
   const { practice } = useOrg();
   const memberName = useMemberName();
+  const t = useTranslator();
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -94,13 +110,13 @@ export default function MattersPage() {
   const columns: TableColumn<MatterRow>[] = [
     {
       key: "name",
-      header: "Matter",
-      width: proportional(2.4),
+      header: t("@legalos.matters.list.table.matter"),
+      width: proportional(2.8),
       renderCell: (row) => (
         <Link href={`/matters/${row.id}`}>
           <HStack gap={1.5} vAlign="center">
             {row.hasCase && <Icon icon={ScaleIcon} size="xsm" color="secondary" />}
-            <Text type="body" weight="semibold">
+            <Text type="body" weight="semibold" maxLines={2}>
               {row.name}
             </Text>
           </HStack>
@@ -109,54 +125,61 @@ export default function MattersPage() {
     },
     {
       key: "clientName",
-      header: "Client",
-      width: proportional(1.6),
-      renderCell: (row) => <Text type="body">{row.clientName}</Text>,
+      header: t("@legalos.matters.field.client"),
+      width: proportional(1.5),
+      renderCell: (row) => (
+        <Text type="body" maxLines={2}>
+          {row.clientName}
+        </Text>
+      ),
     },
     {
       key: "matter_type",
-      header: "Type",
-      width: pixel(150),
-      renderCell: (row) => <Text type="body">{label(row.matter_type)}</Text>,
+      header: t("@legalos.matters.field.type"),
+      width: pixel(140),
+      renderCell: (row) => <Text type="body">{t(MATTER_TYPE_KEY[row.matter_type])}</Text>,
     },
     {
       key: "responsibleName",
-      header: "Responsible",
-      width: pixel(170),
+      header: t("@legalos.matters.field.responsible"),
+      width: pixel(200),
       renderCell: (row) => (
         <HStack gap={2} vAlign="center">
           <Avatar name={row.responsibleName} size="sm" tooltip={false} />
-          <Text type="body">{row.responsibleName}</Text>
+          <Text type="body" maxLines={1}>
+            {row.responsibleName}
+          </Text>
         </HStack>
       ),
     },
     {
       key: "deadlineLabel",
-      header: "Next deadline",
+      header: t("@legalos.matters.field.nextDeadline"),
       width: proportional(1.6),
       renderCell: (row) => {
         if (!row.deadlineDate) {
           return (
             <Text type="body" color="secondary">
-              None scheduled
+              {t("@legalos.matters.list.noDeadline")}
             </Text>
           );
         }
         const days = daysUntil(row.deadlineDate);
         const urgent = days <= 3;
+        const deadlineText = t("@legalos.matters.list.deadlineBadge", {
+          date: formatDate(row.deadlineDate),
+          days,
+        });
         return (
           <VStack gap={0}>
-            <Text type="body" maxLines={1}>
+            <Text type="body" maxLines={2}>
               {row.deadlineLabel}
             </Text>
             {urgent ? (
-              <Badge
-                variant={days < 0 ? "error" : "warning"}
-                label={`${formatDate(row.deadlineDate)} · ${days}d`}
-              />
+              <Badge variant={days < 0 ? "error" : "warning"} label={deadlineText} />
             ) : (
               <Text type="supporting" color="secondary">
-                {formatDate(row.deadlineDate)} · {days}d
+                {deadlineText}
               </Text>
             )}
           </VStack>
@@ -165,10 +188,10 @@ export default function MattersPage() {
     },
     {
       key: "status",
-      header: "Status",
+      header: t("@legalos.matters.field.status"),
       width: pixel(110),
       renderCell: (row) => (
-        <Badge variant={STATUS_VARIANT[row.status]} label={label(row.status)} />
+        <Badge variant={STATUS_VARIANT[row.status]} label={t(MATTER_STATUS_KEY[row.status])} />
       ),
     },
   ];
@@ -182,52 +205,55 @@ export default function MattersPage() {
             <VStack gap={4}>
               <HStack hAlign="between" vAlign="center">
                 <VStack gap={1}>
-                  <Heading level={2}>Matters</Heading>
+                  <Heading level={2}>{t("@legalos.matters.heading")}</Heading>
                   <Text type="body" color="secondary">
-                    {rows.length} {rows.length === 1 ? "matter" : "matters"}
+                    {t("@legalos.matters.count", { count: rows.length })}
                   </Text>
                 </VStack>
                 <Button
-                  label="New matter"
+                  label={t("@legalos.matters.newMatter")}
                   variant="primary"
                   icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
                   onClick={() => setIsCreating(true)}
                   isDisabled={!practice}
                 >
-                  New matter
+                  {t("@legalos.matters.newMatter")}
                 </Button>
               </HStack>
               <HStack gap={3} wrap="wrap">
                 <TextInput
-                  label="Search matters"
+                  label={t("@legalos.matters.list.search.label")}
                   isLabelHidden
                   value={query}
                   onChange={setQuery}
-                  placeholder="Search by matter or client"
+                  placeholder={t("@legalos.matters.list.search.placeholder")}
                   startIcon={MagnifyingGlassIcon}
                   width={320}
                 />
                 <Selector
-                  label="Type"
+                  label={t("@legalos.matters.field.type")}
                   isLabelHidden
                   value={typeFilter}
                   onChange={(v) => setTypeFilter(v ?? "all")}
                   options={[
-                    { value: "all", label: "All types" },
-                    ...MATTER_TYPES.map((t) => ({ value: t, label: label(t) })),
+                    { value: "all", label: t("@legalos.matters.list.filter.allTypes") },
+                    ...MATTER_TYPES.map((type) => ({
+                      value: type,
+                      label: t(MATTER_TYPE_KEY[type]),
+                    })),
                   ]}
                   width={180}
                 />
                 <Selector
-                  label="Status"
+                  label={t("@legalos.matters.field.status")}
                   isLabelHidden
                   value={statusFilter}
                   onChange={(v) => setStatusFilter(v ?? "all")}
                   options={[
-                    { value: "all", label: "All statuses" },
-                    { value: "active", label: "Active" },
-                    { value: "on_hold", label: "On Hold" },
-                    { value: "closed", label: "Closed" },
+                    { value: "all", label: t("@legalos.matters.list.filter.allStatuses") },
+                    { value: "active", label: t("@legalos.matters.status.active") },
+                    { value: "on_hold", label: t("@legalos.matters.status.onHold") },
+                    { value: "closed", label: t("@legalos.matters.status.closed") },
                   ]}
                   width={160}
                 />
@@ -237,18 +263,18 @@ export default function MattersPage() {
         }
         content={
           <LayoutContent padding={0}>
-            <DataView resource={resource} loadingLabel="Loading matters…">
+            <DataView resource={resource} loadingLabel={t("@legalos.matters.list.loading")}>
               {() =>
                 rows.length > 0 ? (
                   <Table<MatterRow> data={rows} columns={columns} idKey="id" hasHover />
                 ) : (
                   <EmptyState
                     icon={<Icon icon={BriefcaseIcon} size="lg" color="secondary" />}
-                    title="No matters match your filters"
-                    description="Try a different search term, or open a new matter."
+                    title={t("@legalos.matters.list.emptyTitle")}
+                    description={t("@legalos.matters.list.emptyDescription")}
                     actions={
                       <Button
-                        label="Clear filters"
+                        label={t("@legalos.matters.list.clearFilters")}
                         variant="secondary"
                         onClick={() => {
                           setQuery("");
@@ -283,6 +309,7 @@ function NewMatterDialog({
   onCreated: () => void;
 }) {
   const { practice, members } = useOrg();
+  const t = useTranslator();
   const [name, setName] = useState("");
   const [clientId, setClientId] = useState<string | null>(null);
   const [matterType, setMatterType] = useState<MatterType>("litigation");
@@ -320,7 +347,7 @@ function NewMatterDialog({
       onOpenChange(false);
       onCreated();
     } catch (exc) {
-      setError(exc instanceof Error ? exc.message : "Could not open this matter.");
+      setError(exc instanceof Error ? exc.message : t("@legalos.matters.dialog.error"));
     } finally {
       setSaving(false);
     }
@@ -331,26 +358,30 @@ function NewMatterDialog({
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
       <Layout
-        header={<DialogHeader title="New matter" onOpenChange={onOpenChange} />}
+        header={
+          <DialogHeader title={t("@legalos.matters.newMatter")} onOpenChange={onOpenChange} />
+        }
         content={
           <LayoutContent>
             <VStack gap={4}>
               <InlineError message={error} onDismiss={() => setError(null)} />
               <TextInput
-                label="Matter name"
+                label={t("@legalos.matters.dialog.nameLabel")}
                 value={name}
                 onChange={setName}
-                placeholder="Nabil v. Nile Trading Co."
+                placeholder={t("@legalos.matters.dialog.namePlaceholder")}
                 isRequired
               />
               <Selector
-                label="Client"
+                label={t("@legalos.matters.field.client")}
                 hasClear
                 value={clientId}
                 onChange={setClientId}
                 isRequired
                 placeholder={
-                  clients.loading ? "Loading clients…" : "Select a client"
+                  clients.loading
+                    ? t("@legalos.matters.dialog.clientsLoading")
+                    : t("@legalos.matters.dialog.selectClient")
                 }
                 options={(clients.data ?? []).map((c) => ({
                   value: String(c.id),
@@ -359,43 +390,46 @@ function NewMatterDialog({
               />
               <HStack gap={3}>
                 <Selector
-                  label="Type"
+                  label={t("@legalos.matters.field.type")}
                   value={matterType}
                   onChange={(v) => setMatterType((v as MatterType) ?? "litigation")}
-                  options={MATTER_TYPES.map((t) => ({ value: t, label: label(t) }))}
+                  options={MATTER_TYPES.map((type) => ({
+                    value: type,
+                    label: t(MATTER_TYPE_KEY[type]),
+                  }))}
                 />
                 <Selector
-                  label="Billing"
+                  label={t("@legalos.matters.field.billing")}
                   value={billingType}
                   onChange={(v) => setBillingType(v ?? "hourly")}
                   options={[
-                    { value: "hourly", label: "Hourly" },
-                    { value: "fixed_fee", label: "Fixed Fee" },
-                    { value: "retainer", label: "Retainer" },
+                    { value: "hourly", label: t("@legalos.matters.billing.hourly") },
+                    { value: "fixed_fee", label: t("@legalos.matters.billing.fixedFee") },
+                    { value: "retainer", label: t("@legalos.matters.billing.retainer") },
                   ]}
                 />
               </HStack>
               <HStack gap={3}>
                 <Selector
-                  label="Responsible"
+                  label={t("@legalos.matters.field.responsible")}
                   hasClear
                   value={responsible}
                   onChange={setResponsible}
                   isRequired
-                  placeholder="Select a lawyer"
+                  placeholder={t("@legalos.matters.dialog.selectLawyer")}
                   options={members.map((m) => ({
                     value: m.clerk_user_id,
                     label: m.display_name ?? m.clerk_user_id,
                   }))}
                 />
                 <DateInput
-                  label="Opened"
+                  label={t("@legalos.matters.field.opened")}
                   value={openedDate}
                   onChange={(v) => setOpenedDate(v ?? openedDate)}
                 />
               </HStack>
               <TextArea
-                label="Description"
+                label={t("@legalos.matters.field.description")}
                 value={description}
                 onChange={setDescription}
                 rows={4}
@@ -407,12 +441,12 @@ function NewMatterDialog({
           <LayoutFooter hasDivider>
             <HStack gap={3} hAlign="end">
               <Button
-                label="Cancel"
+                label={t("@legalos.matters.dialog.cancel")}
                 variant="secondary"
                 onClick={() => onOpenChange(false)}
               />
               <Button
-                label={saving ? "Saving…" : "Open matter"}
+                label={saving ? t("@legalos.matters.savingEllipsis") : t("@legalos.matters.dialog.submit")}
                 variant="primary"
                 onClick={submit}
                 isDisabled={saving || !canSave}

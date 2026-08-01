@@ -37,6 +37,7 @@ import {
   ChatBubbleLeftRightIcon,
   BookOpenIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslator, type TranslatorFn } from "@astryxdesign/core/i18n";
 import { GroundedAnswer, GroundedAnswerData } from "@/components/GroundedAnswer";
 import { dirOf, Article } from "@/lib/api";
 
@@ -47,28 +48,57 @@ import { dirOf, Article } from "@/lib/api";
 // the corpus can't support is refused rather than guessed at.
 // ---------------------------------------------------------------------------
 
-const RECENT_CHATS = [
-  { id: "c1", title: "Termination notice period — labour law", time: "Just now" },
-  { id: "c2", title: "Delta Foods NDA — draft confidentiality clause", time: "Yesterday" },
-  { id: "c3", title: "Saudi Companies Law — single-shareholder LLC", time: "Yesterday" },
-  { id: "c4", title: "Khalil Holdings — contract translation AR→EN", time: "3 days ago" },
-  { id: "c5", title: "El-Sayed Estate — inheritance shares", time: "1 week ago" },
+const RECENT_CHATS: { id: string; titleKey: string; timeKey: string }[] = [
+  {
+    id: "c1",
+    titleKey: "@legalos.aiAssistant.recentChats.item1",
+    timeKey: "@legalos.aiAssistant.time.justNow",
+  },
+  {
+    id: "c2",
+    titleKey: "@legalos.aiAssistant.recentChats.item2",
+    timeKey: "@legalos.aiAssistant.time.yesterday",
+  },
+  {
+    id: "c3",
+    titleKey: "@legalos.aiAssistant.recentChats.item3",
+    timeKey: "@legalos.aiAssistant.time.yesterday",
+  },
+  {
+    id: "c4",
+    titleKey: "@legalos.aiAssistant.recentChats.item4",
+    timeKey: "@legalos.aiAssistant.time.daysAgo3",
+  },
+  {
+    id: "c5",
+    titleKey: "@legalos.aiAssistant.recentChats.item5",
+    timeKey: "@legalos.aiAssistant.time.weekAgo1",
+  },
 ];
 
 const MODES: {
   id: string;
-  label: string;
+  labelKey: string;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   href?: string;
 }[] = [
-  { id: "draft", label: "Draft Contract", icon: DocumentTextIcon },
-  { id: "review", label: "Review Contract", icon: DocumentMagnifyingGlassIcon, href: "/contract-review" },
-  { id: "translate", label: "Translate", icon: LanguageIcon },
-  { id: "summarize", label: "Summarize", icon: ClipboardDocumentListIcon },
-  { id: "case-analysis", label: "Case Analysis", icon: ScaleIcon },
-  { id: "clause-comparison", label: "Clause Comparison", icon: ArrowsRightLeftIcon },
-  { id: "timeline", label: "Timeline Extraction", icon: ClockIcon },
-  { id: "qa", label: "Question Answering", icon: ChatBubbleLeftRightIcon },
+  { id: "draft", labelKey: "@legalos.aiAssistant.modes.draft", icon: DocumentTextIcon },
+  {
+    id: "review",
+    labelKey: "@legalos.aiAssistant.modes.review",
+    icon: DocumentMagnifyingGlassIcon,
+    href: "/contract-review",
+  },
+  { id: "translate", labelKey: "@legalos.aiAssistant.modes.translate", icon: LanguageIcon },
+  { id: "summarize", labelKey: "@legalos.aiAssistant.modes.summarize", icon: ClipboardDocumentListIcon },
+  { id: "case-analysis", labelKey: "@legalos.aiAssistant.modes.caseAnalysis", icon: ScaleIcon },
+  {
+    id: "clause-comparison",
+    labelKey: "@legalos.aiAssistant.modes.clauseComparison",
+    icon: ArrowsRightLeftIcon,
+  },
+  { id: "timeline", labelKey: "@legalos.aiAssistant.modes.timeline", icon: ClockIcon },
+  { id: "qa", labelKey: "@legalos.aiAssistant.modes.qa", icon: ChatBubbleLeftRightIcon },
 ];
 
 const LABOUR_ARTICLES: Article[] = [
@@ -200,10 +230,10 @@ const SAMPLE_TURNS: Record<string, Turn> = {
   },
 };
 
-const SUGGESTIONS = [
-  { label: "ما هي مدة الإخطار الواجب توافرها لإنهاء عقد عمل غير محدد المدة؟", turn: "labour" },
-  { label: "Does Saudi Arabia's Companies Law allow a single-shareholder LLC?", turn: "companies" },
-  { label: "Draft a standard confidentiality clause for a services agreement.", turn: "draft" },
+const SUGGESTIONS: { key: string; turn: string }[] = [
+  { key: "@legalos.aiAssistant.suggestions.labour", turn: "labour" },
+  { key: "@legalos.aiAssistant.suggestions.companies", turn: "companies" },
+  { key: "@legalos.aiAssistant.suggestions.draft", turn: "draft" },
 ];
 
 function ModeChips({
@@ -214,25 +244,27 @@ function ModeChips({
   onSelect: (id: string) => void;
 }) {
   const router = useRouter();
+  const t = useTranslator();
   return (
     <HStack gap={2} wrap="wrap">
       {MODES.map((m) => (
         <Button
           key={m.id}
-          label={m.label}
+          label={t(m.labelKey)}
           size="sm"
           variant={active === m.id ? "secondary" : "ghost"}
           icon={<Icon icon={m.icon} size="sm" className="text-purple-vivid" />}
           onClick={() => (m.href ? router.push(m.href) : onSelect(m.id))}
         >
-          {m.label}
+          {t(m.labelKey)}
         </Button>
       ))}
     </HStack>
   );
 }
 
-function TurnView({ turn }: { turn: Turn }) {
+function TurnView({ turn, t }: { turn: Turn; t: TranslatorFn }) {
+  const mode = turn.kind === "qa" ? MODES.find((m) => m.id === turn.mode) : undefined;
   return (
     <div key={turn.id}>
       <ChatMessage sender="user">
@@ -242,10 +274,7 @@ function TurnView({ turn }: { turn: Turn }) {
               timestamp={<Timestamp value={`2026-07-31T${to24(turn.time)}`} format="time" />}
               footer={
                 turn.kind === "qa" && turn.mode ? (
-                  <Badge
-                    variant="purple"
-                    label={MODES.find((m) => m.id === turn.mode)?.label ?? turn.mode}
-                  />
+                  <Badge variant="purple" label={mode ? t(mode.labelKey) : turn.mode} />
                 ) : undefined
               }
             />
@@ -262,8 +291,8 @@ function TurnView({ turn }: { turn: Turn }) {
           {turn.kind === "notice" ? (
             <Banner
               status="info"
-              title="Concept preview"
-              description="This screen replays curated example answers instead of calling the live corpus API. Try a suggested prompt or a recent chat to see a fully grounded example."
+              title={t("@legalos.aiAssistant.conceptPreview.title")}
+              description={t("@legalos.aiAssistant.conceptPreview.description")}
             />
           ) : (
             <GroundedAnswer answer={turn.answer} refusalDescription={turn.refusalDescription} />
@@ -284,6 +313,7 @@ function to24(t: string) {
 }
 
 export default function AiAssistantPage() {
+  const t = useTranslator();
   const [turns, setTurns] = useState<Turn[]>([
     SAMPLE_TURNS.labour,
     SAMPLE_TURNS.companies,
@@ -301,7 +331,7 @@ export default function AiAssistantPage() {
   function addSample(key: string) {
     setPending(true);
     setTimeout(() => {
-      setTurns((t) => [...t, SAMPLE_TURNS[key]]);
+      setTurns((prev) => [...prev, SAMPLE_TURNS[key]]);
       setPending(false);
     }, 500);
   }
@@ -311,9 +341,14 @@ export default function AiAssistantPage() {
     if (!trimmed || pending) return;
     setPending(true);
     setTimeout(() => {
-      setTurns((t) => [
-        ...t,
-        { kind: "notice", id: `notice-${t.length}`, question: trimmed, time: "Now" },
+      setTurns((prev) => [
+        ...prev,
+        {
+          kind: "notice",
+          id: `notice-${prev.length}`,
+          question: trimmed,
+          time: t("@legalos.aiAssistant.time.now"),
+        },
       ]);
       setPending(false);
     }, 500);
@@ -327,13 +362,13 @@ export default function AiAssistantPage() {
           <VStack gap={0} height="100%">
             <VStack gap={3} padding={4}>
               <Button
-                label="New chat"
+                label={t("@legalos.aiAssistant.newChat")}
                 variant="primary"
                 icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
                 onClick={newChat}
                 width="100%"
               >
-                New chat
+                {t("@legalos.aiAssistant.newChat")}
               </Button>
             </VStack>
             <Divider />
@@ -342,8 +377,8 @@ export default function AiAssistantPage() {
                 {RECENT_CHATS.map((c, i) => (
                   <ListItem
                     key={c.id}
-                    label={c.title}
-                    description={c.time}
+                    label={t(c.titleKey)}
+                    description={t(c.timeKey)}
                     isSelected={i === 0}
                     href="/ai-assistant"
                     startContent={
@@ -361,24 +396,23 @@ export default function AiAssistantPage() {
           <VStack gap={4}>
             <HStack gap={2} vAlign="center">
               <Icon icon={SparklesIcon} size="sm" className="text-purple-vivid" />
-              <Heading level={4}>Knowledge Sources</Heading>
+              <Heading level={4}>{t("@legalos.aiAssistant.knowledgeSources.heading")}</Heading>
             </HStack>
             <Text type="supporting" color="secondary">
-              Every answer above is composed only from statute articles retrieved from the
-              corpus, cited exactly as retrieved, and verified before being shown.
+              {t("@legalos.aiAssistant.knowledgeSources.description")}
             </Text>
             <Card variant="purple" padding={3}>
               <VStack gap={2}>
                 <HStack hAlign="between">
-                  <Text type="label">Egypt</Text>
+                  <Text type="label">{t("@legalos.aiAssistant.knowledgeSources.egypt")}</Text>
                   <Text type="supporting" color="secondary">
-                    148 instruments
+                    {t("@legalos.aiAssistant.knowledgeSources.egyptCount")}
                   </Text>
                 </HStack>
                 <HStack hAlign="between">
-                  <Text type="label">Saudi Arabia</Text>
+                  <Text type="label">{t("@legalos.aiAssistant.knowledgeSources.saudi")}</Text>
                   <Text type="supporting" color="secondary">
-                    76 instruments
+                    {t("@legalos.aiAssistant.knowledgeSources.saudiCount")}
                   </Text>
                 </HStack>
               </VStack>
@@ -386,14 +420,14 @@ export default function AiAssistantPage() {
             <Divider />
             <VStack gap={2}>
               <Text type="label" color="secondary">
-                Cited in this conversation
+                {t("@legalos.aiAssistant.knowledgeSources.citedHeading")}
               </Text>
               <List hasDividers density="compact">
                 {Array.from(
                   new Map(
                     turns
-                      .filter((t): t is Extract<Turn, { kind: "qa" }> => t.kind === "qa")
-                      .flatMap((t) => t.answer.articles)
+                      .filter((turn): turn is Extract<Turn, { kind: "qa" }> => turn.kind === "qa")
+                      .flatMap((turn) => turn.answer.articles)
                       .map((a) => [a.citation, a]),
                   ).values(),
                 ).map((a) => (
@@ -408,8 +442,7 @@ export default function AiAssistantPage() {
             </VStack>
             <Divider />
             <Text type="supporting" color="secondary">
-              Retrieval: semantic vector search over verified statute text. A question the
-              corpus cannot support is refused, not guessed at.
+              {t("@legalos.aiAssistant.knowledgeSources.footer")}
             </Text>
           </VStack>
         </LayoutPanel>
@@ -420,10 +453,9 @@ export default function AiAssistantPage() {
             <VStack gap={3} padding={4}>
               <HStack hAlign="between" vAlign="center">
                 <VStack gap={0.5}>
-                  <Heading level={3}>AI Assistant</Heading>
+                  <Heading level={3}>{t("@legalos.aiAssistant.heading")}</Heading>
                   <Text type="supporting" color="secondary">
-                    Grounded Q&amp;A over the Egyptian &amp; Saudi statute corpus — ask in Arabic
-                    or English.
+                    {t("@legalos.aiAssistant.subheading")}
                   </Text>
                 </VStack>
               </HStack>
@@ -435,21 +467,24 @@ export default function AiAssistantPage() {
                 density="spacious"
                 emptyState={
                   <EmptyState
-                    title="Start a new conversation"
-                    description="Answers are composed only from statute articles retrieved from the corpus. Questions the corpus cannot support are refused rather than guessed at."
+                    title={t("@legalos.aiAssistant.emptyState.title")}
+                    description={t("@legalos.aiAssistant.emptyState.description")}
                     actions={
                       <VStack gap={2} width="100%">
-                        {SUGGESTIONS.map((s) => (
-                          <Card key={s.label} padding={2} variant="muted">
-                            <button
-                              onClick={() => addSample(s.turn)}
-                              style={{ textAlign: "start", width: "100%" }}
-                              dir={dirOf(s.label)}
-                            >
-                              <Text type="label">{s.label}</Text>
-                            </button>
-                          </Card>
-                        ))}
+                        {SUGGESTIONS.map((s) => {
+                          const label = t(s.key);
+                          return (
+                            <Card key={s.key} padding={2} variant="muted">
+                              <button
+                                onClick={() => addSample(s.turn)}
+                                style={{ textAlign: "start", width: "100%" }}
+                                dir={dirOf(label)}
+                              >
+                                <Text type="label">{label}</Text>
+                              </button>
+                            </Card>
+                          );
+                        })}
                       </VStack>
                     }
                   />
@@ -460,21 +495,25 @@ export default function AiAssistantPage() {
                     isDisabled={pending}
                     placeholder={
                       activeMode
-                        ? `Ask in ${MODES.find((m) => m.id === activeMode)?.label} mode…`
-                        : "Ask about the law in Arabic or English…"
+                        ? t("@legalos.aiAssistant.composer.placeholderWithMode", {
+                            mode: t(
+                              MODES.find((m) => m.id === activeMode)?.labelKey ?? "",
+                            ),
+                          })
+                        : t("@legalos.aiAssistant.composer.placeholderDefault")
                     }
                   />
                 }
               >
                 {turns.length > 0 && (
                   <ChatMessageList>
-                    {turns.map((t) => (
-                      <TurnView key={t.id} turn={t} />
+                    {turns.map((turn) => (
+                      <TurnView key={turn.id} turn={turn} t={t} />
                     ))}
                     {pending && (
                       <ChatMessage sender="assistant" avatar={<Avatar name="LegalOS AI" size="md" />}>
                         <ChatMessageBubble variant="ghost">
-                          <Spinner label="Searching the corpus…" />
+                          <Spinner label={t("@legalos.aiAssistant.searchingCorpus")} />
                         </ChatMessageBubble>
                       </ChatMessage>
                     )}

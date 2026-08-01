@@ -21,10 +21,10 @@ import { useOrg, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import {
   formatDate,
-  label,
   type Client,
   type ClientType,
 } from "@/lib/practice";
+import { useEnumLabel } from "@/lib/i18n/enum-label";
 
 interface ClientRow extends Record<string, unknown> {
   id: number;
@@ -39,6 +39,7 @@ interface ClientRow extends Record<string, unknown> {
 }
 
 export default function ClientsPage() {
+  const enumLabel = useEnumLabel();
   const { practice, organizationName } = useOrg();
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -110,7 +111,7 @@ export default function ClientsPage() {
       key: "client_type",
       header: "Type",
       width: pixel(120),
-      renderCell: (row) => <Text type="body">{label(row.client_type)}</Text>,
+      renderCell: (row) => <Text type="body">{enumLabel(row.client_type)}</Text>,
     },
     {
       key: "primaryContactName",

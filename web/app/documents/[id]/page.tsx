@@ -26,9 +26,9 @@ import { DataView, InlineError } from "@/components/DataState";
 import {
   formatBytes,
   formatDateTime,
-  label,
   type DocumentStatus,
 } from "@/lib/practice";
+import { useEnumLabel } from "@/lib/i18n/enum-label";
 
 // Version history and comment threads were in the UI concept but have no
 // backend; this page shows the document's real stored state and the actions
@@ -49,6 +49,7 @@ export default function DocumentDetailPage({
 }) {
   const { id } = use(params);
   const documentId = Number(id);
+  const enumLabel = useEnumLabel();
   const router = useRouter();
   const { practice, organizationId } = useOrg();
   const memberName = useMemberName();
@@ -132,7 +133,7 @@ export default function DocumentDetailPage({
                       onChange={setStatus}
                       isDisabled={pending}
                       width={180}
-                      options={STATUSES.map((s) => ({ value: s, label: label(s) }))}
+                      options={STATUSES.map((s) => ({ value: s, label: enumLabel(s) }))}
                     />
                     {doc.storage_key && (
                       <Button
@@ -194,7 +195,7 @@ export default function DocumentDetailPage({
                       <Heading level={4}>Details</Heading>
                       <MetadataList>
                         <MetadataListItem label="Status">
-                          <Badge variant="neutral" label={label(doc.status)} />
+                          <Badge variant="neutral" label={enumLabel(doc.status)} />
                         </MetadataListItem>
                         <MetadataListItem label="Type">
                           {doc.doc_type || "—"}

@@ -31,6 +31,29 @@
     var(--font-family-base, system-ui), sans-serif;
 }
 
+/*
+  Firms enter client and matter names in whichever script the name belongs to,
+  so a Latin name ("Nabil v. Nile Trading Co.") routinely appears inside an
+  Arabic RTL page. Without isolation the bidi algorithm resolves that run
+  against the surrounding RTL paragraph and throws its trailing punctuation to
+  the wrong end -- the name renders as ".Nabil v. Nile Trading Co". Isolating
+  the wrong end -- the name renders as ".Nabil v. Nile Trading Co".
+
+  `plaintext` rather than `isolate`: isolate alone stops the run from
+  interacting with its neighbours but leaves its base direction inherited
+  (still RTL), so the trailing period stays on the wrong side. `plaintext`
+  derives each run's base direction from its own first strong character, which
+  is exactly the rule for content whose script isn't known ahead of time --
+  Arabic names stay RTL, Latin names read LTR, both inside the same page.
+  Alignment still follows the container, so cells stay right-aligned in RTL.
+
+  Applied to the design system's text primitive so it covers every content
+  string at once, rather than a <bdi> at each of hundreds of call sites.
+*/
+.astryx-text {
+  unicode-bidi: plaintext;
+}
+
 .statute-text {
   white-space: pre-wrap;
   overflow-wrap: anywhere;

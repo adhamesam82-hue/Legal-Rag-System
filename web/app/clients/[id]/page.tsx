@@ -25,9 +25,9 @@ import {
   formatDate,
   formatDateTime,
   formatEGP,
-  label,
   type MatterStatus,
 } from "@/lib/practice";
+import { useEnumLabel } from "@/lib/i18n/enum-label";
 
 const STATUS_VARIANT: Record<MatterStatus, "success" | "warning" | "neutral"> = {
   active: "success",
@@ -42,6 +42,7 @@ export default function ClientDetailPage({
 }) {
   const { id } = use(params);
   const clientId = Number(id);
+  const enumLabel = useEnumLabel();
   const memberName = useMemberName();
 
   const resource = useResource(
@@ -90,7 +91,7 @@ export default function ClientDetailPage({
                         )}
                       </HStack>
                       <Text type="body" color="secondary">
-                        {label(client.client_type)}
+                        {enumLabel(client.client_type)}
                         {client.industry ? ` · ${client.industry}` : ""}
                         {client.client_since
                           ? ` · client since ${formatDate(client.client_since)}`
@@ -153,7 +154,7 @@ export default function ClientDetailPage({
                                     key={matter.id}
                                     label={matter.name}
                                     href={`/matters/${matter.id}`}
-                                    description={`${label(matter.matter_type)} · ${memberName(
+                                    description={`${enumLabel(matter.matter_type)} · ${memberName(
                                       matter.responsible_user,
                                     )}`}
                                     startContent={
@@ -168,7 +169,7 @@ export default function ClientDetailPage({
                                     endContent={
                                       <Badge
                                         variant={STATUS_VARIANT[matter.status]}
-                                        label={label(matter.status)}
+                                        label={enumLabel(matter.status)}
                                       />
                                     }
                                   />
@@ -219,7 +220,7 @@ export default function ClientDetailPage({
                                                 ? "error"
                                                 : "neutral"
                                           }
-                                          label={label(invoice.status)}
+                                          label={enumLabel(invoice.status)}
                                         />
                                       </HStack>
                                     }
@@ -271,7 +272,7 @@ export default function ClientDetailPage({
                           <Heading level={4}>Details</Heading>
                           <MetadataList>
                             <MetadataListItem label="Type">
-                              {label(client.client_type)}
+                              {enumLabel(client.client_type)}
                             </MetadataListItem>
                             {client.registration_number && (
                               <MetadataListItem label="Registration">

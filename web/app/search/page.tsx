@@ -13,8 +13,10 @@ import { Switch } from "@astryxdesign/core/Switch";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { ArticleCard } from "@/components/ArticleCard";
 import { api, ApiError, SearchResponse, dirOf } from "@/lib/api";
+import { useTranslator } from "@astryxdesign/core/i18n";
 
 export default function SearchPage() {
+  const t = useTranslator();
   const [query, setQuery] = useState("");
   // Vector search now handles cross-lingual queries on its own; measured to
   // make LLM expansion add nothing (see docs/ailab/specs/2026-07-31-phase2-
@@ -48,12 +50,9 @@ export default function SearchPage() {
 
   return (
     <div style={{ maxWidth: 880, margin: "0 auto", padding: "32px 20px 64px" }}>
-      <Heading level={1}>Search</Heading>
+      <Heading level={1}>{t("@legalos.search.heading")}</Heading>
       <div style={{ marginBlock: 8 }}>
-        <Text type="supporting">
-          Ranked articles with their retrieval scores, and no composed answer.
-          Useful for seeing exactly what the retrieval layer returns.
-        </Text>
+        <Text type="supporting">{t("@legalos.search.subheading")}</Text>
       </div>
 
       <Card padding={4}>
@@ -65,11 +64,11 @@ export default function SearchPage() {
           style={{ display: "grid", gap: 14 }}
         >
           <TextInput
-            label="Search the corpus"
+            label={t("@legalos.search.input.label")}
             isLabelHidden
             value={query}
             onChange={setQuery}
-            placeholder="e.g. مدة الإجازة السنوية — or: annual leave entitlement"
+            placeholder={t("@legalos.search.input.placeholder")}
             size="lg"
           />
           <div
@@ -81,35 +80,35 @@ export default function SearchPage() {
             }}
           >
             <Switch
-              label="Expand query into Arabic legal terms"
+              label={t("@legalos.search.expand.label")}
               value={expand}
               onChange={setExpand}
             />
             <div style={{ marginInlineStart: "auto" }}>
               <Button
                 type="submit"
-                label="Search"
+                label={t("@legalos.search.submit")}
                 variant="primary"
                 isLoading={pending}
               />
             </div>
           </div>
-          <Text type="supporting">
-            The corpus is entirely Arabic. Expansion translates an English query
-            into the statutory vocabulary before searching — without it, English
-            queries match nothing. It costs one model call.
-          </Text>
+          <Text type="supporting">{t("@legalos.search.helper")}</Text>
         </form>
       </Card>
 
       <div style={{ marginBlockStart: 20, display: "grid", gap: 12 }}>
-        {error && <Banner status="error" title="Search failed" description={error} />}
+        {error && (
+          <Banner status="error" title={t("@legalos.search.error.title")} description={error} />
+        )}
 
         {results?.degraded && results.degraded.length > 0 && (
           <Banner
             status="warning"
-            title="Keyword-only results"
-            description={`Query expansion was unavailable: ${results.degraded.join("; ")}.`}
+            title={t("@legalos.search.degraded.title")}
+            description={t("@legalos.search.degraded.description", {
+              reasons: results.degraded.join("; "),
+            })}
           />
         )}
 
@@ -120,11 +119,11 @@ export default function SearchPage() {
                 <div
                   style={{ display: "flex", gap: 8, alignItems: "center" }}
                 >
-                  <Text type="supporting">Law identified:</Text>
+                  <Text type="supporting">{t("@legalos.search.lawIdentified")}</Text>
                   <Badge variant="neutral" label={results.law_hint} />
                 </div>
               )}
-              <Text type="supporting">Searched for:</Text>
+              <Text type="supporting">{t("@legalos.search.searchedFor")}</Text>
               <p dir={dirOf(results.expanded_terms)}>
                 <Text type="supporting">{results.expanded_terms}</Text>
               </p>
@@ -132,12 +131,12 @@ export default function SearchPage() {
           </Card>
         )}
 
-        {pending && <Spinner label="Searching…" />}
+        {pending && <Spinner label={t("@legalos.search.spinner")} />}
 
         {results && !pending && results.articles.length === 0 && (
           <EmptyState
-            title="No matching articles"
-            description="Nothing in the corpus matched. Try Arabic legal terms, or turn expansion on."
+            title={t("@legalos.search.empty.title")}
+            description={t("@legalos.search.empty.description")}
           />
         )}
 

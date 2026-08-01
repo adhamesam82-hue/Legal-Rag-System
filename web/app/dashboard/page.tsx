@@ -28,6 +28,7 @@ import {
   BanknotesIcon,
   ClockIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import { useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView } from "@/components/DataState";
 import {
@@ -35,9 +36,9 @@ import {
   formatDate,
   formatDateTime,
   formatEGP,
-  label,
   todayIso,
 } from "@/lib/practice";
+import { useEnumLabel } from "@/lib/i18n/enum-label";
 
 // Every figure here comes from the practice tables. The concept build's
 // invented KPIs (revenue targets, message previews, utilization goals) are
@@ -55,6 +56,8 @@ function egpShort(value: number) {
 }
 
 export default function DashboardPage() {
+  const t = useTranslator();
+  const enumLabel = useEnumLabel();
   const { organizationName } = useOrg();
   const memberName = useMemberName();
 
@@ -97,43 +100,49 @@ export default function DashboardPage() {
         <LayoutContent padding={0} isScrollable>
           <VStack gap={6}>
             <VStack gap={1}>
-              <Heading level={2}>Dashboard</Heading>
+              <Heading level={2}>{t("@legalos.dashboard.heading")}</Heading>
               <Text type="body" color="secondary">
-                {organizationName ?? "Your firm"} · {formatDate(todayIso())}
+                {organizationName ?? t("@legalos.dashboard.orgFallback")} · {formatDate(todayIso())}
               </Text>
             </VStack>
 
-            <DataView resource={resource} loadingLabel="Loading your firm…">
+            <DataView resource={resource} loadingLabel={t("@legalos.dashboard.loading")}>
               {({ board }) => {
                 const kpis = [
                   {
-                    label: "Active Matters",
+                    label: t("@legalos.dashboard.kpi.activeMatters"),
                     value: String(board.active_matters),
-                    detail: `${board.active_clients} active clients`,
+                    detail: t("@legalos.dashboard.kpi.activeMattersDetail", {
+                      count: board.active_clients,
+                    }),
                     icon: BriefcaseIcon,
                     warn: false,
                   },
                   {
-                    label: "Open Tasks",
+                    label: t("@legalos.dashboard.kpi.openTasks"),
                     value: String(board.open_tasks),
                     detail:
                       board.overdue_tasks > 0
-                        ? `${board.overdue_tasks} overdue`
-                        : "None overdue",
+                        ? t("@legalos.dashboard.kpi.overdueDetail", {
+                            count: board.overdue_tasks,
+                          })
+                        : t("@legalos.dashboard.kpi.noneOverdue"),
                     icon: CheckCircleIcon,
                     warn: board.overdue_tasks > 0,
                   },
                   {
-                    label: "Unbilled Time",
+                    label: t("@legalos.dashboard.kpi.unbilledTime"),
                     value: formatEGP(board.unbilled_amount),
-                    detail: `${Number(board.hours_this_month).toFixed(1)}h logged this month`,
+                    detail: t("@legalos.dashboard.kpi.hoursLoggedDetail", {
+                      hours: Number(board.hours_this_month).toFixed(1),
+                    }),
                     icon: ClockIcon,
                     warn: false,
                   },
                   {
-                    label: "Outstanding",
+                    label: t("@legalos.dashboard.kpi.outstanding"),
                     value: formatEGP(board.outstanding_amount),
-                    detail: "Sent and overdue invoices",
+                    detail: t("@legalos.dashboard.kpi.outstandingDetail"),
                     icon: BanknotesIcon,
                     warn: false,
                   },
@@ -169,13 +178,13 @@ export default function DashboardPage() {
                         <Card>
                           <VStack gap={4}>
                             <HStack hAlign="between" vAlign="center">
-                              <Heading level={4}>Next 30 days</Heading>
-                              <Link href="/calendar">Calendar</Link>
+                              <Heading level={4}>{t("@legalos.dashboard.next30.heading")}</Heading>
+                              <Link href="/calendar">{t("@legalos.dashboard.next30.calendarLink")}</Link>
                             </HStack>
                             {board.upcoming.length === 0 ? (
                               <EmptyState
-                                title="Nothing scheduled"
-                                description="No hearings, deadlines or task due dates in the next 30 days."
+                                title={t("@legalos.dashboard.next30.empty.title")}
+                                description={t("@legalos.dashboard.next30.empty.description")}
                               />
                             ) : (
                               <List hasDividers density="compact">
@@ -185,7 +194,7 @@ export default function DashboardPage() {
                                     <ListItem
                                       key={`${item.kind}-${item.label}-${index}`}
                                       label={item.label}
-                                      description={item.matter_name ?? "Firm-wide"}
+                                      description={item.matter_name ?? t("@legalos.dashboard.firmWide")}
                                       href={
                                         item.matter_id
                                           ? `/matters/${item.matter_id}`
@@ -201,7 +210,7 @@ export default function DashboardPage() {
                                       endContent={
                                         <HStack gap={3} vAlign="center">
                                           <Text type="supporting" color="secondary">
-                                            {label(item.kind)}
+                                            {enumLabel(item.kind)}
                                           </Text>
                                           {days <= 3 ? (
                                             <Badge
@@ -227,12 +236,12 @@ export default function DashboardPage() {
                       <Card>
                         <VStack gap={4}>
                           <HStack hAlign="between" vAlign="center">
-                            <Heading level={4}>Recent activity</Heading>
-                            <Link href="/matters">Matters</Link>
+                            <Heading level={4}>{t("@legalos.dashboard.recentActivity.heading")}</Heading>
+                            <Link href="/matters">{t("@legalos.dashboard.recentActivity.mattersLink")}</Link>
                           </HStack>
                           {board.recent_activity.length === 0 ? (
                             <Text type="body" color="secondary">
-                              Nothing has happened yet.
+                              {t("@legalos.dashboard.recentActivity.empty")}
                             </Text>
                           ) : (
                             <List hasDividers density="compact">
@@ -265,8 +274,8 @@ export default function DashboardPage() {
                       <Card>
                         <VStack gap={4}>
                           <HStack hAlign="between" vAlign="center">
-                            <Heading level={4}>Collections</Heading>
-                            <Link href="/billing">Billing</Link>
+                            <Heading level={4}>{t("@legalos.dashboard.collections.heading")}</Heading>
+                            <Link href="/billing">{t("@legalos.dashboard.collections.billingLink")}</Link>
                           </HStack>
                           <ResponsiveContainer width="100%" height={240}>
                             <LineChart
@@ -302,7 +311,7 @@ export default function DashboardPage() {
                               <Line
                                 type="monotone"
                                 dataKey="collected"
-                                name="Collected"
+                                name={t("@legalos.dashboard.collections.seriesName")}
                                 stroke="var(--color-accent)"
                                 strokeWidth={2}
                                 dot={false}

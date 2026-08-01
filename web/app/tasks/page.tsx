@@ -25,16 +25,19 @@ import { DataView, InlineError } from "@/components/DataState";
 import {
   daysUntil,
   formatDate,
-  label,
   todayIso,
   type ISODateString,
   type Priority,
   type Task,
 } from "@/lib/practice";
+import { useTranslator } from "@astryxdesign/core/i18n";
+import { useEnumLabel } from "@/lib/i18n/enum-label";
 
 type Filter = "mine" | "all" | "overdue";
 
 export default function TasksPage() {
+  const t = useTranslator();
+  const enumLabel = useEnumLabel();
   const { practice, members } = useOrg();
   const memberName = useMemberName();
   const [filter, setFilter] = useState<Filter>("all");
@@ -77,7 +80,7 @@ export default function TasksPage() {
       });
       resource.reload();
     } catch (exc) {
-      setError(exc instanceof Error ? exc.message : "Could not update this task.");
+      setError(exc instanceof Error ? exc.message : t("@legalos.tasks.updateError"));
     } finally {
       setPendingId(null);
     }
@@ -92,36 +95,39 @@ export default function TasksPage() {
             <VStack gap={4}>
               <HStack hAlign="between" vAlign="center" wrap="wrap" gap={4}>
                 <VStack gap={1}>
-                  <Heading level={2}>Tasks</Heading>
+                  <Heading level={2}>{t("@legalos.tasks.heading")}</Heading>
                   <Text type="body" color="secondary">
-                    {open.length} open across the firm · {overdue.length} overdue
+                    {t("@legalos.tasks.subtitle", {
+                      open: open.length,
+                      overdue: overdue.length,
+                    })}
                   </Text>
                 </VStack>
                 <Button
-                  label="Add task"
+                  label={t("@legalos.tasks.addTask")}
                   variant="primary"
                   icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
                   onClick={() => setIsCreating(true)}
                   isDisabled={!practice}
                 >
-                  Add task
+                  {t("@legalos.tasks.addTask")}
                 </Button>
               </HStack>
               <SegmentedControl
                 value={filter}
                 onChange={(v) => setFilter(v as Filter)}
-                label="Filter tasks"
+                label={t("@legalos.tasks.filterAriaLabel")}
               >
-                <SegmentedControlItem value="all" label="All tasks" />
-                <SegmentedControlItem value="mine" label="Assigned to me" />
-                <SegmentedControlItem value="overdue" label="Overdue" />
+                <SegmentedControlItem value="all" label={t("@legalos.tasks.filter.all")} />
+                <SegmentedControlItem value="mine" label={t("@legalos.tasks.filter.mine")} />
+                <SegmentedControlItem value="overdue" label={t("@legalos.tasks.filter.overdue")} />
               </SegmentedControl>
             </VStack>
           </LayoutHeader>
         }
         content={
           <LayoutContent padding={0} isScrollable>
-            <DataView resource={resource} loadingLabel="Loading tasks…">
+            <DataView resource={resource} loadingLabel={t("@legalos.tasks.loading")}>
               {() => (
                 <VStack gap={6}>
                   <InlineError message={error} onDismiss={() => setError(null)} />
@@ -129,7 +135,7 @@ export default function TasksPage() {
                     <Card>
                       <VStack gap={2}>
                         <Text type="label" color="secondary">
-                          Open tasks
+                          {t("@legalos.tasks.stat.open")}
                         </Text>
                         <Heading level={2}>{open.length}</Heading>
                       </VStack>
@@ -137,7 +143,7 @@ export default function TasksPage() {
                     <Card>
                       <VStack gap={2}>
                         <Text type="label" color="secondary">
-                          Due this week
+                          {t("@legalos.tasks.stat.dueThisWeek")}
                         </Text>
                         <Heading level={2}>{dueThisWeek.length}</Heading>
                       </VStack>
@@ -145,7 +151,7 @@ export default function TasksPage() {
                     <Card>
                       <VStack gap={2}>
                         <Text type="label" color="secondary">
-                          Overdue
+                          {t("@legalos.tasks.stat.overdue")}
                         </Text>
                         <Heading level={2}>{overdue.length}</Heading>
                       </VStack>
@@ -156,18 +162,22 @@ export default function TasksPage() {
                     <VStack gap={4}>
                       <Heading level={4}>
                         {filter === "mine"
-                          ? "Assigned to me"
+                          ? t("@legalos.tasks.filter.mine")
                           : filter === "overdue"
-                            ? "Overdue"
-                            : "All tasks"}
+                            ? t("@legalos.tasks.filter.overdue")
+                            : t("@legalos.tasks.filter.all")}
                       </Heading>
                       {visible.length === 0 ? (
                         <EmptyState
-                          title={filter === "overdue" ? "Nothing overdue" : "No tasks"}
+                          title={
+                            filter === "overdue"
+                              ? t("@legalos.tasks.empty.overdueTitle")
+                              : t("@legalos.tasks.empty.noneTitle")
+                          }
                           description={
                             filter === "overdue"
-                              ? "Every task is on schedule."
-                              : "Tasks assigned across the firm will appear here."
+                              ? t("@legalos.tasks.empty.overdueDescription")
+                              : t("@legalos.tasks.empty.noneDescription")
                           }
                         />
                       ) : (
@@ -189,16 +199,18 @@ export default function TasksPage() {
                                       </Link>
                                     )}
                                     <Text type="supporting" color="secondary">
-                                      · {assignee}
+                                      {t("@legalos.tasks.assigneeLine", { assignee })}
                                       {task.due_date
-                                        ? ` · due ${formatDate(task.due_date)}`
-                                        : " · no due date"}
+                                        ? t("@legalos.tasks.dueOn", {
+                                            date: formatDate(task.due_date),
+                                          })
+                                        : t("@legalos.tasks.noDueDate")}
                                     </Text>
                                   </HStack>
                                 }
                                 startContent={
                                   <CheckboxInput
-                                    label={`Mark "${task.title}" complete`}
+                                    label={t("@legalos.tasks.markComplete", { title: task.title })}
                                     isLabelHidden
                                     value={complete}
                                     isDisabled={pendingId === task.id}
@@ -208,12 +220,12 @@ export default function TasksPage() {
                                 endContent={
                                   <HStack gap={3} vAlign="center">
                                     {isOverdue ? (
-                                      <Badge variant="error" label="Overdue" />
+                                      <Badge variant="error" label={t("@legalos.tasks.badge.overdue")} />
                                     ) : task.priority === "high" && !complete ? (
-                                      <Badge variant="warning" label="High" />
+                                      <Badge variant="warning" label={t("@legalos.tasks.badge.high")} />
                                     ) : (
                                       <Text type="supporting" color="secondary">
-                                        {label(task.status)}
+                                        {enumLabel(task.status)}
                                       </Text>
                                     )}
                                     <Avatar name={assignee} size="sm" tooltip={false} />
@@ -253,6 +265,7 @@ function NewTaskDialog({
   onCreated: () => void;
   defaultAssignee: string | null;
 }) {
+  const t = useTranslator();
   const { practice, members } = useOrg();
   const [title, setTitle] = useState("");
   const [assignee, setAssignee] = useState<string | null>(defaultAssignee);
@@ -284,7 +297,7 @@ function NewTaskDialog({
       onOpenChange(false);
       onCreated();
     } catch (exc) {
-      setError(exc instanceof Error ? exc.message : "Could not create this task.");
+      setError(exc instanceof Error ? exc.message : t("@legalos.tasks.dialog.error"));
     } finally {
       setSaving(false);
     }
@@ -293,24 +306,24 @@ function NewTaskDialog({
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
       <Layout
-        header={<DialogHeader title="Add task" onOpenChange={onOpenChange} />}
+        header={<DialogHeader title={t("@legalos.tasks.dialog.title")} onOpenChange={onOpenChange} />}
         content={
           <LayoutContent>
             <VStack gap={4}>
               <InlineError message={error} onDismiss={() => setError(null)} />
               <TextInput
-                label="Task"
+                label={t("@legalos.tasks.dialog.taskLabel")}
                 value={title}
                 onChange={setTitle}
-                placeholder="Draft appeal brief"
+                placeholder={t("@legalos.tasks.dialog.taskPlaceholder")}
                 isRequired
               />
               <Selector
-                label="Matter"
+                label={t("@legalos.tasks.dialog.matterLabel")}
                 hasClear
                 value={matterId}
                 onChange={setMatterId}
-                placeholder="Not tied to a matter"
+                placeholder={t("@legalos.tasks.dialog.matterPlaceholder")}
                 options={(matters.data ?? []).map((m) => ({
                   value: String(m.id),
                   label: m.name,
@@ -318,7 +331,7 @@ function NewTaskDialog({
               />
               <HStack gap={3}>
                 <Selector
-                  label="Assignee"
+                  label={t("@legalos.tasks.dialog.assigneeLabel")}
                   hasClear
                   value={assignee ?? defaultAssignee}
                   onChange={setAssignee}
@@ -328,18 +341,18 @@ function NewTaskDialog({
                   }))}
                 />
                 <Selector
-                  label="Priority"
+                  label={t("@legalos.tasks.dialog.priorityLabel")}
                   value={priority}
                   onChange={(v) => setPriority((v as Priority) ?? "medium")}
                   options={[
-                    { value: "low", label: "Low" },
-                    { value: "medium", label: "Medium" },
-                    { value: "high", label: "High" },
+                    { value: "low", label: t("@legalos.tasks.priority.low") },
+                    { value: "medium", label: t("@legalos.tasks.priority.medium") },
+                    { value: "high", label: t("@legalos.tasks.priority.high") },
                   ]}
                 />
               </HStack>
               <DateInput
-                label="Due"
+                label={t("@legalos.tasks.dialog.dueLabel")}
                 value={dueDate}
                 onChange={(v) => setDueDate(v ?? dueDate)}
               />
@@ -350,12 +363,12 @@ function NewTaskDialog({
           <LayoutFooter hasDivider>
             <HStack gap={3} hAlign="end">
               <Button
-                label="Cancel"
+                label={t("@legalos.tasks.dialog.cancel")}
                 variant="secondary"
                 onClick={() => onOpenChange(false)}
               />
               <Button
-                label={saving ? "Saving…" : "Add task"}
+                label={saving ? t("@legalos.tasks.dialog.saving") : t("@legalos.tasks.addTask")}
                 variant="primary"
                 onClick={submit}
                 isDisabled={saving || !title.trim()}

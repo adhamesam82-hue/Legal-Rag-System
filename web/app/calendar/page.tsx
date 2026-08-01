@@ -29,6 +29,7 @@ import {
   ClockIcon,
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import { useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import {
@@ -57,19 +58,28 @@ const KIND_ICON = {
   task: CheckCircleIcon,
 } as const;
 
-const KIND_LABEL = {
-  hearing: "Hearing",
-  deadline: "Case deadline",
-  task: "Task",
+const KIND_LABEL_KEY = {
+  hearing: "@legalos.calendar.kind.hearing",
+  deadline: "@legalos.calendar.kind.deadline",
+  task: "@legalos.calendar.kind.task",
 } as const;
 
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WEEKDAY_KEYS = [
+  "@legalos.calendar.weekday.sun",
+  "@legalos.calendar.weekday.mon",
+  "@legalos.calendar.weekday.tue",
+  "@legalos.calendar.weekday.wed",
+  "@legalos.calendar.weekday.thu",
+  "@legalos.calendar.weekday.fri",
+  "@legalos.calendar.weekday.sat",
+] as const;
 
 function monthKey(year: number, month: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
 
 export default function CalendarPage() {
+  const t = useTranslator();
   const { practice, members } = useOrg();
   const memberName = useMemberName();
   const today = todayIso();
@@ -130,7 +140,7 @@ export default function CalendarPage() {
         id: `task-${task.id}`,
         date: task.due_date as string,
         title: task.title,
-        detail: task.matter_name ?? "Firm task",
+        detail: task.matter_name ?? t("@legalos.calendar.firmTask"),
         kind: "task",
         owner: task.assignee,
         matterId: task.matter_id ?? undefined,
@@ -212,18 +222,18 @@ export default function CalendarPage() {
           <LayoutHeader hasDivider padding={0}>
             <HStack hAlign="between" vAlign="center" wrap="wrap" gap={4}>
               <VStack gap={1}>
-                <Heading level={2}>Calendar</Heading>
+                <Heading level={2}>{t("@legalos.calendar.heading")}</Heading>
                 <Text type="body" color="secondary">
-                  Hearings, case deadlines and task due dates
+                  {t("@legalos.calendar.subtitle")}
                 </Text>
               </VStack>
               <HStack gap={2} vAlign="center">
                 <Selector
-                  label="Filter by lawyer"
+                  label={t("@legalos.calendar.filterByLawyer")}
                   value={ownerFilter}
                   onChange={(v) => setOwnerFilter(v ?? "all")}
                   options={[
-                    { value: "all", label: "Whole firm" },
+                    { value: "all", label: t("@legalos.calendar.wholeFirm") },
                     ...members.map((m) => ({
                       value: m.clerk_user_id,
                       label: m.display_name ?? m.clerk_user_id,
@@ -231,13 +241,13 @@ export default function CalendarPage() {
                   ]}
                 />
                 <Button
-                  label="Schedule hearing"
+                  label={t("@legalos.calendar.scheduleHearing")}
                   variant="primary"
                   icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
                   onClick={() => setIsCreating(true)}
                   isDisabled={!practice}
                 >
-                  Schedule hearing
+                  {t("@legalos.calendar.scheduleHearing")}
                 </Button>
               </HStack>
             </HStack>
@@ -251,14 +261,14 @@ export default function CalendarPage() {
                   <Heading level={4}>{monthLabel}</Heading>
                   <HStack gap={1}>
                     <Button
-                      label="Previous month"
+                      label={t("@legalos.calendar.previousMonth")}
                       variant="ghost"
                       isIconOnly
                       icon={<Icon icon={ChevronLeftIcon} size="sm" />}
                       onClick={() => shiftMonth(-1)}
                     />
                     <Button
-                      label="Next month"
+                      label={t("@legalos.calendar.nextMonth")}
                       variant="ghost"
                       isIconOnly
                       icon={<Icon icon={ChevronRightIcon} size="sm" />}
@@ -267,17 +277,17 @@ export default function CalendarPage() {
                   </HStack>
                 </HStack>
 
-                <DataView resource={resource} loadingLabel="Loading calendar…">
+                <DataView resource={resource} loadingLabel={t("@legalos.calendar.loading")}>
                   {() => (
                     <Grid columns={7} gap={2} className="min-w-0">
-                      {WEEKDAYS.map((d) => (
+                      {WEEKDAY_KEYS.map((key) => (
                         <Text
-                          key={d}
+                          key={key}
                           type="supporting"
                           color="secondary"
                           weight="semibold"
                         >
-                          {d}
+                          {t(key)}
                         </Text>
                       ))}
                       {cells.map((date, index) => {
@@ -329,7 +339,9 @@ export default function CalendarPage() {
                               ))}
                               {dayEvents.length > 2 && (
                                 <Text type="supporting" color="secondary">
-                                  +{dayEvents.length - 2} more
+                                  {t("@legalos.calendar.moreEvents", {
+                                    count: dayEvents.length - 2,
+                                  })}
                                 </Text>
                               )}
                             </VStack>
@@ -351,8 +363,8 @@ export default function CalendarPage() {
                   <Heading level={4}>{formatDate(selectedDate)}</Heading>
                   {selectedEvents.length === 0 ? (
                     <EmptyState
-                      title="Nothing scheduled"
-                      description="No events on this day."
+                      title={t("@legalos.calendar.nothingScheduledTitle")}
+                      description={t("@legalos.calendar.nothingScheduledDescription")}
                     />
                   ) : (
                     <List hasDividers density="compact">
@@ -374,10 +386,10 @@ export default function CalendarPage() {
                           endContent={
                             <VStack gap={0} align="end">
                               <Text type="supporting" color="secondary">
-                                {event.time || "All day"}
+                                {event.time || t("@legalos.calendar.allDay")}
                               </Text>
                               <Text type="supporting" color="secondary">
-                                {KIND_LABEL[event.kind]}
+                                {t(KIND_LABEL_KEY[event.kind])}
                               </Text>
                             </VStack>
                           }
@@ -391,12 +403,12 @@ export default function CalendarPage() {
               <Card>
                 <VStack gap={4}>
                   <HStack hAlign="between" vAlign="center">
-                    <Heading level={4}>Coming up</Heading>
-                    <Link href="/tasks">All tasks</Link>
+                    <Heading level={4}>{t("@legalos.calendar.comingUp")}</Heading>
+                    <Link href="/tasks">{t("@legalos.calendar.allTasksLink")}</Link>
                   </HStack>
                   {upcoming.length === 0 ? (
                     <Text type="body" color="secondary">
-                      Nothing upcoming.
+                      {t("@legalos.calendar.nothingUpcoming")}
                     </Text>
                   ) : (
                     <List hasDividers density="compact">
@@ -404,7 +416,7 @@ export default function CalendarPage() {
                         <ListItem
                           key={event.id}
                           label={event.title}
-                          description={`${KIND_LABEL[event.kind]}${
+                          description={`${t(KIND_LABEL_KEY[event.kind])}${
                             event.owner ? ` · ${memberName(event.owner)}` : ""
                           }`}
                           startContent={
@@ -428,18 +440,18 @@ export default function CalendarPage() {
 
               <Card>
                 <VStack gap={3}>
-                  <Heading level={4}>Legend</Heading>
+                  <Heading level={4}>{t("@legalos.calendar.legendHeading")}</Heading>
                   <HStack gap={2} vAlign="center">
                     <Icon icon={ScaleIcon} size="sm" color="secondary" />
-                    <Text type="body">Court hearing</Text>
+                    <Text type="body">{t("@legalos.calendar.legend.hearing")}</Text>
                   </HStack>
                   <HStack gap={2} vAlign="center">
                     <Icon icon={ClockIcon} size="sm" color="secondary" />
-                    <Text type="body">Case deadline</Text>
+                    <Text type="body">{t("@legalos.calendar.legend.deadline")}</Text>
                   </HStack>
                   <HStack gap={2} vAlign="center">
                     <Icon icon={CheckCircleIcon} size="sm" color="secondary" />
-                    <Text type="body">Task due</Text>
+                    <Text type="body">{t("@legalos.calendar.legend.task")}</Text>
                   </HStack>
                 </VStack>
               </Card>
@@ -471,6 +483,7 @@ function NewHearingDialog({
   defaultDate: string;
   onCreated: () => void;
 }) {
+  const t = useTranslator();
   const { practice } = useOrg();
   const [matterId, setMatterId] = useState<string | null>(null);
   const [date, setDate] = useState<ISODateString>(defaultDate as ISODateString);
@@ -497,7 +510,7 @@ function NewHearingDialog({
       onCreated();
     } catch (exc) {
       setError(
-        exc instanceof Error ? exc.message : "Could not schedule this hearing.",
+        exc instanceof Error ? exc.message : t("@legalos.calendar.dialog.error"),
       );
     } finally {
       setSaving(false);
@@ -507,39 +520,39 @@ function NewHearingDialog({
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
       <Layout
-        header={<DialogHeader title="Schedule hearing" onOpenChange={onOpenChange} />}
+        header={<DialogHeader title={t("@legalos.calendar.dialog.title")} onOpenChange={onOpenChange} />}
         content={
           <LayoutContent>
             <VStack gap={4}>
               <InlineError message={error} onDismiss={() => setError(null)} />
               <Selector
-                label="Matter"
+                label={t("@legalos.calendar.dialog.matterLabel")}
                 hasClear
                 isRequired
                 value={matterId}
                 onChange={setMatterId}
-                placeholder="Select a matter"
+                placeholder={t("@legalos.calendar.dialog.matterPlaceholder")}
                 options={matters.map((m) => ({ value: String(m.id), label: m.name }))}
               />
               <HStack gap={3}>
                 <DateInput
-                  label="Date"
+                  label={t("@legalos.calendar.dialog.dateLabel")}
                   value={date}
                   onChange={(v) => setDate(v ?? date)}
                 />
-                <TextInput label="Time" value={time} onChange={setTime} />
+                <TextInput label={t("@legalos.calendar.dialog.timeLabel")} value={time} onChange={setTime} />
               </HStack>
               <TextInput
-                label="Court"
+                label={t("@legalos.calendar.dialog.courtLabel")}
                 value={court}
                 onChange={setCourt}
-                placeholder="Cairo Economic Court"
+                placeholder={t("@legalos.calendar.dialog.courtPlaceholder")}
               />
               <TextInput
-                label="Purpose"
+                label={t("@legalos.calendar.dialog.purposeLabel")}
                 value={purpose}
                 onChange={setPurpose}
-                placeholder="Evidence submission review"
+                placeholder={t("@legalos.calendar.dialog.purposePlaceholder")}
               />
             </VStack>
           </LayoutContent>
@@ -548,12 +561,12 @@ function NewHearingDialog({
           <LayoutFooter hasDivider>
             <HStack gap={3} hAlign="end">
               <Button
-                label="Cancel"
+                label={t("@legalos.calendar.dialog.cancel")}
                 variant="secondary"
                 onClick={() => onOpenChange(false)}
               />
               <Button
-                label={saving ? "Saving…" : "Schedule"}
+                label={saving ? t("@legalos.calendar.dialog.saving") : t("@legalos.calendar.dialog.schedule")}
                 variant="primary"
                 onClick={submit}
                 isDisabled={saving || !matterId}

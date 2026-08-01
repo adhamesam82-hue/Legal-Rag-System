@@ -29,8 +29,8 @@ export const legalosTheme = defineTheme({
   radius: { base: 4, multiplier: 1.25 },
   tokens: {
     // Dark surfaces read as navy, not Astryx's default near-black — this is
-    // what lets the SideNav (forced to mode="dark" regardless of the app's
-    // own light/dark setting) render as the brand's deep-navy rail.
+    // what gives the SideNav (forced to mode="dark" regardless of the app's
+    // own light/dark setting, see Shell.tsx) its brand deep-navy rail color.
     "--color-background-body": ["#F8FAFC", "#0B1220"],
     "--color-background-surface": ["#FFFFFF", "#111C33"],
     "--color-background-card": ["#FFFFFF", "#111C33"],
@@ -40,6 +40,17 @@ export const legalosTheme = defineTheme({
     "--color-border-emphasized": ["#0F172A26", "#F8FAFC33"],
   },
   components: {
+    // Astryx's Layout deliberately bleeds -24px to cancel AppShell's
+    // contentPadding, on the assumption the page re-supplies padding through
+    // LayoutHeader/LayoutContent. Every page here passes padding={0} (and
+    // LayoutContent's default inside a bleeding Layout is 0 anyway), so the
+    // net gutter was zero: body text sat 8px from the sidebar and table
+    // cells touched the right window edge. Cancelling the bleed once here
+    // restores the shell's own 24px gutter across all ~29 pages instead of
+    // re-specifying padding in each of them.
+    layout: {
+      base: { margin: "0" },
+    },
     // The neutral base theme hardcodes a blue fill on the accent progress bar
     // (`.astryx-progressbar.accent { --color-accent: #0074e2 }`), which token
     // overrides alone cannot reach. Point it back at the emerald accent so

@@ -26,6 +26,7 @@ import { Divider } from "@astryxdesign/core/Divider";
 import { Link } from "@astryxdesign/core/Link";
 import { ArrowUpIcon, ArrowDownIcon } from "@heroicons/react/24/outline";
 import { formatEGP } from "@/lib/legalos-data";
+import { useTranslator } from "@astryxdesign/core/i18n";
 
 // ---------------------------------------------------------------------------
 // Mock firm-level financials. Revenue tracks the dashboard's trend
@@ -33,18 +34,13 @@ import { formatEGP } from "@/lib/legalos-data";
 // ---------------------------------------------------------------------------
 
 const MONTHLY = [
-  { month: "Feb", revenue: 312000, expenses: 198000 },
-  { month: "Mar", revenue: 338000, expenses: 205000 },
-  { month: "Apr", revenue: 355000, expenses: 211000 },
-  { month: "May", revenue: 402000, expenses: 224000 },
-  { month: "Jun", revenue: 433000, expenses: 231000 },
-  { month: "Jul", revenue: 486200, expenses: 246800 },
+  { monthKey: "@legalos.accounting.month.feb", revenue: 312000, expenses: 198000 },
+  { monthKey: "@legalos.accounting.month.mar", revenue: 338000, expenses: 205000 },
+  { monthKey: "@legalos.accounting.month.apr", revenue: 355000, expenses: 211000 },
+  { monthKey: "@legalos.accounting.month.may", revenue: 402000, expenses: 224000 },
+  { monthKey: "@legalos.accounting.month.jun", revenue: 433000, expenses: 231000 },
+  { monthKey: "@legalos.accounting.month.jul", revenue: 486200, expenses: 246800 },
 ];
-
-const CASHFLOW = MONTHLY.map((m) => ({
-  month: m.month,
-  net: m.revenue - m.expenses,
-}));
 
 const JULY = MONTHLY[MONTHLY.length - 1];
 const JUNE = MONTHLY[MONTHLY.length - 2];
@@ -53,41 +49,77 @@ const priorProfit = JUNE.revenue - JUNE.expenses;
 const profitDelta = ((profit - priorProfit) / priorProfit) * 100;
 const margin = (profit / JULY.revenue) * 100;
 
+// The current reporting month. Every "July" label on the page resolves through
+// this one key so the copy stays consistent when the catalog switches locale.
+const CURRENT_MONTH_KEY = "@legalos.accounting.month.jul";
+
 interface Payout extends Record<string, unknown> {
   id: string;
-  partner: string;
+  partnerKey: string;
   share: string;
   ytd: number;
   july: number;
 }
 
 const PAYOUTS: Payout[] = [
-  { id: "p1", partner: "Ahmed Al-Sayed", share: "60%", ytd: 742000, july: 143500 },
-  { id: "p2", partner: "Mona Farouk", share: "40%", ytd: 494600, july: 95700 },
+  {
+    id: "p1",
+    partnerKey: "@legalos.accounting.person.ahmed",
+    share: "60%",
+    ytd: 742000,
+    july: 143500,
+  },
+  {
+    id: "p2",
+    partnerKey: "@legalos.accounting.person.mona",
+    share: "40%",
+    ytd: 494600,
+    july: 95700,
+  },
 ];
 
 interface ExpenseLine extends Record<string, unknown> {
   id: string;
-  category: string;
+  categoryKey: string;
   july: number;
   ytd: number;
 }
 
 const EXPENSES: ExpenseLine[] = [
-  { id: "e1", category: "Salaries and wages", july: 148000, ytd: 902000 },
-  { id: "e2", category: "Office rent", july: 42000, ytd: 252000 },
-  { id: "e3", category: "Court and filing fees", july: 18600, ytd: 96400 },
-  { id: "e4", category: "Software and subscriptions", july: 14200, ytd: 78300 },
-  { id: "e5", category: "Professional insurance", july: 11000, ytd: 66000 },
-  { id: "e6", category: "Travel and client meetings", july: 8400, ytd: 41200 },
-  { id: "e7", category: "Utilities and other", july: 4600, ytd: 29800 },
+  { id: "e1", categoryKey: "@legalos.accounting.expense.salaries", july: 148000, ytd: 902000 },
+  { id: "e2", categoryKey: "@legalos.accounting.expense.rent", july: 42000, ytd: 252000 },
+  { id: "e3", categoryKey: "@legalos.accounting.expense.courtFees", july: 18600, ytd: 96400 },
+  { id: "e4", categoryKey: "@legalos.accounting.expense.software", july: 14200, ytd: 78300 },
+  { id: "e5", categoryKey: "@legalos.accounting.expense.insurance", july: 11000, ytd: 66000 },
+  { id: "e6", categoryKey: "@legalos.accounting.expense.travel", july: 8400, ytd: 41200 },
+  { id: "e7", categoryKey: "@legalos.accounting.expense.utilities", july: 4600, ytd: 29800 },
 ];
 
 const PAYROLL = [
-  { name: "Ahmed Al-Sayed", role: "Owner · Partner", gross: 0, note: "Paid via partner draw" },
-  { name: "Mona Farouk", role: "Lawyer · Partner", gross: 0, note: "Paid via partner draw" },
-  { name: "Youssef Adel", role: "Lawyer", gross: 52000, note: "Monthly salary" },
-  { name: "Layla Hassan", role: "Staff", gross: 24000, note: "Monthly salary" },
+  {
+    nameKey: "@legalos.accounting.person.ahmed",
+    roleKey: "@legalos.accounting.payroll.role.ownerPartner",
+    gross: 0,
+    noteKey: "@legalos.accounting.payroll.note.partnerDraw",
+  },
+  {
+    nameKey: "@legalos.accounting.person.mona",
+    roleKey: "@legalos.accounting.payroll.role.lawyerPartner",
+    gross: 0,
+    noteKey: "@legalos.accounting.payroll.note.partnerDraw",
+  },
+  {
+    nameKey: "@legalos.accounting.person.youssef",
+    roleKey: "@legalos.accounting.payroll.role.lawyer",
+    gross: 52000,
+    noteKey: "@legalos.accounting.payroll.note.monthlySalary",
+  },
+  {
+    nameKey: "@legalos.accounting.person.layla",
+    roleKey: "@legalos.accounting.payroll.role.staff",
+    gross: 24000,
+    noteKey: "@legalos.accounting.payroll.note.monthlySalary",
+  },
 ];
 
 const AXIS_TICK = { fontSize: 12, fill: "var(--color-text-secondary)" };
@@ -103,18 +135,36 @@ const tooltipStyle = {
 };
 
 export default function AccountingPage() {
+  const t = useTranslator();
+  const currentMonth = t(CURRENT_MONTH_KEY);
+
+  const monthly = MONTHLY.map((m) => ({
+    month: t(m.monthKey),
+    revenue: m.revenue,
+    expenses: m.expenses,
+  }));
+  const cashflow = monthly.map((m) => ({
+    month: m.month,
+    net: m.revenue - m.expenses,
+  }));
+
   const payoutColumns: TableColumn<Payout>[] = [
-    { key: "partner", header: "Partner", width: proportional(2) },
-    { key: "share", header: "Share", width: pixel(90) },
+    {
+      key: "partnerKey",
+      header: t("@legalos.accounting.column.partner"),
+      width: proportional(2),
+      renderCell: (i) => <Text type="body">{t(i.partnerKey)}</Text>,
+    },
+    { key: "share", header: t("@legalos.accounting.column.share"), width: pixel(90) },
     {
       key: "july",
-      header: "July payout",
+      header: t("@legalos.accounting.column.monthPayout", { month: currentMonth }),
       width: pixel(140),
       renderCell: (i) => <Text type="body">{formatEGP(i.july)}</Text>,
     },
     {
       key: "ytd",
-      header: "Year to date",
+      header: t("@legalos.accounting.column.yearToDate"),
       width: pixel(150),
       renderCell: (i) => (
         <Text type="body" weight="semibold">
@@ -125,16 +175,21 @@ export default function AccountingPage() {
   ];
 
   const expenseColumns: TableColumn<ExpenseLine>[] = [
-    { key: "category", header: "Category", width: proportional(2) },
+    {
+      key: "categoryKey",
+      header: t("@legalos.accounting.column.category"),
+      width: proportional(2),
+      renderCell: (i) => <Text type="body">{t(i.categoryKey)}</Text>,
+    },
     {
       key: "july",
-      header: "July",
+      header: currentMonth,
       width: pixel(130),
       renderCell: (i) => <Text type="body">{formatEGP(i.july)}</Text>,
     },
     {
       key: "ytd",
-      header: "Year to date",
+      header: t("@legalos.accounting.column.yearToDate"),
       width: pixel(150),
       renderCell: (i) => (
         <Text type="body" color="secondary">
@@ -150,9 +205,9 @@ export default function AccountingPage() {
       header={
         <LayoutHeader hasDivider padding={0}>
           <VStack gap={1}>
-            <Heading level={2}>Accounting</Heading>
+            <Heading level={2}>{t("@legalos.accounting.heading")}</Heading>
             <Text type="body" color="secondary">
-              Al-Sayed &amp; Partners · firm financials for July 2026
+              {t("@legalos.accounting.subtitle")}
             </Text>
           </VStack>
         </LayoutHeader>
@@ -162,23 +217,21 @@ export default function AccountingPage() {
           <VStack gap={6}>
             <Banner
               status="info"
-              title="Sample figures — no backend yet"
-              description="This pillar has no data model behind it. Every number below is
-                placeholder content, not a reading of your firm's records. Clients,
-                matters, cases, documents, tasks, time and billing are live."
+              title={t("@legalos.accounting.banner.title")}
+              description={t("@legalos.accounting.banner.description")}
             />
           <VStack gap={6}>
             <Grid columns={{ minWidth: 240, repeat: "fit" }} gap={4}>
               <Card>
                 <VStack gap={2}>
                   <Text type="label" color="secondary">
-                    Revenue (July)
+                    {t("@legalos.accounting.stat.revenue.label", { month: currentMonth })}
                   </Text>
                   <Heading level={2}>{formatEGP(JULY.revenue)}</Heading>
                   <HStack gap={1} vAlign="center">
                     <Icon icon={ArrowUpIcon} size="xsm" color="success" />
                     <Text type="supporting" color="secondary">
-                      +12.3% vs. June
+                      {t("@legalos.accounting.stat.revenueChange")}
                     </Text>
                   </HStack>
                 </VStack>
@@ -186,13 +239,13 @@ export default function AccountingPage() {
               <Card>
                 <VStack gap={2}>
                   <Text type="label" color="secondary">
-                    Expenses (July)
+                    {t("@legalos.accounting.stat.expenses.label", { month: currentMonth })}
                   </Text>
                   <Heading level={2}>{formatEGP(JULY.expenses)}</Heading>
                   <HStack gap={1} vAlign="center">
                     <Icon icon={ArrowUpIcon} size="xsm" color="secondary" />
                     <Text type="supporting" color="secondary">
-                      +6.8% vs. June
+                      {t("@legalos.accounting.stat.expensesChange")}
                     </Text>
                   </HStack>
                 </VStack>
@@ -200,7 +253,7 @@ export default function AccountingPage() {
               <Card>
                 <VStack gap={2}>
                   <Text type="label" color="secondary">
-                    Profit (July)
+                    {t("@legalos.accounting.stat.profit.label", { month: currentMonth })}
                   </Text>
                   <Heading level={2}>{formatEGP(profit)}</Heading>
                   <HStack gap={1} vAlign="center">
@@ -210,7 +263,9 @@ export default function AccountingPage() {
                       color={profitDelta >= 0 ? "success" : "error"}
                     />
                     <Text type="supporting" color="secondary">
-                      {profitDelta.toFixed(1)}% vs. June
+                      {t("@legalos.accounting.stat.profitChange", {
+                        percent: profitDelta.toFixed(1),
+                      })}
                     </Text>
                   </HStack>
                 </VStack>
@@ -218,11 +273,11 @@ export default function AccountingPage() {
               <Card>
                 <VStack gap={2}>
                   <Text type="label" color="secondary">
-                    Net margin
+                    {t("@legalos.accounting.stat.margin.label")}
                   </Text>
                   <Heading level={2}>{margin.toFixed(1)}%</Heading>
                   <Text type="supporting" color="secondary">
-                    Revenue less all operating expenses
+                    {t("@legalos.accounting.stat.margin.description")}
                   </Text>
                 </VStack>
               </Card>
@@ -232,9 +287,11 @@ export default function AccountingPage() {
               <GridSpan columns={2}>
                 <Card>
                   <VStack gap={4}>
-                    <Heading level={4}>Revenue against expenses</Heading>
+                    <Heading level={4}>
+                      {t("@legalos.accounting.chart.revenueExpenses.heading")}
+                    </Heading>
                     <ResponsiveContainer width="100%" height={280}>
-                      <BarChart data={MONTHLY} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <BarChart data={monthly} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                         <CartesianGrid horizontal vertical={false} stroke="var(--color-border)" />
                         <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                         <YAxis
@@ -251,13 +308,13 @@ export default function AccountingPage() {
                         <Legend wrapperStyle={{ fontSize: 12 }} />
                         <Bar
                           dataKey="revenue"
-                          name="Revenue"
+                          name={t("@legalos.accounting.chart.legend.revenue")}
                           fill="var(--color-accent)"
                           radius={[4, 4, 0, 0]}
                         />
                         <Bar
                           dataKey="expenses"
-                          name="Expenses"
+                          name={t("@legalos.accounting.chart.legend.expenses")}
                           fill="var(--color-border-emphasized)"
                           radius={[4, 4, 0, 0]}
                         />
@@ -269,9 +326,9 @@ export default function AccountingPage() {
 
               <Card>
                 <VStack gap={4}>
-                  <Heading level={4}>Cash flow</Heading>
+                  <Heading level={4}>{t("@legalos.accounting.chart.cashFlow.heading")}</Heading>
                   <ResponsiveContainer width="100%" height={280}>
-                    <LineChart data={CASHFLOW} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <LineChart data={cashflow} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                       <CartesianGrid horizontal vertical={false} stroke="var(--color-border)" />
                       <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                       <YAxis
@@ -282,7 +339,10 @@ export default function AccountingPage() {
                         width={64}
                       />
                       <Tooltip
-                        formatter={(v) => [formatEGP(Number(v)), "Net cash"]}
+                        formatter={(v) => [
+                          formatEGP(Number(v)),
+                          t("@legalos.accounting.chart.cashFlow.tooltipLabel"),
+                        ]}
                         contentStyle={tooltipStyle}
                       />
                       <Line
@@ -295,7 +355,7 @@ export default function AccountingPage() {
                     </LineChart>
                   </ResponsiveContainer>
                   <Text type="supporting" color="secondary">
-                    Net of collections and operating outflows each month.
+                    {t("@legalos.accounting.chart.cashFlow.caption")}
                   </Text>
                 </VStack>
               </Card>
@@ -304,7 +364,7 @@ export default function AccountingPage() {
             <Grid columns={2} gap={6}>
               <Card>
                 <VStack gap={4}>
-                  <Heading level={4}>Operating expenses</Heading>
+                  <Heading level={4}>{t("@legalos.accounting.expenses.heading")}</Heading>
                   <Table<ExpenseLine>
                     data={EXPENSES}
                     columns={expenseColumns}
@@ -316,7 +376,7 @@ export default function AccountingPage() {
                   <Divider />
                   <HStack hAlign="between">
                     <Text type="label" weight="semibold">
-                      Total
+                      {t("@legalos.accounting.expenses.total")}
                     </Text>
                     <Text type="label" weight="semibold">
                       {formatEGP(JULY.expenses)}
@@ -329,8 +389,10 @@ export default function AccountingPage() {
                 <Card>
                   <VStack gap={4}>
                     <HStack hAlign="between" vAlign="center">
-                      <Heading level={4}>Partner payouts</Heading>
-                      <Link href="/reports">Reports</Link>
+                      <Heading level={4}>{t("@legalos.accounting.payouts.heading")}</Heading>
+                      <Link href="/reports">
+                        {t("@legalos.accounting.payouts.reportsLink")}
+                      </Link>
                     </HStack>
                     <Table<Payout>
                       data={PAYOUTS}
@@ -345,13 +407,13 @@ export default function AccountingPage() {
 
                 <Card>
                   <VStack gap={4}>
-                    <Heading level={4}>Payroll</Heading>
+                    <Heading level={4}>{t("@legalos.accounting.payroll.heading")}</Heading>
                     <List hasDividers density="compact">
                       {PAYROLL.map((p) => (
                         <ListItem
-                          key={p.name}
-                          label={p.name}
-                          description={`${p.role} · ${p.note}`}
+                          key={p.nameKey}
+                          label={t(p.nameKey)}
+                          description={`${t(p.roleKey)} · ${t(p.noteKey)}`}
                           endContent={
                             <Text type="label" weight="semibold">
                               {p.gross > 0 ? formatEGP(p.gross) : "—"}
@@ -361,7 +423,7 @@ export default function AccountingPage() {
                       ))}
                     </List>
                     <Text type="supporting" color="secondary">
-                      Partner draws are settled through payouts above, not payroll.
+                      {t("@legalos.accounting.payroll.caption")}
                     </Text>
                   </VStack>
                 </Card>

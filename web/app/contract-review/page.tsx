@@ -21,6 +21,7 @@ import {
   ArrowUpTrayIcon,
   DocumentTextIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslator } from "@astryxdesign/core/i18n";
 
 const AI_ICON_CLASS = "text-purple-vivid";
 
@@ -128,16 +129,18 @@ const MISSING = [
 ];
 
 const SEVERITY_BADGE = {
-  high: { variant: "error" as const, label: "High risk" },
-  medium: { variant: "warning" as const, label: "Medium risk" },
-  low: { variant: "neutral" as const, label: "Low risk" },
+  high: { variant: "error" as const, labelKey: "@legalos.contractReview.severityBadge.high" },
+  medium: { variant: "warning" as const, labelKey: "@legalos.contractReview.severityBadge.medium" },
+  low: { variant: "neutral" as const, labelKey: "@legalos.contractReview.severityBadge.low" },
 };
 
 export default function ContractReviewPage() {
+  const t = useTranslator();
   const [panel, setPanel] = useState("risks");
   const [selected, setSelected] = useState<string | null>("c3");
 
   const riskScore = 68; // higher = more risk
+  const highRiskCount = RISKS.filter((r) => r.severity === "high").length;
 
   return (
     <Layout
@@ -147,26 +150,28 @@ export default function ContractReviewPage() {
           <HStack hAlign="between" vAlign="center" wrap="wrap" gap={4}>
             <VStack gap={1}>
               <HStack gap={3} vAlign="center" wrap="wrap">
-                <Heading level={2}>Mutual NDA — Delta Foods</Heading>
-                <Badge variant="purple" label="AI review complete" />
+                <Heading level={2}>{t("@legalos.contractReview.matterTitle")}</Heading>
+                <Badge variant="purple" label={t("@legalos.contractReview.reviewCompleteBadge")} />
               </HStack>
               <HStack gap={2} vAlign="center" wrap="wrap">
-                <Link href="/matters/delta-foods-nda-review">Delta Foods NDA Review</Link>
+                <Link href="/matters/delta-foods-nda-review">
+                  {t("@legalos.contractReview.matterLink")}
+                </Link>
                 <Text type="supporting" color="secondary">
-                  · 6 clauses · reviewed against the firm&apos;s standard NDA template
+                  {t("@legalos.contractReview.matterMeta", { count: CLAUSES.length })}
                 </Text>
               </HStack>
             </VStack>
             <HStack gap={2}>
               <Button
-                label="Upload a different contract"
+                label={t("@legalos.contractReview.uploadButton.ariaLabel")}
                 variant="secondary"
                 icon={<Icon icon={ArrowUpTrayIcon} size="sm" />}
               >
-                Upload
+                {t("@legalos.contractReview.uploadButton.label")}
               </Button>
-              <Button label="Export review" variant="primary">
-                Export review
+              <Button label={t("@legalos.contractReview.exportButton")} variant="primary">
+                {t("@legalos.contractReview.exportButton")}
               </Button>
             </HStack>
           </HStack>
@@ -178,9 +183,9 @@ export default function ContractReviewPage() {
             <VStack gap={4}>
               <HStack gap={2} vAlign="center">
                 <Icon icon={DocumentTextIcon} size="sm" color="secondary" />
-                <Heading level={4}>Contract text</Heading>
+                <Heading level={4}>{t("@legalos.contractReview.contractTextHeading")}</Heading>
                 <Text type="supporting" color="secondary">
-                  Synthetic sample — not an executed agreement
+                  {t("@legalos.contractReview.syntheticSampleNote")}
                 </Text>
               </HStack>
               <Divider />
@@ -203,7 +208,7 @@ export default function ContractReviewPage() {
                           {c.risk && (
                             <Badge
                               variant={SEVERITY_BADGE[c.risk].variant}
-                              label={SEVERITY_BADGE[c.risk].label}
+                              label={t(SEVERITY_BADGE[c.risk].labelKey)}
                             />
                           )}
                         </HStack>
@@ -224,42 +229,54 @@ export default function ContractReviewPage() {
               <VStack gap={4}>
                 <HStack gap={2} vAlign="center">
                   <Icon icon={SparklesIcon} size="sm" className={AI_ICON_CLASS} />
-                  <Heading level={4}>AI review</Heading>
+                  <Heading level={4}>{t("@legalos.contractReview.aiReviewHeading")}</Heading>
                 </HStack>
 
                 <VStack gap={2}>
                   <HStack hAlign="between" vAlign="center">
-                    <Text type="label">Risk score</Text>
+                    <Text type="label">{t("@legalos.contractReview.riskScoreLabel")}</Text>
                     <Text type="label" weight="bold">
-                      {riskScore} / 100
+                      {t("@legalos.contractReview.riskScoreValue", { score: riskScore })}
                     </Text>
                   </HStack>
                   <ProgressBar
-                    label="Overall contract risk"
+                    label={t("@legalos.contractReview.riskScoreAriaLabel")}
                     isLabelHidden
                     value={riskScore}
                     max={100}
                     variant="warning"
                   />
                   <Text type="supporting" color="secondary">
-                    Elevated — 2 high-risk clauses and 4 missing standard provisions. Comparable
-                    NDAs reviewed by this firm score 25–40.
+                    {t("@legalos.contractReview.riskScoreDescription", {
+                      highCount: highRiskCount,
+                      missingCount: MISSING.length,
+                    })}
                   </Text>
                 </VStack>
 
                 <Divider />
 
                 <Text type="supporting" color="secondary">
-                  A drafting aid, not legal advice. Every flagged clause needs a lawyer&apos;s
-                  judgement before you rely on it.
+                  {t("@legalos.contractReview.draftingAidDisclaimer")}
                 </Text>
               </VStack>
             </Card>
 
-            <SegmentedControl value={panel} onChange={setPanel} label="Review section" layout="fill">
-              <SegmentedControlItem value="risks" label="Risks" />
-              <SegmentedControlItem value="missing" label="Missing" />
-              <SegmentedControlItem value="summary" label="Summary" />
+            <SegmentedControl
+              value={panel}
+              onChange={setPanel}
+              label={t("@legalos.contractReview.reviewSectionLabel")}
+              layout="fill"
+            >
+              <SegmentedControlItem value="risks" label={t("@legalos.contractReview.tab.risks")} />
+              <SegmentedControlItem
+                value="missing"
+                label={t("@legalos.contractReview.tab.missing")}
+              />
+              <SegmentedControlItem
+                value="summary"
+                label={t("@legalos.contractReview.tab.summary")}
+              />
             </SegmentedControl>
 
             {panel === "risks" && (
@@ -278,7 +295,7 @@ export default function ContractReviewPage() {
                       <HStack hAlign="start">
                         <Badge
                           variant={SEVERITY_BADGE[r.severity].variant}
-                          label={SEVERITY_BADGE[r.severity].label}
+                          label={t(SEVERITY_BADGE[r.severity].labelKey)}
                         />
                       </HStack>
                       <Text type="body">{r.finding}</Text>
@@ -290,11 +307,19 @@ export default function ContractReviewPage() {
                         </Text>
                       </HStack>
                       <HStack gap={2}>
-                        <Button label="Apply suggestion" variant="secondary" size="sm">
-                          Apply suggestion
+                        <Button
+                          label={t("@legalos.contractReview.applySuggestion")}
+                          variant="secondary"
+                          size="sm"
+                        >
+                          {t("@legalos.contractReview.applySuggestion")}
                         </Button>
-                        <Button label="Dismiss finding" variant="ghost" size="sm">
-                          Dismiss
+                        <Button
+                          label={t("@legalos.contractReview.dismissFinding.label")}
+                          variant="ghost"
+                          size="sm"
+                        >
+                          {t("@legalos.contractReview.dismissFinding.children")}
                         </Button>
                       </HStack>
                     </VStack>
@@ -306,9 +331,9 @@ export default function ContractReviewPage() {
             {panel === "missing" && (
               <Card>
                 <VStack gap={4}>
-                  <Heading level={4}>Missing clauses</Heading>
+                  <Heading level={4}>{t("@legalos.contractReview.missingClausesHeading")}</Heading>
                   <Text type="supporting" color="secondary">
-                    Present in the firm&apos;s standard NDA template but absent here.
+                    {t("@legalos.contractReview.missingClausesDescription")}
                   </Text>
                   <List hasDividers density="balanced">
                     {MISSING.map((m) => (
@@ -318,8 +343,12 @@ export default function ContractReviewPage() {
                         description={m.detail}
                         startContent={<Icon icon={PlusCircleIcon} size="sm" color="secondary" />}
                         endContent={
-                          <Button label={`Insert ${m.label}`} variant="secondary" size="sm">
-                            Insert
+                          <Button
+                            label={t("@legalos.contractReview.insertButton", { label: m.label })}
+                            variant="secondary"
+                            size="sm"
+                          >
+                            {t("@legalos.contractReview.insertButton.label")}
                           </Button>
                         }
                       />
@@ -332,29 +361,28 @@ export default function ContractReviewPage() {
             {panel === "summary" && (
               <Card>
                 <VStack gap={4}>
-                  <Heading level={4}>Recommendations</Heading>
-                  <Text type="body">
-                    This NDA is signable once the perpetual term and the uncapped liability clause
-                    are addressed. Both deviate from the firm&apos;s standard template in ways that
-                    favour the disclosing party, and Delta Foods is the receiving party on the
-                    majority of expected disclosures under this engagement.
-                  </Text>
+                  <Heading level={4}>{t("@legalos.contractReview.recommendationsHeading")}</Heading>
+                  <Text type="body">{t("@legalos.contractReview.summary.intro")}</Text>
                   <Divider />
                   <List density="balanced">
                     <ListItem
-                      label="Negotiate Clause 3 to a 5-year term"
-                      description="Highest-value change; the counterparty accepted the same edit on the 2025 supply agreement."
+                      label={t("@legalos.contractReview.summary.item1.label")}
+                      description={t("@legalos.contractReview.summary.item1.description")}
                     />
                     <ListItem
-                      label="Cap liability in Clause 5"
-                      description="Propose a cap at the value of the underlying engagement."
+                      label={t("@legalos.contractReview.summary.item2.label")}
+                      description={t("@legalos.contractReview.summary.item2.description")}
                     />
                     <ListItem
-                      label="Insert the 4 missing standard clauses"
-                      description="Return/destruction, definition carve-outs, notices, and assignment."
+                      label={t("@legalos.contractReview.summary.item3.label", {
+                        count: MISSING.length,
+                      })}
+                      description={t("@legalos.contractReview.summary.item3.description")}
                     />
                   </List>
-                  <Link href="/knowledge-base">Compare against the firm template</Link>
+                  <Link href="/knowledge-base">
+                    {t("@legalos.contractReview.compareTemplateLink")}
+                  </Link>
                 </VStack>
               </Card>
             )}

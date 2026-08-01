@@ -17,6 +17,7 @@ import { Collapsible } from "@astryxdesign/core/Collapsible";
 import { AnswerBody } from "@/components/AnswerBody";
 import { ArticleCard } from "@/components/ArticleCard";
 import { api, ApiError, AskResponse, dirOf } from "@/lib/api";
+import { useTranslator, type TranslatorFn } from "@astryxdesign/core/i18n";
 
 interface Turn {
   question: string;
@@ -24,13 +25,14 @@ interface Turn {
   error?: { message: string; isCredits: boolean };
 }
 
-const SUGGESTIONS = [
-  "ماذا تنص المادة 80 من قانون العمل رقم 12 لسنة 2003؟",
-  "كم يومًا تكون مدة الإجازة السنوية للعامل؟",
-  "Does Egypt's Companies Law recognise single-person companies?",
+const SUGGESTION_KEYS = [
+  "@legalos.home.suggestion.article80",
+  "@legalos.home.suggestion.annualLeave",
+  "@legalos.home.suggestion.singlePersonCompanies",
 ];
 
 export default function ChatPage() {
+  const t = useTranslator();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [pending, setPending] = useState(false);
 
@@ -76,21 +78,24 @@ export default function ChatPage() {
       <ChatLayout
         emptyState={
           <EmptyState
-            title="Ask about Egyptian law"
-            description="Answers are composed only from statute articles retrieved from the corpus. Every citation is verified before the answer is shown, and questions the corpus cannot support are refused rather than guessed."
+            title={t("@legalos.home.empty.title")}
+            description={t("@legalos.home.empty.description")}
             actions={
               <div style={{ display: "grid", gap: 8, width: "100%" }}>
-                {SUGGESTIONS.map((s) => (
-                  <Card key={s} padding={2} variant="muted">
-                    <button
-                      onClick={() => send(s)}
-                      style={{ textAlign: "start", width: "100%" }}
-                      dir={dirOf(s)}
-                    >
-                      <Text type="label">{s}</Text>
-                    </button>
-                  </Card>
-                ))}
+                {SUGGESTION_KEYS.map((key) => {
+                  const s = t(key);
+                  return (
+                    <Card key={key} padding={2} variant="muted">
+                      <button
+                        onClick={() => send(s)}
+                        style={{ textAlign: "start", width: "100%" }}
+                        dir={dirOf(s)}
+                      >
+                        <Text type="label">{s}</Text>
+                      </button>
+                    </Card>
+                  );
+                })}
               </div>
             }
           />
@@ -99,7 +104,7 @@ export default function ChatPage() {
           <ChatComposer
             onSubmit={send}
             isDisabled={pending}
-            placeholder="Ask about the law in Arabic or English…"
+            placeholder={t("@legalos.home.composer.placeholder")}
           />
         }
       >
@@ -117,19 +122,19 @@ export default function ChatPage() {
 
                 <ChatMessage sender="assistant">
                   {!turn.answer && !turn.error ? (
-                    <Spinner label="Searching the corpus…" />
+                    <Spinner label={t("@legalos.home.turn.searching")} />
                   ) : turn.error ? (
                     <Banner
                       status={turn.error.isCredits ? "warning" : "error"}
-                      title={
+                      title={t(
                         turn.error.isCredits
-                          ? "Model provider out of credits"
-                          : "Could not answer"
-                      }
+                          ? "@legalos.home.error.creditsTitle"
+                          : "@legalos.home.error.genericTitle",
+                      )}
                       description={turn.error.message}
                     />
                   ) : (
-                    <AnswerView answer={turn.answer!} />
+                    <AnswerView answer={turn.answer!} t={t} />
                   )}
                 </ChatMessage>
               </div>
@@ -141,14 +146,16 @@ export default function ChatPage() {
   );
 }
 
-function AnswerView({ answer }: { answer: AskResponse }) {
+function AnswerView({ answer, t }: { answer: AskResponse; t: TranslatorFn }) {
   return (
     <div style={{ display: "grid", gap: 12 }}>
       {answer.degraded.length > 0 && (
         <Banner
           status="warning"
-          title="Reduced retrieval quality"
-          description={`Falling back to keyword search: ${answer.degraded.join("; ")}.`}
+          title={t("@legalos.home.answer.degradedTitle")}
+          description={t("@legalos.home.answer.degradedDescription", {
+            reasons: answer.degraded.join("; "),
+          })}
         />
       )}
 
@@ -160,14 +167,16 @@ function AnswerView({ answer }: { answer: AskResponse }) {
       {answer.blocked ? (
         <Banner
           status="error"
-          title="Answer blocked — unverifiable citations"
-          description={`The model cited articles that were not retrieved from the corpus, so they cannot be verified: ${answer.blocked_citations.join(", ")}.`}
+          title={t("@legalos.home.answer.blockedTitle")}
+          description={t("@legalos.home.answer.blockedDescription", {
+            citations: answer.blocked_citations.join(", "),
+          })}
         />
       ) : answer.refused ? (
         <Banner
           status="info"
-          title="Not found in the corpus"
-          description="No ingested article answers this. Rather than reason from general legal knowledge, the system refuses."
+          title={t("@legalos.home.answer.refusedTitle")}
+          description={t("@legalos.home.answer.refusedDescription")}
         />
       ) : (
         <Card padding={4}>
@@ -180,9 +189,10 @@ function AnswerView({ answer }: { answer: AskResponse }) {
           defaultIsOpen={false}
           trigger={
             <Text type="label">
-              {`Sources — ${answer.articles.length} article${
-                answer.articles.length === 1 ? "" : "s"
-              } via ${answer.strategy.replace("_", " ")}`}
+              {t("@legalos.home.answer.sources", {
+                count: answer.articles.length,
+                strategy: answer.strategy.replace("_", " "),
+              })}
             </Text>
           }
         >
@@ -208,7 +218,7 @@ function AnswerView({ answer }: { answer: AskResponse }) {
             alignItems: "center",
           }}
         >
-          <Text type="supporting">Cited:</Text>
+          <Text type="supporting">{t("@legalos.home.answer.citedLabel")}</Text>
           {answer.citations.map((c) => (
             <Badge key={c} variant="info" label={c} />
           ))}

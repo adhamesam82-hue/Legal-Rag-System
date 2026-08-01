@@ -471,56 +471,9 @@ export function practiceApi(organizationId: number) {
 export type PracticeApi = ReturnType<typeof practiceApi>;
 
 // --- display helpers --------------------------------------------------------
-// The API speaks lowercase enum values; these are the labels shown on screen.
-
-const LABELS: Record<string, string> = {
-  company: "Company",
-  individual: "Individual",
-  active: "Active",
-  inactive: "Inactive",
-  on_hold: "On Hold",
-  closed: "Closed",
-  litigation: "Litigation",
-  corporate: "Corporate",
-  tax: "Tax",
-  labour: "Labour",
-  family_probate: "Family / Probate",
-  contract_review: "Contract Review",
-  hourly: "Hourly",
-  fixed_fee: "Fixed Fee",
-  retainer: "Retainer",
-  todo: "To do",
-  in_progress: "In progress",
-  done: "Done",
-  low: "Low",
-  medium: "Medium",
-  high: "High",
-  draft: "Draft",
-  under_review: "Under review",
-  signed: "Signed",
-  filed: "Filed",
-  final: "Final",
-  sent: "Sent",
-  paid: "Paid",
-  overdue: "Overdue",
-  us: "Us",
-  opposing_party: "Opposing party",
-  court: "Court",
-  owner: "Owner",
-  lawyer: "Lawyer",
-  staff: "Staff",
-  milestone: "Milestone",
-  communication: "Communication",
-  billing: "Billing",
-  hearing: "Hearing",
-  task: "Task",
-  deadline: "Deadline",
-};
-
-export function label(value: string | null | undefined): string {
-  if (!value) return "—";
-  return LABELS[value] ?? value;
-}
+// The API speaks lowercase enum values. Their display labels now live in
+// lib/i18n/catalogs/enums.ts and are resolved through useEnumLabel() so they
+// translate; the English-only LABELS table that used to sit here is gone.
 
 export function formatEGP(amount: number | null | undefined, currency = "EGP"): string {
   if (amount === null || amount === undefined) return "—";

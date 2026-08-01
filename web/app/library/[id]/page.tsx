@@ -8,6 +8,10 @@ import { Badge } from "@astryxdesign/core/Badge";
 import { Button } from "@astryxdesign/core/Button";
 import { Banner } from "@astryxdesign/core/Banner";
 import { Spinner } from "@astryxdesign/core/Spinner";
+import { Icon } from "@astryxdesign/core/Icon";
+import { HStack } from "@astryxdesign/core/Stack";
+import { ArrowLeftIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
+import { useTranslator, useDirection } from "@astryxdesign/core/i18n";
 import { ArticleCard } from "@/components/ArticleCard";
 import { api, ApiError, Article, Instrument, dirOf } from "@/lib/api";
 
@@ -19,6 +23,8 @@ export default function InstrumentPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const t = useTranslator();
+  const direction = useDirection();
   const instrumentId = Number(id);
 
   const [instrument, setInstrument] = useState<Instrument | null>(null);
@@ -49,7 +55,11 @@ export default function InstrumentPage({
   if (error) {
     return (
       <div style={{ maxWidth: 880, margin: "0 auto", padding: "32px 20px" }}>
-        <Banner status="error" title="Could not load this law" description={error} />
+        <Banner
+          status="error"
+          title={t("@legalos.library.instrument.error.title")}
+          description={error}
+        />
       </div>
     );
   }
@@ -61,7 +71,14 @@ export default function InstrumentPage({
     <div style={{ maxWidth: 880, margin: "0 auto", padding: "32px 20px 64px" }}>
       <div style={{ marginBlockEnd: 6 }}>
         <NextLink href="/library">
-          <Text type="supporting">← Library</Text>
+          <HStack gap={1} vAlign="center">
+            <Icon
+              icon={direction === "rtl" ? ArrowRightIcon : ArrowLeftIcon}
+              size="xsm"
+              color="secondary"
+            />
+            <Text type="supporting">{t("@legalos.library.backLink")}</Text>
+          </HStack>
         </NextLink>
       </div>
 
@@ -79,14 +96,17 @@ export default function InstrumentPage({
           </div>
           <div style={{ marginBlock: 8 }}>
             <Text type="supporting">
-              {total.toLocaleString()} articles in force · showing{" "}
-              {offset + 1}–{shown}
+              {t("@legalos.library.instrument.meta", {
+                total: total.toLocaleString(),
+                from: offset + 1,
+                to: shown,
+              })}
             </Text>
           </div>
         </>
       )}
 
-      {loading && <Spinner label="Loading articles…" />}
+      {loading && <Spinner label={t("@legalos.library.instrument.loadingArticles")} />}
 
       <div style={{ display: "grid", gap: 12, marginBlockStart: 16 }}>
         {articles.map((article) => (
@@ -103,13 +123,13 @@ export default function InstrumentPage({
         }}
       >
         <Button
-          label="Previous"
+          label={t("@legalos.library.previous")}
           variant="secondary"
           isDisabled={offset === 0 || loading}
           onClick={() => setOffset((o) => Math.max(0, o - PAGE_SIZE))}
         />
         <Button
-          label="Next"
+          label={t("@legalos.library.next")}
           variant="secondary"
           isDisabled={shown >= total || loading}
           onClick={() => setOffset((o) => o + PAGE_SIZE)}
