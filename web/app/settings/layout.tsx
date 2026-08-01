@@ -22,35 +22,42 @@ import {
   UserCircleIcon,
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslator } from "@astryxdesign/core/i18n";
+import { useOrg } from "@/lib/org";
 
 type NavItem = {
   href: string;
-  label: string;
+  labelKey: string;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   ai?: boolean;
 };
 
-const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
+/** The firm group's title is the firm's own name, so it carries no key --
+ *  it is resolved from the active organization at render time. */
+const NAV_GROUPS: { titleKey?: string; items: NavItem[] }[] = [
   {
-    title: "My account",
-    items: [{ href: "/settings/profile", label: "Profile", icon: UserCircleIcon }],
+    titleKey: "@legalos.settings.group.myAccount",
+    items: [
+      { href: "/settings/profile", labelKey: "@legalos.settings.nav.profile", icon: UserCircleIcon },
+    ],
   },
   {
-    title: "Al-Sayed & Partners",
     items: [
-      { href: "/settings", label: "Firm settings", icon: BuildingOffice2Icon },
-      { href: "/settings/users", label: "Users & permissions", icon: UserGroupIcon },
-      { href: "/settings/integrations", label: "Integrations", icon: PuzzlePieceIcon },
-      { href: "/settings/branding", label: "Branding", icon: PaintBrushIcon },
-      { href: "/settings/billing", label: "Billing", icon: CreditCardIcon },
-      { href: "/settings/api-keys", label: "API keys", icon: KeyIcon },
-      { href: "/settings/ai-models", label: "AI models", icon: SparklesIcon, ai: true },
+      { href: "/settings", labelKey: "@legalos.settings.nav.firmSettings", icon: BuildingOffice2Icon },
+      { href: "/settings/users", labelKey: "@legalos.settings.nav.users", icon: UserGroupIcon },
+      { href: "/settings/integrations", labelKey: "@legalos.settings.nav.integrations", icon: PuzzlePieceIcon },
+      { href: "/settings/branding", labelKey: "@legalos.settings.nav.branding", icon: PaintBrushIcon },
+      { href: "/settings/billing", labelKey: "@legalos.settings.nav.billing", icon: CreditCardIcon },
+      { href: "/settings/api-keys", labelKey: "@legalos.settings.nav.apiKeys", icon: KeyIcon },
+      { href: "/settings/ai-models", labelKey: "@legalos.settings.nav.aiModels", icon: SparklesIcon, ai: true },
     ],
   },
 ];
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const t = useTranslator();
+  const { organizationName } = useOrg();
 
   return (
     <Card padding={0} width="100%" height="100%">
@@ -58,22 +65,27 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
         height="fill"
         header={
           <LayoutHeader hasDivider>
-            <Heading level={4}>Settings</Heading>
+            <Heading level={4}>{t("@legalos.settings.heading")}</Heading>
           </LayoutHeader>
         }
         start={
-          <LayoutPanel hasDivider role="navigation" label="Settings sections" width={240}>
+          <LayoutPanel
+            hasDivider
+            role="navigation"
+            label={t("@legalos.settings.sectionsNavLabel")}
+            width={240}
+          >
             <VStack gap={5}>
-              {NAV_GROUPS.map((group) => (
-                <VStack key={group.title} gap={1}>
+              {NAV_GROUPS.map((group, index) => (
+                <VStack key={group.titleKey ?? `firm-${index}`} gap={1}>
                   <Text type="label" size="sm" color="secondary">
-                    {group.title}
+                    {group.titleKey ? t(group.titleKey) : organizationName}
                   </Text>
                   <List density="compact" hasDividers={false}>
                     {group.items.map((item) => (
                       <ListItem
                         key={item.href}
-                        label={item.label}
+                        label={t(item.labelKey)}
                         href={item.href}
                         isSelected={pathname === item.href}
                         startContent={

@@ -137,7 +137,7 @@ export default function TasksPage() {
                         <Text type="label" color="secondary">
                           {t("@legalos.tasks.stat.open")}
                         </Text>
-                        <Heading level={2}>{open.length}</Heading>
+                        <Text size="2xl" weight="semibold">{open.length}</Text>
                       </VStack>
                     </Card>
                     <Card>
@@ -145,7 +145,7 @@ export default function TasksPage() {
                         <Text type="label" color="secondary">
                           {t("@legalos.tasks.stat.dueThisWeek")}
                         </Text>
-                        <Heading level={2}>{dueThisWeek.length}</Heading>
+                        <Text size="2xl" weight="semibold">{dueThisWeek.length}</Text>
                       </VStack>
                     </Card>
                     <Card>
@@ -153,7 +153,7 @@ export default function TasksPage() {
                         <Text type="label" color="secondary">
                           {t("@legalos.tasks.stat.overdue")}
                         </Text>
-                        <Heading level={2}>{overdue.length}</Heading>
+                        <Text size="2xl" weight="semibold">{overdue.length}</Text>
                       </VStack>
                     </Card>
                   </Grid>

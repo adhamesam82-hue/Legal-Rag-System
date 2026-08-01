@@ -164,7 +164,7 @@ export default function DashboardPage() {
                                 {kpi.label}
                               </Text>
                             </HStack>
-                            <Heading level={2}>{kpi.value}</Heading>
+                            <Text size="2xl" weight="semibold">{kpi.value}</Text>
                             <Text type="supporting" color="secondary">
                               {kpi.detail}
                             </Text>

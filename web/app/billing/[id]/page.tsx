@@ -210,13 +210,13 @@ export default function InvoiceDetailPage({
                               <Divider />
                               <HStack hAlign="between">
                                 <Text type="body" color="secondary">
-                                  Lines total
+                                  {t("@legalos.billingDetail.linesTotal")}
                                 </Text>
                                 <Text type="body">{formatEGP(linesTotal)}</Text>
                               </HStack>
                               <HStack hAlign="between">
                                 <Text type="body" weight="semibold">
-                                  Invoice total
+                                  {t("@legalos.billingDetail.invoiceTotal")}
                                 </Text>
                                 <Text type="body" weight="bold" size="lg">
                                   {formatEGP(Number(loaded.amount), loaded.currency)}

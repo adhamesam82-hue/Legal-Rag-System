@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslator } from "@astryxdesign/core/i18n";
+import { useOrg } from "@/lib/org";
 import { LayoutFooter } from "@astryxdesign/core/Layout";
 import { VStack, HStack } from "@astryxdesign/core/Stack";
 import { Heading, Text } from "@astryxdesign/core/Text";
@@ -13,6 +15,8 @@ import { Divider } from "@astryxdesign/core/Divider";
 import { Avatar } from "@astryxdesign/core/Avatar";
 
 export default function FirmSettingsPage() {
+  const t = useTranslator();
+  const { organizationName } = useOrg();
   const [name, setName] = useState("Al-Sayed & Partners");
   const [registrationNumber, setRegistrationNumber] = useState("CR-2019-004821");
   const [phone, setPhone] = useState("+20 2 2735 1190");
@@ -24,10 +28,9 @@ export default function FirmSettingsPage() {
   return (
     <VStack gap={6}>
       <VStack gap={1}>
-        <Heading level={4}>Firm settings</Heading>
+        <Heading level={4}>{t("@legalos.settings.firm.heading")}</Heading>
         <Text type="body" color="secondary">
-          General information about Al-Sayed &amp; Partners. Visible to every member of
-          the firm.
+          {t("@legalos.settings.firm.subtitle", { firm: organizationName ?? name })}
         </Text>
       </VStack>
 
@@ -37,22 +40,22 @@ export default function FirmSettingsPage() {
             <Avatar name={name} size="lg" tooltip={false} />
             <VStack gap={0.5}>
               <Text type="label" weight="semibold">
-                Firm logo
+                {t("@legalos.settings.firm.logoHeading")}
               </Text>
               <Text type="supporting" color="secondary">
-                Shown on invoices, generated documents, and the sidebar.
+                {t("@legalos.settings.firm.logoDescription")}
               </Text>
             </VStack>
           </HStack>
           <FileInput
-            label="Upload logo"
+            label={t("@legalos.settings.firm.uploadLogo")}
             isLabelHidden
             value={logo}
             onChange={(files) => setLogo(Array.isArray(files) ? (files[0] ?? null) : files)}
             accept="image/png,image/jpeg,image/svg+xml"
             mode="dropzone"
-            placeholder="Drag a logo here, or click to browse"
-            description="PNG, JPG, or SVG. Recommended 512×512px, up to 2MB."
+            placeholder={t("@legalos.settings.firm.logoPlaceholder")}
+            description={t("@legalos.settings.firm.logoHint")}
           />
         </VStack>
       </Card>
@@ -60,19 +63,29 @@ export default function FirmSettingsPage() {
       <Card>
         <VStack gap={4}>
           <Text type="label" weight="semibold">
-            Firm details
+            {t("@legalos.settings.firm.detailsHeading")}
           </Text>
           <Divider />
-          <TextInput label="Firm name" value={name} onChange={setName} isRequired />
           <TextInput
-            label="Commercial registration number"
+            label={t("@legalos.settings.firm.nameLabel")}
+            value={name}
+            onChange={setName}
+            isRequired
+          />
+          <TextInput
+            label={t("@legalos.settings.firm.registrationLabel")}
             value={registrationNumber}
             onChange={setRegistrationNumber}
-            description="As registered with the Egyptian Commercial Registry."
+            description={t("@legalos.settings.firm.registrationHint")}
           />
-          <TextInput label="Phone" value={phone} onChange={setPhone} type="text" />
+          <TextInput
+            label={t("@legalos.settings.firm.phoneLabel")}
+            value={phone}
+            onChange={setPhone}
+            type="text"
+          />
           <TextArea
-            label="Address"
+            label={t("@legalos.settings.firm.addressLabel")}
             value={address}
             onChange={setAddress}
             rows={3}
@@ -82,11 +95,11 @@ export default function FirmSettingsPage() {
 
       <LayoutFooter hasDivider>
         <HStack gap={2} hAlign="end">
-          <Button label="Cancel" variant="secondary">
-            Cancel
+          <Button label={t("@legalos.settings.action.cancel")} variant="secondary">
+            {t("@legalos.settings.action.cancel")}
           </Button>
-          <Button label="Save changes" variant="primary">
-            Save changes
+          <Button label={t("@legalos.settings.action.saveChanges")} variant="primary">
+            {t("@legalos.settings.action.saveChanges")}
           </Button>
         </HStack>
       </LayoutFooter>

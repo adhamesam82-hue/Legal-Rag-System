@@ -27,6 +27,7 @@ import {
   formatEGP,
   type MatterStatus,
 } from "@/lib/practice";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 
 const STATUS_VARIANT: Record<MatterStatus, "success" | "warning" | "neutral"> = {
@@ -41,6 +42,7 @@ export default function ClientDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const t = useTranslator();
   const clientId = Number(id);
   const enumLabel = useEnumLabel();
   const memberName = useMemberName();
@@ -63,7 +65,7 @@ export default function ClientDetailPage({
       height="fill"
       content={
         <LayoutContent padding={0} isScrollable>
-          <DataView resource={resource} loadingLabel="Loading client…">
+          <DataView resource={resource} loadingLabel={t("@legalos.clients.detail.loading")}>
             {({ client, matters, invoices, activity }) => {
               const outstanding = invoices
                 .filter((i) => i.status === "sent" || i.status === "overdue")
@@ -77,7 +79,7 @@ export default function ClientDetailPage({
                     <HStack gap={1.5} vAlign="center">
                       <Icon icon={ArrowLeftIcon} size="sm" color="secondary" />
                       <Text type="body" color="secondary">
-                        Clients
+                        {t("@legalos.clients.detail.backLink")}
                       </Text>
                     </HStack>
                   </Link>
@@ -87,14 +89,14 @@ export default function ClientDetailPage({
                       <HStack gap={3} vAlign="center">
                         <Heading level={2}>{client.name}</Heading>
                         {client.status === "inactive" && (
-                          <Badge variant="neutral" label="Inactive" />
+                          <Badge variant="neutral" label={enumLabel("inactive")} />
                         )}
                       </HStack>
                       <Text type="body" color="secondary">
                         {enumLabel(client.client_type)}
                         {client.industry ? ` · ${client.industry}` : ""}
                         {client.client_since
-                          ? ` · client since ${formatDate(client.client_since)}`
+                          ? t("@legalos.clients.detail.clientSince", { date: formatDate(client.client_since) })
                           : ""}
                       </Text>
                     </VStack>
@@ -104,27 +106,27 @@ export default function ClientDetailPage({
                     <Card>
                       <VStack gap={2}>
                         <Text type="label" color="secondary">
-                          Active matters
+                          {t("@legalos.clients.detail.stat.activeMatters")}
                         </Text>
-                        <Heading level={2}>
+                        <Text size="2xl" weight="semibold">
                           {matters.filter((m) => m.status === "active").length}
-                        </Heading>
+                        </Text>
                       </VStack>
                     </Card>
                     <Card>
                       <VStack gap={2}>
                         <Text type="label" color="secondary">
-                          Total matters
+                          {t("@legalos.clients.detail.stat.totalMatters")}
                         </Text>
-                        <Heading level={2}>{matters.length}</Heading>
+                        <Text size="2xl" weight="semibold">{matters.length}</Text>
                       </VStack>
                     </Card>
                     <Card>
                       <VStack gap={2}>
                         <Text type="label" color="secondary">
-                          Outstanding
+                          {t("@legalos.clients.detail.stat.outstanding")}
                         </Text>
-                        <Heading level={2}>{formatEGP(outstanding)}</Heading>
+                        <Text size="2xl" weight="semibold">{formatEGP(outstanding)}</Text>
                       </VStack>
                     </Card>
                   </Grid>
@@ -134,7 +136,7 @@ export default function ClientDetailPage({
                       <VStack gap={6}>
                         <Card>
                           <VStack gap={4}>
-                            <Heading level={4}>Matters</Heading>
+                            <Heading level={4}>{t("@legalos.clients.detail.matters.heading")}</Heading>
                             {matters.length === 0 ? (
                               <EmptyState
                                 icon={
@@ -144,8 +146,8 @@ export default function ClientDetailPage({
                                     color="secondary"
                                   />
                                 }
-                                title="No matters yet"
-                                description="Open a matter against this client to start work."
+                                title={t("@legalos.clients.detail.matters.emptyTitle")}
+                                description={t("@legalos.clients.detail.matters.emptyDescription")}
                               />
                             ) : (
                               <List hasDividers density="compact">
@@ -182,12 +184,12 @@ export default function ClientDetailPage({
                         <Card>
                           <VStack gap={4}>
                             <HStack hAlign="between" vAlign="center">
-                              <Heading level={4}>Invoices</Heading>
-                              <Link href="/billing">Billing</Link>
+                              <Heading level={4}>{t("@legalos.clients.detail.invoices.heading")}</Heading>
+                              <Link href="/billing">{t("@legalos.clients.detail.invoices.billingLink")}</Link>
                             </HStack>
                             {invoices.length === 0 ? (
                               <Text type="body" color="secondary">
-                                No invoices raised for this client yet.
+                                {t("@legalos.clients.detail.invoices.empty")}
                               </Text>
                             ) : (
                               <List hasDividers density="compact">
@@ -233,10 +235,10 @@ export default function ClientDetailPage({
 
                         <Card>
                           <VStack gap={4}>
-                            <Heading level={4}>Activity</Heading>
+                            <Heading level={4}>{t("@legalos.clients.detail.activity.heading")}</Heading>
                             {activity.length === 0 ? (
                               <Text type="body" color="secondary">
-                                No activity recorded for this client yet.
+                                {t("@legalos.clients.detail.activity.empty")}
                               </Text>
                             ) : (
                               <List hasDividers density="compact">
@@ -269,33 +271,33 @@ export default function ClientDetailPage({
                     <VStack gap={6}>
                       <Card>
                         <VStack gap={4}>
-                          <Heading level={4}>Details</Heading>
+                          <Heading level={4}>{t("@legalos.clients.detail.details.heading")}</Heading>
                           <MetadataList>
-                            <MetadataListItem label="Type">
+                            <MetadataListItem label={t("@legalos.clients.detail.field.type")}>
                               {enumLabel(client.client_type)}
                             </MetadataListItem>
                             {client.registration_number && (
-                              <MetadataListItem label="Registration">
+                              <MetadataListItem label={t("@legalos.clients.detail.field.registration")}>
                                 {client.registration_number}
                               </MetadataListItem>
                             )}
                             {client.tax_id && (
-                              <MetadataListItem label="Tax ID">
+                              <MetadataListItem label={t("@legalos.clients.detail.field.taxId")}>
                                 {client.tax_id}
                               </MetadataListItem>
                             )}
                             {client.address && (
-                              <MetadataListItem label="Address">
+                              <MetadataListItem label={t("@legalos.clients.detail.field.address")}>
                                 {client.address}
                               </MetadataListItem>
                             )}
                             {client.phone && (
-                              <MetadataListItem label="Phone">
+                              <MetadataListItem label={t("@legalos.clients.detail.field.phone")}>
                                 {client.phone}
                               </MetadataListItem>
                             )}
                             {client.email && (
-                              <MetadataListItem label="Email">
+                              <MetadataListItem label={t("@legalos.clients.detail.field.email")}>
                                 {client.email}
                               </MetadataListItem>
                             )}
@@ -305,10 +307,10 @@ export default function ClientDetailPage({
 
                       <Card>
                         <VStack gap={4}>
-                          <Heading level={4}>Contacts</Heading>
+                          <Heading level={4}>{t("@legalos.clients.detail.contacts.heading")}</Heading>
                           {client.contacts.length === 0 ? (
                             <Text type="body" color="secondary">
-                              No contacts recorded.
+                              {t("@legalos.clients.detail.contacts.empty")}
                             </Text>
                           ) : (
                             <List hasDividers density="compact">
@@ -330,7 +332,7 @@ export default function ClientDetailPage({
                                   }
                                   endContent={
                                     contact.is_primary ? (
-                                      <Badge variant="info" label="Primary" />
+                                      <Badge variant="info" label={t("@legalos.clients.detail.contacts.primaryBadge")} />
                                     ) : undefined
                                   }
                                 />
@@ -343,7 +345,7 @@ export default function ClientDetailPage({
                       {client.notes && (
                         <Card>
                           <VStack gap={3}>
-                            <Heading level={4}>Notes</Heading>
+                            <Heading level={4}>{t("@legalos.clients.detail.notes.heading")}</Heading>
                             <Text type="body">{client.notes}</Text>
                           </VStack>
                         </Card>
@@ -353,7 +355,7 @@ export default function ClientDetailPage({
                         <Card>
                           <VStack gap={2}>
                             <Text type="label" color="secondary">
-                              Primary contact
+                              {t("@legalos.clients.detail.contacts.primaryHeading")}
                             </Text>
                             <HStack gap={2} vAlign="center">
                               <Avatar name={primary.name} size="md" tooltip={false} />

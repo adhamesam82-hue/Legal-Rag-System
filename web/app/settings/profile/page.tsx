@@ -17,7 +17,10 @@ import { Divider } from "@astryxdesign/core/Divider";
 import { Link } from "@astryxdesign/core/Link";
 import { List, ListItem } from "@astryxdesign/core/List";
 import { ArrowLeftIcon, ArrowUpTrayIcon, KeyIcon } from "@heroicons/react/24/outline";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import { useLocale } from "@/lib/i18n/provider";
+import { useEnumLabel } from "@/lib/i18n/enum-label";
+import { useOrg } from "@/lib/org";
 import type { Locale } from "@/lib/i18n/locale";
 
 const SESSIONS = [
@@ -33,6 +36,9 @@ export default function ProfileSettingsPage() {
   // Unlike the other fields on this page, language switches the whole app
   // live rather than waiting on "Save changes" — matching how the Astryx
   // InternationalizationProvider is meant to be driven (see lib/i18n).
+  const t = useTranslator();
+  const enumLabel = useEnumLabel();
+  const { organizationName } = useOrg();
   const { locale, setLocale } = useLocale();
   const [emailDigest, setEmailDigest] = useState(true);
   const [hearingAlerts, setHearingAlerts] = useState(true);
@@ -48,14 +54,14 @@ export default function ProfileSettingsPage() {
               <HStack gap={1} vAlign="center">
                 <Icon icon={ArrowLeftIcon} size="xsm" color="inherit" />
                 <Text type="supporting" color="inherit">
-                  Settings
+                  {t("@legalos.settings.profile.backToSettings")}
                 </Text>
               </HStack>
             </Link>
             <VStack gap={1}>
-              <Heading level={2}>Your profile</Heading>
+              <Heading level={2}>{t("@legalos.settings.profile.heading")}</Heading>
               <Text type="body" color="secondary">
-                How you appear to the rest of Al-Sayed &amp; Partners.
+                {t("@legalos.settings.profile.subtitle", { firm: organizationName ?? "" })}
               </Text>
             </VStack>
           </VStack>
@@ -66,24 +72,27 @@ export default function ProfileSettingsPage() {
           <VStack gap={6} maxWidth={860}>
             <Card>
               <VStack gap={4}>
-                <Heading level={4}>Photo</Heading>
+                <Heading level={4}>{t("@legalos.settings.profile.photoHeading")}</Heading>
                 <HStack gap={4} vAlign="center" wrap="wrap">
                   <Avatar name={name} size="xl" tooltip={false} />
                   <VStack gap={2}>
                     <HStack gap={2}>
                       <Button
-                        label="Upload a new photo"
+                        label={t("@legalos.settings.profile.uploadPhotoLabel")}
                         variant="secondary"
                         icon={<Icon icon={ArrowUpTrayIcon} size="sm" />}
                       >
-                        Upload photo
+                        {t("@legalos.settings.profile.uploadPhoto")}
                       </Button>
-                      <Button label="Remove photo" variant="ghost">
-                        Remove
+                      <Button
+                        label={t("@legalos.settings.profile.removePhoto")}
+                        variant="ghost"
+                      >
+                        {t("@legalos.settings.profile.remove")}
                       </Button>
                     </HStack>
                     <Text type="supporting" color="secondary">
-                      JPG or PNG, at least 256×256px. Falls back to your initials.
+                      {t("@legalos.settings.profile.photoHint")}
                     </Text>
                   </VStack>
                 </HStack>
@@ -92,15 +101,32 @@ export default function ProfileSettingsPage() {
 
             <Card>
               <VStack gap={4}>
-                <Heading level={4}>Details</Heading>
+                <Heading level={4}>{t("@legalos.settings.profile.detailsHeading")}</Heading>
                 <Grid columns={{ minWidth: 260, repeat: "fit" }} gap={4}>
-                  <TextInput label="Full name" value={name} onChange={setName} />
-                  <TextInput label="Job title" value={title} onChange={setTitle} />
-                  <TextInput label="Email address" value={email} onChange={setEmail} type="email" />
-                  <TextInput label="Phone" value={phone} onChange={setPhone} />
+                  <TextInput
+                    label={t("@legalos.settings.profile.fullName")}
+                    value={name}
+                    onChange={setName}
+                  />
+                  <TextInput
+                    label={t("@legalos.settings.profile.jobTitle")}
+                    value={title}
+                    onChange={setTitle}
+                  />
+                  <TextInput
+                    label={t("@legalos.settings.profile.emailAddress")}
+                    value={email}
+                    onChange={setEmail}
+                    type="email"
+                  />
+                  <TextInput
+                    label={t("@legalos.settings.profile.phone")}
+                    value={phone}
+                    onChange={setPhone}
+                  />
                 </Grid>
                 <Selector
-                  label="Interface language"
+                  label={t("@legalos.settings.profile.interfaceLanguage")}
                   value={locale}
                   onChange={(value) => setLocale(value as Locale)}
                   options={[
@@ -110,11 +136,11 @@ export default function ProfileSettingsPage() {
                 />
                 <Divider />
                 <HStack gap={2}>
-                  <Button label="Save changes" variant="primary">
-                    Save changes
+                  <Button label={t("@legalos.settings.action.saveChanges")} variant="primary">
+                    {t("@legalos.settings.action.saveChanges")}
                   </Button>
-                  <Button label="Discard changes" variant="ghost">
-                    Discard
+                  <Button label={t("@legalos.settings.profile.discardChanges")} variant="ghost">
+                    {t("@legalos.settings.action.discard")}
                   </Button>
                 </HStack>
               </VStack>
@@ -122,41 +148,40 @@ export default function ProfileSettingsPage() {
 
             <Card>
               <VStack gap={4}>
-                <Heading level={4}>Role and access</Heading>
+                <Heading level={4}>{t("@legalos.settings.profile.roleHeading")}</Heading>
                 <HStack gap={3} vAlign="center" wrap="wrap">
-                  <Badge variant="purple" label="Owner" />
+                  <Badge variant="purple" label={enumLabel("owner")} />
                   <Text type="body" color="secondary">
-                    Full access to every matter, plus firm billing and team management.
+                    {t("@legalos.settings.profile.ownerDescription")}
                   </Text>
                 </HStack>
                 <Text type="supporting" color="secondary">
-                  Only an Owner can change roles. A firm must always keep at least one Owner, so
-                  your own role cannot be changed while you are the only one.
+                  {t("@legalos.settings.profile.ownerNote")}
                 </Text>
-                <Link href="/settings/users">Manage the team</Link>
+                <Link href="/settings/users">{t("@legalos.settings.profile.manageTeam")}</Link>
               </VStack>
             </Card>
 
             <Card>
               <VStack gap={4}>
-                <Heading level={4}>Notifications</Heading>
+                <Heading level={4}>{t("@legalos.settings.profile.notificationsHeading")}</Heading>
                 <Switch
-                  label="Daily email digest"
-                  description="A morning summary of hearings, deadlines, and assignments."
+                  label={t("@legalos.settings.profile.digestLabel")}
+                  description={t("@legalos.settings.profile.digestDescription")}
                   value={emailDigest}
                   onChange={setEmailDigest}
                 />
                 <Divider />
                 <Switch
-                  label="Hearing reminders"
-                  description="Alert me the day before any hearing on a matter I am responsible for."
+                  label={t("@legalos.settings.profile.hearingLabel")}
+                  description={t("@legalos.settings.profile.hearingDescription")}
                   value={hearingAlerts}
                   onChange={setHearingAlerts}
                 />
                 <Divider />
                 <Switch
-                  label="Mentions in messages"
-                  description="Notify me when a colleague @mentions me in a matter channel."
+                  label={t("@legalos.settings.profile.mentionLabel")}
+                  description={t("@legalos.settings.profile.mentionDescription")}
                   value={mentionAlerts}
                   onChange={setMentionAlerts}
                 />
@@ -165,33 +190,37 @@ export default function ProfileSettingsPage() {
 
             <Card>
               <VStack gap={4}>
-                <Heading level={4}>Security</Heading>
+                <Heading level={4}>{t("@legalos.settings.profile.securityHeading")}</Heading>
                 <HStack hAlign="between" vAlign="center" wrap="wrap" gap={3}>
                   <VStack gap={1}>
-                    <Text type="label">Password</Text>
+                    <Text type="label">{t("@legalos.settings.profile.password")}</Text>
                     <Text type="supporting" color="secondary">
-                      Last changed 4 months ago
+                      {t("@legalos.settings.profile.passwordChanged")}
                     </Text>
                   </VStack>
-                  <Button label="Change password" variant="secondary" icon={<Icon icon={KeyIcon} size="sm" />}>
-                    Change password
+                  <Button
+                    label={t("@legalos.settings.profile.changePassword")}
+                    variant="secondary"
+                    icon={<Icon icon={KeyIcon} size="sm" />}
+                  >
+                    {t("@legalos.settings.profile.changePassword")}
                   </Button>
                 </HStack>
                 <Divider />
                 <HStack hAlign="between" vAlign="center" wrap="wrap" gap={3}>
                   <VStack gap={1}>
-                    <Text type="label">Two-factor authentication</Text>
+                    <Text type="label">{t("@legalos.settings.profile.twoFactor")}</Text>
                     <Text type="supporting" color="secondary">
-                      Not enabled — strongly recommended for accounts with billing access.
+                      {t("@legalos.settings.profile.twoFactorHint")}
                     </Text>
                   </VStack>
-                  <Button label="Enable two-factor authentication" variant="secondary">
-                    Enable
+                  <Button label={t("@legalos.settings.profile.enableTwoFactor")} variant="secondary">
+                    {t("@legalos.settings.profile.enable")}
                   </Button>
                 </HStack>
                 <Divider />
                 <VStack gap={3}>
-                  <Text type="label">Active sessions</Text>
+                  <Text type="label">{t("@legalos.settings.profile.activeSessions")}</Text>
                   <List hasDividers density="compact">
                     {SESSIONS.map((s) => (
                       <ListItem
@@ -201,11 +230,17 @@ export default function ProfileSettingsPage() {
                         endContent={
                           s.current ? (
                             <Text type="supporting" color="secondary">
-                              This device
+                              {t("@legalos.settings.profile.thisDevice")}
                             </Text>
                           ) : (
-                            <Button label={`Sign out of ${s.device}`} variant="ghost" size="sm">
-                              Sign out
+                            <Button
+                              label={t("@legalos.settings.profile.signOutOf", {
+                                device: s.device,
+                              })}
+                              variant="ghost"
+                              size="sm"
+                            >
+                              {t("@legalos.settings.profile.signOut")}
                             </Button>
                           )
                         }

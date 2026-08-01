@@ -24,6 +24,7 @@ import {
   type Client,
   type ClientType,
 } from "@/lib/practice";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 
 interface ClientRow extends Record<string, unknown> {
@@ -39,6 +40,7 @@ interface ClientRow extends Record<string, unknown> {
 }
 
 export default function ClientsPage() {
+  const t = useTranslator();
   const enumLabel = useEnumLabel();
   const { practice, organizationName } = useOrg();
   const [query, setQuery] = useState("");
@@ -92,7 +94,7 @@ export default function ClientsPage() {
   const columns: TableColumn<ClientRow>[] = [
     {
       key: "name",
-      header: "Client",
+      header: t("@legalos.clients.table.client"),
       width: proportional(2.5),
       renderCell: (row) => (
         <Link href={`/clients/${row.id}`}>
@@ -109,13 +111,13 @@ export default function ClientsPage() {
     },
     {
       key: "client_type",
-      header: "Type",
+      header: t("@legalos.clients.table.type"),
       width: pixel(120),
       renderCell: (row) => <Text type="body">{enumLabel(row.client_type)}</Text>,
     },
     {
       key: "primaryContactName",
-      header: "Primary contact",
+      header: t("@legalos.clients.table.primaryContact"),
       width: proportional(1.6),
       renderCell: (row) => (
         <HStack gap={2} vAlign="center">
@@ -133,20 +135,20 @@ export default function ClientsPage() {
     },
     {
       key: "activeMatters",
-      header: "Active matters",
+      header: t("@legalos.clients.table.activeMatters"),
       width: pixel(130),
       renderCell: (row) =>
         row.activeMatters > 0 ? (
           <Text type="body">{row.activeMatters}</Text>
         ) : (
           <Text type="body" color="secondary">
-            None
+            {t("@legalos.clients.table.noneActive")}
           </Text>
         ),
     },
     {
       key: "lastActivity",
-      header: "Last activity",
+      header: t("@legalos.clients.table.lastActivity"),
       width: pixel(140),
       renderCell: (row) => (
         <Text type="body" color="secondary">
@@ -156,14 +158,14 @@ export default function ClientsPage() {
     },
     {
       key: "status",
-      header: "Status",
+      header: t("@legalos.clients.table.status"),
       width: pixel(110),
       renderCell: (row) =>
         row.status === "inactive" ? (
-          <Badge variant="neutral" label="Inactive" />
+          <Badge variant="neutral" label={enumLabel("inactive")} />
         ) : (
           <Text type="body" color="secondary">
-            Active
+            {enumLabel("active")}
           </Text>
         ),
     },
@@ -180,53 +182,57 @@ export default function ClientsPage() {
             <VStack gap={4}>
               <HStack hAlign="between" vAlign="center">
                 <VStack gap={1}>
-                  <Heading level={2}>Clients</Heading>
+                  <Heading level={2}>{t("@legalos.clients.heading")}</Heading>
                   <Text type="body" color="secondary">
-                    {total} {total === 1 ? "client" : "clients"}
-                    {organizationName ? ` at ${organizationName}` : ""}
+                    {organizationName
+                      ? t("@legalos.clients.subtitle.atFirm", {
+                          count: total,
+                          firm: organizationName,
+                        })
+                      : t("@legalos.clients.subtitle.plain", { count: total })}
                   </Text>
                 </VStack>
                 <Button
-                  label="New client"
+                  label={t("@legalos.clients.newClient")}
                   variant="primary"
                   icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
                   onClick={() => setIsCreating(true)}
                   isDisabled={!practice}
                 >
-                  New client
+                  {t("@legalos.clients.newClient")}
                 </Button>
               </HStack>
               <HStack gap={3} wrap="wrap">
                 <TextInput
-                  label="Search clients"
+                  label={t("@legalos.clients.search.label")}
                   isLabelHidden
                   value={query}
                   onChange={setQuery}
-                  placeholder="Search by name or industry"
+                  placeholder={t("@legalos.clients.search.placeholder")}
                   startIcon={MagnifyingGlassIcon}
                   width={320}
                 />
                 <Selector
-                  label="Type"
+                  label={t("@legalos.clients.table.type")}
                   isLabelHidden
                   value={typeFilter}
                   onChange={(v) => setTypeFilter(v ?? "all")}
                   options={[
-                    { value: "all", label: "All types" },
-                    { value: "company", label: "Company" },
-                    { value: "individual", label: "Individual" },
+                    { value: "all", label: t("@legalos.clients.filter.allTypes") },
+                    { value: "company", label: enumLabel("company") },
+                    { value: "individual", label: enumLabel("individual") },
                   ]}
                   width={160}
                 />
                 <Selector
-                  label="Status"
+                  label={t("@legalos.clients.table.status")}
                   isLabelHidden
                   value={statusFilter}
                   onChange={(v) => setStatusFilter(v ?? "all")}
                   options={[
-                    { value: "all", label: "All statuses" },
-                    { value: "active", label: "Active" },
-                    { value: "inactive", label: "Inactive" },
+                    { value: "all", label: t("@legalos.clients.filter.allStatuses") },
+                    { value: "active", label: enumLabel("active") },
+                    { value: "inactive", label: enumLabel("inactive") },
                   ]}
                   width={160}
                 />
@@ -236,7 +242,7 @@ export default function ClientsPage() {
         }
         content={
           <LayoutContent padding={0}>
-            <DataView resource={resource} loadingLabel="Loading clients…">
+            <DataView resource={resource} loadingLabel={t("@legalos.clients.loading")}>
               {() =>
                 rows.length > 0 ? (
                   <Table<ClientRow> data={rows} columns={columns} idKey="id" hasHover />
@@ -245,24 +251,24 @@ export default function ClientsPage() {
                     icon={<Icon icon={UserGroupIcon} size="lg" color="secondary" />}
                     title={
                       total === 0
-                        ? "No clients yet"
-                        : "No clients match your filters"
+                        ? t("@legalos.clients.empty.noneTitle")
+                        : t("@legalos.clients.empty.noMatchTitle")
                     }
                     description={
                       total === 0
-                        ? "Add your first client to start opening matters against it."
-                        : "Try a different search term or clear the type and status filters."
+                        ? t("@legalos.clients.empty.noneDescription")
+                        : t("@legalos.clients.empty.noMatchDescription")
                     }
                     actions={
                       total === 0 ? (
                         <Button
-                          label="New client"
+                          label={t("@legalos.clients.newClient")}
                           variant="primary"
                           onClick={() => setIsCreating(true)}
                         />
                       ) : (
                         <Button
-                          label="Clear filters"
+                          label={t("@legalos.clients.clearFilters")}
                           variant="secondary"
                           onClick={() => {
                             setQuery("");
@@ -297,6 +303,8 @@ function NewClientDialog({
   onOpenChange: (open: boolean) => void;
   onCreated: () => void;
 }) {
+  const t = useTranslator();
+  const enumLabel = useEnumLabel();
   const { practice } = useOrg();
   const [name, setName] = useState("");
   const [clientType, setClientType] = useState<ClientType>("company");
@@ -337,7 +345,7 @@ function NewClientDialog({
       onOpenChange(false);
       onCreated();
     } catch (exc) {
-      setError(exc instanceof Error ? exc.message : "Could not save this client.");
+      setError(exc instanceof Error ? exc.message : t("@legalos.clients.dialog.error"));
     } finally {
       setSaving(false);
     }
@@ -346,39 +354,39 @@ function NewClientDialog({
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
       <Layout
-        header={<DialogHeader title="New client" onOpenChange={onOpenChange} />}
+        header={<DialogHeader title={t("@legalos.clients.dialog.title")} onOpenChange={onOpenChange} />}
         content={
           <LayoutContent>
             <VStack gap={4}>
               <InlineError message={error} onDismiss={() => setError(null)} />
               <TextInput
-                label="Client name"
+                label={t("@legalos.clients.dialog.nameLabel")}
                 value={name}
                 onChange={setName}
                 placeholder="Nile Trading Co."
                 isRequired
               />
               <Selector
-                label="Type"
+                label={t("@legalos.clients.dialog.typeLabel")}
                 value={clientType}
                 onChange={(v) => setClientType((v as ClientType) ?? "company")}
                 options={[
-                  { value: "company", label: "Company" },
-                  { value: "individual", label: "Individual" },
+                  { value: "company", label: enumLabel("company") },
+                  { value: "individual", label: enumLabel("individual") },
                 ]}
               />
               <TextInput
-                label="Industry"
+                label={t("@legalos.clients.dialog.industryLabel")}
                 value={industry}
                 onChange={setIndustry}
-                placeholder="Import & Export Trading"
+                placeholder={t("@legalos.clients.dialog.industryPlaceholder")}
               />
               <HStack gap={3}>
-                <TextInput label="Email" value={email} onChange={setEmail} />
-                <TextInput label="Phone" value={phone} onChange={setPhone} />
+                <TextInput label={t("@legalos.clients.dialog.emailLabel")} value={email} onChange={setEmail} />
+                <TextInput label={t("@legalos.clients.dialog.phoneLabel")} value={phone} onChange={setPhone} />
               </HStack>
-              <TextInput label="Address" value={address} onChange={setAddress} />
-              <TextArea label="Notes" value={notes} onChange={setNotes} rows={3} />
+              <TextInput label={t("@legalos.clients.dialog.addressLabel")} value={address} onChange={setAddress} />
+              <TextArea label={t("@legalos.clients.dialog.notesLabel")} value={notes} onChange={setNotes} rows={3} />
             </VStack>
           </LayoutContent>
         }
@@ -386,12 +394,12 @@ function NewClientDialog({
           <LayoutFooter hasDivider>
             <HStack gap={3} hAlign="end">
               <Button
-                label="Cancel"
+                label={t("@legalos.clients.dialog.cancel")}
                 variant="secondary"
                 onClick={() => onOpenChange(false)}
               />
               <Button
-                label={saving ? "Saving…" : "Create client"}
+                label={saving ? t("@legalos.clients.dialog.saving") : t("@legalos.clients.dialog.create")}
                 variant="primary"
                 onClick={submit}
                 isDisabled={saving || !name.trim()}

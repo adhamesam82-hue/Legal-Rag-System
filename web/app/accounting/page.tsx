@@ -227,7 +227,7 @@ export default function AccountingPage() {
                   <Text type="label" color="secondary">
                     {t("@legalos.accounting.stat.revenue.label", { month: currentMonth })}
                   </Text>
-                  <Heading level={2}>{formatEGP(JULY.revenue)}</Heading>
+                  <Text size="2xl" weight="semibold">{formatEGP(JULY.revenue)}</Text>
                   <HStack gap={1} vAlign="center">
                     <Icon icon={ArrowUpIcon} size="xsm" color="success" />
                     <Text type="supporting" color="secondary">
@@ -241,7 +241,7 @@ export default function AccountingPage() {
                   <Text type="label" color="secondary">
                     {t("@legalos.accounting.stat.expenses.label", { month: currentMonth })}
                   </Text>
-                  <Heading level={2}>{formatEGP(JULY.expenses)}</Heading>
+                  <Text size="2xl" weight="semibold">{formatEGP(JULY.expenses)}</Text>
                   <HStack gap={1} vAlign="center">
                     <Icon icon={ArrowUpIcon} size="xsm" color="secondary" />
                     <Text type="supporting" color="secondary">
@@ -255,7 +255,7 @@ export default function AccountingPage() {
                   <Text type="label" color="secondary">
                     {t("@legalos.accounting.stat.profit.label", { month: currentMonth })}
                   </Text>
-                  <Heading level={2}>{formatEGP(profit)}</Heading>
+                  <Text size="2xl" weight="semibold">{formatEGP(profit)}</Text>
                   <HStack gap={1} vAlign="center">
                     <Icon
                       icon={profitDelta >= 0 ? ArrowUpIcon : ArrowDownIcon}
@@ -275,7 +275,7 @@ export default function AccountingPage() {
                   <Text type="label" color="secondary">
                     {t("@legalos.accounting.stat.margin.label")}
                   </Text>
-                  <Heading level={2}>{margin.toFixed(1)}%</Heading>
+                  <Text size="2xl" weight="semibold">{margin.toFixed(1)}%</Text>
                   <Text type="supporting" color="secondary">
                     {t("@legalos.accounting.stat.margin.description")}
                   </Text>

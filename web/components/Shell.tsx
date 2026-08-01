@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { AppShell } from "@astryxdesign/core/AppShell";
+import { AppShell, useAppShellMobile } from "@astryxdesign/core/AppShell";
 import { Theme } from "@astryxdesign/core/theme";
 import { TopNav, TopNavHeading } from "@astryxdesign/core/TopNav";
 import { NavIcon } from "@astryxdesign/core/NavIcon";
@@ -48,6 +48,7 @@ import {
 import { useTranslator, type TranslatorFn } from "@astryxdesign/core/i18n";
 import { legalosTheme } from "@/lib/legalos";
 import { useThemeMode } from "@/app/providers";
+import { useLocale } from "@/lib/i18n/provider";
 
 // stylex.create() isn't compiled by this app's build (see globals.css); AI
 // accent color goes through the Tailwind token bridge instead.
@@ -167,6 +168,41 @@ function ThemeToggle() {
   );
 }
 
+/** Switches the whole app between English and Arabic, which also flips the
+ *  page between LTR and RTL. Shown as the target language's own endonym
+ *  ("العربية" / "EN") rather than an icon: a globe glyph says a language
+ *  menu exists but not which language you would get, and with only two
+ *  locales the direct swap is one click instead of two. */
+function LanguageToggle() {
+  const { locale, setLocale } = useLocale();
+  const t = useTranslator();
+  const toArabic = locale === "en";
+  return (
+    <Button
+      label={t(
+        toArabic
+          ? "@legalos.shell.languageToggle.toArabic"
+          : "@legalos.shell.languageToggle.toEnglish",
+      )}
+      variant="ghost"
+      size="sm"
+      onClick={() => setLocale(toArabic ? "ar" : "en")}
+    >
+      {toArabic ? "العربية" : "EN"}
+    </Button>
+  );
+}
+
+/** The brand lives in one place: the workspace switcher at the top of the
+ *  sidebar. Below AppShell's mobile breakpoint the sidebar becomes a drawer
+ *  and that switcher goes off-screen, so the mark reappears in the top bar —
+ *  the only case where two brand elements can't both be visible at once. */
+function TopNavBrand() {
+  const { isMobile } = useAppShellMobile();
+  if (!isMobile) return null;
+  return <TopNavHeading heading="" logo={<NavIcon icon={<LegalOSLogo />} />} href="/dashboard" />;
+}
+
 /** Routes rendered without app chrome — a signed-out visitor has no firm,
  *  no matters and nothing to navigate to, so the nav would be dead links. */
 const BARE_ROUTES = ["/sign-in", "/sign-up", "/invite"];
@@ -258,7 +294,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const topNav = (
     <TopNav
       label={t("@legalos.shell.mainNavAriaLabel")}
-      heading={<TopNavHeading heading="" logo={<NavIcon icon={<LegalOSLogo />} />} href="/dashboard" />}
+      heading={<TopNavBrand />}
       endContent={
         <HStack gap={1} align="center">
           <Button
@@ -269,6 +305,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           >
             {t("@legalos.shell.search.button")}
           </Button>
+          <LanguageToggle />
           <ThemeToggle />
           <DropdownMenu
             button={{

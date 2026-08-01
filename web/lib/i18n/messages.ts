@@ -1,18 +1,21 @@
 import type { Catalog, MessagesByLocale } from "@astryxdesign/core/i18n";
 import * as ai from "./catalogs/ai";
+import * as clients from "./catalogs/clients";
 import * as common from "./catalogs/common";
+import * as documents from "./catalogs/documents";
 import * as enums from "./catalogs/enums";
 import * as financeA from "./catalogs/finance-a";
 import * as financeB from "./catalogs/finance-b";
 import * as matters from "./catalogs/matters";
 import * as overview from "./catalogs/overview";
 import * as practice from "./catalogs/practice";
+import * as settings from "./catalogs/settings";
 import * as shell from "./catalogs/shell";
 
 // Each domain catalog module exports `en`/`ar` Catalog objects; merge them
 // here into the two locale-wide catalogs the provider needs. Add new domain
 // modules to this list as pages pick up translation.
-const domains = [ai, common, enums, financeA, financeB, matters, overview, practice, shell];
+const domains = [ai, clients, common, documents, enums, financeA, financeB, matters, overview, practice, settings, shell];
 
 function mergeCatalogs(catalogs: Catalog[]): Catalog {
   return Object.assign({}, ...catalogs);

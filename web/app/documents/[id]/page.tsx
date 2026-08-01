@@ -28,6 +28,7 @@ import {
   formatDateTime,
   type DocumentStatus,
 } from "@/lib/practice";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 
 // Version history and comment threads were in the UI concept but have no
@@ -48,6 +49,7 @@ export default function DocumentDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const t = useTranslator();
   const documentId = Number(id);
   const enumLabel = useEnumLabel();
   const router = useRouter();
@@ -70,7 +72,7 @@ export default function DocumentDetailPage({
       resource.reload();
     } catch (exc) {
       setError(
-        exc instanceof Error ? exc.message : "Could not update this document.",
+        exc instanceof Error ? exc.message : t("@legalos.documents.detail.updateError"),
       );
     } finally {
       setPending(false);
@@ -86,7 +88,7 @@ export default function DocumentDetailPage({
       router.push("/documents");
     } catch (exc) {
       setError(
-        exc instanceof Error ? exc.message : "Could not delete this document.",
+        exc instanceof Error ? exc.message : t("@legalos.documents.detail.deleteError"),
       );
       setPending(false);
     }
@@ -97,14 +99,14 @@ export default function DocumentDetailPage({
       height="fill"
       content={
         <LayoutContent padding={0}>
-          <DataView resource={resource} loadingLabel="Loading document…">
+          <DataView resource={resource} loadingLabel={t("@legalos.documents.detail.loading")}>
             {(doc) => (
               <VStack gap={6}>
                 <Link href="/documents">
                   <HStack gap={1.5} vAlign="center">
                     <Icon icon={ArrowLeftIcon} size="sm" color="secondary" />
                     <Text type="body" color="secondary">
-                      Documents
+                      {t("@legalos.documents.detail.backLink")}
                     </Text>
                   </HStack>
                 </Link>
@@ -121,13 +123,13 @@ export default function DocumentDetailPage({
                           {doc.matter_name}
                         </Link>
                       ) : (
-                        "Not filed against a matter"
+                        t("@legalos.documents.detail.notFiled")
                       )}
                     </Text>
                   </VStack>
                   <HStack gap={3} vAlign="center">
                     <Selector
-                      label="Status"
+                      label={t("@legalos.documents.field.status")}
                       isLabelHidden
                       value={doc.status}
                       onChange={setStatus}
@@ -137,24 +139,24 @@ export default function DocumentDetailPage({
                     />
                     {doc.storage_key && (
                       <Button
-                        label="Download"
+                        label={t("@legalos.documents.detail.download")}
                         variant="primary"
                         href={`${API_BASE}/api/orgs/${organizationId}/documents/${doc.id}/content`}
                         icon={
                           <Icon icon={ArrowDownTrayIcon} size="sm" color="inherit" />
                         }
                       >
-                        Download
+                        {t("@legalos.documents.detail.download")}
                       </Button>
                     )}
                     <Button
-                      label="Delete document"
+                      label={t("@legalos.documents.detail.deleteDocument")}
                       variant="destructive"
                       isDisabled={pending}
                       icon={<Icon icon={TrashIcon} size="sm" color="inherit" />}
                       onClick={remove}
                     >
-                      Delete
+                      {t("@legalos.documents.detail.delete")}
                     </Button>
                   </HStack>
                 </HStack>
@@ -165,7 +167,7 @@ export default function DocumentDetailPage({
                   <GridSpan columns={2}>
                     <Card>
                       <VStack gap={4}>
-                        <Heading level={4}>File</Heading>
+                        <Heading level={4}>{t("@legalos.documents.detail.fileHeading")}</Heading>
                         {doc.storage_key ? (
                           <VStack gap={3}>
                             <Text type="body" color="secondary">
@@ -174,7 +176,7 @@ export default function DocumentDetailPage({
                             <Link
                               href={`${API_BASE}/api/orgs/${organizationId}/documents/${doc.id}/content`}
                             >
-                              Open the stored file
+                              {t("@legalos.documents.detail.openStoredFile")}
                             </Link>
                           </VStack>
                         ) : (
@@ -182,8 +184,8 @@ export default function DocumentDetailPage({
                             icon={
                               <Icon icon={DocumentIcon} size="lg" color="secondary" />
                             }
-                            title="No file stored"
-                            description="This record has metadata only — no file was uploaded for it."
+                            title={t("@legalos.documents.detail.noFileTitle")}
+                            description={t("@legalos.documents.detail.noFileDescription")}
                           />
                         )}
                       </VStack>
@@ -192,21 +194,21 @@ export default function DocumentDetailPage({
 
                   <Card>
                     <VStack gap={4}>
-                      <Heading level={4}>Details</Heading>
+                      <Heading level={4}>{t("@legalos.documents.detail.detailsHeading")}</Heading>
                       <MetadataList>
-                        <MetadataListItem label="Status">
+                        <MetadataListItem label={t("@legalos.documents.field.status")}>
                           <Badge variant="neutral" label={enumLabel(doc.status)} />
                         </MetadataListItem>
-                        <MetadataListItem label="Type">
+                        <MetadataListItem label={t("@legalos.documents.field.type")}>
                           {doc.doc_type || "—"}
                         </MetadataListItem>
-                        <MetadataListItem label="Size">
+                        <MetadataListItem label={t("@legalos.documents.field.size")}>
                           {doc.size_bytes ? formatBytes(doc.size_bytes) : "—"}
                         </MetadataListItem>
-                        <MetadataListItem label="Uploaded by">
+                        <MetadataListItem label={t("@legalos.documents.field.uploadedBy")}>
                           {memberName(doc.uploaded_by)}
                         </MetadataListItem>
-                        <MetadataListItem label="Uploaded">
+                        <MetadataListItem label={t("@legalos.documents.field.uploaded")}>
                           {formatDateTime(doc.uploaded_at)}
                         </MetadataListItem>
                       </MetadataList>

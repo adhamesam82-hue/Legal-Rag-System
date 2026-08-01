@@ -11,3 +11,6 @@ final.mjs
 smoke.mjs
 .tmp-*.mjs
 verify-live.mjs
+
+# Playwright QA scratch scripts (session-local, not part of the app)
+.qa-*.mjs

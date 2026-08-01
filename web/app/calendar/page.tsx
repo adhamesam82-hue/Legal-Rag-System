@@ -254,9 +254,12 @@ export default function CalendarPage() {
           </LayoutHeader>
         }
         content={
-          <LayoutContent padding={0} isScrollable>
-            <Card className="min-w-0">
-              <VStack gap={4}>
+          // Not scrollable: the month divides the height it is given (see the
+          // grid below), so there is nothing to scroll past. The right rail is
+          // the screen's one deliberate second scroll region.
+          <LayoutContent padding={0}>
+            <Card className="min-w-0" height="100%">
+              <VStack gap={3} height="100%">
                 <HStack hAlign="between" vAlign="center">
                   <Heading level={4}>{monthLabel}</Heading>
                   <HStack gap={1}>
@@ -279,76 +282,95 @@ export default function CalendarPage() {
 
                 <DataView resource={resource} loadingLabel={t("@legalos.calendar.loading")}>
                   {() => (
-                    <Grid columns={7} gap={2} className="min-w-0">
-                      {WEEKDAY_KEYS.map((key) => (
-                        <Text
-                          key={key}
-                          type="supporting"
-                          color="secondary"
-                          weight="semibold"
-                        >
-                          {t(key)}
-                        </Text>
-                      ))}
-                      {cells.map((date, index) => {
-                        if (!date) {
-                          return (
-                            <VStack key={`pad-${index}`} gap={0} minHeight={96} />
-                          );
-                        }
-                        const dayEvents = byDate[date] ?? [];
-                        const isToday = date === today;
-                        const isSelected = date === selectedDate;
-                        return (
-                          <Card
-                            key={date}
-                            padding={2}
-                            minHeight={96}
-                            variant={isSelected ? "muted" : "default"}
-                            onClick={() => setSelectedDate(date)}
-                            className="cursor-pointer min-w-0 overflow-hidden"
+                    <>
+                      <Grid columns={7} gap={2} className="min-w-0">
+                        {WEEKDAY_KEYS.map((key) => (
+                          <Text
+                            key={key}
+                            type="supporting"
+                            color="secondary"
+                            weight="semibold"
                           >
-                            <VStack gap={1}>
-                              <Text
-                                type="label"
-                                weight={isToday ? "bold" : "normal"}
-                                color={isToday ? "accent" : "primary"}
+                            {t(key)}
+                          </Text>
+                        ))}
+                      </Grid>
+                      {/* The six week rows divide whatever height is left
+                       *  rather than each claiming a fixed 96px: with a fixed
+                       *  height the last row was sliced off the bottom of the
+                       *  viewport (30 and 31 half-visible) while weeks three
+                       *  to five sat almost empty. `grid-rows-6` is Tailwind's
+                       *  repeat(6, minmax(0, 1fr)); the minmax(0) is what lets
+                       *  a row get shorter than the events inside it. */}
+                      <StackItem size="fill">
+                        <Grid columns={7} gap={2} className="grid-rows-6 h-full min-w-0">
+                          {cells.map((date, index) => {
+                            if (!date) {
+                              return <VStack key={`pad-${index}`} gap={0} />;
+                            }
+                            const dayEvents = byDate[date] ?? [];
+                            const isToday = date === today;
+                            const isSelected = date === selectedDate;
+                            return (
+                              <Card
+                                key={date}
+                                padding={2}
+                                variant={isSelected ? "muted" : "default"}
+                                onClick={() => setSelectedDate(date)}
+                                className="cursor-pointer min-w-0 min-h-0 overflow-hidden"
                               >
-                                {Number(date.slice(8))}
-                              </Text>
-                              {dayEvents.slice(0, 2).map((event) => (
-                                <HStack
-                                  key={event.id}
-                                  gap={1}
-                                  vAlign="center"
-                                  className="min-w-0"
-                                >
-                                  <Icon
-                                    icon={KIND_ICON[event.kind]}
-                                    size="xsm"
-                                    color="secondary"
-                                  />
+                                <VStack gap={0.5}>
                                   <Text
-                                    type="supporting"
-                                    color="secondary"
-                                    className="truncate min-w-0"
+                                    type="label"
+                                    weight={isToday ? "bold" : "normal"}
+                                    color={isToday ? "accent" : "primary"}
                                   >
-                                    {event.title}
+                                    {Number(date.slice(8))}
                                   </Text>
-                                </HStack>
-                              ))}
-                              {dayEvents.length > 2 && (
-                                <Text type="supporting" color="secondary">
-                                  {t("@legalos.calendar.moreEvents", {
-                                    count: dayEvents.length - 2,
-                                  })}
-                                </Text>
-                              )}
-                            </VStack>
-                          </Card>
-                        );
-                      })}
-                    </Grid>
+                                  {dayEvents.slice(0, MAX_CHIPS_PER_DAY).map((event) => (
+                                    <HStack
+                                      key={event.id}
+                                      gap={1}
+                                      vAlign="center"
+                                      className="min-w-0"
+                                    >
+                                      <Icon
+                                        icon={KIND_ICON[event.kind]}
+                                        size="xsm"
+                                        color="secondary"
+                                      />
+                                      {/* A day cell is ~90px wide at the 1280
+                                       *  floor, so a matter name cannot fit
+                                       *  whole here and never will; maxLines
+                                       *  (rather than a CSS-only clamp) is
+                                       *  what makes the full string
+                                       *  recoverable, as a title attribute and
+                                       *  a hover tooltip. The day's events are
+                                       *  also listed in full in the rail. */}
+                                      <Text
+                                        size="xsm"
+                                        color="secondary"
+                                        maxLines={1}
+                                        className="min-w-0"
+                                      >
+                                        {event.title}
+                                      </Text>
+                                    </HStack>
+                                  ))}
+                                  {dayEvents.length > MAX_CHIPS_PER_DAY && (
+                                    <Text size="xsm" color="secondary">
+                                      {t("@legalos.calendar.moreEvents", {
+                                        count: dayEvents.length - MAX_CHIPS_PER_DAY,
+                                      })}
+                                    </Text>
+                                  )}
+                                </VStack>
+                              </Card>
+                            );
+                          })}
+                        </Grid>
+                      </StackItem>
+                    </>
                   )}
                 </DataView>
               </VStack>

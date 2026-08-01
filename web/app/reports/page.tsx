@@ -176,9 +176,9 @@ export default function ReportsPage() {
                   <Text type="label" color="secondary">
                     {t("@legalos.reports.stat.revenue.label")}
                   </Text>
-                  <Heading level={2}>
+                  <Text size="2xl" weight="semibold">
                     {formatEGP(REVENUE.reduce((s, r) => s + r.revenue, 0))}
-                  </Heading>
+                  </Text>
                 </VStack>
               </Card>
               <Card>
@@ -186,7 +186,7 @@ export default function ReportsPage() {
                   <Text type="label" color="secondary">
                     {t("@legalos.reports.stat.collectionRate.label")}
                   </Text>
-                  <Heading level={2}>{collectionRate.toFixed(1)}%</Heading>
+                  <Text size="2xl" weight="semibold">{collectionRate.toFixed(1)}%</Text>
                 </VStack>
               </Card>
               <Card>
@@ -194,7 +194,7 @@ export default function ReportsPage() {
                   <Text type="label" color="secondary">
                     {t("@legalos.reports.stat.mattersClosed.label")}
                   </Text>
-                  <Heading level={2}>{COMPLETION.reduce((s, c) => s + c.closed, 0)}</Heading>
+                  <Text size="2xl" weight="semibold">{COMPLETION.reduce((s, c) => s + c.closed, 0)}</Text>
                 </VStack>
               </Card>
               <Card>
@@ -202,9 +202,9 @@ export default function ReportsPage() {
                   <Text type="label" color="secondary">
                     {t("@legalos.reports.stat.favourableOutcomes.label")}
                   </Text>
-                  <Heading level={2}>
+                  <Text size="2xl" weight="semibold">
                     {Math.round(((OUTCOMES[0].value + OUTCOMES[1].value) / totalOutcomes) * 100)}%
-                  </Heading>
+                  </Text>
                 </VStack>
               </Card>
             </Grid>

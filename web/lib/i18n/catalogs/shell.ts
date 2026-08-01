@@ -34,6 +34,8 @@ export const en: Catalog = {
   "@legalos.shell.nav.automation": { defaultMessage: "Automation" },
 
   "@legalos.shell.collapse": { defaultMessage: "Collapse" },
+  "@legalos.shell.languageToggle.toArabic": { defaultMessage: "التبديل إلى العربية" },
+  "@legalos.shell.languageToggle.toEnglish": { defaultMessage: "Switch to English" },
   "@legalos.shell.themeToggle.toLight": { defaultMessage: "Switch to light mode" },
   "@legalos.shell.themeToggle.toDark": { defaultMessage: "Switch to dark mode" },
 
@@ -95,6 +97,8 @@ export const ar: Catalog = {
   "@legalos.shell.nav.automation": { defaultMessage: "الأتمتة" },
 
   "@legalos.shell.collapse": { defaultMessage: "طي القائمة" },
+  "@legalos.shell.languageToggle.toArabic": { defaultMessage: "التبديل إلى العربية" },
+  "@legalos.shell.languageToggle.toEnglish": { defaultMessage: "Switch to English" },
   "@legalos.shell.themeToggle.toLight": { defaultMessage: "التبديل إلى الوضع الفاتح" },
   "@legalos.shell.themeToggle.toDark": { defaultMessage: "التبديل إلى الوضع الداكن" },
 

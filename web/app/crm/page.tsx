@@ -2,7 +2,7 @@
 
 import NextLink from "next/link";
 import { Layout, LayoutContent } from "@astryxdesign/core/Layout";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
+import { VStack, HStack, StackItem } from "@astryxdesign/core/Stack";
 import { Grid } from "@astryxdesign/core/Grid";
 import { Heading, Text } from "@astryxdesign/core/Text";
 import { Card } from "@astryxdesign/core/Card";
@@ -85,16 +85,23 @@ function PipelineColumn({ stage }: { stage: (typeof STAGE_ORDER)[number] }) {
   const meta = STAGE_META[stage];
 
   return (
-    <VStack width={272} gap={3}>
-      {/* Fixed height: the longest stage name ("Consultation Scheduled")
-       *  wraps to two lines while its neighbours stay on one, which would
-       *  otherwise start each column's cards at a different y and leave the
-       *  board's card tops ragged. */}
-      <VStack gap={0.5} height={68}>
+    // size="static" is what makes the track a track: without it the six
+    // columns shrink to share the viewport instead of scrolling, and at
+    // 1280 they land near 148px each — narrow enough that every lead name
+    // wraps to two lines and the width prop reads as decoration.
+    <StackItem size="static">
+      <VStack width={272} gap={3}>
+      {/* Fixed height, and the stage name gets exactly two lines of it: the
+       *  longest name ("Consultation Scheduled") wraps while its neighbours
+       *  stay on one line, which otherwise drops that column's subtitle and
+       *  first card below every other column's and leaves the board ragged. */}
+      <VStack gap={0.5} height={72}>
         <HStack hAlign="between" vAlign="start" gap={2}>
-          <Text type="label" weight="semibold" maxLines={2}>
-            {meta.label}
-          </Text>
+          <VStack height={40}>
+            <Text type="label" weight="semibold" maxLines={2}>
+              {meta.label}
+            </Text>
+          </VStack>
           <Badge variant="neutral" label={String(leads.length)} />
         </HStack>
         <Text type="supporting" color="secondary" maxLines={1}>
@@ -115,7 +122,8 @@ function PipelineColumn({ stage }: { stage: (typeof STAGE_ORDER)[number] }) {
           ))}
         </VStack>
       )}
-    </VStack>
+      </VStack>
+    </StackItem>
   );
 }
 
@@ -154,7 +162,7 @@ export default function CrmPage() {
                     </Text>
                     <Icon icon={UserGroupIcon} size="sm" color="secondary" />
                   </HStack>
-                  <Heading level={2}>{openLeads.length}</Heading>
+                  <Text size="2xl" weight="semibold">{openLeads.length}</Text>
                   <Text type="supporting" color="secondary">
                     Across {STAGE_ORDER.length - 2} active stages
                   </Text>
@@ -168,7 +176,7 @@ export default function CrmPage() {
                     </Text>
                     <Icon icon={BanknotesIcon} size="sm" color="secondary" />
                   </HStack>
-                  <Heading level={2}>{formatEGPCompact(openPipelineValue)}</Heading>
+                  <Text size="2xl" weight="semibold">{formatEGPCompact(openPipelineValue)}</Text>
                   <Text type="supporting" color="secondary">
                     Estimated, not yet won
                   </Text>
@@ -182,7 +190,7 @@ export default function CrmPage() {
                     </Text>
                     <Icon icon={UserGroupIcon} size="sm" color="secondary" />
                   </HStack>
-                  <Heading level={2}>{formatEGP(wonValue)}</Heading>
+                  <Text size="2xl" weight="semibold">{formatEGP(wonValue)}</Text>
                   <Text type="supporting" color="secondary">
                     {wonLeads.length} lead converted
                   </Text>
@@ -196,7 +204,7 @@ export default function CrmPage() {
                     </Text>
                     <Icon icon={ExclamationTriangleIcon} size="sm" color="secondary" />
                   </HStack>
-                  <Heading level={2}>{flaggedCount}</Heading>
+                  <Text size="2xl" weight="semibold">{flaggedCount}</Text>
                   <Text type="supporting" color="secondary">
                     Awaiting partner review
                   </Text>

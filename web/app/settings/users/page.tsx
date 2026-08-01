@@ -20,14 +20,11 @@ import {
   PlusIcon,
   UserPlusIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslator } from "@astryxdesign/core/i18n";
+import { useEnumLabel } from "@/lib/i18n/enum-label";
+import { useOrg } from "@/lib/org";
 
 type Role = "owner" | "lawyer" | "staff";
-
-const ROLE_LABEL: Record<Role, string> = {
-  owner: "Owner",
-  lawyer: "Lawyer",
-  staff: "Staff",
-};
 
 const ROLE_BADGE_VARIANT: Record<Role, "purple" | "blue" | "neutral"> = {
   owner: "purple",
@@ -41,7 +38,9 @@ interface Member {
   email: string;
   role: Role;
   isYou?: boolean;
-  joinedLabel: string;
+  /** Founding members have no join date; the rest carry a month key + year. */
+  joinedMonthKey?: string;
+  joinedYear?: number;
 }
 
 const MEMBERS: Member[] = [
@@ -51,28 +50,31 @@ const MEMBERS: Member[] = [
     email: "ahmed@alsayedpartners.com",
     role: "owner",
     isYou: true,
-    joinedLabel: "Founding member",
+
   },
   {
     id: "mona",
     name: "Mona Farouk",
     email: "mona.farouk@alsayedpartners.com",
     role: "lawyer",
-    joinedLabel: "Joined Mar 2026",
+    joinedMonthKey: "@legalos.settings.month.mar",
+    joinedYear: 2026,
   },
   {
     id: "youssef",
     name: "Youssef Adel",
     email: "youssef.adel@alsayedpartners.com",
     role: "lawyer",
-    joinedLabel: "Joined Apr 2026",
+    joinedMonthKey: "@legalos.settings.month.apr",
+    joinedYear: 2026,
   },
   {
     id: "layla",
     name: "Layla Hassan",
     email: "layla.hassan@alsayedpartners.com",
     role: "staff",
-    joinedLabel: "Joined May 2026",
+    joinedMonthKey: "@legalos.settings.month.may",
+    joinedYear: 2026,
   },
 ];
 
@@ -83,7 +85,9 @@ interface Invitation {
   email: string;
   role: Role;
   status: InviteStatus;
-  detail: string;
+  sentDaysAgo: number;
+  expiresInDays?: number;
+  expiredDaysAgo?: number;
 }
 
 const INVITATIONS: Invitation[] = [
@@ -92,21 +96,26 @@ const INVITATIONS: Invitation[] = [
     email: "sara.ibrahim@example.com",
     role: "lawyer",
     status: "pending",
-    detail: "Invited 2 days ago · expires in 5 days",
+    sentDaysAgo: 2,
+    expiresInDays: 5,
   },
   {
     id: "inv-2",
     email: "khaled.reda@example.com",
     role: "staff",
     status: "expired",
-    detail: "Invited 9 days ago · expired 2 days ago",
+    sentDaysAgo: 9,
+    expiredDaysAgo: 2,
   },
 ];
 
-const INVITE_STATUS_BADGE: Record<InviteStatus, { variant: "warning" | "neutral"; label: string }> = {
-  pending: { variant: "warning", label: "Pending" },
-  expired: { variant: "neutral", label: "Expired" },
-  revoked: { variant: "neutral", label: "Revoked" },
+const INVITE_STATUS_BADGE: Record<
+  InviteStatus,
+  { variant: "warning" | "neutral"; labelKey: string }
+> = {
+  pending: { variant: "warning", labelKey: "@legalos.settings.users.status.pending" },
+  expired: { variant: "neutral", labelKey: "@legalos.settings.users.status.expired" },
+  revoked: { variant: "neutral", labelKey: "@legalos.settings.users.status.revoked" },
 };
 
 function InviteMemberDialog({
@@ -116,6 +125,9 @@ function InviteMemberDialog({
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useTranslator();
+  const enumLabel = useEnumLabel();
+  const { organizationName } = useOrg();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("lawyer");
 
@@ -124,8 +136,10 @@ function InviteMemberDialog({
       <Layout
         header={
           <DialogHeader
-            title="Invite a team member"
-            subtitle="They'll get an email with a link to join Al-Sayed & Partners. Invitations expire after 7 days."
+            title={t("@legalos.settings.invite.title")}
+            subtitle={t("@legalos.settings.invite.subtitle", {
+              firm: organizationName ?? "",
+            })}
             onOpenChange={onOpenChange}
           />
         }
@@ -133,7 +147,7 @@ function InviteMemberDialog({
           <LayoutContent>
             <VStack gap={4}>
               <TextInput
-                label="Email address"
+                label={t("@legalos.settings.invite.emailLabel")}
                 value={email}
                 onChange={setEmail}
                 type="email"
@@ -142,14 +156,14 @@ function InviteMemberDialog({
                 isRequired
               />
               <Selector
-                label="Role"
+                label={t("@legalos.settings.invite.roleLabel")}
                 value={role}
                 onChange={setRole}
                 options={[
-                  { value: "lawyer", label: "Lawyer" },
-                  { value: "staff", label: "Staff" },
+                  { value: "lawyer", label: enumLabel("lawyer") },
+                  { value: "staff", label: enumLabel("staff") },
                 ]}
-                description="New members can only be invited as Lawyer or Staff."
+                description={t("@legalos.settings.invite.roleHint")}
               />
             </VStack>
           </LayoutContent>
@@ -157,11 +171,15 @@ function InviteMemberDialog({
         footer={
           <LayoutFooter>
             <HStack gap={2} hAlign="end">
-              <Button label="Cancel" variant="secondary" onClick={() => onOpenChange(false)}>
+              <Button
+                label={t("@legalos.settings.action.cancel")}
+                variant="secondary"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancel
               </Button>
               <Button
-                label="Send invite"
+                label={t("@legalos.settings.invite.send")}
                 variant="primary"
                 icon={<Icon icon={UserPlusIcon} size="sm" color="inherit" />}
                 onClick={() => {
@@ -180,10 +198,12 @@ function InviteMemberDialog({
 }
 
 function MemberActions({ member }: { member: Member }) {
+  const t = useTranslator();
+  const enumLabel = useEnumLabel();
   if (member.role === "owner") {
     return (
       <Text type="supporting" color="secondary">
-        {member.isYou ? "You" : "Owner"}
+        {member.isYou ? t("@legalos.settings.users.you") : enumLabel("owner")}
       </Text>
     );
   }
@@ -200,37 +220,39 @@ function MemberActions({ member }: { member: Member }) {
         {
           type: "section",
           items: [
-            { label: "Change role to Lawyer", onClick: () => {} },
-            { label: "Change role to Staff", onClick: () => {} },
+            { label: t("@legalos.settings.users.changeRoleToLawyer"), onClick: () => {} },
+            { label: t("@legalos.settings.users.changeRoleToStaff"), onClick: () => {} },
           ],
         },
         { type: "divider" },
-        { label: "Remove from firm", onClick: () => {} },
+        { label: t("@legalos.settings.users.removeFromFirm"), onClick: () => {} },
       ]}
     />
   );
 }
 
 export default function UsersPermissionsPage() {
+  const t = useTranslator();
+  const enumLabel = useEnumLabel();
+  const { organizationName } = useOrg();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
 
   return (
     <VStack gap={6}>
       <HStack hAlign="between" vAlign="start">
         <VStack gap={1}>
-          <Heading level={4}>Users &amp; permissions</Heading>
+          <Heading level={4}>{t("@legalos.settings.users.heading")}</Heading>
           <Text type="body" color="secondary">
-            Manage who has access to Al-Sayed &amp; Partners and what they can do. Only
-            Owners can invite new members.
+            {t("@legalos.settings.users.subtitle", { firm: organizationName ?? "" })}
           </Text>
         </VStack>
         <Button
-          label="Invite member"
+          label={t("@legalos.settings.users.inviteMember")}
           variant="primary"
           icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
           onClick={() => setIsInviteOpen(true)}
         >
-          Invite member
+          {t("@legalos.settings.users.inviteMember")}
         </Button>
       </HStack>
 
@@ -239,12 +261,29 @@ export default function UsersPermissionsPage() {
           {MEMBERS.map((member) => (
             <ListItem
               key={member.id}
-              label={member.isYou ? `${member.name} (you)` : member.name}
-              description={member.email}
+              label={
+                member.isYou
+                  ? t("@legalos.settings.users.nameWithYou", { name: member.name })
+                  : member.name
+              }
+              description={
+                /* joinedMonthKey/joinedYear were carried in this mock data but
+                 * never rendered; surfacing them here alongside the email is
+                 * what they were collected for. */
+                member.joinedMonthKey && member.joinedYear
+                  ? `${member.email} · ${t("@legalos.settings.users.joined", {
+                      month: t(member.joinedMonthKey),
+                      year: member.joinedYear,
+                    })}`
+                  : `${member.email} · ${t("@legalos.settings.users.foundingMember")}`
+              }
               startContent={<Avatar name={member.name} size="md" tooltip={false} />}
               endContent={
                 <HStack gap={3} vAlign="center">
-                  <Badge variant={ROLE_BADGE_VARIANT[member.role]} label={ROLE_LABEL[member.role]} />
+                  <Badge
+                    variant={ROLE_BADGE_VARIANT[member.role]}
+                    label={enumLabel(member.role)}
+                  />
                   <MemberActions member={member} />
                 </HStack>
               }
@@ -256,10 +295,10 @@ export default function UsersPermissionsPage() {
       <VStack gap={3}>
         <VStack gap={1}>
           <Text type="label" weight="semibold">
-            Pending invitations
+            {t("@legalos.settings.users.pendingInvitations")}
           </Text>
           <Text type="supporting" color="secondary">
-            Invitations are single-use links that expire 7 days after they're sent.
+            {t("@legalos.settings.users.invitationsHint")}
           </Text>
         </VStack>
         <Card padding={0}>
@@ -268,18 +307,32 @@ export default function UsersPermissionsPage() {
               <ListItem
                 key={invite.id}
                 label={invite.email}
-                description={invite.detail}
+                description={
+                  invite.status === "pending"
+                    ? t("@legalos.settings.users.invitePending", {
+                        sent: invite.sentDaysAgo,
+                        expires: invite.expiresInDays ?? 0,
+                      })
+                    : t("@legalos.settings.users.inviteExpired", {
+                        sent: invite.sentDaysAgo,
+                        expired: invite.expiredDaysAgo ?? 0,
+                      })
+                }
                 startContent={<Icon icon={EnvelopeIcon} size="sm" color="secondary" />}
                 endContent={
                   <HStack gap={3} vAlign="center">
-                    <Badge variant="neutral" label={ROLE_LABEL[invite.role]} />
+                    <Badge variant="neutral" label={enumLabel(invite.role)} />
                     <Badge
                       variant={INVITE_STATUS_BADGE[invite.status].variant}
-                      label={INVITE_STATUS_BADGE[invite.status].label}
+                      label={t(INVITE_STATUS_BADGE[invite.status].labelKey)}
                     />
                     {invite.status !== "revoked" && (
-                      <Button label="Resend" variant="ghost" size="sm">
-                        Resend
+                      <Button
+                        label={t("@legalos.settings.users.resend")}
+                        variant="ghost"
+                        size="sm"
+                      >
+                        {t("@legalos.settings.users.resend")}
                       </Button>
                     )}
                   </HStack>

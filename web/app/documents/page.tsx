@@ -31,6 +31,7 @@ import {
   type DocumentStatus,
   type MatterDocument,
 } from "@/lib/practice";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 
 // OCR state, sharing scope, comment threads and document tags were part of the
@@ -72,6 +73,7 @@ interface DocRow extends Record<string, unknown> {
 }
 
 export default function DocumentsPage() {
+  const t = useTranslator();
   const enumLabel = useEnumLabel();
   const { practice, organizationId } = useOrg();
   const memberName = useMemberName();
@@ -101,7 +103,7 @@ export default function DocumentsPage() {
     () => [
       {
         id: "all",
-        label: `All documents (${documents.length})`,
+        label: t("@legalos.documents.tree.allDocuments", { count: documents.length }),
         isSelected: selectedMatter === null,
         onClick: () => setSelectedMatter(null),
       },
@@ -155,7 +157,7 @@ export default function DocumentsPage() {
       }
       resource.reload();
     } catch (exc) {
-      setError(exc instanceof Error ? exc.message : "Could not upload this file.");
+      setError(exc instanceof Error ? exc.message : t("@legalos.documents.uploadError"));
     } finally {
       setUploading(false);
       if (fileInput.current) fileInput.current.value = "";
@@ -165,7 +167,7 @@ export default function DocumentsPage() {
   const columns: TableColumn<DocRow>[] = [
     {
       key: "name",
-      header: "Document",
+      header: t("@legalos.documents.field.document"),
       width: proportional(3),
       renderCell: (row) => (
         <HStack gap={2} vAlign="center">
@@ -180,7 +182,7 @@ export default function DocumentsPage() {
     },
     {
       key: "matterName",
-      header: "Matter",
+      header: t("@legalos.documents.field.matter"),
       width: proportional(2),
       renderCell: (row) =>
         row.matterId ? (
@@ -191,13 +193,13 @@ export default function DocumentsPage() {
           </Link>
         ) : (
           <Text type="body" color="secondary">
-            Unfiled
+            {t("@legalos.documents.unfiled")}
           </Text>
         ),
     },
     {
       key: "uploadedBy",
-      header: "Uploaded by",
+      header: t("@legalos.documents.field.uploadedBy"),
       width: proportional(1.5),
       renderCell: (row) => (
         <HStack gap={2} vAlign="center">
@@ -210,7 +212,7 @@ export default function DocumentsPage() {
     },
     {
       key: "uploadedAt",
-      header: "Uploaded",
+      header: t("@legalos.documents.field.uploaded"),
       width: pixel(130),
       renderCell: (row) => (
         <Text type="body" color="secondary">
@@ -220,7 +222,7 @@ export default function DocumentsPage() {
     },
     {
       key: "status",
-      header: "Status",
+      header: t("@legalos.documents.field.status"),
       width: pixel(130),
       renderCell: (row) => (
         <Badge variant={STATUS_VARIANT[row.status]} label={enumLabel(row.status)} />
@@ -228,7 +230,7 @@ export default function DocumentsPage() {
     },
     {
       key: "size",
-      header: "Size",
+      header: t("@legalos.documents.field.size"),
       width: pixel(120),
       align: "end",
       renderCell: (row) =>
@@ -240,7 +242,7 @@ export default function DocumentsPage() {
           </Link>
         ) : (
           <Text type="supporting" color="secondary">
-            No file
+            {t("@legalos.documents.noFile")}
           </Text>
         ),
     },
@@ -253,7 +255,7 @@ export default function DocumentsPage() {
         <LayoutPanel width={260} hasDivider>
           <VStack gap={4}>
             <Text type="label" color="secondary">
-              Matters
+              {t("@legalos.documents.panel.matters")}
             </Text>
             <TreeList items={treeItems} density="compact" />
           </VStack>
@@ -264,30 +266,34 @@ export default function DocumentsPage() {
           <VStack gap={5}>
             <HStack hAlign="between" vAlign="center" wrap="wrap" gap={4}>
               <VStack gap={1}>
-                <Heading level={2}>Documents</Heading>
+                <Heading level={2}>{t("@legalos.documents.heading")}</Heading>
                 <Text type="body" color="secondary">
-                  {rows.length} {rows.length === 1 ? "document" : "documents"}
-                  {selectedMatter ? " in this matter" : " across the firm"}
+                  {t(
+                    selectedMatter
+                      ? "@legalos.documents.subtitle.inMatter"
+                      : "@legalos.documents.subtitle.firmWide",
+                    { count: rows.length },
+                  )}
                 </Text>
               </VStack>
               <HStack gap={3}>
                 <TextInput
-                  label="Search documents"
+                  label={t("@legalos.documents.search.label")}
                   isLabelHidden
                   value={query}
                   onChange={setQuery}
-                  placeholder="Search by name"
+                  placeholder={t("@legalos.documents.search.placeholder")}
                   startIcon={MagnifyingGlassIcon}
                   width={280}
                 />
                 <Button
-                  label={uploading ? "Uploading…" : "Upload"}
+                  label={uploading ? t("@legalos.documents.uploading") : t("@legalos.documents.upload")}
                   variant="primary"
                   isDisabled={uploading || !practice}
                   icon={<Icon icon={ArrowUpTrayIcon} size="sm" color="inherit" />}
                   onClick={() => fileInput.current?.click()}
                 >
-                  Upload
+                  {uploading ? t("@legalos.documents.uploading") : t("@legalos.documents.upload")}
                 </Button>
               </HStack>
             </HStack>
@@ -303,7 +309,7 @@ export default function DocumentsPage() {
 
             <InlineError message={error} onDismiss={() => setError(null)} />
 
-            <DataView resource={resource} loadingLabel="Loading documents…">
+            <DataView resource={resource} loadingLabel={t("@legalos.documents.loading")}>
               {() =>
                 rows.length > 0 ? (
                   <Table<DocRow> data={rows} columns={columns} idKey="id" hasHover />
@@ -311,16 +317,18 @@ export default function DocumentsPage() {
                   <EmptyState
                     icon={<Icon icon={DocumentIcon} size="lg" color="secondary" />}
                     title={
-                      query ? "No documents match your search" : "No documents yet"
+                      query
+                        ? t("@legalos.documents.empty.noMatchTitle")
+                        : t("@legalos.documents.empty.noneTitle")
                     }
                     description={
                       query
-                        ? "Try a different search term."
-                        : "Upload a file to file it against a matter."
+                        ? t("@legalos.documents.empty.noMatchDescription")
+                        : t("@legalos.documents.empty.noneDescription")
                     }
                     actions={
                       <Button
-                        label="Upload a document"
+                        label={t("@legalos.documents.empty.uploadAction")}
                         variant="secondary"
                         onClick={() => fileInput.current?.click()}
                       />
