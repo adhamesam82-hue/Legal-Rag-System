@@ -6,6 +6,8 @@ a real database, so the role-check logic itself is exercised.
 from __future__ import annotations
 
 import pytest
+
+from conftest import drop_organizations_after
 from fastapi.testclient import TestClient
 
 from legalrag.api import app
@@ -20,12 +22,12 @@ def conn():
         connection = get_connection()
     except Exception as exc:  # noqa: BLE001 - any connection failure means skip
         pytest.skip(f"database unavailable: {exc}")
-    yield connection
     with connection.cursor() as cur:
-        cur.execute("DELETE FROM invitations")
-        cur.execute("DELETE FROM memberships")
-        cur.execute("DELETE FROM organizations")
-    connection.commit()
+        cur.execute("SELECT coalesce(max(id), 0) FROM organizations")
+        mark = cur.fetchone()[0]
+    yield connection
+    # Scoped to organizations this test created; see tests/conftest.py.
+    drop_organizations_after(connection, mark)
     connection.close()
 
 

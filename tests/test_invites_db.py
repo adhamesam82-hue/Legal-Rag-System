@@ -5,6 +5,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from conftest import drop_organizations_after
+
 from legalrag.invites import InvitationError, accept_invitation, create_invitation
 from legalrag.orgs import create_organization, get_membership
 
@@ -23,13 +25,14 @@ def conn():
 
 @pytest.fixture(autouse=True)
 def rollback_after_each(conn):
+    # Scoped to this test's organizations; see tests/conftest.py for why a
+    # blanket delete is unsafe now that the practice tables cascade.
+    with conn.cursor() as cur:
+        cur.execute("SELECT coalesce(max(id), 0) FROM organizations")
+        mark = cur.fetchone()[0]
     yield
     conn.rollback()
-    with conn.cursor() as cur:
-        cur.execute("DELETE FROM invitations")
-        cur.execute("DELETE FROM memberships")
-        cur.execute("DELETE FROM organizations")
-    conn.commit()
+    drop_organizations_after(conn, mark)
 
 
 class TestCreateInvitation:

@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import pytest
 
+from conftest import drop_organizations_after
+
 from legalrag.orgs import (
     LastOwnerError,
     add_membership,
@@ -33,14 +35,17 @@ def conn():
 def rollback_after_each(conn):
     """Every test starts from a clean slate: nothing committed here should
     leak into the next test, since organizations/memberships are shared
-    tables with no per-test isolation otherwise."""
+    tables with no per-test isolation otherwise.
+
+    Scoped to organizations this test created. Truncating the table instead
+    would cascade into the practice tables and empty a working database --
+    see tests/conftest.py."""
+    with conn.cursor() as cur:
+        cur.execute("SELECT coalesce(max(id), 0) FROM organizations")
+        mark = cur.fetchone()[0]
     yield
     conn.rollback()
-    with conn.cursor() as cur:
-        cur.execute("DELETE FROM invitations")
-        cur.execute("DELETE FROM memberships")
-        cur.execute("DELETE FROM organizations")
-    conn.commit()
+    drop_organizations_after(conn, mark)
 
 
 class TestCreateOrganization:

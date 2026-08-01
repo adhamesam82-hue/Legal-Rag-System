@@ -50,9 +50,10 @@ from legalrag.orgs import (
     remove_membership,
 )
 from legalrag.pipeline import ask, retrieve_for
+from legalrag.practice_api import router as practice_router
 from legalrag.retrieve import Candidate
 
-app = FastAPI(title="Legal RAG API", version="0.2.0")
+app = FastAPI(title="LegalOS API", version="0.3.0")
 
 # The Next.js dev server is a separate origin.
 app.add_middleware(
@@ -61,6 +62,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Practice management (clients, matters, cases, documents, tasks, time,
+# billing) lives in its own module; the corpus and answering routes below are
+# a separate concern that happens to share an app.
+app.include_router(practice_router)
 
 Jurisdiction = Literal["EG", "SA"]
 
@@ -217,6 +223,8 @@ class OrgMemberOut(BaseModel):
 
     clerk_user_id: str
     role: str
+    display_name: str | None = None
+    title: str | None = None
 
 
 class CreateInviteRequest(BaseModel):
@@ -485,7 +493,15 @@ def get_org_members(
     """
     with db() as conn:
         members = list_org_members(conn, organization_id)
-    return [OrgMemberOut(clerk_user_id=m.clerk_user_id, role=m.role) for m in members]
+    return [
+        OrgMemberOut(
+            clerk_user_id=m.clerk_user_id,
+            role=m.role,
+            display_name=m.display_name,
+            title=m.title,
+        )
+        for m in members
+    ]
 
 
 @app.delete("/api/orgs/{organization_id}/members/{clerk_user_id}", status_code=204)

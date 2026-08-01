@@ -30,6 +30,12 @@ class Membership:
     organization_id: int
     clerk_user_id: str
     role: str
+    # Firm-side display identity. Clerk knows a user's name but not their
+    # title here, and every practice screen that shows "who is responsible"
+    # needs both without a Clerk API call per row. Optional because a
+    # membership created by accepting an invite has neither set yet.
+    display_name: str | None = None
+    title: str | None = None
 
 
 def create_organization(
@@ -81,11 +87,32 @@ def list_org_members(
 ) -> list[Membership]:
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT id, organization_id, clerk_user_id, role FROM memberships "
-            "WHERE organization_id = %s ORDER BY created_at",
+            "SELECT id, organization_id, clerk_user_id, role, display_name, title "
+            "FROM memberships WHERE organization_id = %s ORDER BY created_at",
             (organization_id,),
         )
         return [Membership(*row) for row in cur.fetchall()]
+
+
+def set_member_profile(
+    conn: psycopg.Connection,
+    organization_id: int,
+    clerk_user_id: str,
+    *,
+    display_name: str | None = None,
+    title: str | None = None,
+) -> Membership | None:
+    with conn.cursor() as cur:
+        cur.execute(
+            "UPDATE memberships SET display_name = coalesce(%s, display_name), "
+            "title = coalesce(%s, title) "
+            "WHERE organization_id = %s AND clerk_user_id = %s "
+            "RETURNING id, organization_id, clerk_user_id, role, display_name, title",
+            (display_name, title, organization_id, clerk_user_id),
+        )
+        row = cur.fetchone()
+    conn.commit()
+    return Membership(*row) if row else None
 
 
 def add_membership(

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -92,6 +93,18 @@ def get_resend_api_key() -> str:
     if not key:
         raise RuntimeError("RESEND_API_KEY not set in .env")
     return key
+
+
+def get_document_root() -> Path:
+    """Directory holding uploaded matter documents.
+
+    Local disk, not object storage: this is a solo-founder deployment and the
+    swap to S3-compatible storage is a change to this one function plus
+    practice/documents.py's read/write helpers.
+    """
+    root = Path(os.environ.get("LEGALOS_DOCUMENT_ROOT", "data/documents"))
+    root.mkdir(parents=True, exist_ok=True)
+    return root
 
 
 def get_model_spec(stage: str) -> ModelSpec:
