@@ -4,22 +4,36 @@ version = "0.1.0"
 description = "Arabic legal Q&A research tool (Egypt + Saudi Arabia)"
 requires-python = ">=3.11"
 dependencies = [
-    "streamlit>=1.38",
     "openai>=1.50",
     "httpx>=0.27",
     "beautifulsoup4>=4.12",
-    "datasets>=3.0",
     "python-dotenv>=1.0",
     "psycopg[binary]>=3.2",
     "pyyaml>=6.0",
     "fastapi>=0.141.1",
     "fastapi-clerk-auth>=0.0.9",
+    # Declared explicitly rather than relied on transitively: it is the server
+    # that actually runs the API, so a deployment must not depend on FastAPI
+    # happening to pull it in.
+    "uvicorn[standard]>=0.30",
+    # Multipart form parsing for document uploads.
+    "python-multipart>=0.0.9",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+# Corpus ingestion and the original Streamlit prototype. Kept out of the
+# project dependencies because the API imports none of it, and these packages
+# (streamlit, datasets, and their pandas/pyarrow/pillow tail) are most of the
+# deployed image's size. Installed locally by default; excluded from the
+# container via `uv sync --no-default-groups` in the Dockerfile.
+ingest = [
+    "streamlit>=1.38",
+    "datasets>=3.0",
 ]
 
 [tool.uv]
-dev-dependencies = [
-    "pytest>=8.0",
-]
+default-groups = ["dev", "ingest"]
 
 [tool.pytest.ini_options]
 pythonpath = [".", "evals"]

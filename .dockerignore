@@ -1,0 +1,15 @@
+.git
+.venv
+.claude
+.ailab
+.pytest_cache
+__pycache__
+*.pyc
+node_modules
+web
+data
+scratch
+evals
+tests
+docs
+.env

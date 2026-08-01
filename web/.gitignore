@@ -10,3 +10,4 @@ shots-all.mjs
 final.mjs
 smoke.mjs
 .tmp-*.mjs
+verify-live.mjs
