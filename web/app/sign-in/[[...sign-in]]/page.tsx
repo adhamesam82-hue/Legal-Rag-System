@@ -8,6 +8,7 @@ import { Heading } from "@astryxdesign/core/Heading";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { Button } from "@astryxdesign/core/Button";
 import { Banner } from "@astryxdesign/core/Banner";
+import { RedirectIfSignedIn } from "@/components/RedirectIfSignedIn";
 
 // useSearchParams() in a Client Component requires a Suspense boundary --
 // without one, `next build` fails outright (it has no way to prerender a
@@ -16,7 +17,9 @@ import { Banner } from "@astryxdesign/core/Banner";
 export default function SignInPage() {
   return (
     <Suspense fallback={null}>
-      <SignInForm />
+      <RedirectIfSignedIn>
+        <SignInForm />
+      </RedirectIfSignedIn>
     </Suspense>
   );
 }
@@ -44,10 +47,11 @@ function SignInForm() {
     }
 
     if (signIn.status === "complete") {
-      // OrgGate and the invite-accept page both send visitors here with a
-      // redirect_url when they need to sign in first -- honor it so they
-      // land back where they were going, not always at "/".
-      const destination = searchParams.get("redirect_url") || "/";
+      // The middleware redirects a signed-out visitor here with a
+      // redirect_url -- honor it so they land back where they were going.
+      // "/" is the standalone legal-research chat, not organization-aware;
+      // /dashboard is where a firm member actually lands.
+      const destination = searchParams.get("redirect_url") || "/dashboard";
       await signIn.finalize({
         navigate: ({ decorateUrl }) => {
           const url = decorateUrl(destination);

@@ -9,13 +9,16 @@ import { Text } from "@astryxdesign/core/Text";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { Button } from "@astryxdesign/core/Button";
 import { Banner } from "@astryxdesign/core/Banner";
+import { RedirectIfSignedIn } from "@/components/RedirectIfSignedIn";
 
 // Same reason as the sign-in page: useSearchParams() needs a Suspense
 // boundary or `next build` fails.
 export default function SignUpPage() {
   return (
     <Suspense fallback={null}>
-      <SignUpForm />
+      <RedirectIfSignedIn>
+        <SignUpForm />
+      </RedirectIfSignedIn>
     </Suspense>
   );
 }
@@ -82,10 +85,10 @@ function SignUpForm() {
 
     if (signUp.status === "complete") {
       // A redirect_url means they arrived from an invite link and are
-      // joining an existing firm -- send them there, not to onboarding's
-      // "create a firm" step, which is only for a brand-new account with
-      // nowhere else to go.
-      const destination = searchParams.get("redirect_url") || "/onboarding";
+      // joining an existing firm -- send them there. Otherwise /dashboard,
+      // which prompts a brand-new account with no organization to create one
+      // (see NoOrganizationState) -- there is no separate /onboarding route.
+      const destination = searchParams.get("redirect_url") || "/dashboard";
       await signUp.finalize({
         navigate: ({ decorateUrl }) => {
           const url = decorateUrl(destination);
