@@ -2,9 +2,11 @@
 
 import { createContext, useContext, useMemo, useState } from "react";
 import Link from "next/link";
+import { ClerkProvider } from "@clerk/nextjs";
 import { Theme } from "@astryxdesign/core/theme";
 import { LinkProvider } from "@astryxdesign/core/Link";
 import { legalosTheme } from "@/lib/legalos";
+import { AuthTokenBridge } from "@/components/AuthTokenBridge";
 
 type ColorMode = "light" | "dark" | "system";
 
@@ -26,11 +28,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const ctxValue = useMemo(() => ({ mode, setMode }), [mode]);
 
   return (
-    <ThemeModeContext.Provider value={ctxValue}>
-      <Theme theme={legalosTheme} mode={mode}>
-        {/* Routes every Astryx Link through the Next router. */}
-        <LinkProvider component={Link}>{children}</LinkProvider>
-      </Theme>
-    </ThemeModeContext.Provider>
+    <ClerkProvider>
+      <ThemeModeContext.Provider value={ctxValue}>
+        <Theme theme={legalosTheme} mode={mode}>
+          {/* Routes every Astryx Link through the Next router. */}
+          <LinkProvider component={Link}>
+            <AuthTokenBridge />
+            {children}
+          </LinkProvider>
+        </Theme>
+      </ThemeModeContext.Provider>
+    </ClerkProvider>
   );
 }

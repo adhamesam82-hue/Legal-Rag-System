@@ -2,6 +2,7 @@ node_modules/
 .next/
 next-env.d.ts
 *.tsbuildinfo
+.env*.local
 
 # Local screenshot/smoke scratch scripts
 shot*.mjs
