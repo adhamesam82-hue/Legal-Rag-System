@@ -16,6 +16,7 @@ import {
   Legend,
 } from "recharts";
 import { Layout, LayoutHeader, LayoutContent } from "@astryxdesign/core/Layout";
+import { Banner } from "@astryxdesign/core/Banner";
 import { VStack, HStack } from "@astryxdesign/core/Stack";
 import { Grid, GridSpan } from "@astryxdesign/core/Grid";
 import { Heading, Text } from "@astryxdesign/core/Text";
@@ -106,6 +107,14 @@ export default function ReportsPage() {
       }
       content={
         <LayoutContent padding={0} isScrollable>
+          <VStack gap={6}>
+            <Banner
+              status="info"
+              title="Sample figures — no backend yet"
+              description="This pillar has no data model behind it. Every number below is
+                placeholder content, not a reading of your firm's records. Clients,
+                matters, cases, documents, tasks, time and billing are live."
+            />
           <VStack gap={6}>
             <Grid columns={{ minWidth: 220, repeat: "fit" }} gap={4}>
               <Card>
@@ -290,6 +299,7 @@ export default function ReportsPage() {
                 </Text>
               </VStack>
             </Card>
+          </VStack>
           </VStack>
         </LayoutContent>
       }

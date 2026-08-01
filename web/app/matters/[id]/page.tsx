@@ -1,7 +1,6 @@
 "use client";
 
 import { use, useState } from "react";
-import { notFound } from "next/navigation";
 import { Layout, LayoutHeader, LayoutContent } from "@astryxdesign/core/Layout";
 import { VStack, HStack } from "@astryxdesign/core/Stack";
 import { Grid, GridSpan } from "@astryxdesign/core/Grid";
@@ -12,67 +11,53 @@ import { Icon } from "@astryxdesign/core/Icon";
 import { Badge } from "@astryxdesign/core/Badge";
 import { Avatar } from "@astryxdesign/core/Avatar";
 import { List, ListItem } from "@astryxdesign/core/List";
-import { MetadataList, MetadataListItem } from "@astryxdesign/core/MetadataList";
 import { TabList, Tab } from "@astryxdesign/core/TabList";
-import { Divider } from "@astryxdesign/core/Divider";
+import { TextArea } from "@astryxdesign/core/TextArea";
+import { Selector } from "@astryxdesign/core/Selector";
+import { MetadataList, MetadataListItem } from "@astryxdesign/core/MetadataList";
 import { Link } from "@astryxdesign/core/Link";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
-import { TextArea } from "@astryxdesign/core/TextArea";
 import {
   ArrowLeftIcon,
   ScaleIcon,
-  CalendarDaysIcon,
-  DocumentTextIcon,
-  CheckCircleIcon,
   ClockIcon,
-  SparklesIcon,
-  CreditCardIcon,
-  PencilSquareIcon,
-  ArchiveBoxIcon,
-  ClipboardDocumentListIcon,
-  PaperAirplaneIcon,
+  DocumentTextIcon,
+  BanknotesIcon,
+  CheckCircleIcon,
+  FlagIcon,
+  ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
 import {
-  matterById,
-  clientById,
-  caseForMatter,
-  teamMember,
-  documentsForMatter,
-  hearingsForMatter,
-  tasksForMatter,
-  timeEntriesForMatter,
-  invoicesForMatter,
-  notesForMatter,
-  activityForMatter,
-  timelineForMatter,
-  MATTER_AI_INSIGHTS,
-  MATTER_AI_CONVERSATION,
-  formatEGP,
-  formatDate,
+  useOrg,
+  useMemberName,
+  useResource,
+  useOptionalResource,
+} from "@/lib/org";
+import { DataView, InlineError } from "@/components/DataState";
+import {
   daysUntil,
-} from "@/lib/legalos-data";
-
-const AI_ICON_CLASS = "text-purple-vivid";
+  formatBytes,
+  formatDate,
+  formatDateTime,
+  formatEGP,
+  label,
+  type MatterStatus,
+} from "@/lib/practice";
 
 const TABS = [
   { value: "overview", label: "Overview" },
   { value: "timeline", label: "Timeline" },
   { value: "documents", label: "Documents" },
-  { value: "hearings", label: "Hearings" },
   { value: "tasks", label: "Tasks" },
-  { value: "invoices", label: "Invoices" },
-  { value: "time", label: "Time Entries" },
-  { value: "ai", label: "AI Assistant" },
+  { value: "time", label: "Time & billing" },
   { value: "notes", label: "Notes" },
-  { value: "evidence", label: "Evidence" },
-  { value: "activity", label: "Activity" },
 ];
 
-function statusVariant(status: string): "success" | "warning" | "neutral" {
-  if (status === "Active") return "success";
-  if (status === "On Hold") return "warning";
-  return "neutral";
-}
+const STATUS_VARIANT: Record<MatterStatus, "success" | "warning" | "neutral"> = {
+  active: "success",
+  on_hold: "warning",
+  closed: "neutral",
+};
 
 export default function MatterDetailPage({
   params,
@@ -80,168 +65,434 @@ export default function MatterDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const matterId = Number(id);
+  const { practice } = useOrg();
+  const memberName = useMemberName();
   const [tab, setTab] = useState("overview");
-  const [draft, setDraft] = useState("");
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const matter = matterById(id);
-  if (!matter) {
-    notFound();
+  const resource = useResource(
+    async (api) => {
+      const matter = await api.matters.get(matterId);
+      const [
+        documents,
+        tasks,
+        time,
+        invoices,
+        notes,
+        timeline,
+        hearings,
+        activity,
+      ] = await Promise.all([
+        api.documents.list({ matter_id: matterId }),
+        api.tasks.list({ matter_id: matterId }),
+        api.time.list({ matter_id: matterId }),
+        api.invoices.list({ matter_id: matterId }),
+        api.matters.notes(matterId),
+        api.matters.timeline(matterId),
+        api.hearings.list({ matter_id: matterId }),
+        api.activity({ matter_id: matterId, limit: 20 }),
+      ]);
+      return {
+        matter,
+        documents,
+        tasks,
+        time,
+        invoices,
+        notes,
+        timeline,
+        hearings,
+        activity,
+      };
+    },
+    [matterId],
+  );
+
+  // A matter without litigation has no case; a 404 there is expected, not an error.
+  const caseResource = useOptionalResource(
+    (api) => api.matters.case(matterId),
+    [matterId],
+  );
+
+  async function addNote() {
+    if (!practice || !note.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await practice.matters.addNote(matterId, note.trim());
+      setNote("");
+      resource.reload();
+    } catch (exc) {
+      setError(exc instanceof Error ? exc.message : "Could not save this note.");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  const client = clientById(matter.clientId);
-  const caseRecord = caseForMatter(matter.id);
-  const lead = teamMember(matter.responsibleLawyerId);
-  const documents = documentsForMatter(matter.id);
-  const hearings = hearingsForMatter(matter.id);
-  const tasks = tasksForMatter(matter.id);
-  const timeEntries = timeEntriesForMatter(matter.id);
-  const invoices = invoicesForMatter(matter.id);
-  const notes = notesForMatter(matter.id);
-  const activity = activityForMatter(matter.id);
-  const timeline = timelineForMatter(matter.id);
-  const insights = MATTER_AI_INSIGHTS.filter((i) => i.matterId === matter.id);
-  const conversation = MATTER_AI_CONVERSATION.filter((m) => m.matterId === matter.id);
+  async function setStatus(status: string | null) {
+    if (!practice || !status) return;
+    setError(null);
+    try {
+      await practice.matters.update(matterId, { status });
+      resource.reload();
+    } catch (exc) {
+      setError(exc instanceof Error ? exc.message : "Could not update this matter.");
+    }
+  }
 
-  const openTasks = tasks.filter((t) => t.status !== "Done");
-  const totalHours = timeEntries.reduce((sum, t) => sum + t.hours, 0);
-  const billedValue = timeEntries
-    .filter((t) => t.billable)
-    .reduce((sum, t) => sum + t.hours * t.rate, 0);
-  const outstanding = invoices
-    .filter((i) => i.status === "Sent" || i.status === "Overdue")
-    .reduce((sum, i) => sum + i.amount, 0);
-  const nextHearing = hearings.find((h) => !h.outcome);
+  async function toggleTask(taskId: number, done: boolean) {
+    if (!practice) return;
+    try {
+      await practice.tasks.update(taskId, { status: done ? "done" : "todo" });
+      resource.reload();
+    } catch (exc) {
+      setError(exc instanceof Error ? exc.message : "Could not update this task.");
+    }
+  }
 
   return (
-    <Layout
-      height="fill"
-      header={
-        <LayoutHeader hasDivider padding={0}>
-          <VStack gap={4}>
-            <Link href="/matters" color="secondary">
-              <HStack gap={1} vAlign="center">
-                <Icon icon={ArrowLeftIcon} size="xsm" color="inherit" />
-                <Text type="supporting" color="inherit">
-                  All matters
-                </Text>
-              </HStack>
-            </Link>
+    <DataView resource={resource} loadingLabel="Loading matter…">
+      {({
+        matter,
+        documents,
+        tasks,
+        time,
+        invoices,
+        notes,
+        timeline,
+        hearings,
+        activity,
+      }) => {
+        const openTasks = tasks.filter((t) => t.status !== "done");
+        const billableAmount = time
+          .filter((t) => t.billable)
+          .reduce((sum, t) => sum + Number(t.hours) * Number(t.rate), 0);
+        const unbilledAmount = time
+          .filter((t) => t.billable && t.invoice_id === null)
+          .reduce((sum, t) => sum + Number(t.hours) * Number(t.rate), 0);
+        const totalHours = time.reduce((sum, t) => sum + Number(t.hours), 0);
+        const linkedCase = caseResource.data;
 
-            <HStack hAlign="between" vAlign="start" wrap="wrap" gap={4}>
-              <VStack gap={2}>
-                <HStack gap={3} vAlign="center" wrap="wrap">
-                  <Heading level={2}>{matter.name}</Heading>
-                  <Badge variant={statusVariant(matter.status)} label={matter.status} />
-                </HStack>
-                <HStack gap={2} vAlign="center" wrap="wrap">
-                  {client && <Link href={`/clients/${client.id}`}>{client.name}</Link>}
-                  <Text type="supporting" color="secondary">
-                    · {matter.type} · Opened {formatDate(matter.openedDate)}
-                  </Text>
-                </HStack>
-              </VStack>
-              <HStack gap={2}>
-                <Button
-                  label="Ask AI about this matter"
-                  variant="secondary"
-                  icon={<Icon icon={SparklesIcon} size="sm" className={AI_ICON_CLASS} />}
-                  onClick={() => setTab("ai")}
-                >
-                  Ask AI
-                </Button>
-                <Button label="Log time" variant="secondary" icon={<Icon icon={ClockIcon} size="sm" />}>
-                  Log time
-                </Button>
-                <Button label="Edit matter" variant="primary">
-                  Edit matter
-                </Button>
-              </HStack>
-            </HStack>
+        return (
+          <Layout
+            height="fill"
+            header={
+              <LayoutHeader hasDivider padding={0}>
+                <VStack gap={4}>
+                  <Link href="/matters">
+                    <HStack gap={1.5} vAlign="center">
+                      <Icon icon={ArrowLeftIcon} size="sm" color="secondary" />
+                      <Text type="body" color="secondary">
+                        Matters
+                      </Text>
+                    </HStack>
+                  </Link>
 
-            <TabList value={tab} onChange={setTab} hasDivider>
-              {TABS.map((t) => (
-                <Tab
-                  key={t.value}
-                  value={t.value}
-                  label={t.label}
-                  endContent={
-                    t.value === "tasks" && openTasks.length > 0 ? (
-                      <Badge variant="neutral" label={String(openTasks.length)} />
-                    ) : undefined
-                  }
-                />
-              ))}
-            </TabList>
-          </VStack>
-        </LayoutHeader>
-      }
-      content={
-        <LayoutContent padding={0} isScrollable>
-          <VStack gap={6}>
-            {tab === "overview" && (
-              <Grid columns={3} gap={6}>
-                <GridSpan columns={2}>
-                  <VStack gap={6}>
-                    <Card>
-                      <VStack gap={4}>
-                        <Heading level={4}>Summary</Heading>
-                        <Text type="body">{matter.description}</Text>
-                        <Divider />
-                        <MetadataList columns="multi">
-                          <MetadataListItem label="Client">{client?.name ?? "—"}</MetadataListItem>
-                          <MetadataListItem label="Matter type">{matter.type}</MetadataListItem>
-                          <MetadataListItem label="Responsible lawyer">{lead.name}</MetadataListItem>
-                          <MetadataListItem label="Billing">{matter.billingType}</MetadataListItem>
-                          <MetadataListItem label="Opened">{formatDate(matter.openedDate)}</MetadataListItem>
-                          <MetadataListItem label="Budget">{matter.budget ?? "Not set"}</MetadataListItem>
-                        </MetadataList>
-                      </VStack>
-                    </Card>
+                  <HStack hAlign="between" vAlign="center" wrap="wrap" gap={4}>
+                    <VStack gap={1}>
+                      <HStack gap={3} vAlign="center" wrap="wrap">
+                        <Heading level={2}>{matter.name}</Heading>
+                        <Badge
+                          variant={STATUS_VARIANT[matter.status]}
+                          label={label(matter.status)}
+                        />
+                      </HStack>
+                      <Text type="body" color="secondary">
+                        <Link href={`/clients/${matter.client_id}`}>
+                          {matter.client_name}
+                        </Link>
+                        {` · ${label(matter.matter_type)} · opened ${formatDate(matter.opened_date)}`}
+                      </Text>
+                    </VStack>
+                    <Selector
+                      label="Status"
+                      isLabelHidden
+                      value={matter.status}
+                      onChange={setStatus}
+                      width={160}
+                      options={[
+                        { value: "active", label: "Active" },
+                        { value: "on_hold", label: "On Hold" },
+                        { value: "closed", label: "Closed" },
+                      ]}
+                    />
+                  </HStack>
 
-                    {caseRecord && (
-                      <Card>
-                        <VStack gap={4}>
-                          <HStack hAlign="between" vAlign="center">
-                            <Heading level={4}>Linked court case</Heading>
-                            <Link href={`/cases/${caseRecord.id}`}>Open case</Link>
-                          </HStack>
-                          <MetadataList columns="multi">
-                            <MetadataListItem label="Case number">{caseRecord.caseNumber}</MetadataListItem>
-                            <MetadataListItem label="Court">{caseRecord.court}</MetadataListItem>
-                            <MetadataListItem label="Judge">{caseRecord.judge}</MetadataListItem>
-                            <MetadataListItem label="Opposing party">{caseRecord.opposingParty}</MetadataListItem>
-                          </MetadataList>
+                  <TabList value={tab} onChange={setTab} hasDivider>
+                    {TABS.map((t) => (
+                      <Tab
+                        key={t.value}
+                        value={t.value}
+                        label={t.label}
+                        endContent={
+                          t.value === "tasks" && openTasks.length > 0 ? (
+                            <Badge
+                              variant="neutral"
+                              label={String(openTasks.length)}
+                            />
+                          ) : undefined
+                        }
+                      />
+                    ))}
+                  </TabList>
+                </VStack>
+              </LayoutHeader>
+            }
+            content={
+              <LayoutContent padding={0} isScrollable>
+                <VStack gap={6}>
+                  <InlineError message={error} onDismiss={() => setError(null)} />
+
+                  {tab === "overview" && (
+                    <Grid columns={3} gap={6}>
+                      <GridSpan columns={2}>
+                        <VStack gap={6}>
+                          <Card>
+                            <VStack gap={3}>
+                              <Heading level={4}>Summary</Heading>
+                              <Text type="body">
+                                {matter.description || "No description recorded."}
+                              </Text>
+                              {matter.tags.length > 0 && (
+                                <HStack gap={2} wrap="wrap">
+                                  {matter.tags.map((tag) => (
+                                    <Badge key={tag} variant="neutral" label={tag} />
+                                  ))}
+                                </HStack>
+                              )}
+                            </VStack>
+                          </Card>
+
+                          {linkedCase && (
+                            <Card>
+                              <VStack gap={4}>
+                                <HStack hAlign="between" vAlign="center">
+                                  <Heading level={4}>Linked court case</Heading>
+                                  <Link href={`/cases/${linkedCase.id}`}>
+                                    Open case
+                                  </Link>
+                                </HStack>
+                                <MetadataList>
+                                  <MetadataListItem label="Case number">
+                                    {linkedCase.case_number}
+                                  </MetadataListItem>
+                                  <MetadataListItem label="Court">
+                                    {linkedCase.court}
+                                  </MetadataListItem>
+                                  <MetadataListItem label="Opposing party">
+                                    {linkedCase.opposing_party || "—"}
+                                  </MetadataListItem>
+                                </MetadataList>
+                              </VStack>
+                            </Card>
+                          )}
+
+                          <Card>
+                            <VStack gap={4}>
+                              <Heading level={4}>Open tasks</Heading>
+                              {openTasks.length === 0 ? (
+                                <Text type="body" color="secondary">
+                                  Nothing outstanding.
+                                </Text>
+                              ) : (
+                                <List hasDividers density="compact">
+                                  {openTasks.map((task) => (
+                                    <ListItem
+                                      key={task.id}
+                                      label={task.title}
+                                      description={memberName(task.assignee)}
+                                      startContent={
+                                        <Icon
+                                          icon={CheckCircleIcon}
+                                          size="sm"
+                                          color="secondary"
+                                        />
+                                      }
+                                      endContent={
+                                        task.due_date ? (
+                                          <Text type="supporting" color="secondary">
+                                            {formatDate(task.due_date)}
+                                          </Text>
+                                        ) : undefined
+                                      }
+                                    />
+                                  ))}
+                                </List>
+                              )}
+                            </VStack>
+                          </Card>
+
+                          <Card>
+                            <VStack gap={4}>
+                              <Heading level={4}>Recent activity</Heading>
+                              {activity.length === 0 ? (
+                                <Text type="body" color="secondary">
+                                  No activity yet.
+                                </Text>
+                              ) : (
+                                <List hasDividers density="compact">
+                                  {activity.map((entry) => (
+                                    <ListItem
+                                      key={entry.id}
+                                      label={memberName(entry.actor)}
+                                      description={entry.action}
+                                      startContent={
+                                        <Avatar
+                                          name={memberName(entry.actor)}
+                                          size="sm"
+                                          tooltip={false}
+                                        />
+                                      }
+                                      endContent={
+                                        <Text type="supporting" color="secondary">
+                                          {formatDateTime(entry.occurred_at)}
+                                        </Text>
+                                      }
+                                    />
+                                  ))}
+                                </List>
+                              )}
+                            </VStack>
+                          </Card>
                         </VStack>
-                      </Card>
-                    )}
+                      </GridSpan>
 
+                      <VStack gap={6}>
+                        <Card>
+                          <VStack gap={4}>
+                            <Heading level={4}>At a glance</Heading>
+                            <MetadataList>
+                              <MetadataListItem label="Billing">
+                                {label(matter.billing_type)}
+                              </MetadataListItem>
+                              {matter.budget_amount !== null && (
+                                <MetadataListItem label="Budget">
+                                  {formatEGP(Number(matter.budget_amount))}
+                                  {matter.budget_is_estimate ? " (est.)" : ""}
+                                </MetadataListItem>
+                              )}
+                              <MetadataListItem label="Hours logged">
+                                {totalHours.toFixed(1)}h
+                              </MetadataListItem>
+                              <MetadataListItem label="Unbilled">
+                                {formatEGP(unbilledAmount)}
+                              </MetadataListItem>
+                              {matter.next_deadline && (
+                                <MetadataListItem label="Next deadline">
+                                  {matter.next_deadline.label} ·{" "}
+                                  {formatDate(matter.next_deadline.due_date)}
+                                </MetadataListItem>
+                              )}
+                              {matter.closed_date && (
+                                <MetadataListItem label="Closed">
+                                  {formatDate(matter.closed_date)}
+                                </MetadataListItem>
+                              )}
+                            </MetadataList>
+                          </VStack>
+                        </Card>
+
+                        <Card>
+                          <VStack gap={4}>
+                            <Heading level={4}>Team</Heading>
+                            <List hasDividers density="compact">
+                              <ListItem
+                                label={memberName(matter.responsible_user)}
+                                description="Responsible"
+                                startContent={
+                                  <Avatar
+                                    name={memberName(matter.responsible_user)}
+                                    size="sm"
+                                    tooltip={false}
+                                  />
+                                }
+                              />
+                              {matter.staff.map((userId) => (
+                                <ListItem
+                                  key={userId}
+                                  label={memberName(userId)}
+                                  description="Supporting"
+                                  startContent={
+                                    <Avatar
+                                      name={memberName(userId)}
+                                      size="sm"
+                                      tooltip={false}
+                                    />
+                                  }
+                                />
+                              ))}
+                            </List>
+                          </VStack>
+                        </Card>
+
+                        <Card>
+                          <VStack gap={4}>
+                            <Heading level={4}>Hearings</Heading>
+                            {hearings.length === 0 ? (
+                              <Text type="body" color="secondary">
+                                None scheduled.
+                              </Text>
+                            ) : (
+                              <List hasDividers density="compact">
+                                {hearings.map((hearing) => (
+                                  <ListItem
+                                    key={hearing.id}
+                                    label={hearing.purpose || "Hearing"}
+                                    description={hearing.court}
+                                    startContent={
+                                      <Icon
+                                        icon={ScaleIcon}
+                                        size="sm"
+                                        color="secondary"
+                                      />
+                                    }
+                                    endContent={
+                                      <Text type="supporting" color="secondary">
+                                        {formatDate(hearing.hearing_date)}
+                                      </Text>
+                                    }
+                                  />
+                                ))}
+                              </List>
+                            )}
+                          </VStack>
+                        </Card>
+                      </VStack>
+                    </Grid>
+                  )}
+
+                  {tab === "timeline" && (
                     <Card>
                       <VStack gap={4}>
-                        <HStack hAlign="between" vAlign="center">
-                          <Heading level={4}>Open tasks</Heading>
-                          <Link href="/tasks">All tasks</Link>
-                        </HStack>
-                        {openTasks.length === 0 ? (
+                        <Heading level={4}>Matter timeline</Heading>
+                        {timeline.length === 0 ? (
                           <EmptyState
-                            title="No open tasks"
-                            description="Every task on this matter is complete."
+                            icon={<Icon icon={FlagIcon} size="lg" color="secondary" />}
+                            title="No milestones yet"
+                            description="Filings, communications and billing events appear here."
                           />
                         ) : (
                           <List hasDividers density="compact">
-                            {openTasks.map((t) => (
+                            {timeline.map((event) => (
                               <ListItem
-                                key={t.id}
-                                label={t.title}
-                                description={`${teamMember(t.assigneeId).name} · due ${formatDate(t.dueDate)}`}
-                                startContent={<Icon icon={CheckCircleIcon} size="sm" color="secondary" />}
+                                key={event.id}
+                                label={event.label}
+                                description={event.detail ?? undefined}
+                                startContent={
+                                  <Icon icon={FlagIcon} size="sm" color="secondary" />
+                                }
                                 endContent={
-                                  t.priority === "High" ? (
-                                    <Badge variant="warning" label="High" />
-                                  ) : (
+                                  <HStack gap={3} vAlign="center">
+                                    <Badge
+                                      variant="neutral"
+                                      label={label(event.kind)}
+                                    />
                                     <Text type="supporting" color="secondary">
-                                      {t.priority}
+                                      {formatDate(event.event_date)}
                                     </Text>
-                                  )
+                                  </HStack>
                                 }
                               />
                             ))}
@@ -249,483 +500,292 @@ export default function MatterDetailPage({
                         )}
                       </VStack>
                     </Card>
-                  </VStack>
-                </GridSpan>
-
-                <VStack gap={6}>
-                  <Card variant="purple">
-                    <VStack gap={3}>
-                      <HStack gap={2} vAlign="center">
-                        <Icon icon={SparklesIcon} size="sm" className={AI_ICON_CLASS} />
-                        <Heading level={4}>AI insights</Heading>
-                      </HStack>
-                      {insights.map((i, idx) => (
-                        <VStack key={i.insight} gap={3}>
-                          {idx > 0 && <Divider />}
-                          <Text type="body">{i.insight}</Text>
-                        </VStack>
-                      ))}
-                      <Button
-                        label="Open matter AI assistant"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setTab("ai")}
-                      >
-                        Ask a follow-up
-                      </Button>
-                    </VStack>
-                  </Card>
-
-                  <Card>
-                    <VStack gap={4}>
-                      <Heading level={4}>At a glance</Heading>
-                      <MetadataList>
-                        <MetadataListItem label="Next deadline">
-                          {matter.nextDeadline
-                            ? `${matter.nextDeadline.label} — in ${daysUntil(matter.nextDeadline.date)}d`
-                            : "None set"}
-                        </MetadataListItem>
-                        <MetadataListItem label="Next hearing">
-                          {nextHearing
-                            ? `${formatDate(nextHearing.date)}, ${nextHearing.time}`
-                            : "None scheduled"}
-                        </MetadataListItem>
-                        <MetadataListItem label="Time logged">{`${totalHours.toFixed(1)}h`}</MetadataListItem>
-                        <MetadataListItem label="Unbilled value">{formatEGP(billedValue)}</MetadataListItem>
-                        <MetadataListItem label="Outstanding">{formatEGP(outstanding)}</MetadataListItem>
-                        <MetadataListItem label="Documents">{String(documents.length)}</MetadataListItem>
-                      </MetadataList>
-                    </VStack>
-                  </Card>
-
-                  <Card>
-                    <VStack gap={4}>
-                      <Heading level={4}>Team</Heading>
-                      <List density="compact">
-                        <ListItem
-                          label={lead.name}
-                          description={`${lead.role} · responsible`}
-                          startContent={<Avatar name={lead.name} size="sm" tooltip={false} />}
-                        />
-                        {(matter.supportingStaffIds ?? []).map((sid) => {
-                          const m = teamMember(sid);
-                          return (
-                            <ListItem
-                              key={sid}
-                              label={m.name}
-                              description={m.role}
-                              startContent={<Avatar name={m.name} size="sm" tooltip={false} />}
-                            />
-                          );
-                        })}
-                      </List>
-                    </VStack>
-                  </Card>
-                </VStack>
-              </Grid>
-            )}
-
-            {tab === "timeline" && (
-              <Card>
-                <VStack gap={4}>
-                  <Heading level={4}>Matter timeline</Heading>
-                  {timeline.length === 0 ? (
-                    <EmptyState title="No timeline events" description="Milestones will appear here as the matter progresses." />
-                  ) : (
-                    <List hasDividers density="balanced">
-                      {[...timeline].reverse().map((e) => (
-                        <ListItem
-                          key={`${e.date}-${e.label}`}
-                          label={e.label}
-                          description={e.detail}
-                          startContent={
-                            <Icon
-                              icon={
-                                e.kind === "filing"
-                                  ? ScaleIcon
-                                  : e.kind === "billing"
-                                    ? CreditCardIcon
-                                    : e.kind === "communication"
-                                      ? PaperAirplaneIcon
-                                      : ArchiveBoxIcon
-                              }
-                              size="sm"
-                              color="secondary"
-                            />
-                          }
-                          endContent={
-                            <Text type="supporting" color="secondary">
-                              {formatDate(e.date)}
-                            </Text>
-                          }
-                        />
-                      ))}
-                    </List>
                   )}
-                </VStack>
-              </Card>
-            )}
 
-            {tab === "documents" && (
-              <Card>
-                <VStack gap={4}>
-                  <HStack hAlign="between" vAlign="center">
-                    <Heading level={4}>Documents</Heading>
-                    <Button label="Upload document" variant="secondary" size="sm">
-                      Upload
-                    </Button>
-                  </HStack>
-                  <List hasDividers density="compact">
-                    {documents.map((d) => (
-                      <ListItem
-                        key={d.id}
-                        label={d.name}
-                        description={`${d.type} · ${d.size} · ${d.uploadedBy} · ${formatDate(d.uploadedAt)}`}
-                        href={`/documents/${d.id}`}
-                        startContent={<Icon icon={DocumentTextIcon} size="sm" color="secondary" />}
-                        endContent={
-                          d.status === "Draft" || d.status === "Under review" ? (
-                            <Badge variant="neutral" label={d.status} />
-                          ) : (
-                            <Text type="supporting" color="secondary">
-                              {d.status}
-                            </Text>
-                          )
-                        }
-                      />
-                    ))}
-                  </List>
-                </VStack>
-              </Card>
-            )}
-
-            {tab === "hearings" && (
-              <Card>
-                <VStack gap={4}>
-                  <Heading level={4}>Hearings</Heading>
-                  {hearings.length === 0 ? (
-                    <EmptyState title="No hearings" description="This matter has no scheduled or past hearings." />
-                  ) : (
-                    <List hasDividers density="balanced">
-                      {hearings.map((h) => (
-                        <ListItem
-                          key={h.id}
-                          label={h.purpose}
-                          description={`${h.court}${h.outcome ? ` · ${h.outcome}` : ""}`}
-                          startContent={<Icon icon={CalendarDaysIcon} size="sm" color="secondary" />}
-                          endContent={
-                            <VStack gap={0} align="end">
-                              <Text type="label" weight="semibold">
-                                {formatDate(h.date)}
-                              </Text>
-                              <Text type="supporting" color="secondary">
-                                {h.time}
-                              </Text>
-                            </VStack>
-                          }
-                        />
-                      ))}
-                    </List>
-                  )}
-                </VStack>
-              </Card>
-            )}
-
-            {tab === "tasks" && (
-              <Card>
-                <VStack gap={4}>
-                  <HStack hAlign="between" vAlign="center">
-                    <Heading level={4}>Tasks</Heading>
-                    <Button label="Add task" variant="secondary" size="sm">
-                      Add task
-                    </Button>
-                  </HStack>
-                  <List hasDividers density="compact">
-                    {tasks.map((t) => (
-                      <ListItem
-                        key={t.id}
-                        label={t.title}
-                        description={`${teamMember(t.assigneeId).name} · due ${formatDate(t.dueDate)} · ${t.status}`}
-                        startContent={
-                          <Icon
-                            icon={CheckCircleIcon}
-                            size="sm"
-                            color={t.status === "Done" ? "success" : "secondary"}
-                          />
-                        }
-                        endContent={
-                          t.priority === "High" && t.status !== "Done" ? (
-                            <Badge variant="warning" label="High" />
-                          ) : (
-                            <Text type="supporting" color="secondary">
-                              {t.priority}
-                            </Text>
-                          )
-                        }
-                      />
-                    ))}
-                  </List>
-                </VStack>
-              </Card>
-            )}
-
-            {tab === "invoices" && (
-              <Card>
-                <VStack gap={4}>
-                  <HStack hAlign="between" vAlign="center">
-                    <Heading level={4}>Invoices</Heading>
-                    <Link href="/billing">All billing</Link>
-                  </HStack>
-                  {invoices.length === 0 ? (
-                    <EmptyState title="No invoices" description="Nothing has been invoiced on this matter yet." />
-                  ) : (
-                    <List hasDividers density="compact">
-                      {invoices.map((i) => (
-                        <ListItem
-                          key={i.id}
-                          label={i.number}
-                          description={`Issued ${formatDate(i.issuedDate)} · due ${formatDate(i.dueDate)}`}
-                          href={`/billing/${i.id}`}
-                          startContent={<Icon icon={CreditCardIcon} size="sm" color="secondary" />}
-                          endContent={
-                            <HStack gap={3} vAlign="center">
-                              <Text type="label" weight="semibold">
-                                {formatEGP(i.amount)}
-                              </Text>
-                              {i.status === "Overdue" ? (
-                                <Badge variant="error" label="Overdue" />
-                              ) : (
-                                <Text type="supporting" color="secondary">
-                                  {i.status}
-                                </Text>
-                              )}
-                            </HStack>
-                          }
-                        />
-                      ))}
-                    </List>
-                  )}
-                </VStack>
-              </Card>
-            )}
-
-            {tab === "time" && (
-              <Card>
-                <VStack gap={4}>
-                  <HStack hAlign="between" vAlign="center">
-                    <VStack gap={1}>
-                      <Heading level={4}>Time entries</Heading>
-                      <Text type="supporting" color="secondary">
-                        {totalHours.toFixed(1)}h logged · {formatEGP(billedValue)} billable value
-                      </Text>
-                    </VStack>
-                    <Link href="/time-tracking">Open time tracking</Link>
-                  </HStack>
-                  {timeEntries.length === 0 ? (
-                    <EmptyState title="No time logged" description="Start the timer to record work on this matter." />
-                  ) : (
-                    <List hasDividers density="compact">
-                      {timeEntries.map((t) => (
-                        <ListItem
-                          key={t.id}
-                          label={t.description}
-                          description={`${teamMember(t.lawyerId).name} · ${formatDate(t.date)}`}
-                          startContent={<Icon icon={ClockIcon} size="sm" color="secondary" />}
-                          endContent={
-                            <HStack gap={3} vAlign="center">
-                              <Text type="label" weight="semibold">
-                                {t.hours.toFixed(1)}h
-                              </Text>
-                              {!t.billable && <Badge variant="neutral" label="Non-billable" />}
-                            </HStack>
-                          }
-                        />
-                      ))}
-                    </List>
-                  )}
-                </VStack>
-              </Card>
-            )}
-
-            {tab === "ai" && (
-              <Grid columns={3} gap={6}>
-                <GridSpan columns={2}>
-                  <Card>
-                    <VStack gap={4}>
-                      <HStack gap={2} vAlign="center">
-                        <Icon icon={SparklesIcon} size="sm" className={AI_ICON_CLASS} />
-                        <Heading level={4}>Matter AI assistant</Heading>
-                      </HStack>
-                      <Text type="supporting" color="secondary">
-                        Scoped to this matter&apos;s documents, filings, and the Egyptian statute corpus.
-                        Answers cite the articles they rely on.
-                      </Text>
-                      <Divider />
+                  {tab === "documents" && (
+                    <Card>
                       <VStack gap={4}>
-                        {conversation.map((m, idx) => (
-                          <VStack key={idx} gap={2}>
-                            <HStack gap={2} vAlign="center">
-                              {m.role === "user" ? (
-                                <Avatar name="Ahmed Al-Sayed" size="sm" tooltip={false} />
-                              ) : (
-                                <Icon icon={SparklesIcon} size="sm" className={AI_ICON_CLASS} />
-                              )}
-                              <Text type="label" weight="semibold">
-                                {m.role === "user" ? "Ahmed Al-Sayed" : "AI Assistant"}
-                              </Text>
-                            </HStack>
-                            <Text type="body">{m.content}</Text>
-                          </VStack>
-                        ))}
+                        <HStack hAlign="between" vAlign="center">
+                          <Heading level={4}>Documents</Heading>
+                          <Link href="/documents">All documents</Link>
+                        </HStack>
+                        {documents.length === 0 ? (
+                          <EmptyState
+                            icon={
+                              <Icon
+                                icon={DocumentTextIcon}
+                                size="lg"
+                                color="secondary"
+                              />
+                            }
+                            title="No documents"
+                            description="Upload documents from the Documents screen to file them here."
+                          />
+                        ) : (
+                          <List hasDividers density="compact">
+                            {documents.map((doc) => (
+                              <ListItem
+                                key={doc.id}
+                                label={doc.name}
+                                href={`/documents/${doc.id}`}
+                                description={`${memberName(doc.uploaded_by)} · ${formatDate(doc.uploaded_at)}`}
+                                startContent={
+                                  <Icon
+                                    icon={DocumentTextIcon}
+                                    size="sm"
+                                    color="secondary"
+                                  />
+                                }
+                                endContent={
+                                  <HStack gap={3} vAlign="center">
+                                    <Badge
+                                      variant="neutral"
+                                      label={label(doc.status)}
+                                    />
+                                    <Text type="supporting" color="secondary">
+                                      {doc.size_bytes
+                                        ? formatBytes(doc.size_bytes)
+                                        : "—"}
+                                    </Text>
+                                  </HStack>
+                                }
+                              />
+                            ))}
+                          </List>
+                        )}
                       </VStack>
-                      <Divider />
-                      <TextArea
-                        label="Ask about this matter"
-                        isLabelHidden
-                        value={draft}
-                        onChange={setDraft}
-                        placeholder="Ask about this matter — its documents, deadlines, or the statutes it turns on…"
-                        rows={3}
-                      />
-                      <HStack hAlign="end">
-                        <Button
-                          label="Send"
-                          variant="primary"
-                          icon={<Icon icon={PaperAirplaneIcon} size="sm" color="inherit" />}
-                        >
-                          Send
-                        </Button>
-                      </HStack>
-                    </VStack>
-                  </Card>
-                </GridSpan>
-                <VStack gap={6}>
-                  <Card variant="purple">
-                    <VStack gap={3}>
-                      <Heading level={4}>Suggested</Heading>
-                      <Text type="body">Draft the appeal brief section on damages.</Text>
-                      <Divider />
-                      <Text type="body">Compare the delivery clause against our standard template.</Text>
-                      <Divider />
-                      <Text type="body">Extract a timeline of filings for the client update.</Text>
-                    </VStack>
-                  </Card>
-                  <Card>
-                    <VStack gap={3}>
-                      <Heading level={4}>Knowledge sources</Heading>
-                      <Text type="supporting" color="secondary">
-                        {documents.length} matter documents · Egyptian statute corpus (6,985 articles)
-                        {caseRecord ? ` · case file ${caseRecord.caseNumber}` : ""}
-                      </Text>
-                      <Link href="/knowledge-base">Firm knowledge base</Link>
-                    </VStack>
-                  </Card>
-                </VStack>
-              </Grid>
-            )}
-
-            {tab === "notes" && (
-              <Card>
-                <VStack gap={4}>
-                  <HStack hAlign="between" vAlign="center">
-                    <Heading level={4}>Notes</Heading>
-                    <Button label="Add note" variant="secondary" size="sm" icon={<Icon icon={PencilSquareIcon} size="sm" />}>
-                      Add note
-                    </Button>
-                  </HStack>
-                  {notes.length === 0 ? (
-                    <EmptyState title="No notes yet" description="Internal notes on this matter will appear here." />
-                  ) : (
-                    <VStack gap={4}>
-                      {notes.map((n, idx) => (
-                        <VStack key={n.id} gap={3}>
-                          {idx > 0 && <Divider />}
-                          <HStack gap={2} vAlign="center">
-                            <Avatar name={teamMember(n.authorId).name} size="sm" tooltip={false} />
-                            <Text type="label" weight="semibold">
-                              {teamMember(n.authorId).name}
-                            </Text>
-                            <Text type="supporting" color="secondary">
-                              {formatDate(n.date)}
-                            </Text>
-                          </HStack>
-                          <Text type="body">{n.content}</Text>
-                        </VStack>
-                      ))}
-                    </VStack>
+                    </Card>
                   )}
-                </VStack>
-              </Card>
-            )}
 
-            {tab === "evidence" && (
-              <Card>
-                <VStack gap={4}>
-                  <HStack hAlign="between" vAlign="center">
-                    <Heading level={4}>Evidence</Heading>
-                    {caseRecord && <Link href={`/cases/${caseRecord.id}`}>Open case file</Link>}
-                  </HStack>
-                  {!caseRecord || caseRecord.evidence.length === 0 ? (
-                    <EmptyState
-                      title="No evidence on file"
-                      description="Evidence is tracked on litigation matters with a linked court case."
-                    />
-                  ) : (
-                    <List hasDividers density="compact">
-                      {caseRecord.evidence.map((e) => (
-                        <ListItem
-                          key={e.name}
-                          label={e.name}
-                          description={`${e.type} · submitted by ${e.submittedBy}`}
-                          startContent={<Icon icon={ClipboardDocumentListIcon} size="sm" color="secondary" />}
-                          endContent={
-                            <Text type="supporting" color="secondary">
-                              {formatDate(e.date)}
-                            </Text>
-                          }
-                        />
-                      ))}
-                    </List>
+                  {tab === "tasks" && (
+                    <Card>
+                      <VStack gap={4}>
+                        <HStack hAlign="between" vAlign="center">
+                          <Heading level={4}>Tasks</Heading>
+                          <Link href="/tasks">All tasks</Link>
+                        </HStack>
+                        {tasks.length === 0 ? (
+                          <EmptyState
+                            icon={
+                              <Icon
+                                icon={CheckCircleIcon}
+                                size="lg"
+                                color="secondary"
+                              />
+                            }
+                            title="No tasks"
+                            description="Add tasks from the Tasks screen and assign them to this matter."
+                          />
+                        ) : (
+                          <List hasDividers density="compact">
+                            {tasks.map((task) => {
+                              const done = task.status === "done";
+                              const overdue = !done && daysUntil(task.due_date) < 0;
+                              return (
+                                <ListItem
+                                  key={task.id}
+                                  label={task.title}
+                                  description={`${memberName(task.assignee)}${
+                                    task.due_date
+                                      ? ` · due ${formatDate(task.due_date)}`
+                                      : ""
+                                  }`}
+                                  startContent={
+                                    <Icon
+                                      icon={CheckCircleIcon}
+                                      size="sm"
+                                      color={done ? "success" : "secondary"}
+                                    />
+                                  }
+                                  endContent={
+                                    <HStack gap={3} vAlign="center">
+                                      {overdue && (
+                                        <Badge variant="error" label="Overdue" />
+                                      )}
+                                      <Button
+                                        label={done ? "Reopen" : "Mark done"}
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => toggleTask(task.id, !done)}
+                                      >
+                                        {done ? "Reopen" : "Mark done"}
+                                      </Button>
+                                    </HStack>
+                                  }
+                                />
+                              );
+                            })}
+                          </List>
+                        )}
+                      </VStack>
+                    </Card>
                   )}
-                </VStack>
-              </Card>
-            )}
 
-            {tab === "activity" && (
-              <Card>
-                <VStack gap={4}>
-                  <Heading level={4}>Activity</Heading>
-                  {activity.length === 0 ? (
-                    <EmptyState title="No activity" description="Actions taken on this matter will appear here." />
-                  ) : (
-                    <List hasDividers density="compact">
-                      {[...activity].reverse().map((a) => (
-                        <ListItem
-                          key={a.id}
-                          label={a.who}
-                          description={a.what}
-                          startContent={
-                            a.who === "AI Assistant" ? (
-                              <Icon icon={SparklesIcon} size="sm" className={AI_ICON_CLASS} />
+                  {tab === "time" && (
+                    <Grid columns={3} gap={6}>
+                      <GridSpan columns={2}>
+                        <Card>
+                          <VStack gap={4}>
+                            <HStack hAlign="between" vAlign="center">
+                              <Heading level={4}>Time entries</Heading>
+                              <Link href="/time-tracking">Time tracking</Link>
+                            </HStack>
+                            {time.length === 0 ? (
+                              <Text type="body" color="secondary">
+                                No time logged against this matter.
+                              </Text>
                             ) : (
-                              <Avatar name={a.who} size="sm" tooltip={false} />
-                            )
-                          }
-                          endContent={
-                            <Text type="supporting" color="secondary">
-                              {a.when.slice(0, 10)}
-                            </Text>
-                          }
-                        />
-                      ))}
-                    </List>
+                              <List hasDividers density="compact">
+                                {time.map((entry) => (
+                                  <ListItem
+                                    key={entry.id}
+                                    label={entry.description || "Legal services"}
+                                    description={`${memberName(entry.clerk_user_id)} · ${formatDate(entry.entry_date)}`}
+                                    startContent={
+                                      <Icon
+                                        icon={ClockIcon}
+                                        size="sm"
+                                        color="secondary"
+                                      />
+                                    }
+                                    endContent={
+                                      <HStack gap={3} vAlign="center">
+                                        {entry.invoice_id && (
+                                          <Badge variant="info" label="Invoiced" />
+                                        )}
+                                        <Text type="body" weight="semibold">
+                                          {Number(entry.hours).toFixed(1)}h
+                                        </Text>
+                                      </HStack>
+                                    }
+                                  />
+                                ))}
+                              </List>
+                            )}
+                          </VStack>
+                        </Card>
+                      </GridSpan>
+
+                      <VStack gap={6}>
+                        <Card>
+                          <VStack gap={4}>
+                            <Heading level={4}>Billing</Heading>
+                            <MetadataList>
+                              <MetadataListItem label="Hours">
+                                {totalHours.toFixed(1)}h
+                              </MetadataListItem>
+                              <MetadataListItem label="Billable value">
+                                {formatEGP(billableAmount)}
+                              </MetadataListItem>
+                              <MetadataListItem label="Unbilled">
+                                {formatEGP(unbilledAmount)}
+                              </MetadataListItem>
+                            </MetadataList>
+                          </VStack>
+                        </Card>
+
+                        <Card>
+                          <VStack gap={4}>
+                            <Heading level={4}>Invoices</Heading>
+                            {invoices.length === 0 ? (
+                              <Text type="body" color="secondary">
+                                No invoices raised.
+                              </Text>
+                            ) : (
+                              <List hasDividers density="compact">
+                                {invoices.map((invoice) => (
+                                  <ListItem
+                                    key={invoice.id}
+                                    label={invoice.number}
+                                    href={`/billing/${invoice.id}`}
+                                    description={formatDate(invoice.issued_date)}
+                                    startContent={
+                                      <Icon
+                                        icon={BanknotesIcon}
+                                        size="sm"
+                                        color="secondary"
+                                      />
+                                    }
+                                    endContent={
+                                      <Text type="body" weight="semibold">
+                                        {formatEGP(Number(invoice.amount))}
+                                      </Text>
+                                    }
+                                  />
+                                ))}
+                              </List>
+                            )}
+                          </VStack>
+                        </Card>
+                      </VStack>
+                    </Grid>
+                  )}
+
+                  {tab === "notes" && (
+                    <Card>
+                      <VStack gap={4}>
+                        <Heading level={4}>Notes</Heading>
+                        <VStack gap={3}>
+                          <TextArea
+                            label="Add a note"
+                            value={note}
+                            onChange={setNote}
+                            rows={3}
+                            placeholder="What should the team know about this matter?"
+                          />
+                          <HStack hAlign="end">
+                            <Button
+                              label={saving ? "Saving…" : "Add note"}
+                              variant="primary"
+                              isDisabled={saving || !note.trim()}
+                              onClick={addNote}
+                            />
+                          </HStack>
+                        </VStack>
+                        {notes.length === 0 ? (
+                          <EmptyState
+                            icon={
+                              <Icon
+                                icon={ChatBubbleLeftRightIcon}
+                                size="lg"
+                                color="secondary"
+                              />
+                            }
+                            title="No notes yet"
+                            description="Notes are visible to everyone on the matter."
+                          />
+                        ) : (
+                          <List hasDividers density="compact">
+                            {notes.map((entry) => (
+                              <ListItem
+                                key={entry.id}
+                                label={memberName(entry.author)}
+                                description={entry.content}
+                                startContent={
+                                  <Avatar
+                                    name={memberName(entry.author)}
+                                    size="sm"
+                                    tooltip={false}
+                                  />
+                                }
+                                endContent={
+                                  <Text type="supporting" color="secondary">
+                                    {formatDateTime(entry.created_at)}
+                                  </Text>
+                                }
+                              />
+                            ))}
+                          </List>
+                        )}
+                      </VStack>
+                    </Card>
                   )}
                 </VStack>
-              </Card>
-            )}
-          </VStack>
-        </LayoutContent>
-      }
-    />
+              </LayoutContent>
+            }
+          />
+        );
+      }}
+    </DataView>
   );
 }
