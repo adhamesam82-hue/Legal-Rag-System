@@ -1,8 +1,17 @@
 /* Order matters: reset (@layer reset) -> components (@layer astryx-base)
-   -> theme tokens (@layer astryx-theme). */
+   -> theme tokens (@layer astryx-theme) -> Tailwind bridge (@layer utilities).
+   stylex.create() is NOT wired into this app's build (no StyleX bundler
+   plugin in next.config.mjs) -- component overrides go through the Tailwind
+   bridge below (token-backed utility classes), not xstyle. */
+@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
 @import "@astryxdesign/core/reset.css";
 @import "@astryxdesign/core/astryx.css";
-@import "@astryxdesign/theme-neutral/theme.css";
+@import "../lib/legalos.css";
+@import "@astryxdesign/core/tailwind-theme.css";
+@import "tailwindcss/utilities.css" layer(utilities);
 
 /*
   Project-specific additions only. Astryx already handles layout, colour,

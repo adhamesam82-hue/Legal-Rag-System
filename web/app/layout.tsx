@@ -4,9 +4,9 @@ import { Providers } from "./providers";
 import { Shell } from "@/components/Shell";
 
 export const metadata: Metadata = {
-  title: "LegalRAG — Egyptian & Saudi Law",
+  title: "LegalOS — Practice management for Egyptian & MENA law firms",
   description:
-    "Ask questions about Egyptian and Saudi law and get answers grounded in statute text, with every citation verified against the corpus.",
+    "Matters, clients, documents, time and billing for Egyptian and MENA law firms — built around legal research grounded in statute text, with every citation verified against the corpus.",
 };
 
 export default function RootLayout({

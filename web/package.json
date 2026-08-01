@@ -10,10 +10,12 @@
   "dependencies": {
     "@astryxdesign/core": "^0.2.0",
     "@astryxdesign/theme-neutral": "^0.2.0",
+    "@heroicons/react": "^2.2.0",
     "@stylexjs/stylex": "^0.19.0",
     "next": "^16.2.12",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "recharts": "^3.10.1"
   },
   "devDependencies": {
     "@astryxdesign/cli": "^0.2.0",

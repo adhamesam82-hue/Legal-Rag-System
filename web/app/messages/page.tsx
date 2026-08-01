@@ -1,0 +1,556 @@
+"use client";
+
+import { useState, type CSSProperties } from "react";
+import {
+  Layout,
+  LayoutContent,
+  LayoutPanel,
+  Stack,
+  StackItem,
+  HStack,
+  VStack,
+} from "@astryxdesign/core/Layout";
+import { Text, Heading } from "@astryxdesign/core/Text";
+import {
+  ChatComposer,
+  ChatLayout,
+  ChatMessage,
+  ChatMessageBubble,
+  ChatMessageList,
+  ChatMessageMetadata,
+  ChatSystemMessage,
+} from "@astryxdesign/core/Chat";
+import { Avatar, AvatarStatusDot } from "@astryxdesign/core/Avatar";
+import { StatusDot } from "@astryxdesign/core/StatusDot";
+import { Badge } from "@astryxdesign/core/Badge";
+import { List, ListItem } from "@astryxdesign/core/List";
+import { Divider } from "@astryxdesign/core/Divider";
+import { TextInput } from "@astryxdesign/core/TextInput";
+import { Timestamp } from "@astryxdesign/core/Timestamp";
+import { EmptyState } from "@astryxdesign/core/EmptyState";
+import { Icon } from "@astryxdesign/core/Icon";
+import { IconButton } from "@astryxdesign/core/IconButton";
+import { Button } from "@astryxdesign/core/Button";
+import { Card } from "@astryxdesign/core/Card";
+import { useMediaQuery } from "@astryxdesign/core/hooks";
+import {
+  BriefcaseIcon,
+  ChatBubbleLeftRightIcon,
+  DocumentTextIcon,
+  HashtagIcon,
+  InboxIcon,
+  MagnifyingGlassIcon,
+  PaperClipIcon,
+  PencilSquareIcon,
+  SparklesIcon,
+  UserGroupIcon,
+} from "@heroicons/react/24/outline";
+
+// ---------------------------------------------------------------------------
+// Messages — Slack-like internal firm messaging. No backend yet; this is the
+// UI concept pass. Channels are organized around matters (per the brief),
+// plus a firm-wide channel and private DMs between teammates.
+// ---------------------------------------------------------------------------
+
+const styles: Record<string, CSSProperties> = {
+  root: { minHeight: "100dvh" },
+  sidebar: { height: "100%", minHeight: 0 },
+  sidebarHeader: {
+    alignItems: "center",
+    paddingInline: "var(--spacing-3)",
+    paddingBlock: "var(--spacing-3)",
+  },
+  sidebarSearch: {
+    paddingInline: "var(--spacing-3)",
+    paddingBottom: "var(--spacing-2)",
+  },
+  sidebarScroll: {
+    minHeight: 0,
+    overflowY: "auto",
+    paddingInline: "var(--spacing-2)",
+    paddingBottom: "var(--spacing-3)",
+  },
+  sectionGap: { marginTop: "var(--spacing-4)" },
+  streamColumn: { height: "100%", minHeight: 0 },
+  streamHeader: {
+    alignItems: "center",
+    paddingInline: "var(--spacing-4)",
+    paddingBlock: "var(--spacing-3)",
+  },
+  streamTopic: { minWidth: 0 },
+  chatArea: { minHeight: 0, display: "flex", flexDirection: "column" },
+  chatFill: { flex: 1, minHeight: 0 },
+};
+
+type Presence = "online" | "busy" | "offline";
+
+interface Person {
+  name: string;
+  role: string;
+}
+
+const PEOPLE: Record<string, Person> = {
+  ahmed: { name: "Ahmed Al-Sayed", role: "Owner" },
+  mona: { name: "Mona Farouk", role: "Lawyer" },
+  youssef: { name: "Youssef Adel", role: "Lawyer" },
+  layla: { name: "Layla Hassan", role: "Staff" },
+};
+
+const YOU = "ahmed";
+
+interface Channel {
+  id: string;
+  name: string;
+  topic: string;
+  isMatter: boolean;
+  unread: number;
+}
+
+const CHANNELS: Channel[] = [
+  {
+    id: "general",
+    name: "general",
+    topic: "Firm-wide announcements and chat",
+    isMatter: false,
+    unread: 0,
+  },
+  {
+    id: "nabil-v-nile",
+    name: "Nabil v. Nile Trading Co.",
+    topic: "Matter channel · Commercial litigation",
+    isMatter: true,
+    unread: 2,
+  },
+  {
+    id: "delta-foods-nda",
+    name: "Delta Foods NDA",
+    topic: "Matter channel · Contract review",
+    isMatter: true,
+    unread: 0,
+  },
+];
+
+interface DirectMessage {
+  id: string;
+  userId: string;
+  presence: Presence;
+  unread: number;
+}
+
+const DIRECT_MESSAGES: DirectMessage[] = [
+  { id: "dm-mona", userId: "mona", presence: "online", unread: 0 },
+  { id: "dm-youssef", userId: "youssef", presence: "busy", unread: 1 },
+  { id: "dm-layla", userId: "layla", presence: "offline", unread: 0 },
+];
+
+const PRESENCE_VARIANT: Record<Presence, "success" | "error" | "neutral"> = {
+  online: "success",
+  busy: "error",
+  offline: "neutral",
+};
+
+const PRESENCE_LABEL: Record<Presence, string> = {
+  online: "Online",
+  busy: "Busy",
+  offline: "Offline",
+};
+
+interface Attachment {
+  name: string;
+  size: string;
+}
+
+interface StreamMessage {
+  id: string;
+  userId: string;
+  time: string;
+  bubbles: string[];
+  attachment?: Attachment;
+}
+
+const MESSAGES_BY_CHANNEL: Record<string, StreamMessage[]> = {
+  "nabil-v-nile": [
+    {
+      id: "n1",
+      userId: "youssef",
+      time: "2026-07-31T08:45:00",
+      bubbles: [
+        "Court moved tomorrow's hearing to 10:00 AM — can you confirm the brief is ready?",
+      ],
+    },
+    {
+      id: "n2",
+      userId: "mona",
+      time: "2026-07-31T09:10:00",
+      bubbles: [
+        "@Ahmed Al-Sayed I've attached the updated settlement draft — one clause under 4.2 still needs your sign-off.",
+      ],
+      attachment: { name: "Settlement_Agreement_Draft_v3.pdf", size: "812 KB" },
+    },
+    {
+      id: "n3",
+      userId: "ahmed",
+      time: "2026-07-31T09:32:00",
+      bubbles: [
+        "Reviewed — clause 4.2 looks fine. Go ahead and send it to opposing counsel.",
+      ],
+    },
+    {
+      id: "n4",
+      userId: "mona",
+      time: "2026-07-31T09:34:00",
+      bubbles: ["On it. I'll loop in @Layla Hassan for the filing paperwork."],
+    },
+  ],
+  "delta-foods-nda": [
+    {
+      id: "d1",
+      userId: "youssef",
+      time: "2026-07-30T14:05:00",
+      bubbles: [
+        "AI review flagged 2 clauses that deviate from our standard template — full summary is in Contract Review.",
+      ],
+    },
+    {
+      id: "d2",
+      userId: "layla",
+      time: "2026-07-30T15:20:00",
+      bubbles: ["Client wants to sign by Friday — can we turn this around in time?"],
+    },
+    {
+      id: "d3",
+      userId: "ahmed",
+      time: "2026-07-30T15:26:00",
+      bubbles: ["@Youssef Adel let's prioritize this today, then."],
+    },
+  ],
+  general: [
+    {
+      id: "g1",
+      userId: "layla",
+      time: "2026-07-29T11:00:00",
+      bubbles: ["Reminder: firm all-hands Thursday at 5 PM in the main conference room."],
+    },
+    {
+      id: "g2",
+      userId: "mona",
+      time: "2026-07-29T11:42:00",
+      bubbles: ["New client intake for Khalil Holdings landed in the CRM — assigning it now."],
+    },
+  ],
+};
+
+const MENTION_RE = /(@[A-Z][\w'-]*(?:\s[A-Z][\w'-]*)?)/g;
+
+function MessageText({ text }: { text: string }) {
+  const parts = text.split(MENTION_RE).filter(Boolean);
+  return (
+    <Text type="body" as="span">
+      {parts.map((part, i) =>
+        part.startsWith("@") ? (
+          <Text key={i} type="body" as="span" color="accent" weight="semibold">
+            {part}
+          </Text>
+        ) : (
+          <Text key={i} type="body" as="span">
+            {part}
+          </Text>
+        ),
+      )}
+    </Text>
+  );
+}
+
+function AttachmentCard({ attachment }: { attachment: Attachment }) {
+  return (
+    <Card padding={2} variant="muted">
+      <HStack gap={3} vAlign="center">
+        <Icon icon={DocumentTextIcon} size="md" color="secondary" />
+        <VStack gap={0}>
+          <Text type="label" weight="semibold">
+            {attachment.name}
+          </Text>
+          <Text type="supporting" color="secondary">
+            {attachment.size} · PDF
+          </Text>
+        </VStack>
+      </HStack>
+    </Card>
+  );
+}
+
+function StreamMessageGroup({ message }: { message: StreamMessage }) {
+  const isSelf = message.userId === YOU;
+  const person = PEOPLE[message.userId];
+  const lastIndex = message.bubbles.length - 1;
+
+  return (
+    <ChatMessage
+      sender={isSelf ? "user" : "assistant"}
+      avatar={isSelf ? undefined : <Avatar name={person.name} size="md" />}
+    >
+      {message.bubbles.map((text, index) => (
+        <ChatMessageBubble
+          key={`${message.id}-${index}`}
+          group={
+            message.bubbles.length === 1
+              ? undefined
+              : index === 0
+                ? "first"
+                : index === lastIndex
+                  ? "last"
+                  : "middle"
+          }
+          name={!isSelf && index === 0 ? person.name : undefined}
+          metadata={
+            index === lastIndex ? (
+              <ChatMessageMetadata
+                timestamp={<Timestamp value={message.time} format="time" />}
+              />
+            ) : undefined
+          }
+        >
+          <MessageText text={text} />
+        </ChatMessageBubble>
+      ))}
+      {message.attachment && (
+        <ChatMessageBubble variant="ghost">
+          <AttachmentCard attachment={message.attachment} />
+        </ChatMessageBubble>
+      )}
+    </ChatMessage>
+  );
+}
+
+export default function MessagesPage() {
+  const [selectedChannelId, setSelectedChannelId] = useState("nabil-v-nile");
+  const [selectedDmId, setSelectedDmId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [draft, setDraft] = useState("");
+
+  const isSidebarHidden = useMediaQuery("(max-width: 768px)");
+
+  const selectedChannel =
+    CHANNELS.find((c) => c.id === selectedChannelId) ?? CHANNELS[0];
+  const selectedDm = selectedDmId
+    ? (DIRECT_MESSAGES.find((d) => d.id === selectedDmId) ?? null)
+    : null;
+
+  const messages = selectedDm ? [] : (MESSAGES_BY_CHANNEL[selectedChannel.id] ?? []);
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const visibleChannels = CHANNELS.filter((c) =>
+    c.name.toLowerCase().includes(normalizedQuery),
+  );
+  const visibleDms = DIRECT_MESSAGES.filter((d) =>
+    PEOPLE[d.userId].name.toLowerCase().includes(normalizedQuery),
+  );
+
+  const headingLabel = selectedDm ? PEOPLE[selectedDm.userId].name : selectedChannel.name;
+  const composerPlaceholder = selectedDm
+    ? `Message ${PEOPLE[selectedDm.userId].name}`
+    : `Message #${selectedChannel.name}`;
+
+  const channelSidebar = (
+    <Stack direction="vertical" style={styles.sidebar}>
+      <HStack gap={2} style={styles.sidebarHeader}>
+        <StackItem size="fill">
+          <Heading level={5}>Messages</Heading>
+        </StackItem>
+        <IconButton
+          label="New message"
+          tooltip="New message"
+          icon={<Icon icon={PencilSquareIcon} size="sm" color="inherit" />}
+          variant="ghost"
+          size="sm"
+          onClick={() => {}}
+        />
+      </HStack>
+      <div style={styles.sidebarSearch}>
+        <TextInput
+          label="Jump to"
+          isLabelHidden
+          size="sm"
+          placeholder="Jump to a channel or person..."
+          startIcon={MagnifyingGlassIcon}
+          value={searchQuery}
+          onChange={setSearchQuery}
+        />
+      </div>
+      <StackItem size="fill" style={styles.sidebarScroll}>
+        <List
+          density="compact"
+          hasDividers={false}
+          header={
+            <Text type="label" size="sm" color="secondary">
+              Matter channels
+            </Text>
+          }
+        >
+          {visibleChannels.map((channel) => (
+            <ListItem
+              key={channel.id}
+              label={channel.name}
+              isSelected={selectedDmId === null && channel.id === selectedChannelId}
+              onClick={() => {
+                setSelectedChannelId(channel.id);
+                setSelectedDmId(null);
+              }}
+              startContent={
+                <Icon
+                  icon={channel.isMatter ? BriefcaseIcon : HashtagIcon}
+                  size="sm"
+                  color="secondary"
+                />
+              }
+              endContent={
+                channel.unread > 0 ? (
+                  <Badge label={String(channel.unread)} variant="neutral" />
+                ) : undefined
+              }
+            />
+          ))}
+        </List>
+        <div style={styles.sectionGap}>
+          <List
+            density="compact"
+            hasDividers={false}
+            header={
+              <Text type="label" size="sm" color="secondary">
+                Direct messages
+              </Text>
+            }
+          >
+            {visibleDms.map((dm) => (
+              <ListItem
+                key={dm.id}
+                label={PEOPLE[dm.userId].name}
+                isSelected={selectedDmId === dm.id}
+                onClick={() => setSelectedDmId(dm.id)}
+                startContent={
+                  <Avatar
+                    name={PEOPLE[dm.userId].name}
+                    size="sm"
+                    status={
+                      <AvatarStatusDot
+                        variant={PRESENCE_VARIANT[dm.presence]}
+                        label={PRESENCE_LABEL[dm.presence]}
+                      />
+                    }
+                  />
+                }
+                endContent={
+                  dm.unread > 0 ? (
+                    <Badge label={String(dm.unread)} variant="neutral" />
+                  ) : undefined
+                }
+              />
+            ))}
+          </List>
+        </div>
+      </StackItem>
+    </Stack>
+  );
+
+  const messageStream = (
+    <Stack direction="vertical" style={styles.streamColumn}>
+      <HStack gap={3} style={styles.streamHeader}>
+        <Icon
+          icon={selectedDm ? ChatBubbleLeftRightIcon : selectedChannel.isMatter ? BriefcaseIcon : HashtagIcon}
+          size="sm"
+          color="secondary"
+        />
+        <Heading level={5}>{headingLabel}</Heading>
+        <StackItem size="fill" style={styles.streamTopic}>
+          <Text type="supporting" color="secondary" maxLines={1}>
+            {selectedDm ? PEOPLE[selectedDm.userId].role : selectedChannel.topic}
+          </Text>
+        </StackItem>
+        {!selectedDm && <StatusDot variant="success" label="4 members" />}
+        {!selectedDm && (
+          <IconButton
+            label="Members"
+            tooltip="Members"
+            icon={<Icon icon={UserGroupIcon} size="sm" color="inherit" />}
+            variant="ghost"
+            size="sm"
+            onClick={() => {}}
+          />
+        )}
+      </HStack>
+      <Divider />
+      <StackItem size="fill" style={styles.chatArea}>
+        <div style={styles.chatFill}>
+          <ChatLayout
+            composer={
+              <ChatComposer
+                placeholder={composerPlaceholder}
+                value={draft}
+                onChange={setDraft}
+                onSubmit={() => setDraft("")}
+                headerActions={
+                  <IconButton
+                    label="Attach a file"
+                    tooltip="Attach a file"
+                    icon={<Icon icon={PaperClipIcon} size="sm" color="inherit" />}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {}}
+                  />
+                }
+                footerActions={
+                  <Button
+                    label="AI Summary"
+                    variant="ghost"
+                    size="sm"
+                    icon={<Icon icon={SparklesIcon} size="sm" className="text-purple-vivid" />}
+                  >
+                    AI Summary
+                  </Button>
+                }
+              />
+            }
+            emptyState={
+              <EmptyState
+                icon={<Icon icon={InboxIcon} size="lg" />}
+                title="No messages yet"
+                description="Start the conversation — messages here are only visible to people on this matter."
+              />
+            }
+          >
+            {messages.length > 0 ? (
+              <ChatMessageList density="balanced">
+                <ChatSystemMessage variant="divider">
+                  {new Date(messages[0].time).toLocaleDateString("en-US", {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </ChatSystemMessage>
+                {messages.map((message) => (
+                  <StreamMessageGroup key={message.id} message={message} />
+                ))}
+              </ChatMessageList>
+            ) : null}
+          </ChatLayout>
+        </div>
+      </StackItem>
+    </Stack>
+  );
+
+  return (
+    <div style={styles.root}>
+      <Layout
+        height="fill"
+        start={
+          !isSidebarHidden && (
+            <LayoutPanel width={280} padding={0}>
+              {channelSidebar}
+            </LayoutPanel>
+          )
+        }
+        content={<LayoutContent padding={0}>{messageStream}</LayoutContent>}
+      />
+    </div>
+  );
+}
