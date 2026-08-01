@@ -54,6 +54,30 @@
   unicode-bidi: plaintext;
 }
 
+/*
+  Nothing in a layout may refuse to shrink. Grid items default to
+  `min-width: auto`, which means they will not go narrower than their content:
+  a Table or a long unbroken name inside a `columns={3}` grid pushes its own
+  track wider than 1fr and overlaps the neighbouring column instead of
+  scrolling inside its own cell. Astryx writes numeric column counts as
+  `repeat(N, 1fr)` rather than `repeat(N, minmax(0, 1fr))`, so the floor has to
+  come from the item. `min-width: 0` on every grid child restores the intended
+  behaviour for all ~12 two-thirds/one-third pages at once, and does nothing at
+  all where the content already fits.
+
+  Deliberately not applied to flex children: Astryx's StackItem already resets
+  min-width where a stack child owns a scroll region, and a blanket reset would
+  let primary buttons shrink and wrap their labels rather than hold their size.
+
+  GridSpan is itself a grid container, so a card inside a two-column span is a
+  grid item too and needs the same floor -- that is the case that let the time
+  entries table paint across the timesheet summary next to it.
+*/
+.astryx-grid > *,
+.astryx-grid-span > * {
+  min-width: 0;
+}
+
 .statute-text {
   white-space: pre-wrap;
   overflow-wrap: anywhere;

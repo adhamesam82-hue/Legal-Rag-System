@@ -68,6 +68,17 @@ export const legalosTheme = defineTheme({
     "--color-border-emphasized": ["#0F172A26", "#F8FAFC33"],
   },
   components: {
+    // The shell is the app's outer boundary: it is exactly one viewport tall,
+    // and scrolling happens in a region inside it, never on the page. AppShell
+    // sets the height but leaves overflow visible, so anything that overflows
+    // its region -- a recharts wrapper that measures itself a few hundred
+    // pixels too tall on /reports and /time-tracking is the current example --
+    // pushes the document itself into scrolling, dragging the sidebar and top
+    // bar off screen with it. Clipping here keeps a stray overflow a bug in
+    // one region instead of a broken page.
+    "app-shell": {
+      base: { overflow: "hidden" },
+    },
     // Astryx's Layout deliberately bleeds out of its container to cancel
     // AppShell's contentPadding, on the assumption the page re-supplies
     // padding through LayoutHeader/LayoutContent. Every page here passes

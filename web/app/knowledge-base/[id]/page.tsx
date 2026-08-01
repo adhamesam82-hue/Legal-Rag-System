@@ -24,6 +24,7 @@ import {
   ArrowDownTrayIcon,
   PencilSquareIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import { getKbItem, getKbItems, type KbItem, type KbCategory } from "../data";
 
 const AI_ICON_CLASS = "text-purple-vivid";
@@ -33,6 +34,17 @@ const TYPE_ICON: Record<KbItem["type"], React.ComponentType<React.SVGProps<SVGSV
   precedent: ScaleIcon,
   guide: BookOpenIcon,
   policy: ShieldCheckIcon,
+};
+
+/** KbCategory's members are English strings (they discriminate the union in
+ *  data.ts); this maps each to its catalog key so badges render in the active
+ *  locale without changing the data model. */
+const CATEGORY_KEY: Record<KbCategory, string> = {
+  "Contract Templates": "@legalos.knowledgeBase.category.contractTemplates",
+  "Litigation Precedents": "@legalos.knowledgeBase.category.litigationPrecedents",
+  "Regulatory Guides": "@legalos.knowledgeBase.category.regulatoryGuides",
+  "Firm Policies & SOPs": "@legalos.knowledgeBase.category.firmPolicies",
+  "Client Communication Templates": "@legalos.knowledgeBase.category.clientCommunication",
 };
 
 const CATEGORY_BADGE: Record<KbCategory, "blue" | "orange" | "teal" | "cyan" | "pink"> = {
@@ -48,6 +60,7 @@ export default function KnowledgeBaseDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const t = useTranslator();
   const { id } = use(params);
   const item = getKbItem(id);
 
@@ -59,11 +72,11 @@ export default function KnowledgeBaseDetailPage({
           <LayoutContent padding={0}>
             <EmptyState
               icon={<Icon icon={BookOpenIcon} size="lg" color="secondary" />}
-              title="Item not found"
-              description="This knowledge base entry may have been moved or the link is out of date."
+              title={t("@legalos.knowledgeBase.detail.notFoundTitle")}
+              description={t("@legalos.knowledgeBase.detail.notFoundDescription")}
               actions={
                 <Link href="/knowledge-base" isStandalone>
-                  Back to Knowledge Base
+                  {t("@legalos.knowledgeBase.detail.backToKb")}
                 </Link>
               }
             />
@@ -84,7 +97,9 @@ export default function KnowledgeBaseDetailPage({
           <VStack gap={6}>
             <VStack gap={4}>
               <Breadcrumbs variant="supporting">
-                <BreadcrumbItem href="/knowledge-base">Knowledge Base</BreadcrumbItem>
+                <BreadcrumbItem href="/knowledge-base">
+                  {t("@legalos.knowledgeBase.detail.breadcrumb")}
+                </BreadcrumbItem>
                 <BreadcrumbItem href="/knowledge-base">{item.category}</BreadcrumbItem>
                 <BreadcrumbItem isCurrent>{item.title}</BreadcrumbItem>
               </Breadcrumbs>
@@ -96,35 +111,41 @@ export default function KnowledgeBaseDetailPage({
                     <Heading level={2}>{item.title}</Heading>
                   </HStack>
                   <HStack gap={2} vAlign="center">
-                    <Badge variant={CATEGORY_BADGE[item.category]} label={item.category} />
+                    <Badge
+                      variant={CATEGORY_BADGE[item.category]}
+                      label={t(CATEGORY_KEY[item.category])}
+                    />
                     <Text type="supporting" color="secondary">
-                      Updated {item.updated} · {item.author}
+                      {t("@legalos.knowledgeBase.updatedBy", {
+                        date: item.updated,
+                        author: item.author,
+                      })}
                     </Text>
                   </HStack>
                 </VStack>
                 <HStack gap={2}>
                   <Button
-                    label="Edit"
+                    label={t("@legalos.knowledgeBase.detail.edit")}
                     variant="secondary"
                     icon={<Icon icon={PencilSquareIcon} size="sm" color="inherit" />}
                   >
-                    Edit
+                    {t("@legalos.knowledgeBase.detail.edit")}
                   </Button>
                   {item.type === "template" ? (
                     <Button
-                      label="Use this template"
+                      label={t("@legalos.knowledgeBase.detail.useTemplate")}
                       variant="primary"
                       icon={<Icon icon={DocumentDuplicateIcon} size="sm" color="inherit" />}
                     >
-                      Use this template
+                      {t("@legalos.knowledgeBase.detail.useTemplate")}
                     </Button>
                   ) : (
                     <Button
-                      label="Download"
+                      label={t("@legalos.knowledgeBase.detail.download")}
                       variant="primary"
                       icon={<Icon icon={ArrowDownTrayIcon} size="sm" color="inherit" />}
                     >
-                      Download
+                      {t("@legalos.knowledgeBase.detail.download")}
                     </Button>
                   )}
                 </HStack>
@@ -158,15 +179,17 @@ export default function KnowledgeBaseDetailPage({
                   <VStack gap={3}>
                     <HStack gap={2} vAlign="center">
                       <Icon icon={SparklesIcon} size="sm" className={AI_ICON_CLASS} />
-                      <Heading level={4}>AI recommendations</Heading>
+                      <Heading level={4}>{t("@legalos.knowledgeBase.detail.aiHeading")}</Heading>
                     </HStack>
                     <Text type="body">
                       {item.relatedMatter
-                        ? `Surfaced for matters like ${item.relatedMatter} based on similar fact patterns and clause structure.`
-                        : "Surfaced based on matters and documents your team is currently working on."}
+                        ? t("@legalos.knowledgeBase.detail.aiForMatter", {
+                            matter: item.relatedMatter,
+                          })
+                        : t("@legalos.knowledgeBase.detail.aiGeneric")}
                     </Text>
                     <Link href="/ai-assistant" isStandalone>
-                      Ask AI Assistant about this
+                      {t("@legalos.knowledgeBase.detail.askAi")}
                     </Link>
                   </VStack>
                 </Card>
@@ -174,11 +197,11 @@ export default function KnowledgeBaseDetailPage({
                 {item.relatedMatter && (
                   <Card>
                     <VStack gap={3}>
-                      <Heading level={4}>Related matter</Heading>
+                      <Heading level={4}>{t("@legalos.knowledgeBase.detail.relatedMatter")}</Heading>
                       <List hasDividers density="compact">
                         <ListItem
                           label={item.relatedMatter}
-                          description="View matter"
+                          description={t("@legalos.knowledgeBase.detail.viewMatter")}
                           href="/matters"
                           startContent={<Icon icon={ScaleIcon} size="sm" color="secondary" />}
                         />
@@ -189,14 +212,14 @@ export default function KnowledgeBaseDetailPage({
 
                 <Card>
                   <VStack gap={3}>
-                    <Heading level={4}>Related items</Heading>
+                    <Heading level={4}>{t("@legalos.knowledgeBase.detail.relatedItems")}</Heading>
                     {related.length > 0 ? (
                       <List hasDividers density="compact">
                         {related.map((r) => (
                           <ListItem
                             key={r.id}
                             label={r.title}
-                            description={r.category}
+                            description={t(CATEGORY_KEY[r.category])}
                             href={`/knowledge-base/${r.id}`}
                             startContent={<Icon icon={TYPE_ICON[r.type]} size="sm" color="secondary" />}
                           />
@@ -212,11 +235,11 @@ export default function KnowledgeBaseDetailPage({
 
                 <Card>
                   <VStack gap={3}>
-                    <Heading level={4}>Details</Heading>
+                    <Heading level={4}>{t("@legalos.knowledgeBase.detail.detailsHeading")}</Heading>
                     <VStack gap={2}>
                       <HStack hAlign="between">
                         <Text type="supporting" color="secondary">
-                          Author
+                          {t("@legalos.knowledgeBase.detail.author")}
                         </Text>
                         <HStack gap={2} vAlign="center">
                           <Avatar name={item.author} size="xsm" tooltip={false} />
@@ -225,13 +248,13 @@ export default function KnowledgeBaseDetailPage({
                       </HStack>
                       <HStack hAlign="between">
                         <Text type="supporting" color="secondary">
-                          Last updated
+                          {t("@legalos.knowledgeBase.detail.lastUpdated")}
                         </Text>
                         <Text type="supporting">{item.updated}</Text>
                       </HStack>
                       <HStack hAlign="between">
                         <Text type="supporting" color="secondary">
-                          Tags
+                          {t("@legalos.knowledgeBase.detail.tags")}
                         </Text>
                         <HStack gap={1}>
                           {item.tags.map((t) => (

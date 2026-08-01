@@ -53,14 +53,14 @@ export interface Lead {
 
 export const STAGE_META: Record<
   LeadStage,
-  { label: string; badgeVariant: "neutral" | "blue" | "cyan" | "orange" | "success" | "red" }
+  { labelKey: string; badgeVariant: "neutral" | "blue" | "cyan" | "orange" | "success" | "red" }
 > = {
-  new: { label: "New Lead", badgeVariant: "neutral" },
-  contacted: { label: "Contacted", badgeVariant: "blue" },
-  consultation: { label: "Consultation Scheduled", badgeVariant: "cyan" },
-  proposal: { label: "Proposal Sent", badgeVariant: "orange" },
-  won: { label: "Won", badgeVariant: "success" },
-  lost: { label: "Lost", badgeVariant: "red" },
+  new: { labelKey: "@legalos.crm.stage.new", badgeVariant: "neutral" },
+  contacted: { labelKey: "@legalos.crm.stage.contacted", badgeVariant: "blue" },
+  consultation: { labelKey: "@legalos.crm.stage.consultation", badgeVariant: "cyan" },
+  proposal: { labelKey: "@legalos.crm.stage.proposal", badgeVariant: "orange" },
+  won: { labelKey: "@legalos.crm.stage.won", badgeVariant: "success" },
+  lost: { labelKey: "@legalos.crm.stage.lost", badgeVariant: "red" },
 };
 
 export const STAGE_ORDER: LeadStage[] = [

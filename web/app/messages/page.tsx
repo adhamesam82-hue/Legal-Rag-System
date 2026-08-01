@@ -45,6 +45,7 @@ import {
   SparklesIcon,
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslator } from "@astryxdesign/core/i18n";
 
 // ---------------------------------------------------------------------------
 // Messages — Slack-like internal firm messaging. No backend yet; this is the
@@ -323,6 +324,7 @@ function StreamMessageGroup({ message }: { message: StreamMessage }) {
 }
 
 export default function MessagesPage() {
+  const t = useTranslator();
   const [selectedChannelId, setSelectedChannelId] = useState("nabil-v-nile");
   const [selectedDmId, setSelectedDmId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -368,10 +370,10 @@ export default function MessagesPage() {
       </HStack>
       <div style={styles.sidebarSearch}>
         <TextInput
-          label="Jump to"
+          label={t("@legalos.messages.jumpTo.label")}
           isLabelHidden
           size="sm"
-          placeholder="Jump to a channel or person..."
+          placeholder={t("@legalos.messages.jumpTo.placeholder")}
           startIcon={MagnifyingGlassIcon}
           value={searchQuery}
           onChange={setSearchQuery}
@@ -383,7 +385,7 @@ export default function MessagesPage() {
           hasDividers={false}
           header={
             <Text type="label" size="sm" color="secondary">
-              Matter channels
+              {t("@legalos.messages.matterChannels")}
             </Text>
           }
         >
@@ -417,7 +419,7 @@ export default function MessagesPage() {
             hasDividers={false}
             header={
               <Text type="label" size="sm" color="secondary">
-                Direct messages
+                {t("@legalos.messages.directMessages")}
               </Text>
             }
           >
@@ -466,11 +468,16 @@ export default function MessagesPage() {
             {selectedDm ? PEOPLE[selectedDm.userId].role : selectedChannel.topic}
           </Text>
         </StackItem>
-        {!selectedDm && <StatusDot variant="success" label="4 members" />}
+        {!selectedDm && (
+          <StatusDot
+            variant="success"
+            label={t("@legalos.messages.memberCount", { count: 4 })}
+          />
+        )}
         {!selectedDm && (
           <IconButton
-            label="Members"
-            tooltip="Members"
+            label={t("@legalos.messages.members")}
+            tooltip={t("@legalos.messages.members")}
             icon={<Icon icon={UserGroupIcon} size="sm" color="inherit" />}
             variant="ghost"
             size="sm"
@@ -490,7 +497,7 @@ export default function MessagesPage() {
                 onSubmit={() => setDraft("")}
                 headerActions={
                   <IconButton
-                    label="Attach a file"
+                    label={t("@legalos.messages.attachFile")}
                     tooltip="Attach a file"
                     icon={<Icon icon={PaperClipIcon} size="sm" color="inherit" />}
                     variant="ghost"
@@ -500,12 +507,12 @@ export default function MessagesPage() {
                 }
                 footerActions={
                   <Button
-                    label="AI Summary"
+                    label={t("@legalos.messages.aiSummary")}
                     variant="ghost"
                     size="sm"
                     icon={<Icon icon={SparklesIcon} size="sm" className="text-purple-vivid" />}
                   >
-                    AI Summary
+                    {t("@legalos.messages.aiSummary")}
                   </Button>
                 }
               />
@@ -513,8 +520,8 @@ export default function MessagesPage() {
             emptyState={
               <EmptyState
                 icon={<Icon icon={InboxIcon} size="lg" />}
-                title="No messages yet"
-                description="Start the conversation — messages here are only visible to people on this matter."
+                title={t("@legalos.messages.empty.title")}
+                description={t("@legalos.messages.empty.description")}
               />
             }
           >

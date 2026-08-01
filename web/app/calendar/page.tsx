@@ -8,7 +8,7 @@ import {
   LayoutPanel,
   LayoutFooter,
 } from "@astryxdesign/core/Layout";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
+import { VStack, HStack, StackItem } from "@astryxdesign/core/Stack";
 import { Grid } from "@astryxdesign/core/Grid";
 import { Heading, Text } from "@astryxdesign/core/Text";
 import { Card } from "@astryxdesign/core/Card";
@@ -73,6 +73,10 @@ const WEEKDAY_KEYS = [
   "@legalos.calendar.weekday.fri",
   "@legalos.calendar.weekday.sat",
 ] as const;
+
+/** Chips a day cell shows before collapsing the rest into "+N more". Two fits
+ *  a sixth of the calendar body at the 1280×720 floor with the date above it. */
+const MAX_CHIPS_PER_DAY = 2;
 
 function monthKey(year: number, month: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
@@ -393,7 +397,17 @@ export default function CalendarPage() {
                       {selectedEvents.map((event) => (
                         <ListItem
                           key={event.id}
-                          label={event.title}
+                          // A plain string label is truncated to one line by
+                          // ListItem, which left "Draft appeal brief respon…"
+                          // in a 320px rail — the one place on this screen
+                          // where the full title has to be readable, since it
+                          // is where the month grid's chips send you. A node
+                          // label opts out of that single-line rule.
+                          label={
+                            <Text type="label" weight="medium" maxLines={2}>
+                              {event.title}
+                            </Text>
+                          }
                           description={event.detail}
                           href={
                             event.matterId ? `/matters/${event.matterId}` : undefined
@@ -437,7 +451,11 @@ export default function CalendarPage() {
                       {upcoming.map((event) => (
                         <ListItem
                           key={event.id}
-                          label={event.title}
+                          label={
+                            <Text type="label" weight="medium" maxLines={2}>
+                              {event.title}
+                            </Text>
+                          }
                           description={`${t(KIND_LABEL_KEY[event.kind])}${
                             event.owner ? ` · ${memberName(event.owner)}` : ""
                           }`}

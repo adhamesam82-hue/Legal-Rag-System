@@ -21,6 +21,8 @@ import {
   ExclamationTriangleIcon,
   InboxIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslator } from "@astryxdesign/core/i18n";
+import { useOrg } from "@/lib/org";
 import { LEADS, STAGE_META, STAGE_ORDER, formatEGP, formatEGPCompact, type Lead } from "./data";
 
 // ---------------------------------------------------------------------------
@@ -37,6 +39,7 @@ const wonValue = wonLeads.reduce((sum, l) => sum + l.estValue, 0);
 const flaggedCount = LEADS.filter((l) => l.conflictStatus === "flagged").length;
 
 function LeadCard({ lead }: { lead: Lead }) {
+  const t = useTranslator();
   return (
     <NextLink href={`/crm/${lead.id}`} className="block">
       <Card
@@ -69,7 +72,7 @@ function LeadCard({ lead }: { lead: Lead }) {
           {lead.conflictStatus === "flagged" && (
             <Badge
               variant="warning"
-              label="Conflict flagged"
+              label={t("@legalos.crm.conflictFlagged")}
               icon={<Icon icon={ExclamationTriangleIcon} size="xsm" color="inherit" />}
             />
           )}
@@ -80,6 +83,7 @@ function LeadCard({ lead }: { lead: Lead }) {
 }
 
 function PipelineColumn({ stage }: { stage: (typeof STAGE_ORDER)[number] }) {
+  const t = useTranslator();
   const leads = LEADS.filter((l) => l.stage === stage);
   const total = leads.reduce((sum, l) => sum + l.estValue, 0);
   const meta = STAGE_META[stage];
@@ -99,21 +103,21 @@ function PipelineColumn({ stage }: { stage: (typeof STAGE_ORDER)[number] }) {
         <HStack hAlign="between" vAlign="start" gap={2}>
           <VStack height={40}>
             <Text type="label" weight="semibold" maxLines={2}>
-              {meta.label}
+              {t(meta.labelKey)}
             </Text>
           </VStack>
           <Badge variant="neutral" label={String(leads.length)} />
         </HStack>
         <Text type="supporting" color="secondary" maxLines={1}>
-          {formatEGPCompact(total)} in this stage
+          {t("@legalos.crm.stageTotal", { value: formatEGPCompact(total) })}
         </Text>
       </VStack>
       {leads.length === 0 ? (
         <EmptyState
           isCompact
           icon={<Icon icon={InboxIcon} size="md" color="secondary" />}
-          title="No leads"
-          description="Leads moved to this stage appear here."
+          title={t("@legalos.crm.empty.title")}
+          description={t("@legalos.crm.empty.description")}
         />
       ) : (
         <VStack gap={3}>
@@ -128,6 +132,8 @@ function PipelineColumn({ stage }: { stage: (typeof STAGE_ORDER)[number] }) {
 }
 
 export default function CrmPage() {
+  const t = useTranslator();
+  const { organizationName } = useOrg();
   return (
     <Layout
       height="fill"
@@ -136,20 +142,20 @@ export default function CrmPage() {
           <VStack gap={6}>
             <HStack hAlign="between" vAlign="start">
               <VStack gap={1}>
-                <Heading level={2}>CRM Pipeline</Heading>
+                <Heading level={2}>{t("@legalos.crm.heading")}</Heading>
                 <HStack gap={1} vAlign="center">
                   <Text type="body" color="secondary">
-                    Al-Sayed &amp; Partners · Prospective clients ·
+                    {t("@legalos.crm.subtitle", { firm: organizationName ?? "" })}
                   </Text>
-                  <Link href="/clients">View existing clients</Link>
+                  <Link href="/clients">{t("@legalos.crm.viewExistingClients")}</Link>
                 </HStack>
               </VStack>
               <Button
-                label="New lead"
+                label={t("@legalos.crm.newLead")}
                 variant="primary"
                 icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
               >
-                New lead
+                {t("@legalos.crm.newLead")}
               </Button>
             </HStack>
 
@@ -158,13 +164,15 @@ export default function CrmPage() {
                 <VStack gap={2}>
                   <HStack hAlign="between" vAlign="center">
                     <Text type="label" color="secondary">
-                      Open leads
+                      {t("@legalos.crm.kpi.openLeads")}
                     </Text>
                     <Icon icon={UserGroupIcon} size="sm" color="secondary" />
                   </HStack>
                   <Text size="2xl" weight="semibold">{openLeads.length}</Text>
                   <Text type="supporting" color="secondary">
-                    Across {STAGE_ORDER.length - 2} active stages
+                    {t("@legalos.crm.kpi.openLeadsDetail", {
+                      count: STAGE_ORDER.length - 2,
+                    })}
                   </Text>
                 </VStack>
               </Card>
@@ -172,13 +180,13 @@ export default function CrmPage() {
                 <VStack gap={2}>
                   <HStack hAlign="between" vAlign="center">
                     <Text type="label" color="secondary">
-                      Open pipeline value
+                      {t("@legalos.crm.kpi.pipelineValue")}
                     </Text>
                     <Icon icon={BanknotesIcon} size="sm" color="secondary" />
                   </HStack>
                   <Text size="2xl" weight="semibold">{formatEGPCompact(openPipelineValue)}</Text>
                   <Text type="supporting" color="secondary">
-                    Estimated, not yet won
+                    {t("@legalos.crm.kpi.pipelineValueDetail")}
                   </Text>
                 </VStack>
               </Card>
@@ -186,13 +194,13 @@ export default function CrmPage() {
                 <VStack gap={2}>
                   <HStack hAlign="between" vAlign="center">
                     <Text type="label" color="secondary">
-                      Won this month
+                      {t("@legalos.crm.kpi.wonThisMonth")}
                     </Text>
                     <Icon icon={UserGroupIcon} size="sm" color="secondary" />
                   </HStack>
                   <Text size="2xl" weight="semibold">{formatEGP(wonValue)}</Text>
                   <Text type="supporting" color="secondary">
-                    {wonLeads.length} lead converted
+                    {t("@legalos.crm.kpi.wonDetail", { count: wonLeads.length })}
                   </Text>
                 </VStack>
               </Card>
@@ -200,13 +208,13 @@ export default function CrmPage() {
                 <VStack gap={2}>
                   <HStack hAlign="between" vAlign="center">
                     <Text type="label" color="secondary">
-                      Conflict checks flagged
+                      {t("@legalos.crm.kpi.conflictsFlagged")}
                     </Text>
                     <Icon icon={ExclamationTriangleIcon} size="sm" color="secondary" />
                   </HStack>
                   <Text size="2xl" weight="semibold">{flaggedCount}</Text>
                   <Text type="supporting" color="secondary">
-                    Awaiting partner review
+                    {t("@legalos.crm.kpi.conflictsDetail")}
                   </Text>
                 </VStack>
               </Card>

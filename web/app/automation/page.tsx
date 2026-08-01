@@ -26,6 +26,7 @@ import {
   UserGroupIcon,
   UserPlusIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslator } from "@astryxdesign/core/i18n";
 
 // ---------------------------------------------------------------------------
 // Automation — visual workflow builder concept. No backend/execution engine
@@ -185,6 +186,7 @@ function StepCard({ step }: { step: Step }) {
 }
 
 export default function AutomationPage() {
+  const t = useTranslator();
   const [selectedId, setSelectedId] = useState(AUTOMATIONS[0].id);
   const selected = AUTOMATIONS.find((a) => a.id === selectedId) ?? AUTOMATIONS[0];
   const [activeState, setActiveState] = useState<Record<string, boolean>>(
@@ -199,18 +201,17 @@ export default function AutomationPage() {
           <VStack gap={6}>
             <HStack hAlign="between" vAlign="center">
               <VStack gap={1}>
-                <Heading level={2}>Automation</Heading>
+                <Heading level={2}>{t("@legalos.automation.heading")}</Heading>
                 <Text type="body" color="secondary">
-                  Rule-based workflows that run automatically when something happens in
-                  LegalOS.
+                  {t("@legalos.automation.subtitle")}
                 </Text>
               </VStack>
               <Button
-                label="New automation"
+                label={t("@legalos.automation.newAutomation")}
                 variant="primary"
                 icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
               >
-                New automation
+                {t("@legalos.automation.newAutomation")}
               </Button>
             </HStack>
 
@@ -223,7 +224,12 @@ export default function AutomationPage() {
                       label={automation.name}
                       description={
                         <Text type="supporting" color="secondary" maxLines={2}>
-                          {`${automation.trigger} · ${automation.steps.length} steps`}
+                          {t("@legalos.automation.triggerAndSteps", {
+                            trigger: automation.trigger,
+                            steps: t("@legalos.automation.stepCount", {
+                              count: automation.steps.length,
+                            }),
+                          })}
                         </Text>
                       }
                       isSelected={automation.id === selectedId}
@@ -233,7 +239,14 @@ export default function AutomationPage() {
                       }
                       endContent={
                         <Switch
-                          label={`Turn ${automation.name} ${activeState[automation.id] ? "off" : "on"}`}
+                          label={t("@legalos.automation.toggle", {
+                            name: automation.name,
+                            state: t(
+                              activeState[automation.id]
+                                ? "@legalos.automation.toggle.off"
+                                : "@legalos.automation.toggle.on",
+                            ),
+                          })}
                           isLabelHidden
                           size="sm"
                           value={activeState[automation.id]}
@@ -256,7 +269,11 @@ export default function AutomationPage() {
                           <Heading level={4}>{selected.name}</Heading>
                           <Badge
                             variant={activeState[selected.id] ? "success" : "neutral"}
-                            label={activeState[selected.id] ? "Active" : "Paused"}
+                            label={t(
+                              activeState[selected.id]
+                                ? "@legalos.automation.status.active"
+                                : "@legalos.automation.status.paused",
+                            )}
                           />
                         </HStack>
                         <Text type="body" color="secondary">
@@ -268,13 +285,13 @@ export default function AutomationPage() {
                     <HStack gap={6}>
                       <VStack gap={0.5}>
                         <Text type="supporting" color="secondary">
-                          Trigger
+                          {t("@legalos.automation.trigger")}
                         </Text>
                         <Text type="body">{selected.trigger}</Text>
                       </VStack>
                       <VStack gap={0.5}>
                         <Text type="supporting" color="secondary">
-                          Activity
+                          {t("@legalos.automation.activity")}
                         </Text>
                         <Text type="body">{selected.runCount}</Text>
                       </VStack>
@@ -285,7 +302,7 @@ export default function AutomationPage() {
                 <Card>
                   <VStack gap={0}>
                     <Text type="label" weight="semibold" color="secondary">
-                      Workflow steps
+                      {t("@legalos.automation.workflowSteps")}
                     </Text>
                     <VStack gap={0} style={{ marginTop: "var(--spacing-3)" }}>
                       {selected.steps.map((step, index) => (

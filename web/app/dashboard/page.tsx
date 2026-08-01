@@ -249,7 +249,19 @@ export default function DashboardPage() {
                                 <ListItem
                                   key={entry.id}
                                   label={memberName(entry.actor)}
-                                  description={entry.action}
+                                  // What was done is the point of the row, and
+                                  // a one-third-width rail leaves it about 25
+                                  // characters — "started drafting the ap…"
+                                  // names no matter and no document. A node
+                                  // description opts out of ListItem's
+                                  // single-line rule; two lines carry the
+                                  // whole entry for all but the longest, and
+                                  // those keep a tooltip.
+                                  description={
+                                    <Text type="supporting" color="secondary" maxLines={2}>
+                                      {entry.action}
+                                    </Text>
+                                  }
                                   startContent={
                                     <Avatar
                                       name={memberName(entry.actor)}

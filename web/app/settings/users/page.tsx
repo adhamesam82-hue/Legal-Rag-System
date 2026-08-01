@@ -176,7 +176,7 @@ function InviteMemberDialog({
                 variant="secondary"
                 onClick={() => onOpenChange(false)}
               >
-                Cancel
+                {t("@legalos.settings.action.cancel")}
               </Button>
               <Button
                 label={t("@legalos.settings.invite.send")}
@@ -187,7 +187,7 @@ function InviteMemberDialog({
                   onOpenChange(false);
                 }}
               >
-                Send invite
+                {t("@legalos.settings.invite.send")}
               </Button>
             </HStack>
           </LayoutFooter>

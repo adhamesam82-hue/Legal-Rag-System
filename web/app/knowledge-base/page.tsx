@@ -23,6 +23,7 @@ import {
   BookOpenIcon,
   ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import { KB_CATEGORIES, KB_ITEMS, AI_RECOMMENDATIONS, getKbItems, type KbItem, type KbCategory } from "./data";
 
 const AI_ICON_CLASS = "text-purple-vivid";
@@ -34,6 +35,17 @@ const TYPE_ICON: Record<KbItem["type"], React.ComponentType<React.SVGProps<SVGSV
   policy: ShieldCheckIcon,
 };
 
+/** KbCategory's members are English strings (they discriminate the union in
+ *  data.ts); this maps each to its catalog key so the badge and filter render
+ *  in the active locale without changing the data model. */
+const CATEGORY_KEY: Record<KbCategory, string> = {
+  "Contract Templates": "@legalos.knowledgeBase.category.contractTemplates",
+  "Litigation Precedents": "@legalos.knowledgeBase.category.litigationPrecedents",
+  "Regulatory Guides": "@legalos.knowledgeBase.category.regulatoryGuides",
+  "Firm Policies & SOPs": "@legalos.knowledgeBase.category.firmPolicies",
+  "Client Communication Templates": "@legalos.knowledgeBase.category.clientCommunication",
+};
+
 const CATEGORY_BADGE: Record<KbCategory, "blue" | "orange" | "teal" | "cyan" | "pink"> = {
   "Contract Templates": "blue",
   "Litigation Precedents": "orange",
@@ -43,13 +55,14 @@ const CATEGORY_BADGE: Record<KbCategory, "blue" | "orange" | "teal" | "cyan" | "
 };
 
 function KbCard({ item }: { item: KbItem }) {
+  const t = useTranslator();
   const TypeIcon = TYPE_ICON[item.type];
   return (
     <Card>
       <VStack gap={3}>
         <HStack hAlign="between" vAlign="start">
           <Icon icon={TypeIcon} size="sm" color="secondary" />
-          <Badge variant={CATEGORY_BADGE[item.category]} label={item.category} />
+          <Badge variant={CATEGORY_BADGE[item.category]} label={t(CATEGORY_KEY[item.category])} />
         </HStack>
         <VStack gap={1}>
           <Link href={`/knowledge-base/${item.id}`} isStandalone>
@@ -67,7 +80,7 @@ function KbCard({ item }: { item: KbItem }) {
             </Text>
           </HStack>
           <Text type="supporting" color="secondary">
-            Updated {item.updated}
+            {t("@legalos.knowledgeBase.updated", { date: item.updated })}
           </Text>
         </HStack>
       </VStack>
@@ -76,6 +89,7 @@ function KbCard({ item }: { item: KbItem }) {
 }
 
 export default function KnowledgeBasePage() {
+  const t = useTranslator();
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
@@ -99,26 +113,26 @@ export default function KnowledgeBasePage() {
           <VStack gap={6}>
             <HStack hAlign="between" vAlign="center">
               <VStack gap={1}>
-                <Heading level={2}>Knowledge Base</Heading>
+                <Heading level={2}>{t("@legalos.knowledgeBase.heading")}</Heading>
                 <Text type="body" color="secondary">
-                  Firm templates, precedents, and reference guides
+                  {t("@legalos.knowledgeBase.subtitle")}
                 </Text>
               </VStack>
               <Button
-                label="New template"
+                label={t("@legalos.knowledgeBase.newTemplate")}
                 variant="primary"
                 icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
               >
-                New template
+                {t("@legalos.knowledgeBase.newTemplate")}
               </Button>
             </HStack>
 
             <TextInput
-              label="Search knowledge base"
+              label={t("@legalos.knowledgeBase.search.label")}
               isLabelHidden
               value={search}
               onChange={setSearch}
-              placeholder="Search templates, precedents, and guides"
+              placeholder={t("@legalos.knowledgeBase.search.placeholder")}
               startIcon={MagnifyingGlassIcon}
               hasClear
               width={420}
@@ -129,10 +143,12 @@ export default function KnowledgeBasePage() {
                 <VStack gap={3}>
                   <HStack gap={2} vAlign="center">
                     <Icon icon={SparklesIcon} size="sm" className={AI_ICON_CLASS} />
-                    <Heading level={4}>Related precedents for your current matter</Heading>
+                    <Heading level={4}>{t("@legalos.knowledgeBase.relatedPrecedents")}</Heading>
                   </HStack>
                   <Text type="body" color="secondary">
-                    Showing recommendations for Nabil v. Nile Trading Co.
+                    {t("@legalos.knowledgeBase.showingFor", {
+                      matter: "Nabil v. Nile Trading Co.",
+                    })}
                   </Text>
                   <List hasDividers density="compact">
                     {recommended.map((item, i) => (
@@ -144,7 +160,12 @@ export default function KnowledgeBasePage() {
                         startContent={
                           <Icon icon={TYPE_ICON[item.type]} size="sm" color="secondary" />
                         }
-                        endContent={<Badge variant={CATEGORY_BADGE[item.category]} label={item.category} />}
+                        endContent={
+                          <Badge
+                            variant={CATEGORY_BADGE[item.category]}
+                            label={t(CATEGORY_KEY[item.category])}
+                          />
+                        }
                       />
                     ))}
                   </List>
@@ -156,7 +177,7 @@ export default function KnowledgeBasePage() {
               filtered.length > 0 ? (
                 <VStack gap={4}>
                   <Heading level={4}>
-                    {filtered.length} result{filtered.length === 1 ? "" : "s"}
+                    {t("@legalos.knowledgeBase.resultCount", { count: filtered.length })}
                   </Heading>
                   <Grid columns={{ minWidth: 280, repeat: "fit" }} gap={4}>
                     {filtered.map((item) => (
@@ -167,11 +188,15 @@ export default function KnowledgeBasePage() {
               ) : (
                 <EmptyState
                   icon={<Icon icon={MagnifyingGlassIcon} size="lg" color="secondary" />}
-                  title="No results found"
-                  description="Try a different search term."
+                  title={t("@legalos.knowledgeBase.empty.title")}
+                  description={t("@legalos.knowledgeBase.empty.description")}
                   actions={
-                    <Button label="Clear search" variant="secondary" onClick={() => setSearch("")}>
-                      Clear search
+                    <Button
+                      label={t("@legalos.knowledgeBase.clearSearch")}
+                      variant="secondary"
+                      onClick={() => setSearch("")}
+                    >
+                      {t("@legalos.knowledgeBase.clearSearch")}
                     </Button>
                   }
                 />
@@ -183,7 +208,7 @@ export default function KnowledgeBasePage() {
                   if (items.length === 0) return null;
                   return (
                     <VStack key={category} gap={4}>
-                      <Heading level={4}>{category}</Heading>
+                      <Heading level={4}>{t(CATEGORY_KEY[category])}</Heading>
                       <Grid columns={{ minWidth: 280, repeat: "fit" }} gap={4}>
                         {items.map((item) => (
                           <KbCard key={item.id} item={item} />

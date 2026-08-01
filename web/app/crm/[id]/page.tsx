@@ -33,6 +33,7 @@ import {
   SparklesIcon,
   ClockIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import {
   getLead,
   STAGE_META,
@@ -60,9 +61,9 @@ const TIMELINE_LABEL: Record<TimelineEntryType, string> = {
 };
 
 const CONFLICT_META = {
-  clear: { variant: "success" as const, label: "No conflicts found" },
-  pending: { variant: "warning" as const, label: "Conflict check in progress" },
-  flagged: { variant: "error" as const, label: "Potential conflict — review required" },
+  clear: { variant: "success" as const, labelKey: "@legalos.crm.conflict.clear" },
+  pending: { variant: "warning" as const, labelKey: "@legalos.crm.conflict.pending" },
+  flagged: { variant: "error" as const, labelKey: "@legalos.crm.conflict.flagged" },
 };
 
 export default function LeadProfilePage({
@@ -70,6 +71,7 @@ export default function LeadProfilePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const t = useTranslator();
   const { id } = use(params);
   const lead = getLead(id);
 
@@ -88,11 +90,11 @@ export default function LeadProfilePage({
         content={
           <LayoutContent padding={0}>
             <EmptyState
-              title="Lead not found"
-              description="This lead may have been removed or the link is out of date."
+              title={t("@legalos.crm.detail.notFoundTitle")}
+              description={t("@legalos.crm.detail.notFoundDescription")}
               actions={
                 <Link href="/crm" isStandalone>
-                  Back to pipeline
+                  {t("@legalos.crm.detail.backToPipeline")}
                 </Link>
               }
             />
@@ -133,7 +135,7 @@ export default function LeadProfilePage({
               <Link href="/crm">
                 <HStack gap={1} vAlign="center">
                   <Icon icon={ArrowLeftIcon} size="sm" color="inherit" />
-                  All leads
+                  {t("@legalos.crm.detail.allLeads")}
                 </HStack>
               </Link>
 
@@ -148,9 +150,9 @@ export default function LeadProfilePage({
                     <Heading level={2}>{lead.name}</Heading>
                   </HStack>
                   <HStack gap={2} vAlign="center" wrap="wrap">
-                    <Badge variant={stageMeta.badgeVariant} label={stageMeta.label} />
+                    <Badge variant={stageMeta.badgeVariant} label={t(stageMeta.labelKey)} />
                     {lead.conflictStatus !== "clear" && (
-                      <Badge variant={conflictMeta.variant} label={conflictMeta.label} />
+                      <Badge variant={conflictMeta.variant} label={t(conflictMeta.labelKey)} />
                     )}
                     <Text type="body" color="secondary">
                       {lead.matterType}
@@ -158,11 +160,11 @@ export default function LeadProfilePage({
                   </HStack>
                 </VStack>
                 <HStack gap={2}>
-                  <Button label="Log interaction" variant="secondary">
-                    Log interaction
+                  <Button label={t("@legalos.crm.detail.logInteraction")} variant="secondary">
+                    {t("@legalos.crm.detail.logInteraction")}
                   </Button>
-                  <Button label="Convert to client" variant="primary">
-                    Convert to client
+                  <Button label={t("@legalos.crm.detail.convertToClient")} variant="primary">
+                    {t("@legalos.crm.detail.convertToClient")}
                   </Button>
                 </HStack>
               </HStack>
@@ -173,7 +175,7 @@ export default function LeadProfilePage({
                 <VStack gap={6}>
                   <Card>
                     <VStack gap={4}>
-                      <Heading level={4}>Timeline</Heading>
+                      <Heading level={4}>{t("@legalos.crm.detail.timeline")}</Heading>
                       <List hasDividers density="compact">
                         {lead.timeline.map((entry, i) => (
                           <ListItem
@@ -196,7 +198,7 @@ export default function LeadProfilePage({
 
                   <Card>
                     <VStack gap={4}>
-                      <Heading level={4}>Emails &amp; WhatsApp messages</Heading>
+                      <Heading level={4}>{t("@legalos.crm.detail.messagesHeading")}</Heading>
                       {(() => {
                         const logged = lead.timeline.filter(
                           (e) => e.type === "email" || e.type === "whatsapp"
@@ -205,8 +207,8 @@ export default function LeadProfilePage({
                           return (
                             <EmptyState
                               isCompact
-                              title="No messages logged"
-                              description="Emails and WhatsApp messages logged for this lead appear here."
+                              title={t("@legalos.crm.detail.messagesEmptyTitle")}
+                              description={t("@legalos.crm.detail.messagesEmptyDescription")}
                             />
                           );
                         }
@@ -239,25 +241,25 @@ export default function LeadProfilePage({
 
                   <Card>
                     <VStack gap={4}>
-                      <Heading level={4}>Notes</Heading>
+                      <Heading level={4}>{t("@legalos.crm.detail.notes")}</Heading>
                       <VStack gap={2}>
                         <TextArea
-                          label="Add a note"
+                          label={t("@legalos.crm.detail.addNoteLabel")}
                           isLabelHidden
-                          placeholder="Add a note about this lead…"
+                          placeholder={t("@legalos.crm.detail.addNotePlaceholder")}
                           value={draftNote}
                           onChange={setDraftNote}
                           rows={2}
                         />
                         <HStack hAlign="end">
                           <Button
-                            label="Add note"
+                            label={t("@legalos.crm.detail.addNote")}
                             variant="secondary"
                             size="sm"
                             isDisabled={draftNote.trim().length === 0}
                             onClick={addNote}
                           >
-                            Add note
+                            {t("@legalos.crm.detail.addNote")}
                           </Button>
                         </HStack>
                       </VStack>
@@ -281,18 +283,18 @@ export default function LeadProfilePage({
               <VStack gap={6}>
                 <Card>
                   <VStack gap={4}>
-                    <Heading level={4}>Lead details</Heading>
+                    <Heading level={4}>{t("@legalos.crm.detail.leadDetails")}</Heading>
                     <MetadataList>
-                      <MetadataListItem label="Source" icon={<Icon icon={UserGroupIcon} size="sm" color="secondary" />}>
+                      <MetadataListItem label={t("@legalos.crm.detail.field.source")} icon={<Icon icon={UserGroupIcon} size="sm" color="secondary" />}>
                         {lead.source}
                       </MetadataListItem>
-                      <MetadataListItem label="Estimated value" icon={<Icon icon={BanknotesIcon} size="sm" color="secondary" />}>
+                      <MetadataListItem label={t("@legalos.crm.detail.field.estimatedValue")} icon={<Icon icon={BanknotesIcon} size="sm" color="secondary" />}>
                         {formatEGP(lead.estValue)}
                       </MetadataListItem>
-                      <MetadataListItem label="Assigned to" icon={<Icon icon={UserIcon} size="sm" color="secondary" />}>
+                      <MetadataListItem label={t("@legalos.crm.detail.field.assignedTo")} icon={<Icon icon={UserIcon} size="sm" color="secondary" />}>
                         {lead.assignedTo}
                       </MetadataListItem>
-                      <MetadataListItem label="Created" icon={<Icon icon={CalendarDaysIcon} size="sm" color="secondary" />}>
+                      <MetadataListItem label={t("@legalos.crm.detail.field.created")} icon={<Icon icon={CalendarDaysIcon} size="sm" color="secondary" />}>
                         {lead.createdLabel}
                       </MetadataListItem>
                     </MetadataList>
@@ -311,12 +313,12 @@ export default function LeadProfilePage({
                   <VStack gap={3}>
                     <HStack gap={2} vAlign="center">
                       <Icon icon={ShieldCheckIcon} size="sm" color="secondary" />
-                      <Heading level={4}>Conflict check</Heading>
+                      <Heading level={4}>{t("@legalos.crm.detail.conflictCheck")}</Heading>
                     </HStack>
                     <HStack gap={2} vAlign="center">
-                      <StatusDot variant={conflictMeta.variant} label={conflictMeta.label} />
+                      <StatusDot variant={conflictMeta.variant} label={t(conflictMeta.labelKey)} />
                       <Text type="body" weight="semibold">
-                        {conflictMeta.label}
+                        {t(conflictMeta.labelKey)}
                       </Text>
                     </HStack>
                     <Text type="supporting" color="secondary">
@@ -329,7 +331,7 @@ export default function LeadProfilePage({
                   <VStack gap={3}>
                     <HStack gap={2} vAlign="center">
                       <Icon icon={ClockIcon} size="sm" color="secondary" />
-                      <Heading level={4}>Consultation</Heading>
+                      <Heading level={4}>{t("@legalos.crm.detail.consultation")}</Heading>
                     </HStack>
 
                     {consultation.status === "completed" && (
@@ -337,7 +339,7 @@ export default function LeadProfilePage({
                         <Text type="body">
                           Held {consultation.date} at {consultation.time}
                         </Text>
-                        <Badge variant="neutral" label="Completed" />
+                        <Badge variant="neutral" label={t("@legalos.crm.detail.completed")} />
                       </HStack>
                     )}
 
@@ -346,22 +348,22 @@ export default function LeadProfilePage({
                         <Text type="body">
                           {consultation.date} at {consultation.time}
                         </Text>
-                        <Badge variant="info" label="Scheduled" />
+                        <Badge variant="info" label={t("@legalos.crm.detail.scheduled")} />
                       </HStack>
                     )}
 
                     {consultation.status === "none" && !isScheduling && (
                       <VStack gap={3}>
                         <Text type="supporting" color="secondary">
-                          No consultation scheduled yet.
+                          {t("@legalos.crm.detail.noConsultation")}
                         </Text>
                         <Button
-                          label="Schedule consultation"
+                          label={t("@legalos.crm.detail.scheduleConsultation")}
                           variant="secondary"
                           size="sm"
                           onClick={() => setIsScheduling(true)}
                         >
-                          Schedule consultation
+                          {t("@legalos.crm.detail.scheduleConsultation")}
                         </Button>
                       </VStack>
                     )}
@@ -369,27 +371,27 @@ export default function LeadProfilePage({
                     {isScheduling && (
                       <VStack gap={3}>
                         <DateTimeInput
-                          label="Consultation date and time"
+                          label={t("@legalos.crm.detail.consultationDateLabel")}
                           value={scheduleValue as never}
                           onChange={(v) => setScheduleValue(v)}
                         />
                         <HStack gap={2}>
                           <Button
-                            label="Confirm"
+                            label={t("@legalos.crm.detail.confirm")}
                             variant="primary"
                             size="sm"
                             isDisabled={!scheduleValue}
                             onClick={confirmSchedule}
                           >
-                            Confirm
+                            {t("@legalos.crm.detail.confirm")}
                           </Button>
                           <Button
-                            label="Cancel"
+                            label={t("@legalos.crm.detail.cancel")}
                             variant="ghost"
                             size="sm"
                             onClick={() => setIsScheduling(false)}
                           >
-                            Cancel
+                            {t("@legalos.crm.detail.cancel")}
                           </Button>
                         </HStack>
                       </VStack>
@@ -401,14 +403,16 @@ export default function LeadProfilePage({
                   <VStack gap={3}>
                     <HStack gap={2} vAlign="center">
                       <Icon icon={SparklesIcon} size="sm" className="text-purple-vivid" />
-                      <Heading level={4}>Ask AI</Heading>
+                      <Heading level={4}>{t("@legalos.crm.detail.askAi")}</Heading>
                     </HStack>
                     <Text type="body">
-                      Draft a follow-up email to {lead.name} summarizing next steps for{" "}
-                      {lead.matterType.toLowerCase()}.
+                      {t("@legalos.crm.detail.askAiPrompt", {
+                        name: lead.name,
+                        matterType: lead.matterType.toLowerCase(),
+                      })}
                     </Text>
-                    <Button label="Draft follow-up" variant="secondary" size="sm">
-                      Draft follow-up
+                    <Button label={t("@legalos.crm.detail.draftFollowUp")} variant="secondary" size="sm">
+                      {t("@legalos.crm.detail.draftFollowUp")}
                     </Button>
                   </VStack>
                 </Card>
