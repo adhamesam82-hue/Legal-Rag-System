@@ -27,10 +27,21 @@ function SignInForm() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // signIn.password() returns { error } rather than throwing; without
+  // checking it, a rejected sign-in (wrong password, locked account, rate
+  // limit) just leaves the button re-enabled with no explanation, since
+  // errors.fields only covers per-field validation, not this.
+  const [globalError, setGlobalError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await signIn.password({ emailAddress: email, password });
+    setGlobalError(null);
+
+    const { error } = await signIn.password({ emailAddress: email, password });
+    if (error) {
+      setGlobalError(error.longMessage ?? error.message);
+      return;
+    }
 
     if (signIn.status === "complete") {
       // OrgGate and the invite-accept page both send visitors here with a
@@ -66,6 +77,9 @@ function SignInForm() {
             onSubmit={handleSubmit}
             style={{ display: "grid", gap: 14 }}
           >
+            {globalError && (
+              <Banner status="error" title="تعذر تسجيل الدخول" description={globalError} />
+            )}
             <TextInput
               label="البريد الإلكتروني"
               type="email"

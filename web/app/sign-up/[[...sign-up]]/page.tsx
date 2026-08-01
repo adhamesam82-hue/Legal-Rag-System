@@ -28,17 +28,57 @@ function SignUpForm() {
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [awaitingCode, setAwaitingCode] = useState(false);
+  // Clerk's Future hooks (signUp.password(), .sendEmailCode(), etc.) return
+  // { error } instead of throwing. Every call here must check it -- otherwise
+  // a failed sendEmailCode() (rate limit, delivery rejection, ...) still
+  // advances the UI to "enter the code", promising a code that was never
+  // sent, with no error shown anywhere. errors.fields only covers per-field
+  // validation; this is for everything else.
+  const [globalError, setGlobalError] = useState<string | null>(null);
+  const [resent, setResent] = useState(false);
 
   async function handleCreateAccount(e: React.FormEvent) {
     e.preventDefault();
-    await signUp.password({ emailAddress: email, password });
-    await signUp.verifications.sendEmailCode();
+    setGlobalError(null);
+
+    const { error: passwordError } = await signUp.password({
+      emailAddress: email,
+      password,
+    });
+    if (passwordError) {
+      setGlobalError(passwordError.longMessage ?? passwordError.message);
+      return;
+    }
+
+    const { error: sendError } = await signUp.verifications.sendEmailCode();
+    if (sendError) {
+      setGlobalError(sendError.longMessage ?? sendError.message);
+      return;
+    }
+
     setAwaitingCode(true);
+  }
+
+  async function handleResend() {
+    setGlobalError(null);
+    setResent(false);
+    const { error } = await signUp.verifications.sendEmailCode();
+    if (error) {
+      setGlobalError(error.longMessage ?? error.message);
+      return;
+    }
+    setResent(true);
   }
 
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault();
-    await signUp.verifications.verifyEmailCode({ code });
+    setGlobalError(null);
+
+    const { error } = await signUp.verifications.verifyEmailCode({ code });
+    if (error) {
+      setGlobalError(error.longMessage ?? error.message);
+      return;
+    }
 
     if (signUp.status === "complete") {
       // A redirect_url means they arrived from an invite link and are
@@ -69,6 +109,9 @@ function SignUpForm() {
               onSubmit={handleCreateAccount}
               style={{ display: "grid", gap: 14 }}
             >
+              {globalError && (
+                <Banner status="error" title="تعذر إنشاء الحساب" description={globalError} />
+              )}
               <TextInput
                 label="البريد الإلكتروني"
                 type="email"
@@ -107,6 +150,12 @@ function SignUpForm() {
               <Text type="supporting">
                 {`أرسلنا رمزًا إلى ${email}. أدخله أدناه لإكمال إنشاء حسابك.`}
               </Text>
+              {globalError && (
+                <Banner status="error" title="تعذر إرسال الرمز" description={globalError} />
+              )}
+              {resent && !globalError && (
+                <Banner status="info" title="تم إرسال رمز جديد" />
+              )}
               <TextInput
                 label="رمز التحقق"
                 value={code}
@@ -123,6 +172,13 @@ function SignUpForm() {
                 type="submit"
                 label="تحقق"
                 variant="primary"
+                isLoading={fetchStatus === "fetching"}
+              />
+              <Button
+                type="button"
+                label="إعادة إرسال الرمز"
+                variant="ghost"
+                onClick={handleResend}
                 isLoading={fetchStatus === "fetching"}
               />
             </form>
