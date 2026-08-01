@@ -10,7 +10,11 @@ import httpx
 from fastapi import Depends, HTTPException, Path, Request
 from fastapi_clerk_auth import ClerkConfig, ClerkHTTPBearer, HTTPAuthorizationCredentials
 
-from legalrag.config import get_clerk_jwks_url, get_clerk_secret_key
+from legalrag.config import (
+    get_clerk_jwks_url,
+    get_clerk_secret_key,
+    get_dev_auth_user,
+)
 from legalrag.db import get_connection
 from legalrag.orgs import Membership, get_membership
 
@@ -25,15 +29,29 @@ def _clerk_guard() -> ClerkHTTPBearer:
     return ClerkHTTPBearer(config=ClerkConfig(jwks_url=get_clerk_jwks_url()))
 
 
-async def _verify_clerk_session(request: Request) -> HTTPAuthorizationCredentials:
+async def _verify_clerk_session(
+    request: Request,
+) -> HTTPAuthorizationCredentials | None:
+    # Checked per-request rather than at import time so enabling or clearing
+    # the variable takes effect on reload, like every other config getter here.
+    if get_dev_auth_user():
+        return None
     guard = _clerk_guard()
     return await guard(request)
 
 
 def get_current_user_id(
-    credentials: HTTPAuthorizationCredentials = Depends(_verify_clerk_session),
+    credentials: HTTPAuthorizationCredentials | None = Depends(_verify_clerk_session),
 ) -> str:
-    """The authenticated Clerk user's id -- the JWT's `sub` claim."""
+    """The authenticated Clerk user's id -- the JWT's `sub` claim.
+
+    Returns the impersonated id instead when LEGALOS_DEV_AUTH is set; see
+    config.get_dev_auth_user for why that is opt-in only.
+    """
+    dev_user = get_dev_auth_user()
+    if dev_user:
+        return dev_user
+    assert credentials is not None  # _verify_clerk_session raises otherwise
     return credentials.decoded["sub"]
 
 

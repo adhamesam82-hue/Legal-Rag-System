@@ -95,6 +95,23 @@ def get_resend_api_key() -> str:
     return key
 
 
+def get_dev_auth_user() -> str | None:
+    """The Clerk user id to impersonate when LEGALOS_DEV_AUTH is set.
+
+    An escape hatch for running the whole stack locally before Clerk is
+    configured: with it set, the API skips JWT verification and treats every
+    request as coming from this user.
+
+    Deliberately opt-in and fail-closed. Missing Clerk configuration does NOT
+    enable it -- that would turn a misconfigured production deploy into an open
+    API. The variable's value is the impersonated user id, so there is no way
+    to switch it on by setting it to a vague truthy value.
+
+    MUST NOT be set in any deployed environment.
+    """
+    return os.environ.get("LEGALOS_DEV_AUTH") or None
+
+
 def get_document_root() -> Path:
     """Directory holding uploaded matter documents.
 

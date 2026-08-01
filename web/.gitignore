@@ -9,4 +9,4 @@ shot*.mjs
 shots-all.mjs
 final.mjs
 smoke.mjs
-.tmp-shot.mjs
+.tmp-*.mjs

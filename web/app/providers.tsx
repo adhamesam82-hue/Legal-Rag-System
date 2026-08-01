@@ -6,7 +6,9 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Theme } from "@astryxdesign/core/theme";
 import { LinkProvider } from "@astryxdesign/core/Link";
 import { legalosTheme } from "@/lib/legalos";
+import { USING_CLERK } from "@/lib/auth-mode";
 import { AuthTokenBridge } from "@/components/AuthTokenBridge";
+import { OrgProvider } from "@/lib/org";
 
 type ColorMode = "light" | "dark" | "system";
 
@@ -27,17 +29,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [mode, setMode] = useState<ColorMode>("system");
   const ctxValue = useMemo(() => ({ mode, setMode }), [mode]);
 
-  return (
-    <ClerkProvider>
-      <ThemeModeContext.Provider value={ctxValue}>
-        <Theme theme={legalosTheme} mode={mode}>
-          {/* Routes every Astryx Link through the Next router. */}
-          <LinkProvider component={Link}>
-            <AuthTokenBridge />
-            {children}
-          </LinkProvider>
-        </Theme>
-      </ThemeModeContext.Provider>
-    </ClerkProvider>
+  const inner = (
+    <ThemeModeContext.Provider value={ctxValue}>
+      <Theme theme={legalosTheme} mode={mode}>
+        {/* Routes every Astryx Link through the Next router. */}
+        <LinkProvider component={Link}>
+          {USING_CLERK && <AuthTokenBridge />}
+          <OrgProvider>{children}</OrgProvider>
+        </LinkProvider>
+      </Theme>
+    </ThemeModeContext.Provider>
   );
+
+  // ClerkProvider throws without a publishable key, so it is only mounted
+  // when one is configured; see lib/auth-mode.ts.
+  return USING_CLERK ? <ClerkProvider>{inner}</ClerkProvider> : inner;
 }

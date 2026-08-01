@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Layout, LayoutHeader, LayoutContent } from "@astryxdesign/core/Layout";
+import { Layout, LayoutHeader, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { VStack, HStack } from "@astryxdesign/core/Stack";
 import { Heading, Text } from "@astryxdesign/core/Text";
 import { Button } from "@astryxdesign/core/Button";
@@ -9,79 +9,84 @@ import { Icon } from "@astryxdesign/core/Icon";
 import { Badge } from "@astryxdesign/core/Badge";
 import { Avatar } from "@astryxdesign/core/Avatar";
 import { TextInput } from "@astryxdesign/core/TextInput";
+import { TextArea } from "@astryxdesign/core/TextArea";
 import { Selector } from "@astryxdesign/core/Selector";
 import { Table, proportional, pixel } from "@astryxdesign/core/Table";
 import type { TableColumn } from "@astryxdesign/core/Table";
 import { Link } from "@astryxdesign/core/Link";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
+import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
 import { PlusIcon, MagnifyingGlassIcon, UserGroupIcon } from "@heroicons/react/24/outline";
+import { useOrg, useResource } from "@/lib/org";
+import { DataView, InlineError } from "@/components/DataState";
 import {
-  CLIENTS,
-  MATTERS,
-  ACTIVITY,
   formatDate,
+  label,
   type Client,
-} from "@/lib/legalos-data";
+  type ClientType,
+} from "@/lib/practice";
 
 interface ClientRow extends Record<string, unknown> {
-  id: string;
+  id: number;
   name: string;
-  type: Client["type"];
+  client_type: ClientType;
   industry: string;
-  status: Client["status"];
+  status: string;
   primaryContactName: string;
   primaryContactTitle: string;
   activeMatters: number;
   lastActivity: string | null;
 }
 
-function buildRows(): ClientRow[] {
-  return CLIENTS.map((client) => {
-    const primary = client.contacts.find((c) => c.isPrimary) ?? client.contacts[0];
-    const activeMatters = MATTERS.filter(
-      (m) => m.clientId === client.id && m.status === "Active",
-    ).length;
-    const activity = ACTIVITY.filter((a) => a.clientId === client.id).sort((a, b) =>
-      a.when < b.when ? 1 : -1,
-    );
-    return {
-      id: client.id,
-      name: client.name,
-      type: client.type,
-      industry: client.industry,
-      status: client.status,
-      primaryContactName: primary?.name ?? "—",
-      primaryContactTitle: primary?.title ?? "",
-      activeMatters,
-      lastActivity: activity[0]?.when.slice(0, 10) ?? client.since,
-    };
-  });
-}
-
-const ALL_ROWS = buildRows();
-
 export default function ClientsPage() {
+  const { practice, organizationName } = useOrg();
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [isCreating, setIsCreating] = useState(false);
 
-  const rows = useMemo(() => {
-    return ALL_ROWS.filter((row) => {
-      if (typeFilter !== "all" && row.type !== typeFilter) return false;
-      if (statusFilter !== "all" && row.status !== statusFilter) return false;
-      if (query.trim()) {
-        const q = query.trim().toLowerCase();
-        if (
-          !row.name.toLowerCase().includes(q) &&
-          !row.industry.toLowerCase().includes(q) &&
-          !row.primaryContactName.toLowerCase().includes(q)
-        ) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }, [query, typeFilter, statusFilter]);
+  // Clients, their matter counts and their latest activity come from three
+  // endpoints; the table joins them client-side rather than adding a bespoke
+  // rollup route for one screen.
+  const resource = useResource(
+    async (api) => {
+      const [clients, matters, activity] = await Promise.all([
+        api.clients.list({
+          status: statusFilter === "all" ? undefined : statusFilter,
+          q: query.trim() || undefined,
+        }),
+        api.matters.list({ status: "active" }),
+        api.activity({ limit: 200 }),
+      ]);
+      return { clients, matters, activity };
+    },
+    [query, statusFilter],
+  );
+
+  const rows = useMemo<ClientRow[]>(() => {
+    if (!resource.data) return [];
+    const { clients, matters, activity } = resource.data;
+    return clients
+      .filter((c) => typeFilter === "all" || c.client_type === typeFilter)
+      .map((client) => {
+        const primary =
+          client.contacts.find((c) => c.is_primary) ?? client.contacts[0];
+        const latest = activity
+          .filter((a) => a.client_id === client.id)
+          .sort((a, b) => (a.occurred_at < b.occurred_at ? 1 : -1))[0];
+        return {
+          id: client.id,
+          name: client.name,
+          client_type: client.client_type,
+          industry: client.industry,
+          status: client.status,
+          primaryContactName: primary?.name ?? "—",
+          primaryContactTitle: primary?.title ?? "",
+          activeMatters: matters.filter((m) => m.client_id === client.id).length,
+          lastActivity: latest?.occurred_at ?? client.client_since,
+        };
+      });
+  }, [resource.data, typeFilter]);
 
   const columns: TableColumn<ClientRow>[] = [
     {
@@ -102,10 +107,10 @@ export default function ClientsPage() {
       ),
     },
     {
-      key: "type",
+      key: "client_type",
       header: "Type",
       width: pixel(120),
-      renderCell: (row) => <Text type="body">{row.type}</Text>,
+      renderCell: (row) => <Text type="body">{label(row.client_type)}</Text>,
     },
     {
       key: "primaryContactName",
@@ -144,7 +149,7 @@ export default function ClientsPage() {
       width: pixel(140),
       renderCell: (row) => (
         <Text type="body" color="secondary">
-          {row.lastActivity ? formatDate(row.lastActivity) : "—"}
+          {formatDate(row.lastActivity)}
         </Text>
       ),
     },
@@ -153,7 +158,7 @@ export default function ClientsPage() {
       header: "Status",
       width: pixel(110),
       renderCell: (row) =>
-        row.status === "Inactive" ? (
+        row.status === "inactive" ? (
           <Badge variant="neutral" label="Inactive" />
         ) : (
           <Text type="body" color="secondary">
@@ -163,89 +168,237 @@ export default function ClientsPage() {
     },
   ];
 
+  const total = resource.data?.clients.length ?? 0;
+
   return (
-    <Layout
-      height="fill"
-      header={
-        <LayoutHeader hasDivider padding={0}>
-          <VStack gap={4}>
-            <HStack hAlign="between" vAlign="center">
-              <VStack gap={1}>
-                <Heading level={2}>Clients</Heading>
-                <Text type="body" color="secondary">
-                  {CLIENTS.length} clients at Al-Sayed &amp; Partners
-                </Text>
-              </VStack>
-              <Button
-                label="New client"
-                variant="primary"
-                icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
-              >
-                New client
-              </Button>
-            </HStack>
-            <HStack gap={3} wrap="wrap">
+    <>
+      <Layout
+        height="fill"
+        header={
+          <LayoutHeader hasDivider padding={0}>
+            <VStack gap={4}>
+              <HStack hAlign="between" vAlign="center">
+                <VStack gap={1}>
+                  <Heading level={2}>Clients</Heading>
+                  <Text type="body" color="secondary">
+                    {total} {total === 1 ? "client" : "clients"}
+                    {organizationName ? ` at ${organizationName}` : ""}
+                  </Text>
+                </VStack>
+                <Button
+                  label="New client"
+                  variant="primary"
+                  icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
+                  onClick={() => setIsCreating(true)}
+                  isDisabled={!practice}
+                >
+                  New client
+                </Button>
+              </HStack>
+              <HStack gap={3} wrap="wrap">
+                <TextInput
+                  label="Search clients"
+                  isLabelHidden
+                  value={query}
+                  onChange={setQuery}
+                  placeholder="Search by name or industry"
+                  startIcon={MagnifyingGlassIcon}
+                  width={320}
+                />
+                <Selector
+                  label="Type"
+                  isLabelHidden
+                  value={typeFilter}
+                  onChange={(v) => setTypeFilter(v ?? "all")}
+                  options={[
+                    { value: "all", label: "All types" },
+                    { value: "company", label: "Company" },
+                    { value: "individual", label: "Individual" },
+                  ]}
+                  width={160}
+                />
+                <Selector
+                  label="Status"
+                  isLabelHidden
+                  value={statusFilter}
+                  onChange={(v) => setStatusFilter(v ?? "all")}
+                  options={[
+                    { value: "all", label: "All statuses" },
+                    { value: "active", label: "Active" },
+                    { value: "inactive", label: "Inactive" },
+                  ]}
+                  width={160}
+                />
+              </HStack>
+            </VStack>
+          </LayoutHeader>
+        }
+        content={
+          <LayoutContent padding={0}>
+            <DataView resource={resource} loadingLabel="Loading clients…">
+              {() =>
+                rows.length > 0 ? (
+                  <Table<ClientRow> data={rows} columns={columns} idKey="id" hasHover />
+                ) : (
+                  <EmptyState
+                    icon={<Icon icon={UserGroupIcon} size="lg" color="secondary" />}
+                    title={
+                      total === 0
+                        ? "No clients yet"
+                        : "No clients match your filters"
+                    }
+                    description={
+                      total === 0
+                        ? "Add your first client to start opening matters against it."
+                        : "Try a different search term or clear the type and status filters."
+                    }
+                    actions={
+                      total === 0 ? (
+                        <Button
+                          label="New client"
+                          variant="primary"
+                          onClick={() => setIsCreating(true)}
+                        />
+                      ) : (
+                        <Button
+                          label="Clear filters"
+                          variant="secondary"
+                          onClick={() => {
+                            setQuery("");
+                            setTypeFilter("all");
+                            setStatusFilter("all");
+                          }}
+                        />
+                      )
+                    }
+                  />
+                )
+              }
+            </DataView>
+          </LayoutContent>
+        }
+      />
+      <NewClientDialog
+        isOpen={isCreating}
+        onOpenChange={setIsCreating}
+        onCreated={resource.reload}
+      />
+    </>
+  );
+}
+
+function NewClientDialog({
+  isOpen,
+  onOpenChange,
+  onCreated,
+}: {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreated: () => void;
+}) {
+  const { practice } = useOrg();
+  const [name, setName] = useState("");
+  const [clientType, setClientType] = useState<ClientType>("company");
+  const [industry, setIndustry] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function reset() {
+    setName("");
+    setClientType("company");
+    setIndustry("");
+    setEmail("");
+    setPhone("");
+    setAddress("");
+    setNotes("");
+    setError(null);
+  }
+
+  async function submit() {
+    if (!practice || !name.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await practice.clients.create({
+        name: name.trim(),
+        client_type: clientType,
+        industry,
+        email,
+        phone,
+        address,
+        notes: notes || null,
+      } as Partial<Client>);
+      reset();
+      onOpenChange(false);
+      onCreated();
+    } catch (exc) {
+      setError(exc instanceof Error ? exc.message : "Could not save this client.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
+      <Layout
+        header={<DialogHeader title="New client" onOpenChange={onOpenChange} />}
+        content={
+          <LayoutContent>
+            <VStack gap={4}>
+              <InlineError message={error} onDismiss={() => setError(null)} />
               <TextInput
-                label="Search clients"
-                isLabelHidden
-                value={query}
-                onChange={setQuery}
-                placeholder="Search by name, industry, or contact"
-                startIcon={MagnifyingGlassIcon}
-                width={320}
+                label="Client name"
+                value={name}
+                onChange={setName}
+                placeholder="Nile Trading Co."
+                isRequired
               />
               <Selector
                 label="Type"
-                isLabelHidden
-                value={typeFilter}
-                onChange={(v) => setTypeFilter(v ?? "all")}
+                value={clientType}
+                onChange={(v) => setClientType((v as ClientType) ?? "company")}
                 options={[
-                  { value: "all", label: "All types" },
-                  { value: "Company", label: "Company" },
-                  { value: "Individual", label: "Individual" },
+                  { value: "company", label: "Company" },
+                  { value: "individual", label: "Individual" },
                 ]}
-                width={160}
               />
-              <Selector
-                label="Status"
-                isLabelHidden
-                value={statusFilter}
-                onChange={(v) => setStatusFilter(v ?? "all")}
-                options={[
-                  { value: "all", label: "All statuses" },
-                  { value: "Active", label: "Active" },
-                  { value: "Inactive", label: "Inactive" },
-                ]}
-                width={160}
+              <TextInput
+                label="Industry"
+                value={industry}
+                onChange={setIndustry}
+                placeholder="Import & Export Trading"
+              />
+              <HStack gap={3}>
+                <TextInput label="Email" value={email} onChange={setEmail} />
+                <TextInput label="Phone" value={phone} onChange={setPhone} />
+              </HStack>
+              <TextInput label="Address" value={address} onChange={setAddress} />
+              <TextArea label="Notes" value={notes} onChange={setNotes} rows={3} />
+            </VStack>
+          </LayoutContent>
+        }
+        footer={
+          <LayoutFooter hasDivider>
+            <HStack gap={3} hAlign="end">
+              <Button
+                label="Cancel"
+                variant="secondary"
+                onClick={() => onOpenChange(false)}
+              />
+              <Button
+                label={saving ? "Saving…" : "Create client"}
+                variant="primary"
+                onClick={submit}
+                isDisabled={saving || !name.trim()}
               />
             </HStack>
-          </VStack>
-        </LayoutHeader>
-      }
-      content={
-        <LayoutContent padding={0}>
-          {rows.length > 0 ? (
-            <Table<ClientRow> data={rows} columns={columns} idKey="id" hasHover />
-          ) : (
-            <EmptyState
-              icon={<Icon icon={UserGroupIcon} size="lg" color="secondary" />}
-              title="No clients match your filters"
-              description="Try a different search term or clear the type and status filters."
-              actions={
-                <Button
-                  label="Clear filters"
-                  variant="secondary"
-                  onClick={() => {
-                    setQuery("");
-                    setTypeFilter("all");
-                    setStatusFilter("all");
-                  }}
-                />
-              }
-            />
-          )}
-        </LayoutContent>
-      }
-    />
+          </LayoutFooter>
+        }
+      />
+    </Dialog>
   );
 }

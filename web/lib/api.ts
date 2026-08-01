@@ -79,6 +79,9 @@ export interface InvitationPreview {
 export interface OrgMember {
   clerk_user_id: string;
   role: "owner" | "lawyer" | "staff";
+  /** Firm-side display identity, set on the membership rather than in Clerk. */
+  display_name: string | null;
+  title: string | null;
 }
 
 /** Carries the HTTP status so callers can tell "out of credits" from a real fault. */
@@ -107,7 +110,9 @@ export function configureAuthToken(getter: TokenGetter) {
   getAuthToken = getter;
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+/** Exported so lib/practice.ts shares one auth-token and error-mapping path
+ *  rather than re-implementing fetch for the practice endpoints. */
+export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = await getAuthToken();
   let response: Response;
   try {

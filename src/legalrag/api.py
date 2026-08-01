@@ -7,6 +7,7 @@ before the check that decides whether it may be shown at all.
 """
 from __future__ import annotations
 
+import logging
 from contextlib import contextmanager
 from typing import Literal
 
@@ -22,6 +23,7 @@ from legalrag.clerk import (
     get_user_primary_email,
     require_owner,
 )
+from legalrag.config import get_dev_auth_user
 from legalrag.db import get_connection
 from legalrag.email import send_invite_email
 from legalrag.explain import explain_article
@@ -67,6 +69,14 @@ app.add_middleware(
 # billing) lives in its own module; the corpus and answering routes below are
 # a separate concern that happens to share an app.
 app.include_router(practice_router)
+
+if get_dev_auth_user():
+    # Loud on purpose: this disables JWT verification for every route.
+    logging.getLogger("uvicorn.error").warning(
+        "LEGALOS_DEV_AUTH is set to %r -- authentication is DISABLED and every "
+        "request is treated as that user. Never set this outside local development.",
+        get_dev_auth_user(),
+    )
 
 Jurisdiction = Literal["EG", "SA"]
 
