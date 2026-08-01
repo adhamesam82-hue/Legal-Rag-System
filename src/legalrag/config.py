@@ -95,6 +95,25 @@ def get_resend_api_key() -> str:
     return key
 
 
+LOCAL_CORS_ORIGINS = ("http://localhost:3000", "http://127.0.0.1:3000")
+
+
+def get_cors_origins() -> list[str]:
+    """Browser origins allowed to call this API.
+
+    The two local dev-server origins are always allowed; deployed frontends are
+    added through LEGALOS_CORS_ORIGINS as a comma-separated list, e.g.
+    "https://legalos.vercel.app,https://app.legalos.eg".
+
+    No wildcard: these routes carry a bearer token and allow_credentials is on,
+    so a permissive origin would let any site make authenticated calls on a
+    signed-in user's behalf.
+    """
+    configured = os.environ.get("LEGALOS_CORS_ORIGINS", "")
+    extra = [origin.strip() for origin in configured.split(",") if origin.strip()]
+    return [*LOCAL_CORS_ORIGINS, *extra]
+
+
 def get_dev_auth_user() -> str | None:
     """The Clerk user id to impersonate when LEGALOS_DEV_AUTH is set.
 

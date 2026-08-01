@@ -23,7 +23,7 @@ from legalrag.clerk import (
     get_user_primary_email,
     require_owner,
 )
-from legalrag.config import get_dev_auth_user
+from legalrag.config import get_cors_origins, get_dev_auth_user
 from legalrag.db import get_connection
 from legalrag.email import send_invite_email
 from legalrag.explain import explain_article
@@ -57,10 +57,13 @@ from legalrag.retrieve import Candidate
 
 app = FastAPI(title="LegalOS API", version="0.3.0")
 
-# The Next.js dev server is a separate origin.
+# The frontend is always a separate origin from this API -- the Next.js dev
+# server locally, a deployed domain in production. Extra origins come from
+# LEGALOS_CORS_ORIGINS (comma-separated) so a deploy does not need a code change.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=get_cors_origins(),
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
