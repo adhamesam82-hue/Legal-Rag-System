@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import {
   ResponsiveContainer,
   BarChart,
@@ -10,16 +11,18 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-import { Layout, LayoutContent } from "@astryxdesign/core/Layout";
+import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Grid, GridSpan } from "@astryxdesign/core/Grid";
+import { Grid } from "@astryxdesign/core/Grid";
 import { Heading, Text } from "@astryxdesign/core/Text";
 import { Card } from "@astryxdesign/core/Card";
 import { Button } from "@astryxdesign/core/Button";
 import { Icon } from "@astryxdesign/core/Icon";
 import { Badge } from "@astryxdesign/core/Badge";
-import { List, ListItem } from "@astryxdesign/core/List";
 import { Link } from "@astryxdesign/core/Link";
+import { Selector } from "@astryxdesign/core/Selector";
+import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
+import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { Table, proportional, pixel } from "@astryxdesign/core/Table";
 import type { TableColumn } from "@astryxdesign/core/Table";
 import {
@@ -29,192 +32,224 @@ import {
   DocumentTextIcon,
   BuildingOffice2Icon,
 } from "@heroicons/react/24/outline";
+import { useOrg, useResource } from "@/lib/org";
+import { DataView, InlineError } from "@/components/DataState";
+import { formatDate, formatEGP, label, type InvoiceStatus } from "@/lib/practice";
 
-// ---------------------------------------------------------------------------
-// Mock data — no billing backend exists yet; this is the UI concept pass.
-// Collected figures line up with the dashboard's revenue trend (Feb 312k →
-// Jul 486.2k) so the two pages don't contradict each other.
-// ---------------------------------------------------------------------------
+// Retainer balances and disbursements/expenses were part of the UI concept but
+// have no backend and no schema, so they are not rendered here rather than
+// shown as invented figures. See PRODUCT.md: screens must not imply a pillar
+// is functional before it is.
 
-export interface Invoice extends Record<string, unknown> {
-  id: string;
+interface InvoiceRow extends Record<string, unknown> {
+  id: number;
+  number: string;
   client: string;
   matter: string;
   amount: number;
-  status: "Draft" | "Sent" | "Paid" | "Overdue";
-  issueDate: string;
-  dueDate: string;
+  status: InvoiceStatus;
+  issued: string;
+  due: string;
 }
 
-export const INVOICES: Invoice[] = [
-  { id: "INV-2031", client: "Nile Trading Co.", matter: "Nabil v. Nile Trading Co.", amount: 84500, status: "Sent", issueDate: "Jul 27", dueDate: "Aug 10" },
-  { id: "INV-2030", client: "Delta Foods", matter: "Delta Foods Labour Dispute", amount: 52000, status: "Paid", issueDate: "Jul 6", dueDate: "Jul 20" },
-  { id: "INV-2029", client: "Khalil Holdings", matter: "Khalil Holdings Contract Review", amount: 38750, status: "Overdue", issueDate: "Jul 1", dueDate: "Jul 15" },
-  { id: "INV-2028", client: "Al Amal Trading", matter: "Al Amal Trading Renewal", amount: 21000, status: "Draft", issueDate: "—", dueDate: "—" },
-  { id: "INV-2027", client: "El-Sayed Estate", matter: "El-Sayed Estate Partition", amount: 67200, status: "Paid", issueDate: "Jun 21", dueDate: "Jul 5" },
-  { id: "INV-2026", client: "Nile Trading Co.", matter: "Nabil v. Nile Trading Co.", amount: 45900, status: "Overdue", issueDate: "Jun 14", dueDate: "Jun 28" },
-  { id: "INV-2025", client: "Delta Foods", matter: "Delta Foods Labour Dispute", amount: 29300, status: "Sent", issueDate: "Jul 20", dueDate: "Aug 3" },
-  { id: "INV-2024", client: "Khalil Holdings", matter: "Khalil Holdings Contract Review", amount: 61000, status: "Paid", issueDate: "Jun 1", dueDate: "Jun 15" },
-  { id: "INV-2023", client: "Al Amal Trading", matter: "Al Amal Trading Renewal", amount: 18400, status: "Paid", issueDate: "May 27", dueDate: "Jun 10" },
-  { id: "INV-2022", client: "El-Sayed Estate", matter: "El-Sayed Estate Partition", amount: 33750, status: "Draft", issueDate: "—", dueDate: "—" },
-];
-
-const RETAINERS = [
-  { client: "Nile Trading Co.", balance: 120000, threshold: 25000 },
-  { client: "Delta Foods", balance: 65000, threshold: 20000 },
-  { client: "Al Amal Trading", balance: 42000, threshold: 15000 },
-  { client: "Khalil Holdings", balance: 18500, threshold: 25000 },
-  { client: "El-Sayed Estate", balance: 9200, threshold: 15000 },
-];
-
-interface Expense extends Record<string, unknown> {
-  id: string;
-  date: string;
-  matter: string;
-  description: string;
-  amount: number;
-  kind: "Billable" | "Firm";
-  status: string;
-}
-
-const EXPENSES: Expense[] = [
-  { id: "e1", date: "Jul 28", matter: "Nabil v. Nile Trading Co.", description: "Court filing fees", amount: 3200, kind: "Billable", status: "Reimbursement pending" },
-  { id: "e2", date: "Jul 26", matter: "Delta Foods Labour Dispute", description: "Expert witness consultation", amount: 12000, kind: "Billable", status: "Invoiced" },
-  { id: "e3", date: "Jul 24", matter: "Khalil Holdings Contract Review", description: "Courier & notarization", amount: 850, kind: "Billable", status: "Reimbursed" },
-  { id: "e4", date: "Jul 22", matter: "Firm overhead", description: "Office supplies", amount: 1400, kind: "Firm", status: "Recorded" },
-  { id: "e5", date: "Jul 20", matter: "El-Sayed Estate Partition", description: "Property valuation report", amount: 6500, kind: "Billable", status: "Invoiced" },
-  { id: "e6", date: "Jul 18", matter: "Firm overhead", description: "Legal research subscription", amount: 2200, kind: "Firm", status: "Recorded" },
-];
-
-const BILLING_CHART = [
-  { month: "Feb", invoiced: 325000, collected: 312000 },
-  { month: "Mar", invoiced: 350000, collected: 338000 },
-  { month: "Apr", invoiced: 368000, collected: 355000 },
-  { month: "May", invoiced: 415000, collected: 402000 },
-  { month: "Jun", invoiced: 447000, collected: 433000 },
-  { month: "Jul", invoiced: 501500, collected: 486200 },
-];
-
-export function egp(value: number) {
-  return `EGP ${value.toLocaleString()}`;
-}
+const STATUS_VARIANT: Record<InvoiceStatus, "neutral" | "info" | "success" | "error"> = {
+  draft: "neutral",
+  sent: "info",
+  paid: "success",
+  overdue: "error",
+};
 
 function egpShort(value: number) {
   return `EGP ${Math.round(value / 1000)}k`;
 }
 
-const outstanding = INVOICES.filter((i) => i.status !== "Paid").reduce((sum, i) => sum + i.amount, 0);
-const overdue = INVOICES.filter((i) => i.status === "Overdue").reduce((sum, i) => sum + i.amount, 0);
-const draftPending = INVOICES.filter((i) => i.status === "Draft").reduce((sum, i) => sum + i.amount, 0);
-const collectedMtd = BILLING_CHART[BILLING_CHART.length - 1].collected;
-
-const summaryKpis = [
-  { label: "Total Outstanding", value: egp(outstanding), change: `${INVOICES.filter((i) => i.status !== "Paid").length} open invoices`, icon: BanknotesIcon },
-  { label: "Overdue", value: egp(overdue), change: `${INVOICES.filter((i) => i.status === "Overdue").length} invoices past due`, icon: ExclamationTriangleIcon, warn: true },
-  { label: "Draft — Pending Send", value: egp(draftPending), change: `${INVOICES.filter((i) => i.status === "Draft").length} not yet sent`, icon: DocumentTextIcon },
-  { label: "Collected (MTD)", value: egp(collectedMtd), change: "+12.4% vs. last month", icon: BuildingOffice2Icon },
-];
-
-function BillingChart() {
-  return (
-    <ResponsiveContainer width="100%" height={240}>
-      <BarChart data={BILLING_CHART} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-        <CartesianGrid horizontal vertical={false} stroke="var(--color-border)" />
-        <XAxis
-          dataKey="month"
-          tick={{ fontSize: 12, fill: "var(--color-text-secondary)" }}
-          axisLine={false}
-          tickLine={false}
-        />
-        <YAxis
-          tickFormatter={egpShort}
-          tick={{ fontSize: 12, fill: "var(--color-text-secondary)" }}
-          axisLine={false}
-          tickLine={false}
-          width={56}
-        />
-        <Tooltip
-          formatter={(value, name) => [egp(Number(value)), name]}
-          contentStyle={{
-            background: "var(--color-background-popover)",
-            border: "1px solid var(--color-border)",
-            borderRadius: "var(--radius-element)",
-          }}
-        />
-        <Legend wrapperStyle={{ fontSize: 12 }} />
-        <Bar dataKey="invoiced" name="Invoiced" fill="var(--color-border-strong)" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="collected" name="Collected" fill="var(--color-accent)" radius={[4, 4, 0, 0]} />
-      </BarChart>
-    </ResponsiveContainer>
-  );
-}
-
-function KpiCard({ label, value, change, icon, warn }: (typeof summaryKpis)[number]) {
-  return (
-    <Card>
-      <VStack gap={3}>
-        <HStack hAlign="between" vAlign="center">
-          <Text type="label" color="secondary">
-            {label}
-          </Text>
-          <Icon icon={icon} size="sm" color={warn ? "warning" : "secondary"} />
-        </HStack>
-        <Heading level={2}>{value}</Heading>
-        <Text type="supporting" color="secondary">
-          {change}
-        </Text>
-      </VStack>
-    </Card>
-  );
-}
-
 export default function BillingPage() {
-  const invoiceColumns: TableColumn<Invoice>[] = [
+  const { practice } = useOrg();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [pendingId, setPendingId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const resource = useResource(
+    async (api) => {
+      const [invoices, summary] = await Promise.all([
+        api.invoices.list(),
+        api.invoices.summary(),
+      ]);
+      return { invoices, summary };
+    },
+    [],
+  );
+
+  const invoices = resource.data?.invoices ?? [];
+  const summary = resource.data?.summary;
+
+  // Invoiced vs. collected by month, derived from the invoices themselves
+  // rather than a separate reporting table that could disagree with them.
+  const chart = useMemo(() => {
+    const byMonth = new Map<string, { invoiced: number; collected: number }>();
+    for (const invoice of invoices) {
+      const key = invoice.issued_date.slice(0, 7);
+      const bucket = byMonth.get(key) ?? { invoiced: 0, collected: 0 };
+      bucket.invoiced += Number(invoice.amount);
+      if (invoice.status === "paid") bucket.collected += Number(invoice.amount);
+      byMonth.set(key, bucket);
+    }
+    return [...byMonth.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-6)
+      .map(([key, totals]) => ({
+        month: new Date(`${key}-01T00:00:00`).toLocaleDateString("en-US", {
+          month: "short",
+        }),
+        ...totals,
+      }));
+  }, [invoices]);
+
+  const rows = useMemo<InvoiceRow[]>(
+    () =>
+      invoices.map((invoice) => ({
+        id: invoice.id,
+        number: invoice.number,
+        client: invoice.client_name,
+        matter: invoice.matter_name ?? "—",
+        amount: Number(invoice.amount),
+        status: invoice.status,
+        issued: invoice.issued_date,
+        due: invoice.due_date,
+      })),
+    [invoices],
+  );
+
+  async function setStatus(invoice: InvoiceRow, status: InvoiceStatus) {
+    if (!practice) return;
+    setPendingId(invoice.id);
+    setError(null);
+    try {
+      await practice.invoices.setStatus(invoice.id, status);
+      resource.reload();
+    } catch (exc) {
+      setError(exc instanceof Error ? exc.message : "Could not update this invoice.");
+    } finally {
+      setPendingId(null);
+    }
+  }
+
+  const kpis = summary
+    ? [
+        {
+          label: "Total Outstanding",
+          value: formatEGP(summary.outstanding),
+          change: `${invoices.filter((i) => i.status === "sent" || i.status === "overdue").length} open invoices`,
+          icon: BanknotesIcon,
+          warn: false,
+        },
+        {
+          label: "Overdue",
+          value: formatEGP(summary.overdue),
+          change: `${invoices.filter((i) => i.status === "overdue").length} invoices past due`,
+          icon: ExclamationTriangleIcon,
+          warn: true,
+        },
+        {
+          label: "Draft — Pending Send",
+          value: formatEGP(
+            invoices
+              .filter((i) => i.status === "draft")
+              .reduce((sum, i) => sum + Number(i.amount), 0),
+          ),
+          change: `${summary.draft_count} not yet sent`,
+          icon: DocumentTextIcon,
+          warn: false,
+        },
+        {
+          label: "Collected this year",
+          value: formatEGP(summary.paid_this_year),
+          change: `${invoices.filter((i) => i.status === "paid").length} invoices paid`,
+          icon: BuildingOffice2Icon,
+          warn: false,
+        },
+      ]
+    : [];
+
+  const invoiceColumns: TableColumn<InvoiceRow>[] = [
     {
-      key: "id",
-      header: "Invoice #",
-      width: pixel(120),
-      renderCell: (item) => (
-        <Link href={`/billing/${item.id}`}>{item.id}</Link>
+      key: "number",
+      header: "Invoice",
+      width: pixel(150),
+      renderCell: (row) => (
+        <Link href={`/billing/${row.id}`}>
+          <Text type="body" weight="semibold">
+            {row.number}
+          </Text>
+        </Link>
       ),
     },
     {
       key: "client",
       header: "Client",
-      width: proportional(1.5),
-      renderCell: (item) => <Text type="body">{item.client}</Text>,
+      width: proportional(1.6),
+      renderCell: (row) => <Text type="body">{row.client}</Text>,
     },
     {
       key: "matter",
       header: "Matter",
       width: proportional(2),
-      renderCell: (item) => (
+      renderCell: (row) => (
         <Text type="body" color="secondary" maxLines={1}>
-          {item.matter}
+          {row.matter}
+        </Text>
+      ),
+    },
+    {
+      key: "issued",
+      header: "Issued",
+      width: pixel(120),
+      renderCell: (row) => (
+        <Text type="body" color="secondary">
+          {formatDate(row.issued)}
+        </Text>
+      ),
+    },
+    {
+      key: "due",
+      header: "Due",
+      width: pixel(120),
+      renderCell: (row) => (
+        <Text type="body" color="secondary">
+          {formatDate(row.due)}
         </Text>
       ),
     },
     {
       key: "status",
       header: "Status",
-      width: pixel(110),
-      renderCell: (item) =>
-        item.status === "Overdue" ? (
-          <Badge variant="error" label="Overdue" />
-        ) : (
-          <Text type="body" color={item.status === "Sent" ? "primary" : "secondary"}>
-            {item.status}
-          </Text>
-        ),
-    },
-    {
-      key: "dueDate",
-      header: "Due",
-      width: pixel(90),
-      renderCell: (item) => (
-        <Text type="body" color="secondary">
-          {item.dueDate}
-        </Text>
+      width: pixel(210),
+      renderCell: (row) => (
+        <HStack gap={2} vAlign="center">
+          <Badge variant={STATUS_VARIANT[row.status]} label={label(row.status)} />
+          {row.status === "draft" && (
+            <Button
+              label="Send"
+              variant="ghost"
+              size="sm"
+              isDisabled={pendingId === row.id}
+              onClick={() => setStatus(row, "sent")}
+            >
+              Send
+            </Button>
+          )}
+          {(row.status === "sent" || row.status === "overdue") && (
+            <Button
+              label="Mark paid"
+              variant="ghost"
+              size="sm"
+              isDisabled={pendingId === row.id}
+              onClick={() => setStatus(row, "paid")}
+            >
+              Mark paid
+            </Button>
+          )}
+        </HStack>
       ),
     },
     {
@@ -222,139 +257,271 @@ export default function BillingPage() {
       header: "Amount",
       width: pixel(130),
       align: "end",
-      renderCell: (item) => (
-        <Text type="body" weight="semibold" hasTabularNumbers>
-          {egp(item.amount)}
-        </Text>
-      ),
-    },
-  ];
-
-  const expenseColumns: TableColumn<Expense>[] = [
-    { key: "date", header: "Date", width: pixel(80), renderCell: (item) => <Text type="body" color="secondary">{item.date}</Text> },
-    { key: "matter", header: "Matter", width: proportional(1.5), renderCell: (item) => <Text type="body" maxLines={1}>{item.matter}</Text> },
-    { key: "description", header: "Description", width: proportional(2), renderCell: (item) => <Text type="body" color="secondary">{item.description}</Text> },
-    {
-      key: "kind",
-      header: "Type",
-      width: pixel(110),
-      renderCell: (item) =>
-        item.kind === "Billable" ? (
-          <Text type="body">Billable</Text>
-        ) : (
-          <Badge variant="neutral" label="Firm" />
-        ),
-    },
-    { key: "status", header: "Status", width: pixel(160), renderCell: (item) => <Text type="body" color="secondary">{item.status}</Text> },
-    {
-      key: "amount",
-      header: "Amount",
-      width: pixel(110),
-      align: "end",
-      renderCell: (item) => (
-        <Text type="body" weight="semibold" hasTabularNumbers>
-          {egp(item.amount)}
+      renderCell: (row) => (
+        <Text type="body" weight="semibold">
+          {formatEGP(row.amount)}
         </Text>
       ),
     },
   ];
 
   return (
-    <Layout
-      height="fill"
-      content={
-        <LayoutContent padding={0}>
-          <VStack gap={6}>
-            <HStack hAlign="between" vAlign="center">
-              <VStack gap={1}>
-                <Heading level={2}>Billing</Heading>
-                <Text type="body" color="secondary">
-                  Al-Sayed &amp; Partners · invoices, retainers &amp; expenses
-                </Text>
-              </VStack>
-              <Button
-                label="New invoice"
-                variant="primary"
-                icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
-              >
-                New invoice
-              </Button>
-            </HStack>
-
-            <Grid columns={{ minWidth: 220, repeat: "fit" }} gap={4}>
-              {summaryKpis.map((kpi) => (
-                <KpiCard key={kpi.label} {...kpi} />
-              ))}
-            </Grid>
-
-            <Grid columns={3} gap={6}>
-              <GridSpan columns={2}>
-                <Card>
-                  <VStack gap={4}>
-                    <HStack hAlign="between" vAlign="center">
-                      <Heading level={4}>Invoiced vs. collected</Heading>
-                      <Link href="/reports">View reports</Link>
-                    </HStack>
-                    <BillingChart />
-                  </VStack>
-                </Card>
-              </GridSpan>
-
-              <Card>
-                <VStack gap={4}>
-                  <HStack hAlign="between" vAlign="center">
-                    <Heading level={4}>Retainers</Heading>
-                    <Link href="/clients">All clients</Link>
-                  </HStack>
-                  <List hasDividers density="compact">
-                    {RETAINERS.map((r) => (
-                      <ListItem
-                        key={r.client}
-                        label={r.client}
-                        description={`Replenish below ${egp(r.threshold)}`}
-                        endContent={
-                          <VStack gap={1} align="end">
-                            <Text type="label" weight="semibold" hasTabularNumbers>
-                              {egp(r.balance)}
-                            </Text>
-                            {r.balance < r.threshold && (
-                              <Badge variant="warning" label="Low balance" />
-                            )}
-                          </VStack>
-                        }
-                      />
-                    ))}
-                  </List>
+    <>
+      <Layout
+        height="fill"
+        content={
+          <LayoutContent padding={0}>
+            <VStack gap={6}>
+              <HStack hAlign="between" vAlign="center">
+                <VStack gap={1}>
+                  <Heading level={2}>Billing</Heading>
+                  <Text type="body" color="secondary">
+                    Invoices raised against matters and clients
+                  </Text>
                 </VStack>
-              </Card>
-            </Grid>
+                <Button
+                  label="Invoice unbilled time"
+                  variant="primary"
+                  icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
+                  onClick={() => setIsGenerating(true)}
+                  isDisabled={!practice}
+                >
+                  Invoice unbilled time
+                </Button>
+              </HStack>
 
-            <Card>
-              <VStack gap={4}>
-                <HStack hAlign="between" vAlign="center">
-                  <Heading level={4}>Invoices</Heading>
-                  <Text type="supporting" color="secondary">
-                    {INVOICES.length} invoices
-                  </Text>
-                </HStack>
-                <Table<Invoice> data={INVOICES} columns={invoiceColumns} idKey="id" hasHover />
-              </VStack>
-            </Card>
+              <DataView resource={resource} loadingLabel="Loading billing…">
+                {() => (
+                  <VStack gap={6}>
+                    <InlineError message={error} onDismiss={() => setError(null)} />
 
-            <Card>
-              <VStack gap={4}>
-                <HStack hAlign="between" vAlign="center">
-                  <Heading level={4}>Expenses</Heading>
-                  <Text type="supporting" color="secondary">
-                    Billable &amp; firm expenses, this month
-                  </Text>
-                </HStack>
-                <Table<Expense> data={EXPENSES} columns={expenseColumns} idKey="id" hasHover />
-              </VStack>
-            </Card>
-          </VStack>
-        </LayoutContent>
+                    <Grid columns={{ minWidth: 220, repeat: "fit" }} gap={4}>
+                      {kpis.map((kpi) => (
+                        <Card key={kpi.label}>
+                          <VStack gap={2}>
+                            <HStack gap={2} vAlign="center">
+                              <Icon
+                                icon={kpi.icon}
+                                size="sm"
+                                color={kpi.warn ? "warning" : "secondary"}
+                              />
+                              <Text type="label" color="secondary">
+                                {kpi.label}
+                              </Text>
+                            </HStack>
+                            <Heading level={2}>{kpi.value}</Heading>
+                            <Text type="supporting" color="secondary">
+                              {kpi.change}
+                            </Text>
+                          </VStack>
+                        </Card>
+                      ))}
+                    </Grid>
+
+                    {chart.length > 0 && (
+                      <Card>
+                        <VStack gap={4}>
+                          <HStack hAlign="between" vAlign="center">
+                            <Heading level={4}>Invoiced vs. collected</Heading>
+                            <Text type="supporting" color="secondary">
+                              Last {chart.length}{" "}
+                              {chart.length === 1 ? "month" : "months"}
+                            </Text>
+                          </HStack>
+                          <ResponsiveContainer width="100%" height={240}>
+                            <BarChart
+                              data={chart}
+                              margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                            >
+                              <CartesianGrid
+                                horizontal
+                                vertical={false}
+                                stroke="var(--color-border)"
+                              />
+                              <XAxis
+                                dataKey="month"
+                                tick={{ fontSize: 12, fill: "var(--color-text-secondary)" }}
+                                axisLine={false}
+                                tickLine={false}
+                              />
+                              <YAxis
+                                tickFormatter={egpShort}
+                                tick={{ fontSize: 12, fill: "var(--color-text-secondary)" }}
+                                axisLine={false}
+                                tickLine={false}
+                                width={72}
+                              />
+                              <Tooltip
+                                formatter={(value) => formatEGP(Number(value))}
+                                contentStyle={{
+                                  background: "var(--color-background-popover)",
+                                  border: "1px solid var(--color-border)",
+                                  borderRadius: "var(--radius-element)",
+                                }}
+                              />
+                              <Legend wrapperStyle={{ fontSize: 12 }} />
+                              <Bar
+                                dataKey="invoiced"
+                                name="Invoiced"
+                                fill="var(--color-accent)"
+                                radius={[4, 4, 0, 0]}
+                              />
+                              <Bar
+                                dataKey="collected"
+                                name="Collected"
+                                fill="var(--color-border-strong)"
+                                radius={[4, 4, 0, 0]}
+                              />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </VStack>
+                      </Card>
+                    )}
+
+                    <Card>
+                      <VStack gap={4}>
+                        <Heading level={4}>Invoices</Heading>
+                        {rows.length > 0 ? (
+                          <Table<InvoiceRow>
+                            data={rows}
+                            columns={invoiceColumns}
+                            idKey="id"
+                            hasHover
+                          />
+                        ) : (
+                          <EmptyState
+                            icon={
+                              <Icon icon={BanknotesIcon} size="lg" color="secondary" />
+                            }
+                            title="No invoices yet"
+                            description="Log billable time against a matter, then raise an invoice for it."
+                          />
+                        )}
+                      </VStack>
+                    </Card>
+                  </VStack>
+                )}
+              </DataView>
+            </VStack>
+          </LayoutContent>
+        }
+      />
+      <GenerateInvoiceDialog
+        isOpen={isGenerating}
+        onOpenChange={setIsGenerating}
+        onCreated={resource.reload}
+      />
+    </>
+  );
+}
+
+/** Drafts an invoice from every unbilled billable hour on the chosen matter. */
+function GenerateInvoiceDialog({
+  isOpen,
+  onOpenChange,
+  onCreated,
+}: {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreated: () => void;
+}) {
+  const { practice } = useOrg();
+  const [matterId, setMatterId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const unbilled = useResource(
+    async (api) => {
+      if (!isOpen) return { matters: [], byMatter: {} as Record<number, number> };
+      const [matters, entries] = await Promise.all([
+        api.matters.list(),
+        api.time.list({ unbilled_only: true }),
+      ]);
+      const byMatter: Record<number, number> = {};
+      for (const entry of entries) {
+        byMatter[entry.matter_id] =
+          (byMatter[entry.matter_id] ?? 0) + Number(entry.hours) * Number(entry.rate);
       }
-    />
+      return { matters, byMatter };
+    },
+    [isOpen],
+  );
+
+  const options = (unbilled.data?.matters ?? [])
+    .filter((m) => (unbilled.data?.byMatter[m.id] ?? 0) > 0)
+    .map((m) => ({
+      value: String(m.id),
+      label: `${m.name} — ${formatEGP(unbilled.data?.byMatter[m.id] ?? 0)}`,
+    }));
+
+  async function submit() {
+    if (!practice || !matterId) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await practice.invoices.generate(Number(matterId));
+      setMatterId(null);
+      onOpenChange(false);
+      onCreated();
+    } catch (exc) {
+      setError(exc instanceof Error ? exc.message : "Could not draft this invoice.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
+      <Layout
+        header={
+          <DialogHeader title="Invoice unbilled time" onOpenChange={onOpenChange} />
+        }
+        content={
+          <LayoutContent>
+            <VStack gap={4}>
+              <InlineError message={error} onDismiss={() => setError(null)} />
+              <Text type="body" color="secondary">
+                Drafts an invoice covering every unbilled billable hour logged
+                against the matter. Those hours are then locked to that invoice.
+              </Text>
+              {options.length === 0 && !unbilled.loading ? (
+                <Text type="body">
+                  No matter has unbilled billable time right now.
+                </Text>
+              ) : (
+                <Selector
+                  label="Matter"
+                  hasClear
+                  isRequired
+                  value={matterId}
+                  onChange={setMatterId}
+                  placeholder={
+                    unbilled.loading ? "Loading…" : "Select a matter to bill"
+                  }
+                  options={options}
+                />
+              )}
+            </VStack>
+          </LayoutContent>
+        }
+        footer={
+          <LayoutFooter hasDivider>
+            <HStack gap={3} hAlign="end">
+              <Button
+                label="Cancel"
+                variant="secondary"
+                onClick={() => onOpenChange(false)}
+              />
+              <Button
+                label={saving ? "Drafting…" : "Draft invoice"}
+                variant="primary"
+                onClick={submit}
+                isDisabled={saving || !matterId}
+              />
+            </HStack>
+          </LayoutFooter>
+        }
+      />
+    </Dialog>
   );
 }

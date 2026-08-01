@@ -14,10 +14,12 @@ import type { TableColumn } from "@astryxdesign/core/Table";
 import { Link } from "@astryxdesign/core/Link";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { MagnifyingGlassIcon, ScaleIcon } from "@heroicons/react/24/outline";
-import { CASES, matterById, formatDate } from "@/lib/legalos-data";
+import { useResource } from "@/lib/org";
+import { DataView } from "@/components/DataState";
+import { formatDate, todayIso } from "@/lib/practice";
 
 interface CaseRow extends Record<string, unknown> {
-  id: string;
+  id: number;
   caseNumber: string;
   matterName: string;
   court: string;
@@ -28,51 +30,71 @@ interface CaseRow extends Record<string, unknown> {
   nextHearingTime: string | null;
 }
 
-const COURTS = Array.from(new Set(CASES.map((c) => c.court)));
-
 function statusVariant(status: string): "success" | "warning" | "neutral" {
   if (status.startsWith("Active")) return "success";
   if (status.startsWith("On Hold")) return "warning";
   return "neutral";
 }
 
-function buildRows(): CaseRow[] {
-  return CASES.map((c) => ({
-    id: c.id,
-    caseNumber: c.caseNumber,
-    matterName: matterById(c.matterId)?.name ?? "—",
-    court: c.court,
-    judge: c.judge,
-    opposingParty: c.opposingParty,
-    status: c.status,
-    nextHearingDate: c.nextHearing?.date ?? null,
-    nextHearingTime: c.nextHearing?.time ?? null,
-  }));
-}
-
-const ALL_ROWS = buildRows();
-
 export default function CasesPage() {
   const [query, setQuery] = useState("");
   const [courtFilter, setCourtFilter] = useState<string>("all");
 
-  const rows = useMemo(() => {
-    return ALL_ROWS.filter((row) => {
-      if (courtFilter !== "all" && row.court !== courtFilter) return false;
-      if (query.trim()) {
-        const q = query.trim().toLowerCase();
-        if (
-          !row.caseNumber.toLowerCase().includes(q) &&
-          !row.matterName.toLowerCase().includes(q) &&
-          !row.opposingParty.toLowerCase().includes(q) &&
-          !row.judge.toLowerCase().includes(q)
-        ) {
-          return false;
-        }
-      }
-      return true;
+  // The case list endpoint returns summaries without child collections, so
+  // upcoming hearings come from the hearings endpoint and are joined by
+  // matter here rather than fetching each case in full.
+  const resource = useResource(
+    async (api) => {
+      const [cases, hearings] = await Promise.all([
+        api.cases.list(),
+        api.hearings.list({ since: todayIso() }),
+      ]);
+      return { cases, hearings };
+    },
+    [],
+  );
+
+  const allRows = useMemo<CaseRow[]>(() => {
+    if (!resource.data) return [];
+    const { cases, hearings } = resource.data;
+    return cases.map((record) => {
+      const next = hearings
+        .filter((h) => h.matter_id === record.matter_id)
+        .sort((a, b) => a.hearing_date.localeCompare(b.hearing_date))[0];
+      return {
+        id: record.id,
+        caseNumber: record.case_number,
+        matterName: record.matter_name,
+        court: record.court,
+        judge: record.judge,
+        opposingParty: record.opposing_party,
+        status: record.status,
+        nextHearingDate: next?.hearing_date ?? null,
+        nextHearingTime: next?.hearing_time ?? null,
+      };
     });
-  }, [query, courtFilter]);
+  }, [resource.data]);
+
+  const courts = useMemo(
+    () => Array.from(new Set(allRows.map((r) => r.court))),
+    [allRows],
+  );
+
+  const rows = useMemo(
+    () =>
+      allRows.filter((row) => {
+        if (courtFilter !== "all" && row.court !== courtFilter) return false;
+        const q = query.trim().toLowerCase();
+        if (!q) return true;
+        return (
+          row.caseNumber.toLowerCase().includes(q) ||
+          row.matterName.toLowerCase().includes(q) ||
+          row.opposingParty.toLowerCase().includes(q) ||
+          row.judge.toLowerCase().includes(q)
+        );
+      }),
+    [allRows, query, courtFilter],
+  );
 
   const columns: TableColumn<CaseRow>[] = [
     {
@@ -136,7 +158,9 @@ export default function CasesPage() {
       key: "status",
       header: "Status",
       width: pixel(170),
-      renderCell: (row) => <Badge variant={statusVariant(row.status)} label={row.status} />,
+      renderCell: (row) => (
+        <Badge variant={statusVariant(row.status)} label={row.status || "—"} />
+      ),
     },
   ];
 
@@ -149,7 +173,8 @@ export default function CasesPage() {
             <VStack gap={1}>
               <Heading level={2}>Cases</Heading>
               <Text type="body" color="secondary">
-                {CASES.length} litigation cases on file
+                {allRows.length} litigation{" "}
+                {allRows.length === 1 ? "case" : "cases"} on file
               </Text>
             </VStack>
             <HStack gap={3} wrap="wrap">
@@ -169,7 +194,7 @@ export default function CasesPage() {
                 onChange={(v) => setCourtFilter(v ?? "all")}
                 options={[
                   { value: "all", label: "All courts" },
-                  ...COURTS.map((c) => ({ value: c, label: c })),
+                  ...courts.map((c) => ({ value: c, label: c })),
                 ]}
                 width={220}
               />
@@ -179,25 +204,39 @@ export default function CasesPage() {
       }
       content={
         <LayoutContent padding={0}>
-          {rows.length > 0 ? (
-            <Table<CaseRow> data={rows} columns={columns} idKey="id" hasHover />
-          ) : (
-            <EmptyState
-              icon={<Icon icon={ScaleIcon} size="lg" color="secondary" />}
-              title="No cases match your filters"
-              description="Try a different search term or clear the court filter."
-              actions={
-                <Button
-                  label="Clear filters"
-                  variant="secondary"
-                  onClick={() => {
-                    setQuery("");
-                    setCourtFilter("all");
-                  }}
+          <DataView resource={resource} loadingLabel="Loading cases…">
+            {() =>
+              rows.length > 0 ? (
+                <Table<CaseRow> data={rows} columns={columns} idKey="id" hasHover />
+              ) : (
+                <EmptyState
+                  icon={<Icon icon={ScaleIcon} size="lg" color="secondary" />}
+                  title={
+                    allRows.length === 0
+                      ? "No cases on file"
+                      : "No cases match your filters"
+                  }
+                  description={
+                    allRows.length === 0
+                      ? "A case is added to a matter once it goes into litigation."
+                      : "Try a different search term or clear the court filter."
+                  }
+                  actions={
+                    allRows.length > 0 ? (
+                      <Button
+                        label="Clear filters"
+                        variant="secondary"
+                        onClick={() => {
+                          setQuery("");
+                          setCourtFilter("all");
+                        }}
+                      />
+                    ) : undefined
+                  }
                 />
-              }
-            />
-          )}
+              )
+            }
+          </DataView>
         </LayoutContent>
       }
     />
