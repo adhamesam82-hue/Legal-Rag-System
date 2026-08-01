@@ -398,12 +398,12 @@ export function practiceApi(organizationId: number) {
       ) => {
         const form = new FormData();
         form.append("file", file);
-        return request<MatterDocument>(
-          `${base}/documents${query(options)}`,
-          // Content-Type is omitted deliberately: the browser must set the
-          // multipart boundary itself.
-          { method: "POST", body: form, headers: { "content-type": "" } },
-        );
+        // request() detects the FormData body and leaves content-type to the
+        // browser so the multipart boundary survives.
+        return request<MatterDocument>(`${base}/documents${query(options)}`, {
+          method: "POST",
+          body: form,
+        });
       },
       contentUrl: (id: number) => `${base}/documents/${id}/content`,
     },

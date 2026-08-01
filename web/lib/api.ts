@@ -114,12 +114,16 @@ export function configureAuthToken(getter: TokenGetter) {
  *  rather than re-implementing fetch for the practice endpoints. */
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = await getAuthToken();
+  // A FormData body must set its own content-type: the browser appends the
+  // multipart boundary, and naming the type here would drop it and make the
+  // upload unparseable on the server.
+  const isMultipart = init?.body instanceof FormData;
   let response: Response;
   try {
     response = await fetch(`${API_BASE}${path}`, {
       ...init,
       headers: {
-        "content-type": "application/json",
+        ...(isMultipart ? {} : { "content-type": "application/json" }),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(init?.headers ?? {}),
       },
