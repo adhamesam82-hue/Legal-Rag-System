@@ -40,10 +40,13 @@ documents rather than living in a separate chat tab.
 - Multi-tenant firms with three roles — Owner, Lawyer, Staff — established in
   the shipped Auth & Organizations sub-project.
 - Solo-founder build, phased sub-project sequencing (see
-  `docs/ailab/specs/`). Auth & Organizations and the core research/answering
-  engine have real backends today. Clients & Matters, documents, time &
-  billing, calendaring, CRM, accounting, automations, messaging, knowledge
-  base, and reports do not yet have backend implementations.
+  `docs/ailab/specs/`). Auth & Organizations, the core research/answering
+  engine, and the practice-management pillars — clients, matters, cases,
+  documents, calendaring, tasks, time tracking and billing — have real
+  backends today (migration `0006_practice.sql`, `legalrag.practice`,
+  `legalrag.practice_api`). CRM, accounting, automations, messaging,
+  knowledge base and reports do not yet have backend implementations, and
+  their screens say so.
 - This design pass is an explicit exception to that phased sequencing: a
   full-surface UI concept for the entire intended product, requested ahead of
   the backend roadmap, to be made functional pillar-by-pillar afterward. It
