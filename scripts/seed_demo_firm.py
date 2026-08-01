@@ -7,13 +7,14 @@ the UI exercises real queries, real ids and real writes.
 
 Run:
     uv run python scripts/seed_demo_firm.py
-    uv run python scripts/seed_demo_firm.py --owner-clerk-id user_2abc...
-    uv run python scripts/seed_demo_firm.py --reset
+    uv run python scripts/seed_demo_firm.py --reset --owner-email you@example.com
+    uv run python scripts/seed_demo_firm.py --reset --owner-clerk-id user_2abc...
 
-Without --owner-clerk-id the team is seeded under placeholder ids
-(seed_ahmed_al_sayed and friends), which is enough to browse the app but not
-to sign in as them. Passing a real Clerk user id rebinds the Owner seat to
-that account so a signed-in user lands in a populated firm.
+Without an owner argument the team is seeded under placeholder ids
+(seed_ahmed_al_sayed and friends), which no real Clerk account maps to: you can
+browse the data with LEGALOS_DEV_AUTH set, but a signed-in user will not see
+this firm. Passing --owner-email (or --owner-clerk-id) rebinds the Owner seat
+to a real account, so signing in lands in a populated firm.
 """
 from __future__ import annotations
 
@@ -21,8 +22,10 @@ import argparse
 from datetime import date
 from decimal import Decimal
 
+import httpx
 import psycopg
 
+from legalrag.config import get_clerk_secret_key
 from legalrag.db import get_connection
 
 FIRM_NAME = "Al-Sayed & Partners"
@@ -780,6 +783,28 @@ def seed(conn: psycopg.Connection, owner_clerk_id: str | None) -> int:
     return org
 
 
+def clerk_user_id_for_email(email: str) -> str:
+    """Looks up a Clerk user id by email via the Backend API.
+
+    Saves having to dig the id out of the Clerk dashboard after signing up;
+    the email is the thing the user actually knows.
+    """
+    response = httpx.get(
+        "https://api.clerk.com/v1/users",
+        params={"email_address": email},
+        headers={"Authorization": f"Bearer {get_clerk_secret_key()}"},
+        timeout=10.0,
+    )
+    response.raise_for_status()
+    users = response.json()
+    if not users:
+        raise SystemExit(
+            f"No Clerk user found for {email!r}. Sign up in the app first, "
+            "then re-run this command."
+        )
+    return users[0]["id"]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -788,11 +813,23 @@ def main() -> None:
         "account lands in this firm instead of a placeholder one.",
     )
     parser.add_argument(
+        "--owner-email",
+        help="Same as --owner-clerk-id, but resolves the id from a Clerk account's "
+        "email address. Requires CLERK_SECRET_KEY.",
+    )
+    parser.add_argument(
         "--reset",
         action="store_true",
         help=f"Delete the existing {FIRM_NAME!r} firm's practice data first.",
     )
     args = parser.parse_args()
+
+    owner_clerk_id = args.owner_clerk_id
+    if args.owner_email:
+        if owner_clerk_id:
+            raise SystemExit("Pass --owner-clerk-id or --owner-email, not both.")
+        owner_clerk_id = clerk_user_id_for_email(args.owner_email)
+        print(f"Resolved {args.owner_email} to Clerk user {owner_clerk_id}.")
 
     conn = get_connection()
     try:
@@ -815,7 +852,7 @@ def main() -> None:
                 cur.execute("DELETE FROM organizations WHERE id = %s", (existing[0],))
             conn.commit()
 
-        org = seed(conn, args.owner_clerk_id)
+        org = seed(conn, owner_clerk_id)
         with conn.cursor() as cur:
             cur.execute(
                 "SELECT (SELECT count(*) FROM clients WHERE organization_id = %(o)s),"
@@ -831,7 +868,7 @@ def main() -> None:
             f"{counts[0]} clients, {counts[1]} matters, {counts[2]} cases, "
             f"{counts[3]} tasks, {counts[4]} invoices."
         )
-        if not args.owner_clerk_id:
+        if not owner_clerk_id:
             print(
                 "\nTeam seeded under placeholder ids (seed_ahmed_al_sayed, ...). "
                 "Re-run with --owner-clerk-id <your Clerk user id> to sign in as the Owner."

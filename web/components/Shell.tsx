@@ -164,11 +164,19 @@ function ThemeToggle() {
   );
 }
 
+/** Routes rendered without app chrome — a signed-out visitor has no firm,
+ *  no matters and nothing to navigate to, so the nav would be dead links. */
+const BARE_ROUTES = ["/sign-in", "/sign-up", "/invite"];
+
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const commandSource = useCommandSource();
+
+  if (BARE_ROUTES.some((route) => pathname.startsWith(route))) {
+    return <>{children}</>;
+  }
 
   const sideNav = (
     <Theme theme={legalosTheme} mode="dark">

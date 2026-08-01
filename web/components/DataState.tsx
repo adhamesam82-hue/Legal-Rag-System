@@ -7,6 +7,7 @@
  * table when the API is actually down.
  */
 
+import { useState } from "react";
 import { VStack, HStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { Button } from "@astryxdesign/core/Button";
@@ -18,6 +19,8 @@ import {
   ExclamationTriangleIcon,
   BuildingOffice2Icon,
 } from "@heroicons/react/24/outline";
+import { TextInput } from "@astryxdesign/core/TextInput";
+import { api } from "@/lib/api";
 import { useOrg } from "@/lib/org";
 
 export function LoadingState({ label = "Loading…" }: { label?: string }) {
@@ -84,16 +87,61 @@ export function DataView<T>({
   return <>{children(resource.data)}</>;
 }
 
+/**
+ * Shown when the signed-in account belongs to no organization — the state a
+ * brand-new Clerk sign-up lands in. It creates the firm inline rather than
+ * pointing elsewhere: this is the only route out, so a dead end here would
+ * strand the account with no way into the product.
+ */
 export function NoOrganizationState() {
+  const { reloadOrganizations } = useOrg();
+  const [name, setName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function createFirm() {
+    if (!name.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await api.createOrganization(name.trim());
+      // The creator becomes the Owner server-side; refetch so every screen
+      // picks the new firm up.
+      reloadOrganizations();
+    } catch (exc) {
+      setError(exc instanceof Error ? exc.message : "Could not create the firm.");
+      setSaving(false);
+    }
+  }
+
   return (
-    <EmptyState
-      icon={<Icon icon={BuildingOffice2Icon} size="lg" color="secondary" />}
-      title="No firm yet"
-      description={
-        "This account does not belong to a firm. Create one from Settings, " +
-        "or seed the sample firm with: uv run python scripts/seed_demo_firm.py"
-      }
-    />
+    <VStack gap={5} padding={8} hAlign="center">
+      <EmptyState
+        icon={<Icon icon={BuildingOffice2Icon} size="lg" color="secondary" />}
+        title="Set up your firm"
+        description="This account isn't part of a firm yet. Name it to get started — you'll be its Owner."
+      />
+      <VStack gap={3} width={360}>
+        <InlineError message={error} onDismiss={() => setError(null)} />
+        <TextInput
+          label="Firm name"
+          value={name}
+          onChange={setName}
+          placeholder="Al-Sayed & Partners"
+          isRequired
+        />
+        <Button
+          label={saving ? "Creating…" : "Create firm"}
+          variant="primary"
+          isDisabled={saving || !name.trim()}
+          onClick={createFirm}
+        />
+        <Text type="supporting" color="secondary">
+          To take over the seeded sample firm instead, run: uv run python
+          scripts/seed_demo_firm.py --reset --owner-clerk-id &lt;your Clerk user id&gt;
+        </Text>
+      </VStack>
+    </VStack>
   );
 }
 

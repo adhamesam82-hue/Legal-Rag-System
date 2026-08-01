@@ -18,7 +18,9 @@ import {
   useRef,
   useState,
 } from "react";
+import { useAuth } from "@clerk/nextjs";
 import { ApiError, api, type Membership, type OrgMember } from "@/lib/api";
+import { USING_CLERK } from "@/lib/auth-mode";
 import { practiceApi, type PracticeApi, type Role } from "@/lib/practice";
 
 interface OrgContextValue {
@@ -33,21 +35,79 @@ interface OrgContextValue {
   error: string | null;
   setOrganizationId: (id: number) => void;
   reloadMembers: () => void;
+  /** Refetches the caller's organizations — call after creating or joining one. */
+  reloadOrganizations: () => void;
 }
 
 const OrgContext = createContext<OrgContextValue | null>(null);
 
 const STORAGE_KEY = "legalos.organizationId";
 
+type AuthState = "loading" | "signed-in" | "signed-out";
+
+/**
+ * Reports Clerk's session state to OrgProvider.
+ *
+ * Split into its own component because useAuth() only works under
+ * ClerkProvider, which is not mounted in dev-auth mode. USING_CLERK is a
+ * module constant, so the branch below never flips between renders and hook
+ * order stays stable.
+ */
+function ClerkAuthGate({
+  children,
+}: {
+  children: (state: AuthState) => React.ReactNode;
+}) {
+  const { isLoaded, isSignedIn } = useAuth();
+  return (
+    <>
+      {children(
+        !isLoaded ? "loading" : isSignedIn ? "signed-in" : "signed-out",
+      )}
+    </>
+  );
+}
+
 export function OrgProvider({ children }: { children: React.ReactNode }) {
+  if (!USING_CLERK) {
+    return <OrgProviderInner authState="signed-in">{children}</OrgProviderInner>;
+  }
+  return (
+    <ClerkAuthGate>
+      {(authState) => (
+        <OrgProviderInner authState={authState}>{children}</OrgProviderInner>
+      )}
+    </ClerkAuthGate>
+  );
+}
+
+function OrgProviderInner({
+  authState,
+  children,
+}: {
+  authState: AuthState;
+  children: React.ReactNode;
+}) {
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [members, setMembers] = useState<OrgMember[]>([]);
   const [organizationId, setOrganizationIdState] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [membersNonce, setMembersNonce] = useState(0);
+  const [orgsNonce, setOrgsNonce] = useState(0);
 
   useEffect(() => {
+    // Waiting on Clerk: hold the loading state rather than briefly claiming
+    // the account has no firm.
+    if (authState === "loading") return;
+    // Signed out: the API would 403. Middleware redirects these visitors to
+    // sign-in, so there is nothing to fetch for.
+    if (authState === "signed-out") {
+      setMemberships([]);
+      setOrganizationIdState(null);
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     api
       .myOrganizations()
@@ -75,10 +135,10 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [orgsNonce, authState]);
 
   useEffect(() => {
-    if (organizationId === null) return;
+    if (organizationId === null || authState !== "signed-in") return;
     let cancelled = false;
     api
       .listOrgMembers(organizationId)
@@ -87,7 +147,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [organizationId, membersNonce]);
+  }, [organizationId, membersNonce, authState]);
 
   const setOrganizationId = useCallback((id: number) => {
     window.localStorage.setItem(STORAGE_KEY, String(id));
@@ -107,6 +167,7 @@ export function OrgProvider({ children }: { children: React.ReactNode }) {
       error,
       setOrganizationId,
       reloadMembers: () => setMembersNonce((n) => n + 1),
+      reloadOrganizations: () => setOrgsNonce((n) => n + 1),
     };
   }, [organizationId, memberships, members, loading, error, setOrganizationId]);
 
