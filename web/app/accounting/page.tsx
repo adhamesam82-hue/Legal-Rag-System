@@ -122,7 +122,7 @@ const PAYROLL = [
   },
 ];
 
-const AXIS_TICK = { fontSize: 12, fill: "var(--color-text-secondary)" };
+const AXIS_TICK = { fontSize: "var(--font-size-sm)", fill: "var(--color-text-secondary)" };
 
 function egpK(v: number) {
   return `EGP ${Math.round(v / 1000)}k`;
@@ -305,7 +305,7 @@ export default function AccountingPage() {
                           formatter={(v) => formatEGP(Number(v))}
                           contentStyle={tooltipStyle}
                         />
-                        <Legend wrapperStyle={{ fontSize: 12 }} />
+                        <Legend wrapperStyle={{ fontSize: "var(--font-size-sm)" }} />
                         <Bar
                           dataKey="revenue"
                           name={t("@legalos.accounting.chart.legend.revenue")}

@@ -318,10 +318,17 @@ export default function ClientDetailPage({
                                 <ListItem
                                   key={contact.id}
                                   label={contact.name}
+                                  // Role, email and phone on one truncated line
+                                  // in a 312px rail cut the phone number in
+                                  // half, which is the part somebody is
+                                  // reading this card to get. Wrapping keeps
+                                  // all three whole.
                                   description={
-                                    [contact.title, contact.email, contact.phone]
-                                      .filter(Boolean)
-                                      .join(" · ") || undefined
+                                    <Text type="supporting" color="secondary" maxLines={3}>
+                                      {[contact.title, contact.email, contact.phone]
+                                        .filter(Boolean)
+                                        .join(" · ")}
+                                    </Text>
                                   }
                                   startContent={
                                     <Avatar

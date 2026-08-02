@@ -54,7 +54,12 @@ import { useTranslator } from "@astryxdesign/core/i18n";
 // ---------------------------------------------------------------------------
 
 const styles: Record<string, CSSProperties> = {
-  root: { minHeight: "100dvh" },
+  // 100% of the shell's content region, not 100dvh: this page renders inside
+  // the app shell, which has already spent the top bar's height, so a viewport
+  // minimum made the screen 48px taller than the space it had. The overflow
+  // landed on the composer at the bottom, which is the one control the screen
+  // exists for.
+  root: { height: "100%", minHeight: 0 },
   sidebar: { height: "100%", minHeight: 0 },
   sidebarHeader: {
     alignItems: "center",
@@ -80,7 +85,11 @@ const styles: Record<string, CSSProperties> = {
   },
   streamTopic: { minWidth: 0 },
   chatArea: { minHeight: 0, display: "flex", flexDirection: "column" },
-  chatFill: { flex: 1, minHeight: 0 },
+  // A flex column, not a plain block: ChatLayout sizes itself with `flex: 1`,
+  // which only means anything inside a flex container. As a block child it
+  // took its content height instead and ran past the bottom of the region,
+  // carrying the composer with it.
+  chatFill: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" },
 };
 
 type Presence = "online" | "busy" | "offline";

@@ -287,12 +287,12 @@ export default function TimeTrackingPage() {
                                 />
                                 <XAxis
                                   dataKey="day"
-                                  tick={{ fontSize: 12, fill: "var(--color-text-secondary)" }}
+                                  tick={{ fontSize: "var(--font-size-sm)", fill: "var(--color-text-secondary)" }}
                                   axisLine={false}
                                   tickLine={false}
                                 />
                                 <YAxis
-                                  tick={{ fontSize: 12, fill: "var(--color-text-secondary)" }}
+                                  tick={{ fontSize: "var(--font-size-sm)", fill: "var(--color-text-secondary)" }}
                                   axisLine={false}
                                   tickLine={false}
                                   width={32}
@@ -308,7 +308,7 @@ export default function TimeTrackingPage() {
                                     borderRadius: "var(--radius-element)",
                                   }}
                                 />
-                                <Legend wrapperStyle={{ fontSize: 12 }} />
+                                <Legend wrapperStyle={{ fontSize: "var(--font-size-sm)" }} />
                                 <Bar
                                   dataKey="billable"
                                   name={t("@legalos.timeTracking.chart.billable")}

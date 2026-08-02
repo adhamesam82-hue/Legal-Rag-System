@@ -45,6 +45,7 @@ import {
   MoonIcon,
   SunIcon,
 } from "@heroicons/react/24/outline";
+import { useMediaQuery } from "@astryxdesign/core/hooks";
 import { useTranslator, type TranslatorFn } from "@astryxdesign/core/i18n";
 import { legalosTheme } from "@/lib/legalos";
 import { useThemeMode } from "@/app/providers";
@@ -209,12 +210,20 @@ const BARE_ROUTES = ["/sign-in", "/sign-up", "/invite"];
 
 const SIDENAV_COLLAPSED_KEY = "legalos-sidenav-collapsed";
 
+/** 1280×720 is the layout floor every screen is designed to hold. Under it the
+ *  rail gives its 248px back to the content rather than letting the screens
+ *  compress: at 1024 a calendar month cell is otherwise about 50px wide. The
+ *  saved preference is left untouched, so widening the window restores whatever
+ *  the user last chose. */
+const BELOW_FLOOR_QUERY = "(max-width: 1279px)";
+
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const t = useTranslator();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSideNavCollapsed, setIsSideNavCollapsed] = useState(false);
+  const isBelowFloor = useMediaQuery(BELOW_FLOOR_QUERY);
   const commandSource = useCommandSource(t);
 
   // Read the saved preference after mount rather than lazily in useState, so
@@ -247,7 +256,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <SideNav
           resizable={{ defaultWidth: 248, minWidth: 220, maxWidth: 320, autoSaveId: "legalos-sidenav" }}
           collapsible={{
-            isCollapsed: isSideNavCollapsed,
+            isCollapsed: isSideNavCollapsed || isBelowFloor,
             onCollapsedChange: handleCollapsedChange,
             hasButton: false,
           }}

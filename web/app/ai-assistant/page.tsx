@@ -377,7 +377,17 @@ export default function AiAssistantPage() {
                 {RECENT_CHATS.map((c, i) => (
                   <ListItem
                     key={c.id}
-                    label={t(c.titleKey)}
+                    // A conversation is identified by its subject, and the
+                    // rail cut these one or two characters short of the end.
+                    // Node labels are exempt from ListItem's single-line
+                    // truncation, so the title wraps instead — and anything
+                    // still too long keeps a tooltip, which the plain-string
+                    // form does not give.
+                    label={
+                      <Text type="label" weight="medium" maxLines={2}>
+                        {t(c.titleKey)}
+                      </Text>
+                    }
                     description={t(c.timeKey)}
                     isSelected={i === 0}
                     href="/ai-assistant"

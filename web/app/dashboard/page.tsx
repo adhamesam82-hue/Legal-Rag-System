@@ -301,13 +301,13 @@ export default function DashboardPage() {
                               />
                               <XAxis
                                 dataKey="month"
-                                tick={{ fontSize: 12, fill: "var(--color-text-secondary)" }}
+                                tick={{ fontSize: "var(--font-size-sm)", fill: "var(--color-text-secondary)" }}
                                 axisLine={false}
                                 tickLine={false}
                               />
                               <YAxis
                                 tickFormatter={egpShort}
-                                tick={{ fontSize: 12, fill: "var(--color-text-secondary)" }}
+                                tick={{ fontSize: "var(--font-size-sm)", fill: "var(--color-text-secondary)" }}
                                 axisLine={false}
                                 tickLine={false}
                                 width={72}

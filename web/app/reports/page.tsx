@@ -104,7 +104,7 @@ const COMPLETION = [
   { monthKey: MONTH_KEYS[5], opened: 9, closed: 6 },
 ];
 
-const AXIS_TICK = { fontSize: 12, fill: "var(--color-text-secondary)" };
+const AXIS_TICK = { fontSize: "var(--font-size-sm)", fill: "var(--color-text-secondary)" };
 
 const tooltipStyle = {
   background: "var(--color-background-popover)",
@@ -227,7 +227,7 @@ export default function ReportsPage() {
                       width={64}
                     />
                     <Tooltip formatter={(v) => formatEGP(Number(v))} contentStyle={tooltipStyle} />
-                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Legend wrapperStyle={{ fontSize: "var(--font-size-sm)" }} />
                     <Line
                       type="monotone"
                       dataKey="revenue"
@@ -340,7 +340,7 @@ export default function ReportsPage() {
                     <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                     <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} width={32} />
                     <Tooltip contentStyle={tooltipStyle} />
-                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Legend wrapperStyle={{ fontSize: "var(--font-size-sm)" }} />
                     <Bar
                       dataKey="opened"
                       name={t("@legalos.reports.legend.opened")}
