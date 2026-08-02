@@ -7,7 +7,6 @@ import type { Catalog } from "@astryxdesign/core/i18n";
 
 export const en: Catalog = {
   "@legalos.crm.heading": { defaultMessage: "CRM Pipeline" },
-  "@legalos.crm.subtitle": { defaultMessage: "{firm} · Prospective clients ·" },
   "@legalos.crm.viewExistingClients": { defaultMessage: "View existing clients" },
   "@legalos.crm.newLead": { defaultMessage: "New lead" },
 
@@ -91,7 +90,6 @@ export const en: Catalog = {
 
 export const ar: Catalog = {
   "@legalos.crm.heading": { defaultMessage: "مسار العملاء المحتملين" },
-  "@legalos.crm.subtitle": { defaultMessage: "{firm} · عملاء محتملون ·" },
   "@legalos.crm.viewExistingClients": { defaultMessage: "عرض العملاء الحاليين" },
   "@legalos.crm.newLead": { defaultMessage: "عميل محتمل جديد" },
 

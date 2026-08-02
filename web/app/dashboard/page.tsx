@@ -22,7 +22,6 @@ import { List, ListItem } from "@astryxdesign/core/List";
 import { Link } from "@astryxdesign/core/Link";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import {
-  ScaleIcon,
   BriefcaseIcon,
   CheckCircleIcon,
   BanknotesIcon,
@@ -44,12 +43,6 @@ import { useEnumLabel } from "@/lib/i18n/enum-label";
 // invented KPIs (revenue targets, message previews, utilization goals) are
 // gone rather than kept as decoration: a dashboard that mixes real and
 // fabricated numbers is worse than one that shows fewer, true ones.
-
-const KIND_ICON = {
-  hearing: ScaleIcon,
-  deadline: ClockIcon,
-  task: CheckCircleIcon,
-} as const;
 
 function egpShort(value: number) {
   return `EGP ${Math.round(value / 1000)}k`;
@@ -154,12 +147,15 @@ export default function DashboardPage() {
                       {kpis.map((kpi) => (
                         <Card key={kpi.label}>
                           <VStack gap={2}>
-                            <HStack gap={2} vAlign="center">
-                              <Icon
-                                icon={kpi.icon}
-                                size="sm"
-                                color={kpi.warn ? "warning" : "secondary"}
-                              />
+                            {/* The glyph is kept only where it carries the
+                              * warning; as decoration on every card it made
+                              * four identical rows of ornament and left
+                              * nothing for the one card that needs attention
+                              * to stand out with. */}
+                            <HStack gap={1.5} vAlign="center">
+                              {kpi.warn && (
+                                <Icon icon={kpi.icon} size="sm" color="warning" />
+                              )}
                               <Text type="label" color="secondary">
                                 {kpi.label}
                               </Text>
@@ -200,26 +196,28 @@ export default function DashboardPage() {
                                           ? `/matters/${item.matter_id}`
                                           : undefined
                                       }
-                                      startContent={
-                                        <Icon
-                                          icon={KIND_ICON[item.kind]}
-                                          size="sm"
-                                          color="secondary"
-                                        />
-                                      }
                                       endContent={
                                         <HStack gap={3} vAlign="center">
                                           <Text type="supporting" color="secondary">
                                             {enumLabel(item.kind)}
                                           </Text>
-                                          {days <= 3 ? (
+                                          {/* Only what is already late gets a
+                                            * badge. Marking everything inside
+                                            * three days meant seven of the
+                                            * eight rows carried one, so the
+                                            * mark stopped meaning "look at
+                                            * this" and became the row style;
+                                            * the countdown alone says the
+                                            * same thing in plain text. */}
+                                          {days < 0 ? (
                                             <Badge
-                                              variant={days < 0 ? "error" : "warning"}
+                                              variant="error"
                                               label={`${formatDate(item.due_date)} · ${days}d`}
                                             />
                                           ) : (
                                             <Text type="supporting" color="secondary">
                                               {formatDate(item.due_date)}
+                                              {days <= 3 ? ` · ${days}d` : ""}
                                             </Text>
                                           )}
                                         </HStack>

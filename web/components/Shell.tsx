@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AppShell, useAppShellMobile } from "@astryxdesign/core/AppShell";
-import { Theme } from "@astryxdesign/core/theme";
 import { TopNav, TopNavHeading } from "@astryxdesign/core/TopNav";
 import { NavIcon } from "@astryxdesign/core/NavIcon";
 import {
@@ -47,7 +46,6 @@ import {
 } from "@heroicons/react/24/outline";
 import { useMediaQuery } from "@astryxdesign/core/hooks";
 import { useTranslator, type TranslatorFn } from "@astryxdesign/core/i18n";
-import { legalosTheme } from "@/lib/legalos";
 import { useThemeMode } from "@/app/providers";
 import { useLocale } from "@/lib/i18n/provider";
 
@@ -204,6 +202,74 @@ function TopNavBrand() {
   return <TopNavHeading heading="" logo={<NavIcon icon={<LegalOSLogo />} />} href="/dashboard" />;
 }
 
+/** Search, language, appearance, notifications, account — the controls that
+ *  belong to the app rather than to any screen. Rendered floating over the
+ *  content on desktop and inside the mobile bar below the breakpoint, so
+ *  there is one definition of them either way. */
+function UtilityControls({ onSearch }: { onSearch: () => void }) {
+  const t = useTranslator();
+  const router = useRouter();
+  return (
+    <HStack gap={0.5} vAlign="center">
+      <Button
+        label={t("@legalos.shell.search.ariaLabel")}
+        variant="ghost"
+        size="sm"
+        icon={<Icon icon="search" color="inherit" />}
+        onClick={onSearch}
+      >
+        {t("@legalos.shell.search.button")}
+      </Button>
+      <LanguageToggle />
+      <ThemeToggle />
+      <DropdownMenu
+        button={{
+          label: t("@legalos.shell.notifications.button"),
+          variant: "ghost",
+          isIconOnly: true,
+          icon: <Icon icon={BellIcon} size="sm" />,
+        }}
+        hasChevron={false}
+        items={[
+          {
+            type: "section",
+            title: t("@legalos.shell.notifications.today"),
+            items: [
+              { label: t("@legalos.shell.notifications.hearingReminder") },
+              { label: t("@legalos.shell.notifications.inviteAccepted") },
+              { label: t("@legalos.shell.notifications.contractReviewFinished") },
+            ],
+          },
+        ]}
+      />
+      <DropdownMenu
+        button={{
+          label: t("@legalos.shell.account.menuAriaLabel"),
+          variant: "ghost",
+          isIconOnly: true,
+          icon: <Avatar name="Ahmed Al-Sayed" size="sm" tooltip={false} />,
+        }}
+        hasChevron={false}
+        items={[
+          {
+            type: "section",
+            items: [
+              { label: t("@legalos.shell.account.profile"), onClick: () => router.push("/settings/profile") },
+              { label: t("@legalos.shell.account.firmSettings"), onClick: () => router.push("/settings") },
+            ],
+          },
+          { type: "divider" },
+          {
+            label: t("@legalos.shell.account.signOut"),
+            icon: <Icon icon={ArrowRightOnRectangleIcon} size="sm" />,
+            onClick: () => {},
+          },
+        ]}
+      />
+    </HStack>
+  );
+}
+
 /** Routes rendered without app chrome — a signed-out visitor has no firm,
  *  no matters and nothing to navigate to, so the nav would be dead links. */
 const BARE_ROUTES = ["/sign-in", "/sign-up", "/invite"];
@@ -217,6 +283,12 @@ const SIDENAV_COLLAPSED_KEY = "legalos-sidenav-collapsed";
  *  the user last chose. */
 const BELOW_FLOOR_QUERY = "(max-width: 1279px)";
 
+/** AppShell's own default breakpoint, below which the sidebar becomes a drawer
+ *  and a docked top bar is the only place left for the brand and the
+ *  hamburger. Kept in step with AppShell's `md` by hand — the component reads
+ *  it from its own constant, and exposes it only through context. */
+const MOBILE_BAR_QUERY = "(max-width: 768px)";
+
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -224,6 +296,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSideNavCollapsed, setIsSideNavCollapsed] = useState(false);
   const isBelowFloor = useMediaQuery(BELOW_FLOOR_QUERY);
+  const isMobileBar = useMediaQuery(MOBILE_BAR_QUERY);
   const commandSource = useCommandSource(t);
 
   // Read the saved preference after mount rather than lazily in useState, so
@@ -242,134 +315,88 @@ export function Shell({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
+  // The rail follows the app's own light/dark mode rather than being forced
+  // dark for the brand navy. A permanently dark column against a white content
+  // area split the screen into two planes and spent the strongest contrast on
+  // the part of the interface nobody is reading; on the wash background it
+  // recedes, and the only marked item is the selected one.
   const sideNav = (
-    <Theme theme={legalosTheme} mode="dark">
-      {/* AppShell paints the nav rail's surface using the *ambient* (outer)
-       * theme before this Theme override ever runs, and SideNav itself
-       * inherits its background rather than setting one — so without an
-       * explicit repaint here the rail stays the outer light/dark surface
-       * color while its text switches to dark-mode tokens, i.e. unreadable
-       * near-white text on a near-white rail. Painting the surface color
-       * explicitly, inside the override, is what actually makes the rail
-       * render as the brand's deep-navy regardless of the app's own mode. */}
-      <div style={{ backgroundColor: "var(--color-background-surface)", height: "100%" }}>
-        <SideNav
-          resizable={{ defaultWidth: 248, minWidth: 220, maxWidth: 320, autoSaveId: "legalos-sidenav" }}
-          collapsible={{
-            isCollapsed: isSideNavCollapsed || isBelowFloor,
-            onCollapsedChange: handleCollapsedChange,
-            hasButton: false,
-          }}
-          footerIcons={
-            <SideNavCollapseButton
-              label={isSideNavCollapsed ? undefined : t("@legalos.shell.collapse")}
-            />
+    <SideNav
+      resizable={{ defaultWidth: 248, minWidth: 220, maxWidth: 320, autoSaveId: "legalos-sidenav" }}
+      collapsible={{
+        isCollapsed: isSideNavCollapsed || isBelowFloor,
+        onCollapsedChange: handleCollapsedChange,
+        hasButton: false,
+      }}
+      footerIcons={
+        <SideNavCollapseButton
+          label={isSideNavCollapsed ? undefined : t("@legalos.shell.collapse")}
+        />
+      }
+      header={
+        <SideNavHeading
+          heading={t("@legalos.shell.brand")}
+          icon={<LegalOSLogo />}
+          menu={
+            <NavHeadingMenu size="lg">
+              {FIRMS.map((firm) => (
+                <NavHeadingMenuItem key={firm.id} label={t(firm.nameKey)} href="#" />
+              ))}
+            </NavHeadingMenu>
           }
-          header={
-            <SideNavHeading
-              heading={t("@legalos.shell.brand")}
-              icon={<LegalOSLogo />}
-              menu={
-                <NavHeadingMenu size="lg">
-                  {FIRMS.map((firm) => (
-                    <NavHeadingMenuItem key={firm.id} label={t(firm.nameKey)} href="#" />
-                  ))}
-                </NavHeadingMenu>
-              }
-            />
-          }
-        >
-          {NAV_SECTIONS.map((section) => (
-            <SideNavSection key={section.titleKey} title={t(section.titleKey)}>
-              {section.items.map((item) => {
-                const isSelected = pathname.startsWith(item.href);
-                return (
-                  <SideNavItem
-                    key={item.href}
-                    label={t(item.labelKey)}
-                    href={item.href}
-                    isSelected={isSelected}
-                    icon={<Icon icon={item.icon} size="sm" className={item.ai ? AI_ICON_CLASS : undefined} />}
-                  />
-                );
-              })}
-            </SideNavSection>
-          ))}
-        </SideNav>
-      </div>
-    </Theme>
+        />
+      }
+    >
+      {NAV_SECTIONS.map((section) => (
+        <SideNavSection key={section.titleKey} title={t(section.titleKey)}>
+          {section.items.map((item) => {
+            const isSelected = pathname.startsWith(item.href);
+            return (
+              <SideNavItem
+                key={item.href}
+                label={t(item.labelKey)}
+                href={item.href}
+                isSelected={isSelected}
+                icon={<Icon icon={item.icon} size="sm" className={item.ai ? AI_ICON_CLASS : undefined} />}
+              />
+            );
+          })}
+        </SideNavSection>
+      ))}
+    </SideNav>
   );
 
-  const topNav = (
+  // The top bar is a row in the shell grid only where it has to be. Below the
+  // breakpoint the sidebar is a drawer, so that row carries the brand and the
+  // hamburger and earns its 48px; above it, the controls float over the
+  // content instead (see below) and the content region gets the full height.
+  const topNav = isMobileBar ? (
     <TopNav
       label={t("@legalos.shell.mainNavAriaLabel")}
       heading={<TopNavBrand />}
-      endContent={
-        <HStack gap={1} align="center">
-          <Button
-            label={t("@legalos.shell.search.ariaLabel")}
-            variant="ghost"
-            icon={<Icon icon="search" color="inherit" />}
-            onClick={() => setIsSearchOpen(true)}
-          >
-            {t("@legalos.shell.search.button")}
-          </Button>
-          <LanguageToggle />
-          <ThemeToggle />
-          <DropdownMenu
-            button={{
-              label: t("@legalos.shell.notifications.button"),
-              variant: "ghost",
-              isIconOnly: true,
-              icon: <Icon icon={BellIcon} size="sm" />,
-            }}
-            hasChevron={false}
-            items={[
-              {
-                type: "section",
-                title: t("@legalos.shell.notifications.today"),
-                items: [
-                  { label: t("@legalos.shell.notifications.hearingReminder") },
-                  { label: t("@legalos.shell.notifications.inviteAccepted") },
-                  { label: t("@legalos.shell.notifications.contractReviewFinished") },
-                ],
-              },
-            ]}
-          />
-          <DropdownMenu
-            button={{
-              label: t("@legalos.shell.account.menuAriaLabel"),
-              variant: "ghost",
-              isIconOnly: true,
-              icon: <Avatar name="Ahmed Al-Sayed" size="sm" tooltip={false} />,
-            }}
-            hasChevron={false}
-            items={[
-              {
-                type: "section",
-                items: [
-                  { label: t("@legalos.shell.account.profile"), onClick: () => router.push("/settings/profile") },
-                  { label: t("@legalos.shell.account.firmSettings"), onClick: () => router.push("/settings") },
-                ],
-              },
-              { type: "divider" },
-              {
-                label: t("@legalos.shell.account.signOut"),
-                icon: <Icon icon={ArrowRightOnRectangleIcon} size="sm" />,
-                onClick: () => {},
-              },
-            ]}
-          />
-        </HStack>
-      }
+      endContent={<UtilityControls onSearch={() => setIsSearchOpen(true)} />}
     />
-  );
+  ) : undefined;
 
   return (
     <>
       <AppShell topNav={topNav} sideNav={sideNav} contentPadding={6}>
         {children}
       </AppShell>
+      {/* Floating, not docked: the content region owns the whole viewport
+       *  height and scrolls underneath this, which is why the pill is
+       *  translucent and blurred rather than opaque. #astryx-app-shell-main
+       *  keeps a matching top inset (globals.css) so the first screenful of a
+       *  page starts below it instead of under it. */}
+      {!isMobileBar && (
+        <HStack
+          gap={0.5}
+          vAlign="center"
+          className="fixed top-2 end-3 z-40 rounded-full border border-border bg-surface/75 px-1 py-0.5 backdrop-blur-md"
+        >
+          <UtilityControls onSearch={() => setIsSearchOpen(true)} />
+        </HStack>
+      )}
       <CommandPalette
         isOpen={isSearchOpen}
         onOpenChange={setIsSearchOpen}

@@ -7,9 +7,6 @@ import type { Catalog } from "@astryxdesign/core/i18n";
 
 export const en: Catalog = {
   "@legalos.knowledgeBase.heading": { defaultMessage: "Knowledge Base" },
-  "@legalos.knowledgeBase.subtitle": {
-    defaultMessage: "Firm templates, precedents, and reference guides",
-  },
   "@legalos.knowledgeBase.newTemplate": { defaultMessage: "New template" },
   "@legalos.knowledgeBase.search.label": { defaultMessage: "Search knowledge base" },
   "@legalos.knowledgeBase.search.placeholder": {
@@ -81,9 +78,6 @@ export const en: Catalog = {
 
 export const ar: Catalog = {
   "@legalos.knowledgeBase.heading": { defaultMessage: "قاعدة المعرفة" },
-  "@legalos.knowledgeBase.subtitle": {
-    defaultMessage: "نماذج المكتب والسوابق والأدلة المرجعية",
-  },
   "@legalos.knowledgeBase.newTemplate": { defaultMessage: "نموذج جديد" },
   "@legalos.knowledgeBase.search.label": { defaultMessage: "البحث في قاعدة المعرفة" },
   "@legalos.knowledgeBase.search.placeholder": {

@@ -1,7 +1,18 @@
-// LegalOS theme: emerald interactive accent, deep-navy dark surfaces, Inter
-// type, layered on Astryx's neutral base rather than replacing it. Purple
-// (Astryx's built-in --color-*-purple roles) is reserved for AI-surfaced UI
-// only, never used as a general accent.
+// LegalOS theme: a near-neutral surface set with one accent, layered on
+// Astryx's neutral base rather than replacing it.
+//
+// The brief's palette (PRODUCT.md) named deep navy #0F172A as the primary and
+// emerald #10B981 as the accent. Navy is no longer painted on the nav rail:
+// two large colour fields (navy rail, white content) made the screen read as
+// two applications side by side, and colour on permanent chrome is colour that
+// can never mean anything. The greys below are untinted, so the only colour on
+// a screen is the accent on the one thing you are meant to act on, plus the
+// status hues where the colour *is* the information (overdue, conflict
+// flagged). Emerald stays that accent, one step deeper so it holds its
+// contrast against white as a fill.
+//
+// Purple (Astryx's built-in --color-*-purple roles) is still reserved for
+// AI-surfaced UI only, never used as a general accent.
 import { defineTheme } from "@astryxdesign/core/theme";
 import { neutralTheme } from "@astryxdesign/theme-neutral";
 
@@ -9,8 +20,10 @@ export const legalosTheme = defineTheme({
   name: "legalos",
   extends: neutralTheme,
   color: {
-    accent: "#10B981",
-    neutralStyle: "cool",
+    accent: "#047857",
+    // Untinted: the previous "cool" neutrals carried a blue cast that read as
+    // a second colour once the navy left.
+    neutralStyle: "neutral",
     contrast: "standard",
   },
   typography: {
@@ -56,16 +69,40 @@ export const legalosTheme = defineTheme({
     "--text-heading-4-size": "0.875rem",
     "--text-label-size": "0.875rem",
 
-    // Dark surfaces read as navy, not Astryx's default near-black — this is
-    // what gives the SideNav (forced to mode="dark" regardless of the app's
-    // own light/dark setting, see Shell.tsx) its brand deep-navy rail color.
-    "--color-background-body": ["#F8FAFC", "#0B1220"],
-    "--color-background-surface": ["#FFFFFF", "#111C33"],
-    "--color-background-card": ["#FFFFFF", "#111C33"],
-    "--color-background-popover": ["#FFFFFF", "#16203B"],
-    "--color-background-inverted": ["#0F172A", "#F8FAFC"],
-    "--color-border": ["#0F172A14", "#F8FAFC1F"],
-    "--color-border-emphasized": ["#0F172A26", "#F8FAFC33"],
+    // Surfaces. Two steps only -- the wash the app sits on and the surface
+    // content sits on -- and both untinted, so nothing on screen competes with
+    // the accent. Dark mode is a true dark grey rather than the old navy.
+    "--color-background-body": ["#FAFAFA", "#0C0C0D"],
+    "--color-background-surface": ["#FFFFFF", "#151516"],
+    "--color-background-card": ["#FFFFFF", "#151516"],
+    "--color-background-popover": ["#FFFFFF", "#1C1C1E"],
+    "--color-background-inverted": ["#18181B", "#FAFAFA"],
+
+    // Borders do the separating that shadows used to. They are hairlines: at
+    // this weight a card reads as an area rather than an object, which is the
+    // whole point of dropping the elevation.
+    "--color-border": ["#18181B14", "#FFFFFF14"],
+    "--color-border-emphasized": ["#18181B26", "#FFFFFF26"],
+
+    // Text: near-black rather than black, and a secondary that is legibly
+    // quieter without going pale.
+    "--color-text-primary": ["#18181B", "#EDEDED"],
+    "--color-text-secondary": ["#71717A", "#A1A1AA"],
+    "--color-text-disabled": ["#A1A1AA", "#71717A"],
+
+    // Elevation is gone from the resting state. The tokens stay non-empty for
+    // the things that genuinely float above the page -- menus, dialogs, the
+    // toolbar pill -- but even those are a single soft shadow rather than the
+    // stacked three-layer set.
+    "--shadow-low": "0 1px 2px light-dark(oklch(0 0 0 / 6%), oklch(0 0 0 / 40%))",
+    "--shadow-med": "0 2px 8px light-dark(oklch(0 0 0 / 8%), oklch(0 0 0 / 50%))",
+    "--shadow-high": "0 8px 24px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 60%))",
+
+    // Corners: enough to look drawn on purpose, not enough to be a style.
+    "--radius-inner": "4px",
+    "--radius-element": "6px",
+    "--radius-container": "8px",
+    "--radius-page": "16px",
   },
   components: {
     // The shell is the app's outer boundary: it is exactly one viewport tall,
@@ -100,6 +137,35 @@ export const legalosTheme = defineTheme({
         "--container-padding-inline-end": "0px",
         "--container-padding-block-start": "0px",
         "--container-padding-block-end": "0px",
+      },
+    },
+    // Badges carry two different jobs and were drawn the same loud way. The
+    // status variants become tinted rather than filled: a solid #ffce2f block
+    // for "Conflict flagged" pulls the eye harder than the matter name above
+    // it, and on a board with several flagged leads the screen turns into
+    // warning colour. The tint keeps the same hue and the same meaning at a
+    // fraction of the weight. Neutral badges (counts, enumerated states) drop
+    // to the muted surface, where they read as a label rather than a chip.
+    badge: {
+      "variant:neutral": {
+        backgroundColor: "var(--color-background-muted)",
+        color: "var(--color-text-secondary)",
+      },
+      "variant:info": {
+        backgroundColor: "var(--color-background-blue)",
+        color: "var(--color-text-blue)",
+      },
+      "variant:success": {
+        backgroundColor: "var(--color-background-green)",
+        color: "var(--color-text-green)",
+      },
+      "variant:warning": {
+        backgroundColor: "var(--color-background-yellow)",
+        color: "var(--color-text-yellow)",
+      },
+      "variant:error": {
+        backgroundColor: "var(--color-background-red)",
+        color: "var(--color-text-red)",
       },
     },
     // The neutral base theme hardcodes a blue fill on the accent progress bar

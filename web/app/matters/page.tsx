@@ -7,6 +7,7 @@ import { Heading, Text } from "@astryxdesign/core/Text";
 import { Button } from "@astryxdesign/core/Button";
 import { Icon } from "@astryxdesign/core/Icon";
 import { Badge } from "@astryxdesign/core/Badge";
+import { StatusDot } from "@astryxdesign/core/StatusDot";
 import { Avatar } from "@astryxdesign/core/Avatar";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { TextArea } from "@astryxdesign/core/TextArea";
@@ -17,7 +18,7 @@ import type { TableColumn } from "@astryxdesign/core/Table";
 import { Link } from "@astryxdesign/core/Link";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
-import { PlusIcon, MagnifyingGlassIcon, BriefcaseIcon, ScaleIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, MagnifyingGlassIcon, BriefcaseIcon } from "@heroicons/react/24/outline";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
@@ -37,7 +38,6 @@ interface MatterRow extends Record<string, unknown> {
   matter_type: MatterType;
   status: MatterStatus;
   responsibleName: string;
-  hasCase: boolean;
   deadlineLabel: string | null;
   deadlineDate: string | null;
 }
@@ -100,7 +100,6 @@ export default function MattersPage() {
         matter_type: matter.matter_type,
         status: matter.status,
         responsibleName: memberName(matter.responsible_user),
-        hasCase: matter.case_id !== null,
         deadlineLabel: matter.next_deadline?.label ?? null,
         deadlineDate: matter.next_deadline?.due_date ?? null,
       })),
@@ -114,12 +113,9 @@ export default function MattersPage() {
       width: proportional(2.8),
       renderCell: (row) => (
         <Link href={`/matters/${row.id}`}>
-          <HStack gap={1.5} vAlign="center">
-            {row.hasCase && <Icon icon={ScaleIcon} size="xsm" color="secondary" />}
-            <Text type="body" weight="semibold" maxLines={2}>
-              {row.name}
-            </Text>
-          </HStack>
+          <Text type="body" weight="semibold" maxLines={2}>
+            {row.name}
+          </Text>
         </Link>
       ),
     },
@@ -165,7 +161,7 @@ export default function MattersPage() {
           );
         }
         const days = daysUntil(row.deadlineDate);
-        const urgent = days <= 3;
+        const overdue = days < 0;
         const deadlineText = t("@legalos.matters.list.deadlineBadge", {
           date: formatDate(row.deadlineDate),
           days,
@@ -175,8 +171,8 @@ export default function MattersPage() {
             <Text type="body" maxLines={2}>
               {row.deadlineLabel}
             </Text>
-            {urgent ? (
-              <Badge variant={days < 0 ? "error" : "warning"} label={deadlineText} />
+            {overdue ? (
+              <Badge variant="error" label={deadlineText} />
             ) : (
               <Text type="supporting" color="secondary">
                 {deadlineText}
@@ -190,8 +186,19 @@ export default function MattersPage() {
       key: "status",
       header: t("@legalos.matters.field.status"),
       width: pixel(110),
+      // A pill on every row makes the column a block of colour and says
+      // nothing: a dot plus the word is the same information at a whisper,
+      // and it lines up with the other text columns instead of floating.
       renderCell: (row) => (
-        <Badge variant={STATUS_VARIANT[row.status]} label={t(MATTER_STATUS_KEY[row.status])} />
+        <HStack gap={1.5} vAlign="center">
+          <StatusDot
+            variant={STATUS_VARIANT[row.status]}
+            label={t(MATTER_STATUS_KEY[row.status])}
+          />
+          <Text type="body" color="secondary">
+            {t(MATTER_STATUS_KEY[row.status])}
+          </Text>
+        </HStack>
       ),
     },
   ];

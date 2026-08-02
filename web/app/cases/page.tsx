@@ -6,7 +6,7 @@ import { VStack, HStack } from "@astryxdesign/core/Stack";
 import { Heading, Text } from "@astryxdesign/core/Text";
 import { Button } from "@astryxdesign/core/Button";
 import { Icon } from "@astryxdesign/core/Icon";
-import { Badge } from "@astryxdesign/core/Badge";
+import { StatusDot } from "@astryxdesign/core/StatusDot";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { Selector } from "@astryxdesign/core/Selector";
 import { Table, proportional, pixel } from "@astryxdesign/core/Table";
@@ -161,7 +161,12 @@ export default function CasesPage() {
       header: t("@legalos.cases.field.status"),
       width: pixel(170),
       renderCell: (row) => (
-        <Badge variant={statusVariant(row.status)} label={row.status || "—"} />
+        <HStack gap={1.5} vAlign="center">
+          <StatusDot variant={statusVariant(row.status)} label={row.status || "—"} />
+          <Text type="body" color="secondary">
+            {row.status || "—"}
+          </Text>
+        </HStack>
       ),
     },
   ];

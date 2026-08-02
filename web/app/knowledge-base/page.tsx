@@ -114,9 +114,6 @@ export default function KnowledgeBasePage() {
             <HStack hAlign="between" vAlign="center">
               <VStack gap={1}>
                 <Heading level={2}>{t("@legalos.knowledgeBase.heading")}</Heading>
-                <Text type="body" color="secondary">
-                  {t("@legalos.knowledgeBase.subtitle")}
-                </Text>
               </VStack>
               <Button
                 label={t("@legalos.knowledgeBase.newTemplate")}

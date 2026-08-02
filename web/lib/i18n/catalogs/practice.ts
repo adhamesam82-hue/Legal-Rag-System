@@ -63,9 +63,6 @@ export const en: Catalog = {
 
   // --- Calendar ---------------------------------------------------------------
   "@legalos.calendar.heading": { defaultMessage: "Calendar" },
-  "@legalos.calendar.subtitle": {
-    defaultMessage: "Hearings, case deadlines and task due dates",
-  },
   "@legalos.calendar.filterByLawyer": { defaultMessage: "Filter by lawyer" },
   "@legalos.calendar.wholeFirm": { defaultMessage: "Whole firm" },
   "@legalos.calendar.scheduleHearing": { defaultMessage: "Schedule hearing" },
@@ -80,10 +77,6 @@ export const en: Catalog = {
   "@legalos.calendar.allTasksLink": { defaultMessage: "All tasks" },
   "@legalos.calendar.nothingUpcoming": { defaultMessage: "Nothing upcoming." },
   "@legalos.calendar.firmTask": { defaultMessage: "Firm task" },
-  "@legalos.calendar.legendHeading": { defaultMessage: "Legend" },
-  "@legalos.calendar.legend.hearing": { defaultMessage: "Court hearing" },
-  "@legalos.calendar.legend.deadline": { defaultMessage: "Case deadline" },
-  "@legalos.calendar.legend.task": { defaultMessage: "Task due" },
   "@legalos.calendar.kind.hearing": { defaultMessage: "Hearing" },
   "@legalos.calendar.kind.deadline": { defaultMessage: "Case deadline" },
   "@legalos.calendar.kind.task": { defaultMessage: "Task" },
@@ -111,9 +104,6 @@ export const en: Catalog = {
 
   // --- Tasks -------------------------------------------------------------------
   "@legalos.tasks.heading": { defaultMessage: "Tasks" },
-  "@legalos.tasks.subtitle": {
-    defaultMessage: "{open} open across the firm · {overdue} overdue",
-  },
   "@legalos.tasks.addTask": { defaultMessage: "Add task" },
   "@legalos.tasks.filterAriaLabel": { defaultMessage: "Filter tasks" },
   "@legalos.tasks.filter.all": { defaultMessage: "All tasks" },
@@ -218,9 +208,6 @@ export const ar: Catalog = {
 
   // --- Calendar ---------------------------------------------------------------
   "@legalos.calendar.heading": { defaultMessage: "التقويم" },
-  "@legalos.calendar.subtitle": {
-    defaultMessage: "الجلسات والمواعيد النهائية للقضايا ومواعيد استحقاق المهام",
-  },
   "@legalos.calendar.filterByLawyer": { defaultMessage: "التصفية حسب المحامي" },
   "@legalos.calendar.wholeFirm": { defaultMessage: "المكتب بأكمله" },
   "@legalos.calendar.scheduleHearing": { defaultMessage: "جدولة جلسة" },
@@ -235,10 +222,6 @@ export const ar: Catalog = {
   "@legalos.calendar.allTasksLink": { defaultMessage: "جميع المهام" },
   "@legalos.calendar.nothingUpcoming": { defaultMessage: "لا يوجد شيء قادم." },
   "@legalos.calendar.firmTask": { defaultMessage: "مهمة عامة للمكتب" },
-  "@legalos.calendar.legendHeading": { defaultMessage: "دليل الرموز" },
-  "@legalos.calendar.legend.hearing": { defaultMessage: "جلسة محكمة" },
-  "@legalos.calendar.legend.deadline": { defaultMessage: "موعد نهائي للقضية" },
-  "@legalos.calendar.legend.task": { defaultMessage: "موعد استحقاق مهمة" },
   "@legalos.calendar.kind.hearing": { defaultMessage: "جلسة" },
   "@legalos.calendar.kind.deadline": { defaultMessage: "موعد نهائي للقضية" },
   "@legalos.calendar.kind.task": { defaultMessage: "مهمة" },
@@ -266,9 +249,6 @@ export const ar: Catalog = {
 
   // --- Tasks -------------------------------------------------------------------
   "@legalos.tasks.heading": { defaultMessage: "المهام" },
-  "@legalos.tasks.subtitle": {
-    defaultMessage: "{open} مهمة مفتوحة في المكتب · {overdue} متأخرة",
-  },
   "@legalos.tasks.addTask": { defaultMessage: "إضافة مهمة" },
   "@legalos.tasks.filterAriaLabel": { defaultMessage: "تصفية المهام" },
   "@legalos.tasks.filter.all": { defaultMessage: "جميع المهام" },

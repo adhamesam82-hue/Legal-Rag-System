@@ -55,6 +55,24 @@
 }
 
 /*
+  The utility controls float over the content rather than sitting in a row of
+  the shell (Shell.tsx), so the content region is a full viewport tall and
+  scrolls underneath them. This inset keeps the first screenful clear of the
+  pill; because it is padding on the scroll container, it scrolls away with
+  the content instead of reserving a permanent band the way the old top bar
+  did. Matched to the pill's own top offset plus its height.
+
+  Below AppShell's breakpoint the bar is docked again and owns that space, so
+  the inset is desktop-only. The id is AppShell's own, set on the <main>
+  region it renders.
+*/
+@media (min-width: 769px) {
+  #astryx-app-shell-main {
+    padding-block-start: calc(var(--spacing-6) + 1.75rem);
+  }
+}
+
+/*
   Nothing in a layout may refuse to shrink. Grid items default to
   `min-width: auto`, which means they will not go narrower than their content:
   a Table or a long unbroken name inside a `columns={3}` grid pushes its own

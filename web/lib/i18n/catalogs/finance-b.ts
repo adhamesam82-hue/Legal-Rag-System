@@ -42,7 +42,7 @@ export const en: Catalog = {
   // ---------------------------------------------------------------------
   "@legalos.accounting.heading": { defaultMessage: "Accounting" },
   "@legalos.accounting.subtitle": {
-    defaultMessage: "Al-Sayed & Partners · firm financials for July 2026",
+    defaultMessage: "Firm financials · July 2026",
   },
 
   "@legalos.accounting.banner.title": { defaultMessage: "Sample figures — no backend yet" },
@@ -221,7 +221,7 @@ export const ar: Catalog = {
   // ---------------------------------------------------------------------
   "@legalos.accounting.heading": { defaultMessage: "المحاسبة" },
   "@legalos.accounting.subtitle": {
-    defaultMessage: "السيد وشركاه · البيانات المالية للمكتب لشهر يوليو 2026",
+    defaultMessage: "البيانات المالية للمكتب · يوليو 2026",
   },
 
   "@legalos.accounting.banner.title": { defaultMessage: "أرقام تجريبية — لا يوجد نظام خلفي بعد" },

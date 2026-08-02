@@ -94,15 +94,10 @@ export default function TasksPage() {
           <LayoutHeader hasDivider padding={0}>
             <VStack gap={4}>
               <HStack hAlign="between" vAlign="center" wrap="wrap" gap={4}>
-                <VStack gap={1}>
-                  <Heading level={2}>{t("@legalos.tasks.heading")}</Heading>
-                  <Text type="body" color="secondary">
-                    {t("@legalos.tasks.subtitle", {
-                      open: open.length,
-                      overdue: overdue.length,
-                    })}
-                  </Text>
-                </VStack>
+                {/* No subtitle: it said "8 open across the firm · 0 overdue",
+                  * which is the first and third stat card verbatim, one line
+                  * above them. */}
+                <Heading level={2}>{t("@legalos.tasks.heading")}</Heading>
                 <Button
                   label={t("@legalos.tasks.addTask")}
                   variant="primary"

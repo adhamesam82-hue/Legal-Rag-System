@@ -6,7 +6,7 @@ import { VStack, HStack } from "@astryxdesign/core/Stack";
 import { Heading, Text } from "@astryxdesign/core/Text";
 import { Button } from "@astryxdesign/core/Button";
 import { Icon } from "@astryxdesign/core/Icon";
-import { Badge } from "@astryxdesign/core/Badge";
+import { StatusDot } from "@astryxdesign/core/StatusDot";
 import { Avatar } from "@astryxdesign/core/Avatar";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { TreeList } from "@astryxdesign/core/TreeList";
@@ -40,12 +40,12 @@ import { useEnumLabel } from "@/lib/i18n/enum-label";
 
 const STATUS_VARIANT: Record<
   DocumentStatus,
-  "neutral" | "warning" | "info" | "success"
+  "neutral" | "warning" | "accent" | "success"
 > = {
   draft: "neutral",
   under_review: "warning",
   signed: "success",
-  filed: "info",
+  filed: "accent",
   final: "success",
 };
 
@@ -225,7 +225,12 @@ export default function DocumentsPage() {
       header: t("@legalos.documents.field.status"),
       width: pixel(130),
       renderCell: (row) => (
-        <Badge variant={STATUS_VARIANT[row.status]} label={enumLabel(row.status)} />
+        <HStack gap={1.5} vAlign="center">
+          <StatusDot variant={STATUS_VARIANT[row.status]} label={enumLabel(row.status)} />
+          <Text type="body" color="secondary">
+            {enumLabel(row.status)}
+          </Text>
+        </HStack>
       ),
     },
     {

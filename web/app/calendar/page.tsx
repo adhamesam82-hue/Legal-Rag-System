@@ -225,12 +225,7 @@ export default function CalendarPage() {
         header={
           <LayoutHeader hasDivider padding={0}>
             <HStack hAlign="between" vAlign="center" wrap="wrap" gap={4}>
-              <VStack gap={1}>
-                <Heading level={2}>{t("@legalos.calendar.heading")}</Heading>
-                <Text type="body" color="secondary">
-                  {t("@legalos.calendar.subtitle")}
-                </Text>
-              </VStack>
+              <Heading level={2}>{t("@legalos.calendar.heading")}</Heading>
               <HStack gap={2} vAlign="center">
                 <Selector
                   label={t("@legalos.calendar.filterByLawyer")}
@@ -478,23 +473,6 @@ export default function CalendarPage() {
                 </VStack>
               </Card>
 
-              <Card>
-                <VStack gap={3}>
-                  <Heading level={4}>{t("@legalos.calendar.legendHeading")}</Heading>
-                  <HStack gap={2} vAlign="center">
-                    <Icon icon={ScaleIcon} size="sm" color="secondary" />
-                    <Text type="body">{t("@legalos.calendar.legend.hearing")}</Text>
-                  </HStack>
-                  <HStack gap={2} vAlign="center">
-                    <Icon icon={ClockIcon} size="sm" color="secondary" />
-                    <Text type="body">{t("@legalos.calendar.legend.deadline")}</Text>
-                  </HStack>
-                  <HStack gap={2} vAlign="center">
-                    <Icon icon={CheckCircleIcon} size="sm" color="secondary" />
-                    <Text type="body">{t("@legalos.calendar.legend.task")}</Text>
-                  </HStack>
-                </VStack>
-              </Card>
             </VStack>
           </LayoutPanel>
         }

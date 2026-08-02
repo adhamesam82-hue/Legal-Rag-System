@@ -18,7 +18,7 @@ import { Heading, Text } from "@astryxdesign/core/Text";
 import { Card } from "@astryxdesign/core/Card";
 import { Button } from "@astryxdesign/core/Button";
 import { Icon } from "@astryxdesign/core/Icon";
-import { Badge } from "@astryxdesign/core/Badge";
+import { StatusDot } from "@astryxdesign/core/StatusDot";
 import { Link } from "@astryxdesign/core/Link";
 import { Selector } from "@astryxdesign/core/Selector";
 import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
@@ -54,9 +54,9 @@ interface InvoiceRow extends Record<string, unknown> {
   due: string;
 }
 
-const STATUS_VARIANT: Record<InvoiceStatus, "neutral" | "info" | "success" | "error"> = {
+const STATUS_VARIANT: Record<InvoiceStatus, "neutral" | "accent" | "success" | "error"> = {
   draft: "neutral",
-  sent: "info",
+  sent: "accent",
   paid: "success",
   overdue: "error",
 };
@@ -237,7 +237,12 @@ export default function BillingPage() {
       width: pixel(210),
       renderCell: (row) => (
         <HStack gap={2} vAlign="center">
-          <Badge variant={STATUS_VARIANT[row.status]} label={enumLabel(row.status)} />
+          <HStack gap={1.5} vAlign="center">
+            <StatusDot variant={STATUS_VARIANT[row.status]} label={enumLabel(row.status)} />
+            <Text type="body" color="secondary">
+              {enumLabel(row.status)}
+            </Text>
+          </HStack>
           {row.status === "draft" && (
             <Button
               label={t("@legalos.billing.action.send")}
@@ -310,12 +315,15 @@ export default function BillingPage() {
                       {kpis.map((kpi) => (
                         <Card key={kpi.label}>
                           <VStack gap={2}>
-                            <HStack gap={2} vAlign="center">
-                              <Icon
-                                icon={kpi.icon}
-                                size="sm"
-                                color={kpi.warn ? "warning" : "secondary"}
-                              />
+                            {/* The glyph is kept only where it carries the
+                              * warning; as decoration on every card it made
+                              * four identical rows of ornament and left
+                              * nothing for the one card that needs attention
+                              * to stand out with. */}
+                            <HStack gap={1.5} vAlign="center">
+                              {kpi.warn && (
+                                <Icon icon={kpi.icon} size="sm" color="warning" />
+                              )}
                               <Text type="label" color="secondary">
                                 {kpi.label}
                               </Text>

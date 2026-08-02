@@ -83,9 +83,17 @@ documents rather than living in a separate chat tab.
   identifies as "LegalRAG" in `web/app/layout.tsx` metadata. Treated as an
   intentional rename for the SaaS surface — flagged here rather than silently
   assumed.
-- Palette (binding, from the brief): primary deep navy `#0F172A`, accent
-  emerald `#10B981`, AI-accent purple `#7C3AED`, background `#F8FAFC`, white
-  cards, subtle borders.
+- Palette, as briefed: primary deep navy `#0F172A`, accent emerald `#10B981`,
+  AI-accent purple `#7C3AED`, background `#F8FAFC`, white cards, subtle
+  borders.
+- Amended on the user's instruction to make the interface minimalist. Emerald
+  (one step deeper, `#047857`, so it holds contrast as a fill) is still the
+  single accent and purple is still AI-only, but navy is no longer painted as
+  a field: the nav rail follows the app's light/dark mode, and the greys are
+  untinted rather than the briefed blue-tinted `#F8FAFC`. Rationale in
+  `web/lib/theme.ts` — colour on permanent chrome is colour that can never
+  mean anything, and the rail was the largest colour field on every screen.
+  Revert that block to restore the briefed palette exactly.
 - Typography: Inter.
 - Applied as a theme layered on Astryx (the existing RTL design system),
   per the user's explicit choice — not a replacement of Astryx.
