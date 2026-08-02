@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Layout, LayoutHeader, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { VStack, HStack } from "@astryxdesign/core/Stack";
 import { Heading, Text } from "@astryxdesign/core/Text";
@@ -48,6 +48,16 @@ export default function ClientsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isCreating, setIsCreating] = useState(false);
 
+  // The search box drives a server-side filter, so the input keeps its own
+  // state and only the settled value reaches the fetch -- typing "Al-Sayed"
+  // otherwise fired eight rounds of three requests, each round's results
+  // arriving after the letter that made them obsolete.
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query.trim()), 250);
+    return () => clearTimeout(timer);
+  }, [query]);
+
   // Clients, their matter counts and their latest activity come from three
   // endpoints; the table joins them client-side rather than adding a bespoke
   // rollup route for one screen.
@@ -56,14 +66,14 @@ export default function ClientsPage() {
       const [clients, matters, activity] = await Promise.all([
         api.clients.list({
           status: statusFilter === "all" ? undefined : statusFilter,
-          q: query.trim() || undefined,
+          q: debouncedQuery || undefined,
         }),
         api.matters.list({ status: "active" }),
         api.activity({ limit: 200 }),
       ]);
       return { clients, matters, activity };
     },
-    [query, statusFilter],
+    [debouncedQuery, statusFilter],
   );
 
   const rows = useMemo<ClientRow[]>(() => {

@@ -154,6 +154,15 @@ function OrgProviderInner({
     setOrganizationIdState(id);
   }, []);
 
+  // Memoised on the organization alone. useResource keys its effect on this
+  // object, so building a fresh one inside the context value below would refire
+  // every screen's fetches when the unrelated `members` list arrives -- every
+  // page loaded its data twice on the first navigation after sign-in.
+  const practice = useMemo(
+    () => (organizationId === null ? null : practiceApi(organizationId)),
+    [organizationId],
+  );
+
   const value = useMemo<OrgContextValue>(() => {
     const active = memberships.find((m) => m.organization_id === organizationId);
     return {
@@ -162,14 +171,14 @@ function OrgProviderInner({
       role: (active?.role as Role) ?? null,
       memberships,
       members,
-      practice: organizationId === null ? null : practiceApi(organizationId),
+      practice,
       loading,
       error,
       setOrganizationId,
       reloadMembers: () => setMembersNonce((n) => n + 1),
       reloadOrganizations: () => setOrgsNonce((n) => n + 1),
     };
-  }, [organizationId, memberships, members, loading, error, setOrganizationId]);
+  }, [organizationId, memberships, members, practice, loading, error, setOrganizationId]);
 
   return <OrgContext.Provider value={value}>{children}</OrgContext.Provider>;
 }

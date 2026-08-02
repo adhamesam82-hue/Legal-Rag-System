@@ -110,9 +110,59 @@ export function configureAuthToken(getter: TokenGetter) {
   getAuthToken = getter;
 }
 
+/**
+ * Short-lived cache of in-flight and just-finished GETs, keyed by path.
+ *
+ * Every screen is a client component that refetches from scratch on mount, so
+ * without this, clicking away from Clients and back blanks the table to a
+ * spinner and re-runs three requests plus a Clerk token refresh for rows that
+ * are seconds old. Two jobs: concurrent identical GETs share one response, and
+ * a repeat GET inside the window resolves from memory.
+ *
+ * Any successful write clears the whole map rather than trying to guess which
+ * paths a POST invalidated -- a matter write moves the dashboard, the client
+ * row and the activity feed, and being wrong here means showing stale data.
+ */
+const GET_CACHE_TTL_MS = 30_000;
+const getCache = new Map<string, { at: number; value: Promise<unknown> }>();
+
+/** Drops every cached GET. Exported for callers that mutate outside request(). */
+export function invalidateApiCache() {
+  getCache.clear();
+}
+
 /** Exported so lib/practice.ts shares one auth-token and error-mapping path
  *  rather than re-implementing fetch for the practice endpoints. */
-export async function request<T>(path: string, init?: RequestInit): Promise<T> {
+export function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const method = (init?.method ?? "GET").toUpperCase();
+  // Only in the browser: a module-level map on the server would be shared
+  // across every user's request.
+  const cacheable = method === "GET" && typeof window !== "undefined";
+
+  if (!cacheable) {
+    const result = send<T>(path, init);
+    if (method !== "GET") {
+      // Registered before the caller's own .then, so a page that reloads
+      // straight after a save sees the cleared map, not the pre-write rows.
+      result.then(invalidateApiCache, () => {});
+    }
+    return result;
+  }
+
+  const hit = getCache.get(path);
+  if (hit && Date.now() - hit.at < GET_CACHE_TTL_MS) {
+    return hit.value as Promise<T>;
+  }
+  const value = send<T>(path, init);
+  getCache.set(path, { at: Date.now(), value });
+  // A failure must not be cached, or one blip pins the error for the window.
+  value.catch(() => {
+    if (getCache.get(path)?.value === value) getCache.delete(path);
+  });
+  return value;
+}
+
+async function send<T>(path: string, init?: RequestInit): Promise<T> {
   const token = await getAuthToken();
   // A FormData body must set its own content-type: the browser appends the
   // multipart boundary, and naming the type here would drop it and make the
