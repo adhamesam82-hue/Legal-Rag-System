@@ -6,59 +6,78 @@ import { Collapsible } from "@astryxdesign/core/Collapsible";
 import { Badge } from "@astryxdesign/core/Badge";
 import { Text } from "@astryxdesign/core/Text";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import { AnswerBody } from "@/components/AnswerBody";
 import { ArticleCard } from "@/components/ArticleCard";
-import type { Article } from "@/lib/api";
+import type { AskResponse } from "@/lib/api";
 
 /**
- * Shared shape for a grounded AI answer across the AI Assistant and Legal
- * Research surfaces. Mirrors the real `/api/ask` response contract (see
- * `web/lib/api.ts`) so mock data here reads the same as the wired chat at
- * `web/app/page.tsx` — an answer is either a cited response or an explicit
- * refusal, never unlabelled prose.
- */
-export interface GroundedAnswerData {
-  text: string;
-  citations: string[];
-  refused: boolean;
-  strategy: string;
-  articles: Article[];
-}
-
-/**
- * Renders a grounded answer exactly like the production chat does: the
- * composed answer (or a refusal banner when nothing in the corpus supports
- * it), a collapsible list of the retrieved source articles, and citation
- * badges. Reused wherever this pillar shows an AI answer so the citation
- * discipline stays visually identical everywhere.
+ * Renders one live `/api/ask` response. Shared by every surface that shows an
+ * AI answer — the chat at `web/app/page.tsx`, the AI Assistant and Legal
+ * Research — so the citation discipline is enforced in one place rather than
+ * re-implemented per screen.
+ *
+ * The three outcomes are deliberately not interchangeable:
+ *
+ *   blocked  the model cited articles it was never given. The answer text is
+ *            withheld entirely, because a plausible-looking legal answer
+ *            carrying a caveat is still read as an answer.
+ *   refused  nothing retrieved supports the question. Shown as its own state,
+ *            never as an empty answer.
+ *   answered composed text, plus the retrieved articles behind it.
  */
 export function GroundedAnswer({
   answer,
-  refusalTitle = "Not found in the corpus",
-  refusalDescription = "No ingested article answers this. Rather than reason from general legal knowledge, the system refuses.",
+  /** Set false where the surface already lists the retrieved articles in full
+   *  — Legal Research does, and the collapsible would repeat all eight. */
+  showSources = true,
 }: {
-  answer: GroundedAnswerData;
-  refusalTitle?: string;
-  refusalDescription?: string;
+  answer: AskResponse;
+  showSources?: boolean;
 }) {
+  const t = useTranslator();
+
   return (
     <VStack gap={3}>
-      {answer.refused ? (
-        <Banner status="info" title={refusalTitle} description={refusalDescription} />
+      {answer.degraded.length > 0 && (
+        <Banner
+          status="warning"
+          title={t("@legalos.groundedAnswer.degradedTitle")}
+          description={t("@legalos.groundedAnswer.degradedDescription", {
+            reasons: answer.degraded.join("; "),
+          })}
+        />
+      )}
+
+      {answer.blocked ? (
+        <Banner
+          status="error"
+          title={t("@legalos.groundedAnswer.blockedTitle")}
+          description={t("@legalos.groundedAnswer.blockedDescription", {
+            citations: answer.blocked_citations.join(", "),
+          })}
+        />
+      ) : answer.refused ? (
+        <Banner
+          status="info"
+          title={t("@legalos.groundedAnswer.refusedTitle")}
+          description={t("@legalos.groundedAnswer.refusedDescription")}
+        />
       ) : (
         <Card padding={4}>
           <AnswerBody text={answer.text} />
         </Card>
       )}
 
-      {answer.articles.length > 0 && (
+      {showSources && answer.articles.length > 0 && (
         <Collapsible
           defaultIsOpen={false}
           trigger={
             <Text type="label">
-              {`Sources — ${answer.articles.length} article${
-                answer.articles.length === 1 ? "" : "s"
-              }${answer.strategy ? ` via ${answer.strategy.replace(/_/g, " ")}` : ""}`}
+              {t("@legalos.groundedAnswer.sources", {
+                count: answer.articles.length,
+                strategy: answer.strategy.replace(/_/g, " "),
+              })}
             </Text>
           }
         >
@@ -78,7 +97,7 @@ export function GroundedAnswer({
       {answer.citations.length > 0 && (
         <HStack gap={1.5} wrap="wrap" vAlign="center">
           <Text type="supporting" color="secondary">
-            Cited:
+            {t("@legalos.groundedAnswer.citedLabel")}
           </Text>
           {answer.citations.map((c) => (
             <Badge key={c} variant="info" label={c} />

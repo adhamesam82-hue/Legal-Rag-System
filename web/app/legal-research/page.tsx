@@ -8,27 +8,27 @@ import { Card } from "@astryxdesign/core/Card";
 import { Button } from "@astryxdesign/core/Button";
 import { Icon } from "@astryxdesign/core/Icon";
 import { Badge } from "@astryxdesign/core/Badge";
-import { List, ListItem } from "@astryxdesign/core/List";
+import { Banner } from "@astryxdesign/core/Banner";
+import { Spinner } from "@astryxdesign/core/Spinner";
 import { Link } from "@astryxdesign/core/Link";
 import { Divider } from "@astryxdesign/core/Divider";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { Selector } from "@astryxdesign/core/Selector";
+import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { SegmentedControl, SegmentedControlItem } from "@astryxdesign/core/SegmentedControl";
-import {
-  SparklesIcon,
-  BookOpenIcon,
-  ScaleIcon,
-  DocumentTextIcon,
-} from "@heroicons/react/24/outline";
+import { SparklesIcon, BookOpenIcon } from "@heroicons/react/24/outline";
 import { useTranslator } from "@astryxdesign/core/i18n";
-
-const AI_ICON_CLASS = "text-purple-vivid";
-
-// ---------------------------------------------------------------------------
-// Mock research results. Citation format matches the real answering engine:
-// [Law N/YYYY, Art. M]. The refusal example below is deliberate — the real
-// system refuses rather than guessing when the corpus cannot support an answer.
-// ---------------------------------------------------------------------------
+import { GroundedAnswer } from "@/components/GroundedAnswer";
+import { ArticleCard } from "@/components/ArticleCard";
+import { useCorpusStats } from "@/lib/corpus";
+import {
+  api,
+  ApiError,
+  dirOf,
+  type AskResponse,
+  type Jurisdiction,
+  type SearchResponse,
+} from "@/lib/api";
 
 const EXAMPLE_QUERY_KEYS = [
   "@legalos.legalResearch.exampleQueries.q1",
@@ -36,69 +36,57 @@ const EXAMPLE_QUERY_KEYS = [
   "@legalos.legalResearch.exampleQueries.q3",
 ];
 
-const ANSWER = {
-  query: "What notice period applies to terminating an indefinite employment contract?",
-  text: "For an employment contract of indefinite duration, either party may terminate it provided written notice is given to the other party. The notice period is two months where the worker has been employed for ten years or less, and three months where employment exceeds ten years [Law 12/2003, Art. 111]. Terminating without observing the notice period obliges the terminating party to pay the other party an amount equal to the worker's wage for the notice period, or the remainder of it [Law 12/2003, Art. 112]. Notice may not be given while the worker is on a legally granted leave [Law 12/2003, Art. 111].",
-  jurisdiction: "Egypt",
-};
-
-// The refused-query example. Like ANSWER above, this is seeded engine output
-// rather than UI copy, so it stays in its source language.
-const REFUSAL = {
-  query: "What is the minimum wage for offshore drilling contractors?",
-  text: "I could not find this in the corpus. The indexed Egyptian legislation does not contain a provision setting a sector-specific minimum wage for offshore drilling contractors. Rather than infer from general wage provisions, this query is being refused — check the National Wage Council's periodic decisions, which are outside the indexed corpus.",
-};
-
-const LEGISLATION = [
-  {
-    citation: "Law 12/2003, Art. 111",
-    title: "Labour Law — notice of termination for indefinite contracts",
-    snippet:
-      "إذا كان العقد غير محدد المدة جاز لكل من طرفيه إنهاؤه بشرط أن يخطر الطرف الآخر كتابة قبل الإنهاء…",
-  },
-  {
-    citation: "Law 12/2003, Art. 112",
-    title: "Labour Law — compensation in lieu of notice",
-    snippet:
-      "إذا لم يراع أحد الطرفين مهلة الإخطار التزم بأن يؤدي إلى الطرف الآخر مبلغاً مساوياً لأجر العامل عن مدة الإخطار…",
-  },
-  {
-    citation: "Law 12/2003, Art. 110",
-    title: "Labour Law — termination of fixed-term contracts",
-    snippet: "ينتهي عقد العمل المحدد المدة بانقضاء مدته أو بإنجاز العمل المتفق عليه…",
-  },
-];
-
-const DECISIONS = [
-  {
-    court: "Court of Cassation",
-    ref: "Appeal 14237/2019, session of 9 March 2021",
-    holding:
-      "Notice given during a worker's annual leave is void; the notice period runs only from the worker's return to service.",
-  },
-  {
-    court: "Court of Cassation",
-    ref: "Appeal 8891/2016, session of 12 June 2018",
-    holding:
-      "Payment in lieu of notice does not bar a separate claim for arbitrary dismissal where the termination lacked justification.",
-  },
-];
-
-const PRECEDENTS = [
-  {
-    labelKey: "@legalos.legalResearch.precedents.item1",
-    href: "/matters/delta-foods-labour-dispute",
-  },
-  { labelKey: "@legalos.legalResearch.precedents.item2", href: "/knowledge-base" },
-];
+/** `answer` composes a cited answer via /api/ask; `articles` returns the
+ *  ranked retrieval only, with no LLM call. */
+type Mode = "answer" | "articles";
 
 export default function LegalResearchPage() {
   const t = useTranslator();
-  const [query, setQuery] = useState(ANSWER.query);
-  const [jurisdiction, setJurisdiction] = useState("EG");
-  const [instrument, setInstrument] = useState("all");
-  const [mode, setMode] = useState("answer");
-  const [showRefusal, setShowRefusal] = useState(false);
+  const corpus = useCorpusStats();
+  const [query, setQuery] = useState("");
+  const [jurisdiction, setJurisdiction] = useState<Jurisdiction>("EG");
+  const [mode, setMode] = useState<Mode>("answer");
+  const [answer, setAnswer] = useState<AskResponse | null>(null);
+  const [search, setSearch] = useState<SearchResponse | null>(null);
+  const [submitted, setSubmitted] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<{ message: string; isCredits: boolean } | null>(null);
+
+  async function run(raw: string, runMode: Mode = mode) {
+    const trimmed = raw.trim();
+    if (!trimmed || pending) return;
+
+    setPending(true);
+    setError(null);
+    setAnswer(null);
+    setSearch(null);
+    setSubmitted(trimmed);
+
+    try {
+      if (runMode === "answer") {
+        setAnswer(await api.ask({ question: trimmed, jurisdiction }));
+      } else {
+        setSearch(await api.search({ query: trimmed, jurisdiction, limit: 15 }));
+      }
+    } catch (e) {
+      setError(
+        e instanceof ApiError
+          ? { message: e.message, isCredits: e.isCredits }
+          : { message: String(e), isCredits: false },
+      );
+    } finally {
+      setPending(false);
+    }
+  }
+
+  // Switching between a composed answer and the raw ranking is a different
+  // view of the same question, so it re-runs rather than blanking the screen.
+  function changeMode(next: Mode) {
+    setMode(next);
+    if (submitted) run(submitted, next);
+  }
+
+  const articles = mode === "answer" ? (answer?.articles ?? []) : (search?.articles ?? []);
 
   return (
     <Layout
@@ -113,172 +101,159 @@ export default function LegalResearchPage() {
               </Text>
             </VStack>
 
-            <TextInput
-              label={t("@legalos.legalResearch.searchLabel")}
-              isLabelHidden
-              value={query}
-              onChange={setQuery}
-              placeholder={t("@legalos.legalResearch.searchPlaceholder")}
-              />
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                run(query);
+              }}
+            >
+              <VStack gap={4}>
+                <TextInput
+                  label={t("@legalos.legalResearch.searchLabel")}
+                  isLabelHidden
+                  value={query}
+                  onChange={setQuery}
+                  placeholder={t("@legalos.legalResearch.searchPlaceholder")}
+                />
 
-            <HStack gap={2} vAlign="center" wrap="wrap">
-              <Selector
-                label={t("@legalos.legalResearch.jurisdictionLabel")}
-                value={jurisdiction}
-                onChange={setJurisdiction}
-                options={[
-                  { value: "EG", label: t("@legalos.legalResearch.jurisdiction.egypt") },
-                  { value: "SA", label: t("@legalos.legalResearch.jurisdiction.saudi") },
-                ]}
-              />
-              <Selector
-                label={t("@legalos.legalResearch.instrumentTypeLabel")}
-                value={instrument}
-                onChange={setInstrument}
-                options={[
-                  { value: "all", label: t("@legalos.legalResearch.instrumentType.all") },
-                  { value: "law", label: t("@legalos.legalResearch.instrumentType.law") },
-                  { value: "decree", label: t("@legalos.legalResearch.instrumentType.decree") },
-                  {
-                    value: "regulation",
-                    label: t("@legalos.legalResearch.instrumentType.regulation"),
-                  },
-                ]}
-              />
-              <SegmentedControl
-                value={mode}
-                onChange={setMode}
-                label={t("@legalos.legalResearch.resultModeLabel")}
-              >
-                <SegmentedControlItem
-                  value="answer"
-                  label={t("@legalos.legalResearch.resultMode.answer")}
-                />
-                <SegmentedControlItem
-                  value="articles"
-                  label={t("@legalos.legalResearch.resultMode.articles")}
-                />
-              </SegmentedControl>
-              <Button
-                label={t("@legalos.legalResearch.refusalToggle.ariaLabel")}
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowRefusal((v) => !v)}
-              >
-                {showRefusal
-                  ? t("@legalos.legalResearch.refusalToggle.showAnswered")
-                  : t("@legalos.legalResearch.refusalToggle.showRefusal")}
-              </Button>
-            </HStack>
+                <HStack gap={2} vAlign="center" wrap="wrap">
+                  <Selector
+                    label={t("@legalos.jurisdiction.label")}
+                    value={jurisdiction}
+                    onChange={(next) => setJurisdiction(next as Jurisdiction)}
+                    options={[
+                      { value: "EG", label: t("@legalos.jurisdiction.EG") },
+                      {
+                        // Jurisdiction is a hard filter in retrieval: selecting
+                        // one with nothing ingested would return nothing on
+                        // every query with no indication why.
+                        value: "SA",
+                        label: corpus.has("SA")
+                          ? t("@legalos.jurisdiction.SA")
+                          : t("@legalos.jurisdiction.SAUnavailable"),
+                        disabled: !corpus.has("SA"),
+                      },
+                    ]}
+                  />
+                  <SegmentedControl
+                    value={mode}
+                    onChange={(next) => changeMode(next as Mode)}
+                    label={t("@legalos.legalResearch.resultModeLabel")}
+                  >
+                    <SegmentedControlItem
+                      value="answer"
+                      label={t("@legalos.legalResearch.resultMode.answer")}
+                    />
+                    <SegmentedControlItem
+                      value="articles"
+                      label={t("@legalos.legalResearch.resultMode.articles")}
+                    />
+                  </SegmentedControl>
+                  <Button
+                    type="submit"
+                    label={t("@legalos.legalResearch.submit")}
+                    variant="primary"
+                    isLoading={pending}
+                  />
+                </HStack>
+              </VStack>
+            </form>
           </VStack>
         </LayoutHeader>
       }
       content={
         <LayoutContent padding={0} isScrollable>
           <VStack gap={6}>
-            <Card variant="purple">
-              <VStack gap={4}>
-                <HStack gap={2} vAlign="center">
-                  <Icon icon={SparklesIcon} size="sm" className={AI_ICON_CLASS} />
-                  <Heading level={4}>{t("@legalos.legalResearch.aiAnswerHeading")}</Heading>
-                  <Badge
-                    variant="purple"
-                    label={
-                      jurisdiction === "EG"
-                        ? t("@legalos.legalResearch.jurisdiction.egypt")
-                        : t("@legalos.legalResearch.jurisdiction.saudi")
-                    }
-                  />
-                </HStack>
-
-                {showRefusal ? (
-                  <VStack gap={3}>
-                    <Text type="supporting" color="secondary">
-                      {t("@legalos.legalResearch.queryPrefix", { query: REFUSAL.query })}
-                    </Text>
-                    <Text type="body">{REFUSAL.text}</Text>
-                    <Text type="supporting" color="secondary">
-                      {t("@legalos.legalResearch.refusalNote")}
-                    </Text>
-                  </VStack>
-                ) : (
-                  <VStack gap={3}>
-                    <Text type="supporting" color="secondary">
-                      {t("@legalos.legalResearch.queryPrefix", { query: ANSWER.query })}
-                    </Text>
-                    <Text type="body">{ANSWER.text}</Text>
-                  </VStack>
+            {error && (
+              <Banner
+                status={error.isCredits ? "warning" : "error"}
+                title={t(
+                  error.isCredits
+                    ? "@legalos.ask.error.creditsTitle"
+                    : "@legalos.ask.error.genericTitle",
                 )}
+                description={error.message}
+              />
+            )}
 
-                <Divider />
-                <Text type="supporting" color="secondary">
-                  {t("@legalos.legalResearch.disclaimersFooter")}
-                </Text>
-              </VStack>
-            </Card>
+            {pending && <Spinner label={t("@legalos.ask.searching")} />}
 
-            {!showRefusal && (
-              <>
-                <Card>
-                  <VStack gap={4}>
-                    <HStack gap={2} vAlign="center">
-                      <Icon icon={BookOpenIcon} size="sm" color="secondary" />
-                      <Heading level={4}>
-                        {t("@legalos.legalResearch.referencedLegislationHeading")}
-                      </Heading>
-                    </HStack>
-                    <List hasDividers density="balanced">
-                      {LEGISLATION.map((l) => (
-                        <ListItem
-                          key={l.citation}
-                          label={l.title}
-                          description={
-                            <VStack gap={1}>
-                              <Text type="supporting" color="secondary">
-                                {l.citation}
-                              </Text>
-                              <Text type="supporting" color="secondary" dir="rtl">
-                                {l.snippet}
-                              </Text>
-                            </VStack>
-                          }
-                          startContent={<Icon icon={DocumentTextIcon} size="sm" color="secondary" />}
+            {!pending && !error && !submitted && (
+              <EmptyState
+                title={t("@legalos.legalResearch.empty.title")}
+                description={t("@legalos.legalResearch.empty.description")}
+              />
+            )}
+
+            {mode === "answer" && answer && (
+              <Card variant="purple">
+                <VStack gap={4}>
+                  <HStack gap={2} vAlign="center" wrap="wrap">
+                    <Icon icon={SparklesIcon} size="sm" className="text-purple-vivid" />
+                    <Heading level={4}>{t("@legalos.legalResearch.aiAnswerHeading")}</Heading>
+                    <Badge variant="purple" label={t(`@legalos.jurisdiction.${jurisdiction}`)} />
+                  </HStack>
+
+                  {submitted && (
+                    <div dir={dirOf(submitted)}>
+                      <Text type="supporting" color="secondary">
+                        {t("@legalos.legalResearch.queryPrefix", { query: submitted })}
+                      </Text>
+                    </div>
+                  )}
+
+                  <GroundedAnswer answer={answer} showSources={false} />
+
+                  <Divider />
+                  <Text type="supporting" color="secondary">
+                    {t("@legalos.legalResearch.disclaimersFooter")}
+                  </Text>
+                </VStack>
+              </Card>
+            )}
+
+            {mode === "articles" && search?.degraded && search.degraded.length > 0 && (
+              <Banner
+                status="warning"
+                title={t("@legalos.groundedAnswer.degradedTitle")}
+                description={t("@legalos.groundedAnswer.degradedDescription", {
+                  reasons: search.degraded.join("; "),
+                })}
+              />
+            )}
+
+            {/* Retrieved statute text, listed in full. In answer mode these are
+                the same articles GroundedAnswer collapses into "Sources" — kept
+                expanded here because reading the provision itself is the point
+                of the research surface. */}
+            {!pending && submitted && (
+              <Card>
+                <VStack gap={4}>
+                  <HStack gap={2} vAlign="center">
+                    <Icon icon={BookOpenIcon} size="sm" color="secondary" />
+                    <Heading level={4}>
+                      {t("@legalos.legalResearch.referencedLegislationHeading")}
+                    </Heading>
+                  </HStack>
+                  {articles.length === 0 ? (
+                    <Text type="supporting" color="secondary">
+                      {t("@legalos.legalResearch.noArticles")}
+                    </Text>
+                  ) : (
+                    <VStack gap={3}>
+                      {articles.map((article, i) => (
+                        <ArticleCard
+                          key={article.id}
+                          article={article}
+                          rank={i + 1}
+                          showScore={mode === "articles"}
+                          cited={answer?.citations.includes(article.citation) ?? false}
                         />
                       ))}
-                    </List>
-                  </VStack>
-                </Card>
-
-                <Card>
-                  <VStack gap={4}>
-                    <HStack gap={2} vAlign="center">
-                      <Icon icon={ScaleIcon} size="sm" color="secondary" />
-                      <Heading level={4}>
-                        {t("@legalos.legalResearch.referencedDecisionsHeading")}
-                      </Heading>
-                    </HStack>
-                    <List hasDividers density="balanced">
-                      {DECISIONS.map((d) => (
-                        <ListItem
-                          key={d.ref}
-                          label={d.ref}
-                          description={
-                            <Text type="supporting" color="secondary" maxLines={3}>
-                              {d.holding}
-                            </Text>
-                          }
-                          startContent={<Icon icon={ScaleIcon} size="sm" color="secondary" />}
-                          endContent={
-                            <Text type="supporting" color="secondary">
-                              {d.court}
-                            </Text>
-                          }
-                        />
-                      ))}
-                    </List>
-                  </VStack>
-                </Card>
-              </>
+                    </VStack>
+                  )}
+                </VStack>
+              </Card>
             )}
           </VStack>
         </LayoutContent>
@@ -296,9 +271,10 @@ export default function LegalResearchPage() {
                       <button
                         onClick={() => {
                           setQuery(q);
-                          setShowRefusal(false);
+                          run(q);
                         }}
                         style={{ textAlign: "start", width: "100%" }}
+                        dir={dirOf(q)}
                       >
                         <Text type="supporting">{q}</Text>
                       </button>
@@ -309,24 +285,35 @@ export default function LegalResearchPage() {
             </Card>
 
             <Card>
-              <VStack gap={4}>
-                <Heading level={4}>{t("@legalos.legalResearch.relatedPrecedentsHeading")}</Heading>
-                <VStack gap={2}>
-                  {PRECEDENTS.map((p) => (
-                    <Link key={p.href} href={p.href}>
-                      <Text type="supporting">{t(p.labelKey)}</Text>
-                    </Link>
-                  ))}
-                </VStack>
-              </VStack>
-            </Card>
-
-            <Card>
               <VStack gap={3}>
                 <Heading level={4}>{t("@legalos.legalResearch.corpusHeading")}</Heading>
+                {corpus.failed ? (
+                  <Text type="supporting" color="secondary">
+                    {t("@legalos.corpus.unavailableDescription")}
+                  </Text>
+                ) : (
+                  <VStack gap={2}>
+                    {(["EG", "SA"] as const).map((code) => (
+                      <HStack key={code} hAlign="between" vAlign="center" gap={2}>
+                        <Text type="label">{t(`@legalos.jurisdiction.${code}`)}</Text>
+                        {corpus.stats && !corpus.has(code) ? (
+                          <Badge variant="neutral" label={t("@legalos.corpus.notIngested")} />
+                        ) : (
+                          <Text type="supporting" color="secondary">
+                            {t("@legalos.corpus.counts", {
+                              instruments: corpus.counts(code).instruments,
+                              articles: corpus.counts(code).articles,
+                            })}
+                          </Text>
+                        )}
+                      </HStack>
+                    ))}
+                  </VStack>
+                )}
                 <Text type="supporting" color="secondary">
                   {t("@legalos.legalResearch.corpusDescription")}
                 </Text>
+                <Link href="/library">{t("@legalos.legalResearch.browseLibraryLink")}</Link>
                 <Link href="/ai-assistant">
                   {t("@legalos.legalResearch.openAiAssistantLink")}
                 </Link>

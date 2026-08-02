@@ -47,6 +47,15 @@ documents rather than living in a separate chat tab.
   `legalrag.practice_api`). CRM, accounting, automations, messaging,
   knowledge base and reports do not yet have backend implementations, and
   their screens say so.
+- The AI pillar's two research screens — AI Assistant and Legal Research —
+  were mock when first built and now call the live engine (`/api/ask`,
+  `/api/search`) through the shared `GroundedAnswer` renderer, so the
+  refusal/blocked/citation discipline is identical to the original chat.
+  Contract Review remains a concept screen. The assistant's non-Q&A modes
+  (draft, translate, summarise, case analysis, clause comparison, timeline)
+  are shown disabled: the answering engine is a grounded statute-QA path that
+  refuses anything the corpus cannot support, so those are separate backends,
+  not the same call with a different prompt.
 - This design pass is an explicit exception to that phased sequencing: a
   full-surface UI concept for the entire intended product, requested ahead of
   the backend roadmap, to be made functional pillar-by-pillar afterward. It
@@ -62,10 +71,16 @@ documents rather than living in a separate chat tab.
   frontend at `web/`.
 - This pass's scope: real Next.js/Astryx page scaffolds (not static mockups)
   for the full nav surface — Dashboard, CRM, Clients, Matters, Cases,
-  Calendar, Tasks, Documents, AI Assistant, Legal Research, Contract Review,
-  Time Tracking, Billing, Accounting, Reports, Knowledge Base, Messages,
-  Automation, Settings — populated with mock/placeholder data, since most
-  pillars have no backend yet.
+  Calendar, Tasks, Documents, Law Library, AI Assistant, Legal Research,
+  Contract Review, Time Tracking, Billing, Accounting, Reports, Knowledge
+  Base, Messages, Automation, Settings — populated with mock/placeholder data,
+  since most pillars have no backend yet.
+- Law Library (`/library`, `/library/[id]`, `/article/[id]`) is the statute
+  corpus browser carried over from the original three-screen research app. It
+  was already wired to the API and simply absent from the nav; it is now a
+  Content-section item, and article pages keep it selected because every
+  citation in the product resolves there. Distinct from Knowledge Base, which
+  is the firm's own material.
 - Screens must not fabricate claims that could be mistaken for real product
   state (no invented customer metrics, no implying integrations exist that
   don't). Mock data should read as plausible sample content, not as evidence.
@@ -108,7 +123,12 @@ documents rather than living in a separate chat tab.
 - Astryx CLI (`npx astryx`) available in `web/` for component discovery,
   theming (`astryx theme`), and page/block templates.
 - No real client, matter, billing, or firm-operations data exists yet. All
-  content in the new pillars is mock/placeholder.
+  content in the not-yet-backed pillars is mock/placeholder.
+- Corpus coverage as ingested: Egypt only — 78 instruments, 6,985 articles,
+  statute text with no case law. The Saudi jurisdiction exists in the schema
+  and the UI but has nothing ingested, so every AI screen reads its coverage
+  from `/api/health` at runtime and disables the Saudi option rather than
+  offering a search that would silently return nothing.
 
 ## Product Principles
 

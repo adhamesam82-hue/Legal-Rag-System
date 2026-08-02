@@ -15,6 +15,7 @@ import { List, ListItem } from "@astryxdesign/core/List";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { Banner } from "@astryxdesign/core/Banner";
 import { Spinner } from "@astryxdesign/core/Spinner";
+import { Selector } from "@astryxdesign/core/Selector";
 import { Timestamp } from "@astryxdesign/core/Timestamp";
 import {
   ChatComposer,
@@ -38,50 +39,26 @@ import {
   BookOpenIcon,
 } from "@heroicons/react/24/outline";
 import { useTranslator, type TranslatorFn } from "@astryxdesign/core/i18n";
-import { GroundedAnswer, GroundedAnswerData } from "@/components/GroundedAnswer";
-import { dirOf, Article } from "@/lib/api";
+import { GroundedAnswer } from "@/components/GroundedAnswer";
+import { useCorpusStats } from "@/lib/corpus";
+import { api, ApiError, dirOf, type AskResponse, type Jurisdiction } from "@/lib/api";
 
-// ---------------------------------------------------------------------------
-// Mock data — this route is a UI concept pass with no live API wiring (see
-// web/app/page.tsx for the real, working chat). Citation format and refusal
-// tone mirror that real system exactly: [Law N/YYYY, Art. M], and a question
-// the corpus can't support is refused rather than guessed at.
-// ---------------------------------------------------------------------------
-
-const RECENT_CHATS: { id: string; titleKey: string; timeKey: string }[] = [
-  {
-    id: "c1",
-    titleKey: "@legalos.aiAssistant.recentChats.item1",
-    timeKey: "@legalos.aiAssistant.time.justNow",
-  },
-  {
-    id: "c2",
-    titleKey: "@legalos.aiAssistant.recentChats.item2",
-    timeKey: "@legalos.aiAssistant.time.yesterday",
-  },
-  {
-    id: "c3",
-    titleKey: "@legalos.aiAssistant.recentChats.item3",
-    timeKey: "@legalos.aiAssistant.time.yesterday",
-  },
-  {
-    id: "c4",
-    titleKey: "@legalos.aiAssistant.recentChats.item4",
-    timeKey: "@legalos.aiAssistant.time.daysAgo3",
-  },
-  {
-    id: "c5",
-    titleKey: "@legalos.aiAssistant.recentChats.item5",
-    timeKey: "@legalos.aiAssistant.time.weekAgo1",
-  },
-];
-
+/**
+ * Modes the assistant is intended to offer. Only question answering is wired:
+ * `/api/ask` composes an answer strictly from retrieved statute text and
+ * refuses anything the corpus cannot support, so drafting, translation and
+ * summarisation are not the same request with a different prompt — they need
+ * their own backends. They are shown disabled rather than hidden so the
+ * intended surface stays visible without implying it works.
+ */
 const MODES: {
   id: string;
   labelKey: string;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   href?: string;
+  isLive?: boolean;
 }[] = [
+  { id: "qa", labelKey: "@legalos.aiAssistant.modes.qa", icon: ChatBubbleLeftRightIcon, isLive: true },
   { id: "draft", labelKey: "@legalos.aiAssistant.modes.draft", icon: DocumentTextIcon },
   {
     id: "review",
@@ -90,7 +67,11 @@ const MODES: {
     href: "/contract-review",
   },
   { id: "translate", labelKey: "@legalos.aiAssistant.modes.translate", icon: LanguageIcon },
-  { id: "summarize", labelKey: "@legalos.aiAssistant.modes.summarize", icon: ClipboardDocumentListIcon },
+  {
+    id: "summarize",
+    labelKey: "@legalos.aiAssistant.modes.summarize",
+    icon: ClipboardDocumentListIcon,
+  },
   { id: "case-analysis", labelKey: "@legalos.aiAssistant.modes.caseAnalysis", icon: ScaleIcon },
   {
     id: "clause-comparison",
@@ -98,260 +79,121 @@ const MODES: {
     icon: ArrowsRightLeftIcon,
   },
   { id: "timeline", labelKey: "@legalos.aiAssistant.modes.timeline", icon: ClockIcon },
-  { id: "qa", labelKey: "@legalos.aiAssistant.modes.qa", icon: ChatBubbleLeftRightIcon },
 ];
 
-const LABOUR_ARTICLES: Article[] = [
-  {
-    id: 1101,
-    citation: "Law 12/2003, Art. 110",
-    instrument_number: "12",
-    instrument_year: 2003,
-    instrument_title: "Labour Law No. 12 of 2003",
-    article_number: "110",
-    text: "على صاحب العمل أو العامل الراغب في إنهاء عقد العمل غير محدد المدة أن يخطر الطرف الآخر كتابة قبل الإنهاء بمدة لا تقل عن شهرين إذا كانت مدة خدمة العامل لا تجاوز عشر سنوات، وبمدة لا تقل عن ثلاثة أشهر إذا جاوزت مدة خدمته عشر سنوات.",
-    score: 0.913,
-  },
-  {
-    id: 1102,
-    citation: "Law 12/2003, Art. 111",
-    instrument_number: "12",
-    instrument_year: 2003,
-    instrument_title: "Labour Law No. 12 of 2003",
-    article_number: "111",
-    text: "إذا لم يراعِ الطرف الذي أنهى العقد مهلة الإخطار المنصوص عليها في المادة السابقة، التزم بأن يؤدي للطرف الآخر تعويضًا يعادل أجر العامل عن مهلة الإخطار أو ما تبقى منها.",
-    score: 0.887,
-  },
+const SUGGESTION_KEYS = [
+  "@legalos.aiAssistant.suggestions.notice",
+  "@legalos.aiAssistant.suggestions.leave",
+  "@legalos.aiAssistant.suggestions.companies",
 ];
 
-const COMPANIES_ARTICLES: Article[] = [
-  {
-    id: 2201,
-    citation: "Law 1/1437, Art. 152",
-    instrument_number: "1",
-    instrument_year: 1437,
-    instrument_title: "Saudi Companies Law No. 1 of 1437H",
-    article_number: "152",
-    text: "يجوز أن تتكون الشركة ذات المسؤولية المحدودة من شخص طبيعي أو اعتباري واحد يمتلك جميع حصصها، ويسري عليها في هذه الحالة ما يسري على الشركة ذات الشخص الواحد من أحكام هذا النظام.",
-    score: 0.901,
-  },
-  {
-    id: 2202,
-    citation: "Law 1/1437, Art. 153",
-    instrument_number: "1",
-    instrument_year: 1437,
-    instrument_title: "Saudi Companies Law No. 1 of 1437H",
-    article_number: "153",
-    text: "يُمارس الشريك الوحيد الاختصاصات المقررة للجمعية العامة للشركاء، وعليه أن يثبت قراراته في محضر خاص يُودَع في مقر الشركة.",
-    score: 0.86,
-  },
-];
-
-const CIVIL_CODE_ARTICLES: Article[] = [
-  {
-    id: 3301,
-    citation: "Law 131/1948, Art. 148",
-    instrument_number: "131",
-    instrument_year: 1948,
-    instrument_title: "Civil Code No. 131 of 1948",
-    article_number: "148",
-    text: "يجب تنفيذ العقد طبقًا لما اشتمل عليه وبطريقة تتفق مع ما يوجبه حسن النية.",
-    score: 0.79,
-  },
-];
-
-type Turn =
-  | {
-      kind: "qa";
-      id: string;
-      question: string;
-      mode?: string;
-      time: string;
-      answer: GroundedAnswerData;
-      refusalDescription?: string;
-    }
-  | { kind: "notice"; id: string; question: string; time: string };
-
-const SAMPLE_TURNS: Record<string, Turn> = {
-  labour: {
-    kind: "qa",
-    id: "labour",
-    time: "10:02 AM",
-    question: "ما هي مدة الإخطار الواجب توافرها لإنهاء عقد عمل غير محدد المدة؟",
-    answer: {
-      text: "وفقًا لقانون العمل المصري، يجب على أي من الطرفين الراغب في إنهاء عقد العمل غير محدد المدة إخطار الطرف الآخر كتابةً قبل الإنهاء بمدة لا تقل عن شهرين إذا كانت مدة خدمة العامل حتى عشر سنوات، وثلاثة أشهر إذا زادت مدة الخدمة عن ذلك [Law 12/2003, Art. 110].\n\nوفي حالة عدم مراعاة مهلة الإخطار، يلتزم الطرف الذي أنهى العقد بأن يدفع للطرف الآخر تعويضًا معادلاً لأجر العامل عن مهلة الإخطار أو الجزء المتبقي منها [Law 12/2003, Art. 111].\n\n_للاطلاع على النص الكامل يرجى مراجعة الجريدة الرسمية؛ هذه الإجابة لا تُغني عن الاستشارة القانونية._",
-      citations: ["Law 12/2003, Art. 110", "Law 12/2003, Art. 111"],
-      refused: false,
-      strategy: "vector_search",
-      articles: LABOUR_ARTICLES,
-    },
-  },
-  companies: {
-    kind: "qa",
-    id: "companies",
-    time: "10:05 AM",
-    question: "Does Saudi Arabia's Companies Law allow a single-shareholder limited liability company?",
-    answer: {
-      text: "Yes. Saudi Arabia's Companies Law permits a single natural or corporate person to incorporate and hold all shares of a limited liability company on their own [Law 1/1437, Art. 152]. The sole shareholder exercises the powers otherwise reserved for the general assembly of partners and must record their resolutions in a special register kept at the company's registered office [Law 1/1437, Art. 153].\n\n_Saudi statute citations follow the Umm Al-Qura gazette numbering used in the ingested corpus._",
-      citations: ["Law 1/1437, Art. 152", "Law 1/1437, Art. 153"],
-      refused: false,
-      strategy: "vector_search",
-      articles: COMPANIES_ARTICLES,
-    },
-  },
-  crypto: {
-    kind: "qa",
-    id: "crypto",
-    time: "10:07 AM",
-    question: "What are the penalties for undeclared cryptocurrency gains under Egyptian tax law?",
-    refusalDescription:
-      "No ingested article addresses cryptocurrency taxation specifically. Rather than reasoning from general knowledge, the system refuses — ask about a provision that exists in the Egyptian or Saudi statute corpus, or route this to a tax advisor for an unsettled area of law.",
-    answer: {
-      text: "",
-      citations: [],
-      refused: true,
-      strategy: "vector_search",
-      articles: [],
-    },
-  },
-  draft: {
-    kind: "qa",
-    id: "draft",
-    time: "10:11 AM",
-    mode: "draft",
-    question: "Draft a standard confidentiality clause for a services agreement governed by Egyptian law.",
-    answer: {
-      text: 'Here is a standard mutual confidentiality clause for a services agreement governed by Egyptian law:\n\n"Each Party shall keep confidential all information disclosed by the other Party in connection with this Agreement and shall not disclose it to any third party without the disclosing Party\'s prior written consent, except as required by law or a competent authority."\n\nBecause Egyptian contract law requires performance in accordance with good faith [Law 131/1948, Art. 148], pair this clause with a defined term and carve-outs for information that becomes public through no fault of the receiving party — an open-ended confidentiality clause with no term is routinely narrowed by Egyptian courts.\n\n_This drafting suggestion is grounded in the retrieved article above; it is a starting point, not a substitute for review by a licensed lawyer._',
-      citations: ["Law 131/1948, Art. 148"],
-      refused: false,
-      strategy: "vector_search",
-      articles: CIVIL_CODE_ARTICLES,
-    },
-  },
-};
-
-const SUGGESTIONS: { key: string; turn: string }[] = [
-  { key: "@legalos.aiAssistant.suggestions.labour", turn: "labour" },
-  { key: "@legalos.aiAssistant.suggestions.companies", turn: "companies" },
-  { key: "@legalos.aiAssistant.suggestions.draft", turn: "draft" },
-];
-
-function ModeChips({
-  active,
-  onSelect,
-}: {
-  active: string | null;
-  onSelect: (id: string) => void;
-}) {
-  const router = useRouter();
-  const t = useTranslator();
-  return (
-    <HStack gap={2} wrap="wrap">
-      {MODES.map((m) => (
-        <Button
-          key={m.id}
-          label={t(m.labelKey)}
-          size="sm"
-          variant={active === m.id ? "secondary" : "ghost"}
-          icon={<Icon icon={m.icon} size="sm" className="text-purple-vivid" />}
-          onClick={() => (m.href ? router.push(m.href) : onSelect(m.id))}
-        >
-          {t(m.labelKey)}
-        </Button>
-      ))}
-    </HStack>
-  );
+interface Turn {
+  id: string;
+  question: string;
+  /** ISO timestamp, stamped when the question is sent. */
+  at: string;
+  answer?: AskResponse;
+  error?: { message: string; isCredits: boolean };
 }
 
-function TurnView({ turn, t }: { turn: Turn; t: TranslatorFn }) {
-  const mode = turn.kind === "qa" ? MODES.find((m) => m.id === turn.mode) : undefined;
-  return (
-    <div key={turn.id}>
-      <ChatMessage sender="user">
-        <ChatMessageBubble
-          metadata={
-            <ChatMessageMetadata
-              timestamp={<Timestamp value={`2026-07-31T${to24(turn.time)}`} format="time" />}
-              footer={
-                turn.kind === "qa" && turn.mode ? (
-                  <Badge variant="purple" label={mode ? t(mode.labelKey) : turn.mode} />
-                ) : undefined
-              }
-            />
-          }
-        >
-          <div dir={dirOf(turn.question)}>
-            <Text type="body">{turn.question}</Text>
-          </div>
-        </ChatMessageBubble>
-      </ChatMessage>
-
-      <ChatMessage sender="assistant" avatar={<Avatar name="LegalOS AI" size="md" />}>
-        <ChatMessageBubble variant="ghost">
-          {turn.kind === "notice" ? (
-            <Banner
-              status="info"
-              title={t("@legalos.aiAssistant.conceptPreview.title")}
-              description={t("@legalos.aiAssistant.conceptPreview.description")}
-            />
-          ) : (
-            <GroundedAnswer answer={turn.answer} refusalDescription={turn.refusalDescription} />
-          )}
-        </ChatMessageBubble>
-      </ChatMessage>
-    </div>
-  );
+interface Conversation {
+  id: string;
+  title: string;
+  turns: Turn[];
 }
 
-function to24(t: string) {
-  const [time, meridiem] = t.split(" ");
-  if (!meridiem) return "10:00:00";
-  let [h, m] = time.split(":").map(Number);
-  if (meridiem === "PM" && h !== 12) h += 12;
-  if (meridiem === "AM" && h === 12) h = 0;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
-}
+// Conversations live in component state and end with the tab. There is no
+// history endpoint yet, so the rail lists this session only and says so —
+// showing a persistent-looking archive would promise storage that does not
+// exist.
+let sequence = 0;
+const nextId = (prefix: string) => `${prefix}-${++sequence}`;
+
+const TITLE_MAX = 60;
 
 export default function AiAssistantPage() {
   const t = useTranslator();
-  const [turns, setTurns] = useState<Turn[]>([
-    SAMPLE_TURNS.labour,
-    SAMPLE_TURNS.companies,
-    SAMPLE_TURNS.crypto,
-    SAMPLE_TURNS.draft,
-  ]);
-  const [activeMode, setActiveMode] = useState<string | null>(null);
+  const corpus = useCorpusStats();
+  const [jurisdiction, setJurisdiction] = useState<Jurisdiction>("EG");
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  function newChat() {
-    setTurns([]);
-    setActiveMode(null);
+  const active = conversations.find((c) => c.id === activeId) ?? null;
+  const turns = active?.turns ?? [];
+
+  // Only articles the answer actually cited, not everything retrieval
+  // returned. Eight articles are fetched per question and typically one or two
+  // are relied on; listing all of them under "Cited" would inflate the
+  // provenance trail this panel exists to make checkable.
+  const citedArticles = Array.from(
+    new Map(
+      turns
+        .flatMap((turn) =>
+          (turn.answer?.articles ?? []).filter((article) =>
+            turn.answer!.citations.includes(article.citation),
+          ),
+        )
+        .map((article) => [article.citation, article]),
+    ).values(),
+  );
+
+  function patchTurn(conversationId: string, turnId: string, patch: Partial<Turn>) {
+    setConversations((prev) =>
+      prev.map((conversation) =>
+        conversation.id === conversationId
+          ? {
+              ...conversation,
+              turns: conversation.turns.map((turn) =>
+                turn.id === turnId ? { ...turn, ...patch } : turn,
+              ),
+            }
+          : conversation,
+      ),
+    );
   }
 
-  function addSample(key: string) {
-    setPending(true);
-    setTimeout(() => {
-      setTurns((prev) => [...prev, SAMPLE_TURNS[key]]);
-      setPending(false);
-    }, 500);
-  }
-
-  function submit(question: string) {
+  async function send(question: string) {
     const trimmed = question.trim();
     if (!trimmed || pending) return;
-    setPending(true);
-    setTimeout(() => {
-      setTurns((prev) => [
-        ...prev,
+
+    const turn: Turn = { id: nextId("turn"), question: trimmed, at: new Date().toISOString() };
+
+    // The first question of a session also creates the conversation, so the
+    // rail never shows an empty thread waiting to be filled.
+    const conversationId = active?.id ?? nextId("conversation");
+    if (active) {
+      setConversations((prev) =>
+        prev.map((c) => (c.id === conversationId ? { ...c, turns: [...c.turns, turn] } : c)),
+      );
+    } else {
+      setConversations((prev) => [
         {
-          kind: "notice",
-          id: `notice-${prev.length}`,
-          question: trimmed,
-          time: t("@legalos.aiAssistant.time.now"),
+          id: conversationId,
+          title:
+            trimmed.length > TITLE_MAX ? `${trimmed.slice(0, TITLE_MAX).trimEnd()}…` : trimmed,
+          turns: [turn],
         },
+        ...prev,
       ]);
+      setActiveId(conversationId);
+    }
+
+    setPending(true);
+    try {
+      patchTurn(conversationId, turn.id, {
+        answer: await api.ask({ question: trimmed, jurisdiction }),
+      });
+    } catch (error) {
+      patchTurn(conversationId, turn.id, {
+        error:
+          error instanceof ApiError
+            ? { message: error.message, isCredits: error.isCredits }
+            : { message: String(error), isCredits: false },
+      });
+    } finally {
       setPending(false);
-    }, 500);
+    }
   }
 
   return (
@@ -365,7 +207,8 @@ export default function AiAssistantPage() {
                 label={t("@legalos.aiAssistant.newChat")}
                 variant="primary"
                 icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
-                onClick={newChat}
+                onClick={() => setActiveId(null)}
+                isDisabled={pending}
                 width="100%"
               >
                 {t("@legalos.aiAssistant.newChat")}
@@ -373,31 +216,47 @@ export default function AiAssistantPage() {
             </VStack>
             <Divider />
             <StackItem size="fill" isScrollable>
-              <List hasDividers density="compact">
-                {RECENT_CHATS.map((c, i) => (
-                  <ListItem
-                    key={c.id}
-                    // A conversation is identified by its subject, and the
-                    // rail cut these one or two characters short of the end.
-                    // Node labels are exempt from ListItem's single-line
-                    // truncation, so the title wraps instead — and anything
-                    // still too long keeps a tooltip, which the plain-string
-                    // form does not give.
-                    label={
-                      <Text type="label" weight="medium" maxLines={2}>
-                        {t(c.titleKey)}
-                      </Text>
-                    }
-                    description={t(c.timeKey)}
-                    isSelected={i === 0}
-                    href="/ai-assistant"
-                    startContent={
-                      <Icon icon={ChatBubbleLeftRightIcon} size="sm" color="secondary" />
-                    }
-                  />
-                ))}
-              </List>
+              {conversations.length === 0 ? (
+                <VStack padding={4}>
+                  <Text type="supporting" color="secondary">
+                    {t("@legalos.aiAssistant.noConversations")}
+                  </Text>
+                </VStack>
+              ) : (
+                <List hasDividers density="compact">
+                  {conversations.map((conversation) => (
+                    <ListItem
+                      key={conversation.id}
+                      // A conversation is identified by its subject, and the
+                      // rail cut these one or two characters short of the end.
+                      // Node labels are exempt from ListItem's single-line
+                      // truncation, so the title wraps instead — and anything
+                      // still too long keeps a tooltip, which the plain-string
+                      // form does not give.
+                      label={
+                        <Text type="label" weight="medium" maxLines={2} dir={dirOf(conversation.title)}>
+                          {conversation.title}
+                        </Text>
+                      }
+                      description={t("@legalos.aiAssistant.turnCount", {
+                        count: conversation.turns.length,
+                      })}
+                      isSelected={conversation.id === activeId}
+                      onClick={() => setActiveId(conversation.id)}
+                      startContent={
+                        <Icon icon={ChatBubbleLeftRightIcon} size="sm" color="secondary" />
+                      }
+                    />
+                  ))}
+                </List>
+              )}
             </StackItem>
+            <Divider />
+            <VStack padding={4}>
+              <Text type="supporting" color="secondary">
+                {t("@legalos.aiAssistant.sessionOnlyNote")}
+              </Text>
+            </VStack>
           </VStack>
         </LayoutPanel>
       }
@@ -411,44 +270,57 @@ export default function AiAssistantPage() {
             <Text type="supporting" color="secondary">
               {t("@legalos.aiAssistant.knowledgeSources.description")}
             </Text>
-            <Card variant="purple" padding={3}>
-              <VStack gap={2}>
-                <HStack hAlign="between">
-                  <Text type="label">{t("@legalos.aiAssistant.knowledgeSources.egypt")}</Text>
-                  <Text type="supporting" color="secondary">
-                    {t("@legalos.aiAssistant.knowledgeSources.egyptCount")}
-                  </Text>
-                </HStack>
-                <HStack hAlign="between">
-                  <Text type="label">{t("@legalos.aiAssistant.knowledgeSources.saudi")}</Text>
-                  <Text type="supporting" color="secondary">
-                    {t("@legalos.aiAssistant.knowledgeSources.saudiCount")}
-                  </Text>
-                </HStack>
-              </VStack>
-            </Card>
+
+            {corpus.failed ? (
+              <Banner
+                status="error"
+                title={t("@legalos.corpus.unavailableTitle")}
+                description={t("@legalos.corpus.unavailableDescription")}
+              />
+            ) : (
+              <Card variant="purple" padding={3}>
+                <VStack gap={2}>
+                  {(["EG", "SA"] as const).map((code) => (
+                    <HStack key={code} hAlign="between" vAlign="center" gap={2}>
+                      <Text type="label">{t(`@legalos.jurisdiction.${code}`)}</Text>
+                      {corpus.stats && !corpus.has(code) ? (
+                        <Badge variant="neutral" label={t("@legalos.corpus.notIngested")} />
+                      ) : (
+                        <Text type="supporting" color="secondary">
+                          {t("@legalos.corpus.counts", {
+                            instruments: corpus.counts(code).instruments,
+                            articles: corpus.counts(code).articles,
+                          })}
+                        </Text>
+                      )}
+                    </HStack>
+                  ))}
+                </VStack>
+              </Card>
+            )}
+
             <Divider />
             <VStack gap={2}>
               <Text type="label" color="secondary">
                 {t("@legalos.aiAssistant.knowledgeSources.citedHeading")}
               </Text>
-              <List hasDividers density="compact">
-                {Array.from(
-                  new Map(
-                    turns
-                      .filter((turn): turn is Extract<Turn, { kind: "qa" }> => turn.kind === "qa")
-                      .flatMap((turn) => turn.answer.articles)
-                      .map((a) => [a.citation, a]),
-                  ).values(),
-                ).map((a) => (
-                  <ListItem
-                    key={a.id}
-                    label={a.citation}
-                    description={a.instrument_title}
-                    endContent={<Icon icon={BookOpenIcon} size="sm" color="secondary" />}
-                  />
-                ))}
-              </List>
+              {citedArticles.length === 0 ? (
+                <Text type="supporting" color="secondary">
+                  {t("@legalos.aiAssistant.knowledgeSources.noneYet")}
+                </Text>
+              ) : (
+                <List hasDividers density="compact">
+                  {citedArticles.map((article) => (
+                    <ListItem
+                      key={article.id}
+                      label={article.citation}
+                      description={article.instrument_title}
+                      href={`/article/${article.id}`}
+                      endContent={<Icon icon={BookOpenIcon} size="sm" color="secondary" />}
+                    />
+                  ))}
+                </List>
+              )}
             </VStack>
             <Divider />
             <Text type="supporting" color="secondary">
@@ -461,15 +333,21 @@ export default function AiAssistantPage() {
         <LayoutContent padding={0}>
           <VStack gap={0} height="100%">
             <VStack gap={3} padding={4}>
-              <HStack hAlign="between" vAlign="center">
+              <HStack hAlign="between" vAlign="center" gap={3} wrap="wrap">
                 <VStack gap={0.5}>
                   <Heading level={3}>{t("@legalos.aiAssistant.heading")}</Heading>
                   <Text type="supporting" color="secondary">
                     {t("@legalos.aiAssistant.subheading")}
                   </Text>
                 </VStack>
+                <JurisdictionSelector
+                  value={jurisdiction}
+                  onChange={setJurisdiction}
+                  isSaudiAvailable={corpus.has("SA")}
+                  t={t}
+                />
               </HStack>
-              <ModeChips active={activeMode} onSelect={setActiveMode} />
+              <ModeChips />
             </VStack>
             <Divider />
             <StackItem size="fill">
@@ -481,12 +359,12 @@ export default function AiAssistantPage() {
                     description={t("@legalos.aiAssistant.emptyState.description")}
                     actions={
                       <VStack gap={2} width="100%">
-                        {SUGGESTIONS.map((s) => {
-                          const label = t(s.key);
+                        {SUGGESTION_KEYS.map((key) => {
+                          const label = t(key);
                           return (
-                            <Card key={s.key} padding={2} variant="muted">
+                            <Card key={key} padding={2} variant="muted">
                               <button
-                                onClick={() => addSample(s.turn)}
+                                onClick={() => send(label)}
                                 style={{ textAlign: "start", width: "100%" }}
                                 dir={dirOf(label)}
                               >
@@ -501,17 +379,9 @@ export default function AiAssistantPage() {
                 }
                 composer={
                   <ChatComposer
-                    onSubmit={submit}
+                    onSubmit={send}
                     isDisabled={pending}
-                    placeholder={
-                      activeMode
-                        ? t("@legalos.aiAssistant.composer.placeholderWithMode", {
-                            mode: t(
-                              MODES.find((m) => m.id === activeMode)?.labelKey ?? "",
-                            ),
-                          })
-                        : t("@legalos.aiAssistant.composer.placeholderDefault")
-                    }
+                    placeholder={t("@legalos.aiAssistant.composer.placeholderDefault")}
                   />
                 }
               >
@@ -520,13 +390,6 @@ export default function AiAssistantPage() {
                     {turns.map((turn) => (
                       <TurnView key={turn.id} turn={turn} t={t} />
                     ))}
-                    {pending && (
-                      <ChatMessage sender="assistant" avatar={<Avatar name="LegalOS AI" size="md" />}>
-                        <ChatMessageBubble variant="ghost">
-                          <Spinner label={t("@legalos.aiAssistant.searchingCorpus")} />
-                        </ChatMessageBubble>
-                      </ChatMessage>
-                    )}
                   </ChatMessageList>
                 )}
               </ChatLayout>
@@ -535,5 +398,104 @@ export default function AiAssistantPage() {
         </LayoutContent>
       }
     />
+  );
+}
+
+function JurisdictionSelector({
+  value,
+  onChange,
+  isSaudiAvailable,
+  t,
+}: {
+  value: Jurisdiction;
+  onChange: (value: Jurisdiction) => void;
+  isSaudiAvailable: boolean;
+  t: TranslatorFn;
+}) {
+  return (
+    <Selector
+      label={t("@legalos.jurisdiction.label")}
+      value={value}
+      onChange={(next) => onChange(next as Jurisdiction)}
+      options={[
+        { value: "EG", label: t("@legalos.jurisdiction.EG") },
+        {
+          value: "SA",
+          // Jurisdiction is a hard filter in retrieval, so selecting a
+          // jurisdiction with nothing ingested would refuse every question
+          // with no indication why.
+          label: isSaudiAvailable
+            ? t("@legalos.jurisdiction.SA")
+            : t("@legalos.jurisdiction.SAUnavailable"),
+          disabled: !isSaudiAvailable,
+        },
+      ]}
+    />
+  );
+}
+
+function ModeChips() {
+  const router = useRouter();
+  const t = useTranslator();
+  return (
+    <VStack gap={2}>
+      <HStack gap={2} wrap="wrap">
+        {MODES.map((mode) => (
+          <Button
+            key={mode.id}
+            label={t(mode.labelKey)}
+            size="sm"
+            variant={mode.isLive ? "secondary" : "ghost"}
+            isDisabled={!mode.isLive && !mode.href}
+            tooltip={mode.isLive ? undefined : t("@legalos.aiAssistant.modes.notBuiltTooltip")}
+            icon={<Icon icon={mode.icon} size="sm" className="text-purple-vivid" />}
+            onClick={mode.href ? () => router.push(mode.href!) : undefined}
+          >
+            {t(mode.labelKey)}
+          </Button>
+        ))}
+      </HStack>
+      <Text type="supporting" color="secondary">
+        {t("@legalos.aiAssistant.modes.availabilityNote")}
+      </Text>
+    </VStack>
+  );
+}
+
+function TurnView({ turn, t }: { turn: Turn; t: TranslatorFn }) {
+  return (
+    <div>
+      <ChatMessage sender="user">
+        <ChatMessageBubble
+          metadata={
+            <ChatMessageMetadata timestamp={<Timestamp value={turn.at} format="time" />} />
+          }
+        >
+          <div dir={dirOf(turn.question)}>
+            <Text type="body">{turn.question}</Text>
+          </div>
+        </ChatMessageBubble>
+      </ChatMessage>
+
+      <ChatMessage sender="assistant" avatar={<Avatar name="LegalOS AI" size="md" />}>
+        <ChatMessageBubble variant="ghost">
+          {!turn.answer && !turn.error ? (
+            <Spinner label={t("@legalos.ask.searching")} />
+          ) : turn.error ? (
+            <Banner
+              status={turn.error.isCredits ? "warning" : "error"}
+              title={t(
+                turn.error.isCredits
+                  ? "@legalos.ask.error.creditsTitle"
+                  : "@legalos.ask.error.genericTitle",
+              )}
+              description={turn.error.message}
+            />
+          ) : (
+            <GroundedAnswer answer={turn.answer!} />
+          )}
+        </ChatMessageBubble>
+      </ChatMessage>
+    </div>
   );
 }

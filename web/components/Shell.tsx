@@ -31,6 +31,7 @@ import {
   FolderIcon,
   SparklesIcon,
   BookOpenIcon,
+  BuildingLibraryIcon,
   DocumentMagnifyingGlassIcon,
   ClockIcon,
   CreditCardIcon,
@@ -58,6 +59,11 @@ type NavItem = {
   labelKey: string;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   ai?: boolean;
+  /** Extra path prefixes that belong to this item. Article pages live at
+   *  /article/:id rather than under /library, but they are reached from the
+   *  library and from every citation, so the rail should still point there
+   *  instead of showing nothing selected. */
+  alsoMatch?: string[];
 };
 
 const NAV_SECTIONS: { titleKey: string; items: NavItem[] }[] = [
@@ -85,6 +91,14 @@ const NAV_SECTIONS: { titleKey: string; items: NavItem[] }[] = [
     titleKey: "@legalos.shell.nav.section.content",
     items: [
       { href: "/documents", labelKey: "@legalos.shell.nav.documents", icon: FolderIcon },
+      {
+        // The statute corpus itself — the source every AI citation resolves
+        // to. Distinct from Knowledge Base, which is the firm's own material.
+        href: "/library",
+        labelKey: "@legalos.shell.nav.lawLibrary",
+        icon: BuildingLibraryIcon,
+        alsoMatch: ["/article"],
+      },
       { href: "/knowledge-base", labelKey: "@legalos.shell.nav.knowledgeBase", icon: LightBulbIcon },
     ],
   },
@@ -350,7 +364,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
       {NAV_SECTIONS.map((section) => (
         <SideNavSection key={section.titleKey} title={t(section.titleKey)}>
           {section.items.map((item) => {
-            const isSelected = pathname.startsWith(item.href);
+            const isSelected = [item.href, ...(item.alsoMatch ?? [])].some((prefix) =>
+              pathname.startsWith(prefix),
+            );
             return (
               <SideNavItem
                 key={item.href}

@@ -9,15 +9,12 @@ import {
 } from "@astryxdesign/core/Chat";
 import { Card } from "@astryxdesign/core/Card";
 import { Banner } from "@astryxdesign/core/Banner";
-import { Badge } from "@astryxdesign/core/Badge";
 import { Text } from "@astryxdesign/core/Text";
 import { Spinner } from "@astryxdesign/core/Spinner";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
-import { Collapsible } from "@astryxdesign/core/Collapsible";
-import { AnswerBody } from "@/components/AnswerBody";
-import { ArticleCard } from "@/components/ArticleCard";
+import { GroundedAnswer } from "@/components/GroundedAnswer";
 import { api, ApiError, AskResponse, dirOf } from "@/lib/api";
-import { useTranslator, type TranslatorFn } from "@astryxdesign/core/i18n";
+import { useTranslator } from "@astryxdesign/core/i18n";
 
 interface Turn {
   question: string;
@@ -122,19 +119,19 @@ export default function ChatPage() {
 
                 <ChatMessage sender="assistant">
                   {!turn.answer && !turn.error ? (
-                    <Spinner label={t("@legalos.home.turn.searching")} />
+                    <Spinner label={t("@legalos.ask.searching")} />
                   ) : turn.error ? (
                     <Banner
                       status={turn.error.isCredits ? "warning" : "error"}
                       title={t(
                         turn.error.isCredits
-                          ? "@legalos.home.error.creditsTitle"
-                          : "@legalos.home.error.genericTitle",
+                          ? "@legalos.ask.error.creditsTitle"
+                          : "@legalos.ask.error.genericTitle",
                       )}
                       description={turn.error.message}
                     />
                   ) : (
-                    <AnswerView answer={turn.answer!} t={t} />
+                    <GroundedAnswer answer={turn.answer!} />
                   )}
                 </ChatMessage>
               </div>
@@ -142,88 +139,6 @@ export default function ChatPage() {
           </ChatMessageList>
         )}
       </ChatLayout>
-    </div>
-  );
-}
-
-function AnswerView({ answer, t }: { answer: AskResponse; t: TranslatorFn }) {
-  return (
-    <div style={{ display: "grid", gap: 12 }}>
-      {answer.degraded.length > 0 && (
-        <Banner
-          status="warning"
-          title={t("@legalos.home.answer.degradedTitle")}
-          description={t("@legalos.home.answer.degradedDescription", {
-            reasons: answer.degraded.join("; "),
-          })}
-        />
-      )}
-
-      {/*
-        A blocked answer is shown as an error and its text is withheld entirely.
-        The model cited articles it was not given, and a plausible-looking legal
-        answer carrying a caveat is still read as an answer.
-      */}
-      {answer.blocked ? (
-        <Banner
-          status="error"
-          title={t("@legalos.home.answer.blockedTitle")}
-          description={t("@legalos.home.answer.blockedDescription", {
-            citations: answer.blocked_citations.join(", "),
-          })}
-        />
-      ) : answer.refused ? (
-        <Banner
-          status="info"
-          title={t("@legalos.home.answer.refusedTitle")}
-          description={t("@legalos.home.answer.refusedDescription")}
-        />
-      ) : (
-        <Card padding={4}>
-          <AnswerBody text={answer.text} />
-        </Card>
-      )}
-
-      {answer.articles.length > 0 && (
-        <Collapsible
-          defaultIsOpen={false}
-          trigger={
-            <Text type="label">
-              {t("@legalos.home.answer.sources", {
-                count: answer.articles.length,
-                strategy: answer.strategy.replace("_", " "),
-              })}
-            </Text>
-          }
-        >
-          <div style={{ display: "grid", gap: 10, paddingBlockStart: 10 }}>
-            {answer.articles.map((article, i) => (
-              <ArticleCard
-                key={article.id}
-                article={article}
-                rank={i + 1}
-                cited={answer.citations.includes(article.citation)}
-              />
-            ))}
-          </div>
-        </Collapsible>
-      )}
-
-      {answer.citations.length > 0 && (
-        <div
-          style={{
-            display: "flex",
-            gap: 6,
-            flexWrap: "wrap",
-            alignItems: "center",
-          }}
-        >
-          <Text type="supporting">{t("@legalos.home.answer.citedLabel")}</Text>
-          {answer.citations.map((c) => (
-            <Badge key={c} variant="info" label={c} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }

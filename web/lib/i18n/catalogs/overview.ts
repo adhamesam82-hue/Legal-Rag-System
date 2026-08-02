@@ -21,34 +21,9 @@ export const en: Catalog = {
   "@legalos.home.composer.placeholder": {
     defaultMessage: "Ask about the law in Arabic or English…",
   },
-  "@legalos.home.turn.searching": { defaultMessage: "Searching the corpus…" },
-  "@legalos.home.error.creditsTitle": {
-    defaultMessage: "Model provider out of credits",
-  },
-  "@legalos.home.error.genericTitle": { defaultMessage: "Could not answer" },
-  "@legalos.home.answer.degradedTitle": {
-    defaultMessage: "Reduced retrieval quality",
-  },
-  "@legalos.home.answer.degradedDescription": {
-    defaultMessage: "Falling back to keyword search: {reasons}.",
-  },
-  "@legalos.home.answer.blockedTitle": {
-    defaultMessage: "Answer blocked — unverifiable citations",
-  },
-  "@legalos.home.answer.blockedDescription": {
-    defaultMessage:
-      "The model cited articles that were not retrieved from the corpus, so they cannot be verified: {citations}.",
-  },
-  "@legalos.home.answer.refusedTitle": { defaultMessage: "Not found in the corpus" },
-  "@legalos.home.answer.refusedDescription": {
-    defaultMessage:
-      "No ingested article answers this. Rather than reason from general legal knowledge, the system refuses.",
-  },
-  "@legalos.home.answer.sources": {
-    defaultMessage:
-      "Sources — {count, plural, one {# article} other {# articles}} via {strategy}",
-  },
-  "@legalos.home.answer.citedLabel": { defaultMessage: "Cited:" },
+  // Answer rendering (spinner, errors, citations) is shared with the AI
+  // Assistant and Legal Research — see @legalos.groundedAnswer.* and
+  // @legalos.ask.* in catalogs/common.ts.
 
   // ---------------------------------------------------------------------
   // app/search/page.tsx
@@ -208,30 +183,9 @@ export const ar: Catalog = {
   "@legalos.home.composer.placeholder": {
     defaultMessage: "اطرح سؤالك القانوني بالعربية أو الإنجليزية…",
   },
-  "@legalos.home.turn.searching": { defaultMessage: "جارٍ البحث في قاعدة البيانات…" },
-  "@legalos.home.error.creditsTitle": { defaultMessage: "رصيد مزوّد النموذج نفد" },
-  "@legalos.home.error.genericTitle": { defaultMessage: "تعذّر تقديم إجابة" },
-  "@legalos.home.answer.degradedTitle": { defaultMessage: "جودة الاسترجاع منخفضة" },
-  "@legalos.home.answer.degradedDescription": {
-    defaultMessage: "تم التحول إلى البحث بالكلمات المفتاحية: {reasons}.",
-  },
-  "@legalos.home.answer.blockedTitle": {
-    defaultMessage: "تم حجب الإجابة — استشهادات غير قابلة للتحقق",
-  },
-  "@legalos.home.answer.blockedDescription": {
-    defaultMessage:
-      "استشهد النموذج بمواد لم يتم استرجاعها من قاعدة البيانات، ولذلك يتعذّر التحقق منها: {citations}.",
-  },
-  "@legalos.home.answer.refusedTitle": { defaultMessage: "غير موجود في قاعدة البيانات" },
-  "@legalos.home.answer.refusedDescription": {
-    defaultMessage:
-      "لا توجد مادة مُدرجة تجيب عن هذا السؤال. وبدلاً من الاستنتاج من معرفة قانونية عامة، يرفض النظام تقديم إجابة.",
-  },
-  "@legalos.home.answer.sources": {
-    defaultMessage:
-      "المصادر — {count, plural, one {مادة واحدة} two {مادتان} few {# مواد} other {# مادة}} عبر {strategy}",
-  },
-  "@legalos.home.answer.citedLabel": { defaultMessage: "الاستشهادات:" },
+  // عرض الإجابة (المؤشر، الأخطاء، الاستشهادات) مشترك مع المساعد الذكي
+  // والبحث القانوني — راجع @legalos.groundedAnswer.* و@legalos.ask.*
+  // في catalogs/common.ts.
 
   // ---------------------------------------------------------------------
   // app/search/page.tsx

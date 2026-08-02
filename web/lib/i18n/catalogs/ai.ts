@@ -4,7 +4,7 @@ export const en: Catalog = {
   // --- AI Assistant -----------------------------------------------------
   "@legalos.aiAssistant.heading": { defaultMessage: "AI Assistant" },
   "@legalos.aiAssistant.subheading": {
-    defaultMessage: "Grounded Q&A over the Egyptian & Saudi statute corpus — ask in Arabic or English.",
+    defaultMessage: "Grounded Q&A over the statute corpus — ask in Arabic or English.",
   },
   "@legalos.aiAssistant.newChat": { defaultMessage: "New chat" },
 
@@ -16,39 +16,31 @@ export const en: Catalog = {
   "@legalos.aiAssistant.modes.clauseComparison": { defaultMessage: "Clause Comparison" },
   "@legalos.aiAssistant.modes.timeline": { defaultMessage: "Timeline Extraction" },
   "@legalos.aiAssistant.modes.qa": { defaultMessage: "Question Answering" },
-
-  "@legalos.aiAssistant.recentChats.item1": { defaultMessage: "Termination notice period — labour law" },
-  "@legalos.aiAssistant.recentChats.item2": {
-    defaultMessage: "Delta Foods NDA — draft confidentiality clause",
+  "@legalos.aiAssistant.modes.notBuiltTooltip": { defaultMessage: "Not built yet" },
+  "@legalos.aiAssistant.modes.availabilityNote": {
+    defaultMessage:
+      "Question answering runs against the live corpus. The other modes are planned and not built yet.",
   },
-  "@legalos.aiAssistant.recentChats.item3": {
-    defaultMessage: "Saudi Companies Law — single-shareholder LLC",
-  },
-  "@legalos.aiAssistant.recentChats.item4": {
-    defaultMessage: "Khalil Holdings — contract translation AR→EN",
-  },
-  "@legalos.aiAssistant.recentChats.item5": { defaultMessage: "El-Sayed Estate — inheritance shares" },
 
-  "@legalos.aiAssistant.time.now": { defaultMessage: "Now" },
-  "@legalos.aiAssistant.time.justNow": { defaultMessage: "Just now" },
-  "@legalos.aiAssistant.time.yesterday": { defaultMessage: "Yesterday" },
-  "@legalos.aiAssistant.time.daysAgo3": { defaultMessage: "3 days ago" },
-  "@legalos.aiAssistant.time.weekAgo1": { defaultMessage: "1 week ago" },
+  "@legalos.aiAssistant.noConversations": {
+    defaultMessage: "No conversations yet. Ask a question to start one.",
+  },
+  "@legalos.aiAssistant.turnCount": {
+    defaultMessage: "{count, plural, one {# question} other {# questions}}",
+  },
+  "@legalos.aiAssistant.sessionOnlyNote": {
+    defaultMessage:
+      "Conversations are kept for this session only — chat history isn't stored yet.",
+  },
 
-  "@legalos.aiAssistant.suggestions.labour": {
-    defaultMessage: "What notice period is required to end an indefinite-term employment contract?",
+  "@legalos.aiAssistant.suggestions.notice": {
+    defaultMessage: "ما هي مهلة الإخطار الواجب مراعاتها لإنهاء عقد عمل غير محدد المدة؟",
+  },
+  "@legalos.aiAssistant.suggestions.leave": {
+    defaultMessage: "كم يومًا تكون مدة الإجازة السنوية للعامل؟",
   },
   "@legalos.aiAssistant.suggestions.companies": {
-    defaultMessage: "Does Saudi Arabia's Companies Law allow a single-shareholder LLC?",
-  },
-  "@legalos.aiAssistant.suggestions.draft": {
-    defaultMessage: "Draft a standard confidentiality clause for a services agreement.",
-  },
-
-  "@legalos.aiAssistant.conceptPreview.title": { defaultMessage: "Concept preview" },
-  "@legalos.aiAssistant.conceptPreview.description": {
-    defaultMessage:
-      "This screen replays curated example answers instead of calling the live corpus API. Try a suggested prompt or a recent chat to see a fully grounded example.",
+    defaultMessage: "Does Egypt's Companies Law recognise single-person companies?",
   },
 
   "@legalos.aiAssistant.knowledgeSources.heading": { defaultMessage: "Knowledge Sources" },
@@ -56,12 +48,11 @@ export const en: Catalog = {
     defaultMessage:
       "Every answer above is composed only from statute articles retrieved from the corpus, cited exactly as retrieved, and verified before being shown.",
   },
-  "@legalos.aiAssistant.knowledgeSources.egypt": { defaultMessage: "Egypt" },
-  "@legalos.aiAssistant.knowledgeSources.egyptCount": { defaultMessage: "148 instruments" },
-  "@legalos.aiAssistant.knowledgeSources.saudi": { defaultMessage: "Saudi Arabia" },
-  "@legalos.aiAssistant.knowledgeSources.saudiCount": { defaultMessage: "76 instruments" },
   "@legalos.aiAssistant.knowledgeSources.citedHeading": {
     defaultMessage: "Cited in this conversation",
+  },
+  "@legalos.aiAssistant.knowledgeSources.noneYet": {
+    defaultMessage: "Articles cited in this conversation will be listed here.",
   },
   "@legalos.aiAssistant.knowledgeSources.footer": {
     defaultMessage:
@@ -77,60 +68,47 @@ export const en: Catalog = {
   "@legalos.aiAssistant.composer.placeholderDefault": {
     defaultMessage: "Ask about the law in Arabic or English…",
   },
-  "@legalos.aiAssistant.composer.placeholderWithMode": { defaultMessage: "Ask in {mode} mode…" },
-
-  "@legalos.aiAssistant.searchingCorpus": { defaultMessage: "Searching the corpus…" },
 
   // --- Legal Research -----------------------------------------------------
   "@legalos.legalResearch.heading": { defaultMessage: "Legal research" },
   "@legalos.legalResearch.description": {
     defaultMessage:
-      "Search Egyptian and Saudi statutes and judgments. Every answer cites the articles it relies on.",
+      "Search the indexed statute corpus. Every answer cites the articles it relies on, and refuses when nothing supports one.",
   },
-  "@legalos.legalResearch.searchLabel": { defaultMessage: "Search legislation and judgments" },
+  "@legalos.legalResearch.searchLabel": { defaultMessage: "Search legislation" },
   "@legalos.legalResearch.searchPlaceholder": {
     defaultMessage: "Ask a question, or search by law number and article…",
   },
-  "@legalos.legalResearch.jurisdictionLabel": { defaultMessage: "Jurisdiction" },
-  "@legalos.legalResearch.jurisdiction.egypt": { defaultMessage: "Egypt" },
-  "@legalos.legalResearch.jurisdiction.saudi": { defaultMessage: "Saudi Arabia" },
-  "@legalos.legalResearch.instrumentTypeLabel": { defaultMessage: "Instrument type" },
-  "@legalos.legalResearch.instrumentType.all": { defaultMessage: "All instruments" },
-  "@legalos.legalResearch.instrumentType.law": { defaultMessage: "Laws" },
-  "@legalos.legalResearch.instrumentType.decree": { defaultMessage: "Decrees" },
-  "@legalos.legalResearch.instrumentType.regulation": { defaultMessage: "Regulations" },
+  "@legalos.legalResearch.submit": { defaultMessage: "Search" },
   "@legalos.legalResearch.resultModeLabel": { defaultMessage: "Result mode" },
   "@legalos.legalResearch.resultMode.answer": { defaultMessage: "AI answer" },
   "@legalos.legalResearch.resultMode.articles": { defaultMessage: "Articles only" },
-  "@legalos.legalResearch.refusalToggle.ariaLabel": {
-    defaultMessage: "Show a refused query example",
-  },
-  "@legalos.legalResearch.refusalToggle.showAnswered": { defaultMessage: "Show answered example" },
-  "@legalos.legalResearch.refusalToggle.showRefusal": { defaultMessage: "Show refusal example" },
 
   "@legalos.legalResearch.aiAnswerHeading": { defaultMessage: "AI answer" },
   "@legalos.legalResearch.queryPrefix": { defaultMessage: "Query: “{query}”" },
-  "@legalos.legalResearch.refusalNote": {
-    defaultMessage:
-      "Refusing beats guessing: an invented article number is the failure mode this system is built to prevent.",
-  },
   "@legalos.legalResearch.disclaimersFooter": {
     defaultMessage:
       "Research assistance, not legal advice. Verify every citation against the official gazette before relying on it.",
   },
 
-  "@legalos.legalResearch.referencedLegislationHeading": { defaultMessage: "Referenced legislation" },
-  "@legalos.legalResearch.referencedDecisionsHeading": {
-    defaultMessage: "Referenced court decisions",
+  "@legalos.legalResearch.referencedLegislationHeading": { defaultMessage: "Retrieved articles" },
+  "@legalos.legalResearch.noArticles": {
+    defaultMessage: "Nothing in the corpus matched this query.",
+  },
+
+  "@legalos.legalResearch.empty.title": { defaultMessage: "Search the statute corpus" },
+  "@legalos.legalResearch.empty.description": {
+    defaultMessage:
+      "“AI answer” composes a cited answer from the retrieved articles. “Articles only” returns the ranked statute text with no model call.",
   },
 
   "@legalos.legalResearch.tryQuestionHeading": { defaultMessage: "Try a question" },
-  "@legalos.legalResearch.relatedPrecedentsHeading": { defaultMessage: "Related precedents" },
   "@legalos.legalResearch.corpusHeading": { defaultMessage: "Corpus" },
   "@legalos.legalResearch.corpusDescription": {
     defaultMessage:
-      "Egypt · 6,985 articles indexed across the Civil Code, Labour Law, and Companies Law. Jurisdiction is a hard filter — an Egypt-scoped query never returns Saudi text.",
+      "Statute text only — no case law or commentary is indexed. Jurisdiction is a hard filter: an Egypt-scoped query never returns text from another jurisdiction.",
   },
+  "@legalos.legalResearch.browseLibraryLink": { defaultMessage: "Browse the library" },
   "@legalos.legalResearch.openAiAssistantLink": { defaultMessage: "Open AI Assistant" },
 
   "@legalos.legalResearch.exampleQueries.q1": {
@@ -140,14 +118,7 @@ export const en: Catalog = {
     defaultMessage: "What notice period applies to terminating an indefinite employment contract?",
   },
   "@legalos.legalResearch.exampleQueries.q3": {
-    defaultMessage: "When may a company issue preferred shares?",
-  },
-
-  "@legalos.legalResearch.precedents.item1": {
-    defaultMessage: "Delta Foods Labour Dispute — severance calculation",
-  },
-  "@legalos.legalResearch.precedents.item2": {
-    defaultMessage: "Firm template: Termination notice letter (indefinite contract)",
+    defaultMessage: "ماذا تنص المادة 80 من قانون العمل رقم 12 لسنة 2003؟",
   },
 
   // --- Contract Review -----------------------------------------------------
@@ -228,7 +199,7 @@ export const ar: Catalog = {
   // --- AI Assistant -----------------------------------------------------
   "@legalos.aiAssistant.heading": { defaultMessage: "المساعد الذكي" },
   "@legalos.aiAssistant.subheading": {
-    defaultMessage: "إجابات قانونية موثّقة من مدوّنة القوانين المصرية والسعودية — اسأل بالعربية أو الإنجليزية.",
+    defaultMessage: "إجابات قانونية موثّقة من مدوّنة القوانين المفهرسة — اسأل بالعربية أو الإنجليزية.",
   },
   "@legalos.aiAssistant.newChat": { defaultMessage: "محادثة جديدة" },
 
@@ -240,39 +211,30 @@ export const ar: Catalog = {
   "@legalos.aiAssistant.modes.clauseComparison": { defaultMessage: "مقارنة البنود" },
   "@legalos.aiAssistant.modes.timeline": { defaultMessage: "استخلاص الجدول الزمني" },
   "@legalos.aiAssistant.modes.qa": { defaultMessage: "الإجابة عن الأسئلة" },
-
-  "@legalos.aiAssistant.recentChats.item1": { defaultMessage: "مهلة الإخطار بإنهاء الخدمة — قانون العمل" },
-  "@legalos.aiAssistant.recentChats.item2": {
-    defaultMessage: "اتفاقية سرية دلتا فودز — صياغة بند السرية",
+  "@legalos.aiAssistant.modes.notBuiltTooltip": { defaultMessage: "لم يُبنَ بعد" },
+  "@legalos.aiAssistant.modes.availabilityNote": {
+    defaultMessage:
+      "الإجابة عن الأسئلة تعمل فعليًا على قاعدة البيانات. أما الأوضاع الأخرى فمخطط لها ولم تُبنَ بعد.",
   },
-  "@legalos.aiAssistant.recentChats.item3": {
-    defaultMessage: "نظام الشركات السعودي — شركة ذات شخص واحد",
-  },
-  "@legalos.aiAssistant.recentChats.item4": {
-    defaultMessage: "مجموعة خليل القابضة — ترجمة عقد عربي↔إنجليزي",
-  },
-  "@legalos.aiAssistant.recentChats.item5": { defaultMessage: "تركة السيد — أنصبة الميراث" },
 
-  "@legalos.aiAssistant.time.now": { defaultMessage: "الآن" },
-  "@legalos.aiAssistant.time.justNow": { defaultMessage: "منذ لحظات" },
-  "@legalos.aiAssistant.time.yesterday": { defaultMessage: "أمس" },
-  "@legalos.aiAssistant.time.daysAgo3": { defaultMessage: "قبل ٣ أيام" },
-  "@legalos.aiAssistant.time.weekAgo1": { defaultMessage: "قبل أسبوع" },
+  "@legalos.aiAssistant.noConversations": {
+    defaultMessage: "لا توجد محادثات بعد. اطرح سؤالاً لبدء محادثة.",
+  },
+  "@legalos.aiAssistant.turnCount": {
+    defaultMessage: "{count, plural, one {سؤال واحد} two {سؤالان} few {# أسئلة} other {# سؤالاً}}",
+  },
+  "@legalos.aiAssistant.sessionOnlyNote": {
+    defaultMessage: "تُحفظ المحادثات لهذه الجلسة فقط — لم يُفعَّل تخزين سجل المحادثات بعد.",
+  },
 
-  "@legalos.aiAssistant.suggestions.labour": {
-    defaultMessage: "ما هي مدة الإخطار الواجب توافرها لإنهاء عقد عمل غير محدد المدة؟",
+  "@legalos.aiAssistant.suggestions.notice": {
+    defaultMessage: "ما هي مهلة الإخطار الواجب مراعاتها لإنهاء عقد عمل غير محدد المدة؟",
+  },
+  "@legalos.aiAssistant.suggestions.leave": {
+    defaultMessage: "كم يومًا تكون مدة الإجازة السنوية للعامل؟",
   },
   "@legalos.aiAssistant.suggestions.companies": {
-    defaultMessage: "هل يسمح نظام الشركات السعودي بتأسيس شركة ذات مسؤولية محدودة بشريك واحد؟",
-  },
-  "@legalos.aiAssistant.suggestions.draft": {
-    defaultMessage: "صِغ بندًا قياسيًا للسرية في اتفاقية خدمات.",
-  },
-
-  "@legalos.aiAssistant.conceptPreview.title": { defaultMessage: "معاينة مفاهيمية" },
-  "@legalos.aiAssistant.conceptPreview.description": {
-    defaultMessage:
-      "تعرض هذه الشاشة إجابات نموذجية مُعدة مسبقًا بدلًا من استدعاء واجهة قاعدة البيانات الفعلية. جرّب أحد الاقتراحات أو محادثة سابقة لرؤية مثال كامل مدعوم بالمصادر.",
+    defaultMessage: "هل يعترف قانون الشركات المصري بالشركة ذات الشخص الواحد؟",
   },
 
   "@legalos.aiAssistant.knowledgeSources.heading": { defaultMessage: "مصادر المعرفة" },
@@ -280,12 +242,11 @@ export const ar: Catalog = {
     defaultMessage:
       "كل إجابة أعلاه مُركّبة فقط من مواد قانونية مسترجَعة من قاعدة البيانات، وموثّقة كما وردت، ويتم التحقق منها قبل عرضها.",
   },
-  "@legalos.aiAssistant.knowledgeSources.egypt": { defaultMessage: "مصر" },
-  "@legalos.aiAssistant.knowledgeSources.egyptCount": { defaultMessage: "١٤٨ وثيقة تشريعية" },
-  "@legalos.aiAssistant.knowledgeSources.saudi": { defaultMessage: "السعودية" },
-  "@legalos.aiAssistant.knowledgeSources.saudiCount": { defaultMessage: "٧٦ وثيقة تشريعية" },
   "@legalos.aiAssistant.knowledgeSources.citedHeading": {
     defaultMessage: "المصادر المستشهد بها في هذه المحادثة",
+  },
+  "@legalos.aiAssistant.knowledgeSources.noneYet": {
+    defaultMessage: "ستظهر هنا المواد المستشهد بها في هذه المحادثة.",
   },
   "@legalos.aiAssistant.knowledgeSources.footer": {
     defaultMessage:
@@ -301,59 +262,47 @@ export const ar: Catalog = {
   "@legalos.aiAssistant.composer.placeholderDefault": {
     defaultMessage: "اسأل عن القانون بالعربية أو الإنجليزية…",
   },
-  "@legalos.aiAssistant.composer.placeholderWithMode": { defaultMessage: "اسأل في وضع {mode}…" },
-
-  "@legalos.aiAssistant.searchingCorpus": { defaultMessage: "جارٍ البحث في قاعدة البيانات…" },
 
   // --- Legal Research -----------------------------------------------------
   "@legalos.legalResearch.heading": { defaultMessage: "البحث القانوني" },
   "@legalos.legalResearch.description": {
-    defaultMessage: "ابحث في القوانين والأحكام القضائية المصرية والسعودية. كل إجابة تستشهد بالمواد التي استندت إليها.",
+    defaultMessage:
+      "ابحث في مدوّنة القوانين المفهرسة. كل إجابة تستشهد بالمواد التي استندت إليها، وتمتنع عن الإجابة إذا لم تدعمها أي مادة.",
   },
-  "@legalos.legalResearch.searchLabel": { defaultMessage: "البحث في التشريعات والأحكام" },
+  "@legalos.legalResearch.searchLabel": { defaultMessage: "البحث في التشريعات" },
   "@legalos.legalResearch.searchPlaceholder": {
     defaultMessage: "اطرح سؤالاً، أو ابحث برقم القانون والمادة…",
   },
-  "@legalos.legalResearch.jurisdictionLabel": { defaultMessage: "الولاية القضائية" },
-  "@legalos.legalResearch.jurisdiction.egypt": { defaultMessage: "مصر" },
-  "@legalos.legalResearch.jurisdiction.saudi": { defaultMessage: "السعودية" },
-  "@legalos.legalResearch.instrumentTypeLabel": { defaultMessage: "نوع الوثيقة" },
-  "@legalos.legalResearch.instrumentType.all": { defaultMessage: "جميع الوثائق" },
-  "@legalos.legalResearch.instrumentType.law": { defaultMessage: "القوانين" },
-  "@legalos.legalResearch.instrumentType.decree": { defaultMessage: "القرارات" },
-  "@legalos.legalResearch.instrumentType.regulation": { defaultMessage: "اللوائح" },
+  "@legalos.legalResearch.submit": { defaultMessage: "بحث" },
   "@legalos.legalResearch.resultModeLabel": { defaultMessage: "نمط النتائج" },
   "@legalos.legalResearch.resultMode.answer": { defaultMessage: "إجابة الذكاء الاصطناعي" },
   "@legalos.legalResearch.resultMode.articles": { defaultMessage: "المواد فقط" },
-  "@legalos.legalResearch.refusalToggle.ariaLabel": {
-    defaultMessage: "عرض مثال لسؤال مرفوض",
-  },
-  "@legalos.legalResearch.refusalToggle.showAnswered": { defaultMessage: "عرض مثال مُجاب عنه" },
-  "@legalos.legalResearch.refusalToggle.showRefusal": { defaultMessage: "عرض مثال مرفوض" },
 
   "@legalos.legalResearch.aiAnswerHeading": { defaultMessage: "إجابة الذكاء الاصطناعي" },
   "@legalos.legalResearch.queryPrefix": { defaultMessage: "السؤال: «{query}»" },
-  "@legalos.legalResearch.refusalNote": {
-    defaultMessage:
-      "الامتناع عن الإجابة أفضل من التخمين: اختلاق رقم مادة هو الخلل الذي صُمم هذا النظام لتفاديه.",
-  },
   "@legalos.legalResearch.disclaimersFooter": {
     defaultMessage:
       "مساعدة بحثية، وليست استشارة قانونية. تحقق من كل استشهاد في الجريدة الرسمية قبل الاعتماد عليه.",
   },
 
-  "@legalos.legalResearch.referencedLegislationHeading": { defaultMessage: "التشريعات المرجعية" },
-  "@legalos.legalResearch.referencedDecisionsHeading": {
-    defaultMessage: "الأحكام القضائية المرجعية",
+  "@legalos.legalResearch.referencedLegislationHeading": { defaultMessage: "المواد المسترجَعة" },
+  "@legalos.legalResearch.noArticles": {
+    defaultMessage: "لا توجد في قاعدة البيانات أي مادة مطابقة لهذا البحث.",
+  },
+
+  "@legalos.legalResearch.empty.title": { defaultMessage: "ابحث في مدوّنة القوانين" },
+  "@legalos.legalResearch.empty.description": {
+    defaultMessage:
+      "«إجابة الذكاء الاصطناعي» تُركّب إجابة موثّقة من المواد المسترجَعة. أما «المواد فقط» فتُعيد النصوص مرتّبة دون استدعاء النموذج.",
   },
 
   "@legalos.legalResearch.tryQuestionHeading": { defaultMessage: "جرّب سؤالاً" },
-  "@legalos.legalResearch.relatedPrecedentsHeading": { defaultMessage: "سوابق ذات صلة" },
   "@legalos.legalResearch.corpusHeading": { defaultMessage: "قاعدة البيانات" },
   "@legalos.legalResearch.corpusDescription": {
     defaultMessage:
-      "مصر · ٦٬٩٨٥ مادة مفهرسة عبر القانون المدني وقانون العمل وقانون الشركات. الولاية القضائية فلتر صارم — لا يُعيد سؤال مخصص لمصر أي نص سعودي.",
+      "نصوص تشريعية فقط — لا تتضمن الفهرسة أحكامًا قضائية أو شروحًا فقهية. والولاية القضائية فلتر صارم: لا يُعيد سؤال مخصص لمصر أي نص من ولاية أخرى.",
   },
+  "@legalos.legalResearch.browseLibraryLink": { defaultMessage: "تصفّح المكتبة" },
   "@legalos.legalResearch.openAiAssistantLink": { defaultMessage: "فتح المساعد الذكي" },
 
   "@legalos.legalResearch.exampleQueries.q1": {
@@ -363,14 +312,7 @@ export const ar: Catalog = {
     defaultMessage: "ما هي مهلة الإخطار الواجب مراعاتها لإنهاء عقد عمل غير محدد المدة؟",
   },
   "@legalos.legalResearch.exampleQueries.q3": {
-    defaultMessage: "متى يجوز للشركة إصدار أسهم ممتازة؟",
-  },
-
-  "@legalos.legalResearch.precedents.item1": {
-    defaultMessage: "نزاع دلتا فودز العمالي — احتساب مكافأة نهاية الخدمة",
-  },
-  "@legalos.legalResearch.precedents.item2": {
-    defaultMessage: "قالب المكتب: خطاب إخطار بإنهاء الخدمة (عقد غير محدد المدة)",
+    defaultMessage: "ماذا تنص المادة 80 من قانون العمل رقم 12 لسنة 2003؟",
   },
 
   // --- Contract Review -----------------------------------------------------
