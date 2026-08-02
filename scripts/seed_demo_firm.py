@@ -574,16 +574,125 @@ MATTER_TIMELINE = [
 ]
 
 
+# --- matter workspace (0007) ------------------------------------------------
+
+# (matter, contact name, relationship, email, phone, is_bill_recipient)
+# Parties who exist only on the matter — opposing counsel, experts, court
+# staff — carry their own details; contacts on file at a client are attached
+# separately below, by name.
+MATTER_PARTIES = [
+    ("nabil-v-nile-trading", "Hisham Nabil", "Opposing party", "", "", False),
+    ("nabil-v-nile-trading", "Sherif Zaki", "Opposing counsel", "s.zaki@zakilaw.example", "+20 2 2735 1180", False),
+    ("nabil-v-nile-trading", "Dr. Amira Sobhy", "Court-appointed expert", "", "", False),
+    ("delta-foods-labour-dispute", "Mahmoud Rashad", "Opposing counsel", "m.rashad@rashad.example", "", False),
+    ("khalil-tax-objection", "Egyptian Tax Authority — Cairo Investment Office", "Authority", "", "", False),
+    ("el-sayed-estate-partition", "Farida El-Sayed", "Co-heir", "", "", False),
+]
+
+# Contacts already on file at a client, attached to a matter by contact name.
+# (matter, client, contact name, relationship, is_bill_recipient)
+MATTER_CLIENT_CONTACTS = [
+    ("nabil-v-nile-trading", "nile-trading", "Karim Fahmy", "Client", True),
+    ("delta-foods-labour-dispute", "delta-foods", "Tamer Gaber", "Client", True),
+    ("khalil-tax-objection", "khalil-holdings", "Nadia Khalil", "Client", True),
+]
+
+# (matter, user, date, description, category, quantity, unit_amount, billable)
+EXPENSES = [
+    ("nabil-v-nile-trading", LAYLA, date(2026, 7, 15), "Appeal filing fee", "court_fees", Decimal("1"), Decimal("2400"), True),
+    ("nabil-v-nile-trading", LAYLA, date(2026, 7, 16), "Certified copies of the expert report", "filing", Decimal("6"), Decimal("85"), True),
+    ("nabil-v-nile-trading", MONA, date(2026, 5, 6), "Courier to Cairo Economic Court", "courier", Decimal("2"), Decimal("120"), True),
+    ("delta-foods-labour-dispute", YOUSSEF, date(2026, 7, 22), "Labour office filing fee", "court_fees", Decimal("1"), Decimal("900"), True),
+    ("khalil-tax-objection", AHMED, date(2026, 6, 12), "Sworn translation of transfer pricing study", "translation", Decimal("34"), Decimal("110"), True),
+    ("el-sayed-estate-partition", AHMED, date(2026, 3, 11), "Independent valuation of the business stake", "expert", Decimal("1"), Decimal("12000"), True),
+    ("nabil-v-nile-trading", MONA, date(2026, 7, 28), "Team lunch during trial prep", "other", Decimal("1"), Decimal("450"), False),
+]
+
+# (matter, channel, direction, subject, body, counterparty, who, when, minutes)
+COMMUNICATIONS = [
+    ("nabil-v-nile-trading", "phone", "outgoing", "Appeal strategy", "Walked Karim through the expert's freight double-count and the appeal timetable. He approved proceeding.", "Karim Fahmy", MONA, "2026-07-20 11:15", 24),
+    ("nabil-v-nile-trading", "email", "incoming", "Re: Expert report", "Client confirms the delivery logs we used for the rebuttal are the complete set.", "Karim Fahmy", MONA, "2026-07-17 09:42", None),
+    ("nabil-v-nile-trading", "email", "outgoing", "Appeal brief for review", "Sent the draft appeal brief for client comment ahead of the 12 August filing.", "Karim Fahmy", MONA, "2026-07-29 17:05", None),
+    ("nabil-v-nile-trading", "meeting", "outgoing", "Pre-hearing conference", "Met opposing counsel at the court to narrow the disputed heads of damage. No agreement reached.", "Sherif Zaki", AHMED, "2026-07-24 10:00", 45),
+    ("delta-foods-labour-dispute", "phone", "incoming", "Missing personnel files", "Tamer confirmed HR is retrieving the two missing termination-cause records.", "Tamer Gaber", YOUSSEF, "2026-07-26 13:30", 12),
+    ("delta-foods-labour-dispute", "letter", "incoming", "Labour office notice", "Notice setting the final arguments date.", "Cairo Labour Office", LAYLA, "2026-07-18 00:00", None),
+    ("khalil-tax-objection", "email", "outgoing", "Objection filing draft", "Circulated the draft objection and supporting schedules.", "Nadia Khalil", AHMED, "2026-07-30 15:20", None),
+    ("el-sayed-estate-partition", "phone", "outgoing", "Buyout proposal", "Farida is open to a cash buyout at or near the court valuation.", "Farida El-Sayed", AHMED, "2026-06-05 12:00", 31),
+]
+
+# (matter, client, contact name, status, documents, bills, messages)
+PORTALS = [
+    ("nabil-v-nile-trading", "nile-trading", "Karim Fahmy", "active", True, True, True),
+    ("delta-foods-labour-dispute", "delta-foods", "Tamer Gaber", "invited", True, False, True),
+]
+
+# (matter, portal contact or None, subject, [(author kind, author, body)])
+THREADS = [
+    (
+        "nabil-v-nile-trading",
+        "Karim Fahmy",
+        "Appeal brief — your comments",
+        [
+            ("firm", MONA, "Karim, the draft appeal brief is attached in Documents. The key argument is the freight double-count. Could you confirm the delivery log dates by Thursday?"),
+            ("client", None, "Reviewed — the dates are right. One correction: the Alexandria consignment shipped on the 14th, not the 12th."),
+            ("firm", MONA, "Noted, corrected in the brief. Filing on 12 August."),
+        ],
+    ),
+]
+
+# (matter, kind, amount, date, description, reference, who)
+TRUST_TRANSACTIONS = [
+    ("nabil-v-nile-trading", "deposit", Decimal("100000"), date(2025, 11, 5), "Retainer on account", "TRF-99182", AHMED),
+    ("nabil-v-nile-trading", "invoice_payment", Decimal("45500"), date(2026, 6, 2), "Settled INV-2026-0142 from funds on account", "", LAYLA),
+    ("nabil-v-nile-trading", "withdrawal", Decimal("2400"), date(2026, 7, 15), "Appeal filing fee paid to the court", "CHQ-4471", LAYLA),
+    ("el-sayed-estate-partition", "deposit", Decimal("60000"), date(2025, 9, 15), "Retainer on account", "TRF-88301", AHMED),
+    ("el-sayed-estate-partition", "invoice_payment", Decimal("15000"), date(2026, 5, 2), "Settled INV-2026-0110 from funds on account", "", AHMED),
+]
+
+# (field_key, label, type, options, required, order, matter_type)
+CUSTOM_FIELDS = [
+    ("referral_source", "Referral source", "text", [], False, 1, None),
+    ("risk_band", "Risk band", "select", ["Low", "Medium", "High"], False, 2, None),
+    ("court_circuit", "Court circuit", "text", [], False, 3, "litigation"),
+    ("engagement_letter_signed", "Engagement letter signed", "checkbox", [], False, 4, None),
+    ("tax_year_under_review", "Tax year under review", "number", [], False, 5, "tax"),
+]
+
+# (matter, field_key, value)
+CUSTOM_VALUES = [
+    ("nabil-v-nile-trading", "referral_source", "Existing client"),
+    ("nabil-v-nile-trading", "risk_band", "Medium"),
+    ("nabil-v-nile-trading", "court_circuit", "Cairo Economic Court — Circuit 7"),
+    ("nabil-v-nile-trading", "engagement_letter_signed", "true"),
+    ("delta-foods-labour-dispute", "risk_band", "High"),
+    ("delta-foods-labour-dispute", "engagement_letter_signed", "true"),
+    ("khalil-tax-objection", "tax_year_under_review", "2023"),
+    ("khalil-tax-objection", "risk_band", "High"),
+]
+
+# (matter, terms, result, hit summary, notes, who, cleared)
+CONFLICT_CHECKS = [
+    ("nabil-v-nile-trading", ["Hisham Nabil", "Nabil Import"], "clear", "no matching records", "No prior engagement with either party.", AHMED, True),
+    ("delta-foods-labour-dispute", ["Delta Foods"], "clear", "Delta Foods Manufacturing (client)", "Match is our own client, not an adverse party.", AHMED, True),
+]
+
+
 def reset(conn: psycopg.Connection, organization_id: int) -> None:
     """Deletes the firm's practice rows. Cascades handle the child tables."""
     with conn.cursor() as cur:
+        # Trust transactions block matter deletion by design (ON DELETE
+        # RESTRICT), so they go first; the rest cascade from their parents.
+        cur.execute(
+            "DELETE FROM trust_transactions WHERE organization_id = %s",
+            (organization_id,),
+        )
         for table in (
-            "activity", "matter_timeline_events", "matter_notes", "invoice_lines",
+            "conflict_checks", "custom_field_definitions", "communications",
+            "secure_message_threads", "client_portals", "trust_accounts",
+            "activity", "matter_timeline_events", "matter_notes", "expenses",
             "time_entries", "invoices", "tasks", "hearings", "documents", "cases",
-            "matter_staff", "matters", "client_contacts", "clients",
+            "matters", "clients",
         ):
-            if table in ("invoice_lines", "matter_staff", "client_contacts"):
-                continue  # removed by cascade from their parents
             cur.execute(f"DELETE FROM {table} WHERE organization_id = %s", (organization_id,))
     conn.commit()
 
@@ -637,14 +746,19 @@ def seed(conn: psycopg.Connection, owner_clerk_id: str | None) -> int:
                 )
 
         matter_ids: dict[str, int] = {}
-        for matter in MATTERS:
+        # Matter numbers run 00001, 00002, … in the order the seed lists them,
+        # the same series create_matter() would have produced.
+        for index, matter in enumerate(MATTERS, start=1):
             cur.execute(
-                "INSERT INTO matters (organization_id, client_id, name, matter_type, "
+                "INSERT INTO matters (organization_id, number_seq, matter_number, "
+                "client_id, name, matter_type, "
                 "status, responsible_user, opened_date, closed_date, description, "
                 "billing_type, budget_amount, budget_is_estimate, tags) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
+                "RETURNING id",
                 (
-                    org, client_ids[matter["client"]], matter["name"],
+                    org, index, f"{index:05d}",
+                    client_ids[matter["client"]], matter["name"],
                     matter["matter_type"], matter["status"],
                     actor.get(matter["responsible_user"], matter["responsible_user"]),
                     matter["opened_date"], matter["closed_date"],
@@ -777,6 +891,179 @@ def seed(conn: psycopg.Connection, owner_clerk_id: str | None) -> int:
                 "INSERT INTO matter_timeline_events (organization_id, matter_id, "
                 "event_date, label, detail, kind) VALUES (%s, %s, %s, %s, %s, %s)",
                 (org, matter_ids[matter], event_date, label, detail, kind),
+            )
+
+        # --- matter workspace (0007) ---------------------------------------
+
+        for matter, name, relationship, email, phone, is_bill in MATTER_PARTIES:
+            cur.execute(
+                "INSERT INTO matter_contacts (matter_id, name, relationship, "
+                "email, phone, is_bill_recipient) VALUES (%s, %s, %s, %s, %s, %s)",
+                (matter_ids[matter], name, relationship, email, phone, is_bill),
+            )
+
+        for matter, client, name, relationship, is_bill in MATTER_CLIENT_CONTACTS:
+            cur.execute(
+                "SELECT id FROM client_contacts WHERE client_id = %s AND name = %s",
+                (client_ids[client], name),
+            )
+            row = cur.fetchone()
+            if row is None:
+                continue  # the contact list changed; skip rather than crash
+            cur.execute(
+                "INSERT INTO matter_contacts (matter_id, contact_id, relationship, "
+                "is_bill_recipient) VALUES (%s, %s, %s, %s)",
+                (matter_ids[matter], row[0], relationship, is_bill),
+            )
+
+        for matter, who, day, description, category, qty, unit, billable in EXPENSES:
+            cur.execute(
+                "INSERT INTO expenses (organization_id, matter_id, clerk_user_id, "
+                "entry_date, description, category, quantity, unit_amount, billable) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (
+                    org, matter_ids[matter], actor.get(who, who), day, description,
+                    category, qty, unit, billable,
+                ),
+            )
+
+        for (
+            matter, channel, direction, subject, body, counterparty, who, when, minutes
+        ) in COMMUNICATIONS:
+            cur.execute(
+                "INSERT INTO communications (organization_id, matter_id, client_id, "
+                "channel, direction, subject, body, counterparty, logged_by, "
+                "occurred_at, duration_minutes) "
+                "VALUES (%s, %s, (SELECT client_id FROM matters WHERE id = %s), "
+                "%s, %s, %s, %s, %s, %s, %s, %s)",
+                (
+                    org, matter_ids[matter], matter_ids[matter], channel, direction,
+                    subject, body, counterparty, actor.get(who, who), when, minutes,
+                ),
+            )
+
+        portal_ids: dict[tuple[str, str], int] = {}
+        for matter, client, name, status, docs, bills, msgs in PORTALS:
+            cur.execute(
+                "SELECT id FROM client_contacts WHERE client_id = %s AND name = %s",
+                (client_ids[client], name),
+            )
+            row = cur.fetchone()
+            if row is None:
+                continue
+            cur.execute(
+                "INSERT INTO client_portals (organization_id, matter_id, contact_id, "
+                "status, can_view_documents, can_view_bills, can_message, invited_by, "
+                "activated_at, last_active_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, "
+                "CASE WHEN %s = 'active' THEN now() END, "
+                "CASE WHEN %s = 'active' THEN now() END) RETURNING id",
+                (
+                    org, matter_ids[matter], row[0], status, docs, bills, msgs,
+                    actor.get(AHMED, AHMED), status, status,
+                ),
+            )
+            portal_ids[(matter, name)] = cur.fetchone()[0]
+
+        for matter, contact_name, subject, messages in THREADS:
+            portal_id = portal_ids.get((matter, contact_name)) if contact_name else None
+            opener = messages[0][1] or AHMED
+            cur.execute(
+                "INSERT INTO secure_message_threads (organization_id, matter_id, "
+                "portal_id, subject, created_by) VALUES (%s, %s, %s, %s, %s) "
+                "RETURNING id",
+                (org, matter_ids[matter], portal_id, subject, actor.get(opener, opener)),
+            )
+            thread_id = cur.fetchone()[0]
+
+            # The client side of a thread is the portal's contact. A thread with
+            # no portal has no client author, so it carries firm messages only.
+            contact_id = None
+            if portal_id is not None:
+                cur.execute(
+                    "SELECT contact_id FROM client_portals WHERE id = %s", (portal_id,)
+                )
+                contact_id = cur.fetchone()[0]
+
+            for kind, author, body in messages:
+                cur.execute(
+                    "INSERT INTO secure_messages (thread_id, author_kind, "
+                    "author_user, author_contact_id, body) VALUES (%s, %s, %s, %s, %s)",
+                    (
+                        thread_id,
+                        kind,
+                        actor.get(author, author) if kind == "firm" else None,
+                        contact_id if kind == "client" else None,
+                        body,
+                    ),
+                )
+
+        if TRUST_TRANSACTIONS:
+            cur.execute(
+                "INSERT INTO trust_accounts (organization_id, name, bank_name, "
+                "account_number, is_default) VALUES (%s, %s, %s, %s, TRUE) RETURNING id",
+                (org, "Client account", "Banque Misr", "****4471"),
+            )
+            trust_account = cur.fetchone()[0]
+            for matter, kind, amount, day, description, reference, who in (
+                TRUST_TRANSACTIONS
+            ):
+                # An invoice_payment must name its invoice; the seed's payments
+                # settle the matter's earliest paid bill.
+                invoice_id = None
+                if kind == "invoice_payment":
+                    cur.execute(
+                        "SELECT id FROM invoices WHERE matter_id = %s "
+                        "ORDER BY issued_date LIMIT 1",
+                        (matter_ids[matter],),
+                    )
+                    found = cur.fetchone()
+                    invoice_id = found[0] if found else None
+                    if invoice_id is None:
+                        continue
+                cur.execute(
+                    "INSERT INTO trust_transactions (organization_id, "
+                    "trust_account_id, matter_id, client_id, kind, amount, "
+                    "description, reference, invoice_id, transaction_date, "
+                    "recorded_by) VALUES (%s, %s, %s, "
+                    "(SELECT client_id FROM matters WHERE id = %s), "
+                    "%s, %s, %s, %s, %s, %s, %s)",
+                    (
+                        org, trust_account, matter_ids[matter], matter_ids[matter],
+                        kind, amount, description, reference, invoice_id, day,
+                        actor.get(who, who),
+                    ),
+                )
+
+        definition_ids: dict[str, int] = {}
+        for key, label, field_type, options, required, order, matter_type in (
+            CUSTOM_FIELDS
+        ):
+            cur.execute(
+                "INSERT INTO custom_field_definitions (organization_id, field_key, "
+                "label, field_type, options, is_required, display_order, matter_type) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+                (org, key, label, field_type, options, required, order, matter_type),
+            )
+            definition_ids[key] = cur.fetchone()[0]
+
+        for matter, key, value in CUSTOM_VALUES:
+            cur.execute(
+                "INSERT INTO matter_custom_values (matter_id, definition_id, value) "
+                "VALUES (%s, %s, %s)",
+                (matter_ids[matter], definition_ids[key], value),
+            )
+
+        for matter, terms, result, summary, notes, who, cleared in CONFLICT_CHECKS:
+            cur.execute(
+                "INSERT INTO conflict_checks (organization_id, matter_id, "
+                "search_terms, result, hit_summary, notes, run_by, cleared_by, "
+                "cleared_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (
+                    org, matter_ids[matter], terms, result, summary, notes,
+                    actor.get(who, who),
+                    actor.get(who, who) if cleared else None,
+                    "2026-07-30 09:00" if cleared else None,
+                ),
             )
 
     conn.commit()

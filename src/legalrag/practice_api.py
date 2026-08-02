@@ -15,7 +15,7 @@ serialization boundary, for display.
 """
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 
@@ -27,8 +27,11 @@ from legalrag.clerk import get_current_membership, get_current_user_id
 from legalrag.db import get_connection
 from legalrag.orgs import Membership
 from legalrag.practice import NotFoundError, activity, billing, cases, clients
+from legalrag.practice import communications as comms
+from legalrag.practice import conflicts
+from legalrag.practice import custom_fields as fields
 from legalrag.practice import documents as docs
-from legalrag.practice import matters, tasks, time_entries
+from legalrag.practice import expenses, matters, portals, tasks, time_entries, trust
 
 router = APIRouter(prefix="/api/orgs/{organization_id}", tags=["practice"])
 
@@ -90,6 +93,8 @@ class ContactIn(BaseModel):
 class MatterIn(BaseModel):
     client_id: int
     name: str = Field(min_length=1, max_length=300)
+    # Omitted means "give it the next number in the firm's series".
+    matter_number: str | None = Field(default=None, max_length=80)
     matter_type: Literal[
         "litigation", "corporate", "tax", "labour", "family_probate", "contract_review"
     ]
@@ -108,6 +113,7 @@ class MatterIn(BaseModel):
 class MatterPatch(BaseModel):
     client_id: int | None = None
     name: str | None = None
+    matter_number: str | None = Field(default=None, max_length=80)
     matter_type: str | None = None
     billing_type: str | None = None
     responsible_user: str | None = None
@@ -249,6 +255,7 @@ class GenerateInvoiceIn(BaseModel):
     matter_id: int
     issued_date: date | None = None
     payment_terms_days: int = Field(default=30, ge=0, le=365)
+    include_expenses: bool = True
 
 
 class DocumentPatch(BaseModel):
@@ -256,6 +263,149 @@ class DocumentPatch(BaseModel):
     doc_type: str | None = None
     status: Literal["draft", "under_review", "signed", "filed", "final"] | None = None
     matter_id: int | None = None
+
+
+class MatterContactIn(BaseModel):
+    contact_id: int | None = None
+    name: str = ""
+    relationship: str = ""
+    email: str = ""
+    phone: str = ""
+    is_bill_recipient: bool = False
+
+
+class MatterContactPatch(BaseModel):
+    name: str | None = None
+    relationship: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    is_bill_recipient: bool | None = None
+
+
+class DuplicateMatterIn(BaseModel):
+    name: str | None = None
+    opened_date: date | None = None
+
+
+class ExpenseIn(BaseModel):
+    matter_id: int
+    entry_date: date
+    unit_amount: Decimal
+    quantity: Decimal = Decimal(1)
+    description: str = ""
+    category: Literal[
+        "court_fees", "filing", "expert", "travel", "translation", "courier", "other"
+    ] = "other"
+    billable: bool = True
+    currency: str = "EGP"
+    clerk_user_id: str | None = None
+
+
+class ExpensePatch(BaseModel):
+    matter_id: int | None = None
+    entry_date: date | None = None
+    description: str | None = None
+    category: str | None = None
+    quantity: Decimal | None = None
+    unit_amount: Decimal | None = None
+    billable: bool | None = None
+
+
+class CommunicationIn(BaseModel):
+    channel: Literal["phone", "email", "meeting", "letter"]
+    direction: Literal["incoming", "outgoing"]
+    occurred_at: datetime
+    matter_id: int | None = None
+    client_id: int | None = None
+    subject: str = ""
+    body: str = ""
+    counterparty: str = ""
+    duration_minutes: int | None = Field(default=None, gt=0)
+
+
+class CommunicationPatch(BaseModel):
+    subject: str | None = None
+    body: str | None = None
+    counterparty: str | None = None
+    occurred_at: datetime | None = None
+    duration_minutes: int | None = Field(default=None, gt=0)
+
+
+class PortalInviteIn(BaseModel):
+    contact_id: int
+    can_view_documents: bool = True
+    can_view_bills: bool = False
+    can_message: bool = True
+
+
+class PortalPatch(BaseModel):
+    status: Literal["invited", "active", "revoked"] | None = None
+    can_view_documents: bool | None = None
+    can_view_bills: bool | None = None
+    can_message: bool | None = None
+
+
+class ThreadIn(BaseModel):
+    subject: str = Field(min_length=1, max_length=300)
+    body: str = Field(min_length=1)
+    portal_id: int | None = None
+
+
+class MessageIn(BaseModel):
+    body: str = Field(min_length=1)
+
+
+class TrustAccountIn(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    bank_name: str = ""
+    account_number: str = ""
+    currency: str = "EGP"
+    is_default: bool = False
+
+
+class TrustTransactionIn(BaseModel):
+    matter_id: int
+    kind: Literal["deposit", "withdrawal", "invoice_payment", "refund"]
+    amount: Decimal = Field(gt=0)
+    transaction_date: date
+    trust_account_id: int | None = None
+    description: str = ""
+    reference: str = ""
+    invoice_id: int | None = None
+    currency: str = "EGP"
+
+
+class FieldDefinitionIn(BaseModel):
+    field_key: str = Field(min_length=1, max_length=80, pattern=r"^[a-z0-9_]+$")
+    label: str = Field(min_length=1, max_length=200)
+    field_type: Literal["text", "number", "date", "checkbox", "select"]
+    options: list[str] = Field(default_factory=list)
+    is_required: bool = False
+    display_order: int = 0
+    matter_type: str | None = None
+
+
+class FieldDefinitionPatch(BaseModel):
+    label: str | None = None
+    options: list[str] | None = None
+    is_required: bool | None = None
+    display_order: int | None = None
+    matter_type: str | None = None
+
+
+class FieldValueIn(BaseModel):
+    # None clears the field; the practice layer treats empty and absent alike.
+    value: str | None = None
+
+
+class ConflictCheckIn(BaseModel):
+    terms: list[str] = Field(min_length=1)
+    notes: str = ""
+
+
+class ConflictResolveIn(BaseModel):
+    result: Literal["clear", "potential_conflict", "conflict"]
+    notes: str | None = None
 
 
 # --- clients ----------------------------------------------------------------
@@ -402,6 +552,11 @@ def post_matter(
         matter = matters.create_matter(conn, organization_id, **body.model_dump())
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Client not found")
+    except UniqueViolation:
+        conn.rollback()
+        raise HTTPException(
+            status_code=409, detail="A matter with that number already exists."
+        )
     activity.record(
         conn,
         organization_id,
@@ -438,6 +593,11 @@ def patch_matter(
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Matter not found")
+    except UniqueViolation:
+        conn.rollback()
+        raise HTTPException(
+            status_code=409, detail="A matter with that number already exists."
+        )
 
 
 @router.delete("/matters/{matter_id}", status_code=204)
@@ -1027,12 +1187,13 @@ def post_generate_invoice(
     conn=Depends(db),
 ):
     try:
-        invoice = billing.generate_from_unbilled_time(
+        invoice = billing.generate_from_unbilled(
             conn,
             organization_id,
             matter_id=body.matter_id,
             issued_date=body.issued_date,
             payment_terms_days=body.payment_terms_days,
+            include_expenses=body.include_expenses,
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Matter not found")
@@ -1091,6 +1252,679 @@ def remove_invoice(
             status_code=404, detail="Draft invoice not found. Only drafts can be deleted."
         )
     return Response(status_code=204)
+
+
+# --- matter contacts --------------------------------------------------------
+
+
+@router.get("/matters/{matter_id}/contacts")
+def get_matter_contacts(
+    organization_id: int,
+    matter_id: int,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    return matters.list_matter_contacts(conn, organization_id, matter_id)
+
+
+@router.post("/matters/{matter_id}/contacts", status_code=201)
+def post_matter_contact(
+    organization_id: int,
+    matter_id: int,
+    body: MatterContactIn,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    try:
+        return matters.add_matter_contact(
+            conn, organization_id, matter_id, **body.model_dump()
+        )
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    except UniqueViolation:
+        conn.rollback()
+        raise HTTPException(
+            status_code=409, detail="That contact is already on this matter."
+        )
+
+
+@router.patch("/matters/{matter_id}/contacts/{contact_row_id}")
+def patch_matter_contact(
+    organization_id: int,
+    matter_id: int,
+    contact_row_id: int,
+    body: MatterContactPatch,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    try:
+        return matters.update_matter_contact(
+            conn, organization_id, contact_row_id, **body.model_dump(exclude_unset=True)
+        )
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Contact not found on this matter")
+
+
+@router.delete("/matters/{matter_id}/contacts/{contact_row_id}", status_code=204)
+def remove_matter_contact(
+    organization_id: int,
+    matter_id: int,
+    contact_row_id: int,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    try:
+        matters.remove_matter_contact(conn, organization_id, contact_row_id)
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Contact not found on this matter")
+    return Response(status_code=204)
+
+
+@router.post("/matters/{matter_id}/duplicate", status_code=201)
+def post_duplicate_matter(
+    organization_id: int,
+    matter_id: int,
+    body: DuplicateMatterIn,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    try:
+        copy = matters.duplicate_matter(
+            conn, organization_id, matter_id, **body.model_dump()
+        )
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Matter not found")
+    activity.record(
+        conn,
+        organization_id,
+        actor=membership.clerk_user_id,
+        action=f"opened matter {copy.matter_number} from matter {matter_id}",
+        matter_id=copy.id,
+        client_id=copy.client_id,
+    )
+    conn.commit()
+    return copy
+
+
+# --- expenses ---------------------------------------------------------------
+
+
+@router.get("/expenses")
+def get_expenses(
+    organization_id: int,
+    matter_id: int | None = None,
+    clerk_user_id: str | None = None,
+    since: date | None = None,
+    until: date | None = None,
+    unbilled_only: bool = False,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    return expenses.list_expenses(
+        conn,
+        organization_id,
+        matter_id=matter_id,
+        clerk_user_id=clerk_user_id,
+        since=since,
+        until=until,
+        unbilled_only=unbilled_only,
+    )
+
+
+@router.get("/expenses/summary")
+def get_expense_summary(
+    organization_id: int,
+    matter_id: int | None = None,
+    since: date | None = None,
+    until: date | None = None,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    return expenses.summarize(
+        conn, organization_id, matter_id=matter_id, since=since, until=until
+    )
+
+
+@router.post("/expenses", status_code=201)
+def post_expense(
+    organization_id: int,
+    body: ExpenseIn,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    payload = body.model_dump()
+    # Same rule as time: recording someone else's disbursement is a
+    # Staff/Owner action, and the caller is the default either way.
+    requested = payload.pop("clerk_user_id", None)
+    if requested and requested != membership.clerk_user_id and membership.role == "lawyer":
+        raise HTTPException(
+            status_code=403, detail="Lawyers can only record their own expenses"
+        )
+    try:
+        return expenses.create_expense(
+            conn,
+            organization_id,
+            clerk_user_id=requested or membership.clerk_user_id,
+            **payload,
+        )
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Matter not found")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+
+@router.patch("/expenses/{expense_id}")
+def patch_expense(
+    organization_id: int,
+    expense_id: int,
+    body: ExpensePatch,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    try:
+        return expenses.update_expense(
+            conn, organization_id, expense_id, **body.model_dump(exclude_unset=True)
+        )
+    except NotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail="Expense not found, or already billed on an invoice",
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+
+@router.delete("/expenses/{expense_id}", status_code=204)
+def remove_expense(
+    organization_id: int,
+    expense_id: int,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    try:
+        expenses.delete_expense(conn, organization_id, expense_id)
+    except NotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail="Expense not found, or already billed on an invoice",
+        )
+    return Response(status_code=204)
+
+
+# --- communications ---------------------------------------------------------
+
+
+@router.get("/communications")
+def get_communications(
+    organization_id: int,
+    matter_id: int | None = None,
+    client_id: int | None = None,
+    channel: str | None = None,
+    direction: str | None = None,
+    since: date | None = None,
+    until: date | None = None,
+    q: str | None = Query(default=None, max_length=200),
+    limit: int = Query(default=200, ge=1, le=500),
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    return comms.list_communications(
+        conn,
+        organization_id,
+        matter_id=matter_id,
+        client_id=client_id,
+        channel=channel,
+        direction=direction,
+        since=since,
+        until=until,
+        query=q,
+        limit=limit,
+    )
+
+
+@router.post("/communications", status_code=201)
+def post_communication(
+    organization_id: int,
+    body: CommunicationIn,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    try:
+        entry = comms.log_communication(
+            conn,
+            organization_id,
+            logged_by=membership.clerk_user_id,
+            **body.model_dump(),
+        )
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    activity.record(
+        conn,
+        organization_id,
+        actor=membership.clerk_user_id,
+        action=f"logged {entry.direction} {entry.channel}",
+        matter_id=entry.matter_id,
+        client_id=entry.client_id,
+    )
+    conn.commit()
+    return entry
+
+
+@router.patch("/communications/{communication_id}")
+def patch_communication(
+    organization_id: int,
+    communication_id: int,
+    body: CommunicationPatch,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    try:
+        return comms.update_communication(
+            conn,
+            organization_id,
+            communication_id,
+            **body.model_dump(exclude_unset=True),
+        )
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Communication not found")
+
+
+@router.delete("/communications/{communication_id}", status_code=204)
+def remove_communication(
+    organization_id: int,
+    communication_id: int,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    try:
+        comms.delete_communication(conn, organization_id, communication_id)
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Communication not found")
+    return Response(status_code=204)
+
+
+# --- client portal and secure messages --------------------------------------
+
+
+@router.get("/portals")
+def get_portals(
+    organization_id: int,
+    matter_id: int | None = None,
+    status: str | None = None,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    return portals.list_portals(
+        conn, organization_id, matter_id=matter_id, status=status
+    )
+
+
+@router.post("/matters/{matter_id}/portals", status_code=201)
+def post_portal_invite(
+    organization_id: int,
+    matter_id: int,
+    body: PortalInviteIn,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    try:
+        portal = portals.invite(
+            conn,
+            organization_id,
+            matter_id,
+            invited_by=membership.clerk_user_id,
+            **body.model_dump(),
+        )
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    activity.record(
+        conn,
+        organization_id,
+        actor=membership.clerk_user_id,
+        action=f"invited {portal.contact_name} to the client portal",
+        matter_id=matter_id,
+    )
+    conn.commit()
+    return portal
+
+
+@router.patch("/portals/{portal_id}")
+def patch_portal(
+    organization_id: int,
+    portal_id: int,
+    body: PortalPatch,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    try:
+        return portals.update_portal(
+            conn, organization_id, portal_id, **body.model_dump(exclude_unset=True)
+        )
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Portal access not found")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+
+@router.get("/matters/{matter_id}/threads")
+def get_threads(
+    organization_id: int,
+    matter_id: int,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    return portals.list_threads(
+        conn, organization_id, matter_id=matter_id, with_messages=True
+    )
+
+
+@router.post("/matters/{matter_id}/threads", status_code=201)
+def post_thread(
+    organization_id: int,
+    matter_id: int,
+    body: ThreadIn,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    try:
+        return portals.start_thread(
+            conn,
+            organization_id,
+            matter_id,
+            created_by=membership.clerk_user_id,
+            **body.model_dump(),
+        )
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.post("/threads/{thread_id}/messages", status_code=201)
+def post_message(
+    organization_id: int,
+    thread_id: int,
+    body: MessageIn,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    try:
+        return portals.post_message(
+            conn,
+            organization_id,
+            thread_id,
+            body=body.body,
+            author_user=membership.clerk_user_id,
+        )
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Thread not found")
+
+
+@router.post("/threads/{thread_id}/read", status_code=204)
+def post_thread_read(
+    organization_id: int,
+    thread_id: int,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    portals.mark_thread_read(conn, organization_id, thread_id)
+    return Response(status_code=204)
+
+
+# --- client funds -----------------------------------------------------------
+
+
+@router.get("/trust-accounts")
+def get_trust_accounts(
+    organization_id: int,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    return trust.list_accounts(conn, organization_id)
+
+
+@router.post("/trust-accounts", status_code=201)
+def post_trust_account(
+    organization_id: int,
+    body: TrustAccountIn,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    if membership.role != "owner":
+        raise HTTPException(
+            status_code=403, detail="Only an owner can open a client-funds account"
+        )
+    return trust.create_account(conn, organization_id, **body.model_dump())
+
+
+@router.get("/trust-transactions")
+def get_trust_transactions(
+    organization_id: int,
+    matter_id: int | None = None,
+    client_id: int | None = None,
+    trust_account_id: int | None = None,
+    since: date | None = None,
+    until: date | None = None,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    return trust.list_transactions(
+        conn,
+        organization_id,
+        matter_id=matter_id,
+        client_id=client_id,
+        trust_account_id=trust_account_id,
+        since=since,
+        until=until,
+    )
+
+
+@router.get("/matters/{matter_id}/trust-balance")
+def get_trust_balance(
+    organization_id: int,
+    matter_id: int,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    return trust.matter_balance(conn, organization_id, matter_id)
+
+
+@router.post("/trust-transactions", status_code=201)
+def post_trust_transaction(
+    organization_id: int,
+    body: TrustTransactionIn,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    if membership.role == "lawyer":
+        raise HTTPException(
+            status_code=403, detail="Only an owner or staff can move client funds"
+        )
+    try:
+        entry = trust.record_transaction(
+            conn,
+            organization_id,
+            recorded_by=membership.clerk_user_id,
+            **body.model_dump(),
+        )
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        conn.rollback()
+        raise HTTPException(status_code=409, detail=str(exc))
+    activity.record(
+        conn,
+        organization_id,
+        actor=membership.clerk_user_id,
+        action=f"recorded a client-funds {entry.kind.replace('_', ' ')} of "
+        f"{entry.currency} {entry.amount}",
+        matter_id=entry.matter_id,
+        client_id=entry.client_id,
+    )
+    conn.commit()
+    return entry
+
+
+# --- custom fields ----------------------------------------------------------
+
+
+@router.get("/custom-fields")
+def get_custom_fields(
+    organization_id: int,
+    matter_type: str | None = None,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    return fields.list_definitions(conn, organization_id, matter_type=matter_type)
+
+
+@router.post("/custom-fields", status_code=201)
+def post_custom_field(
+    organization_id: int,
+    body: FieldDefinitionIn,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    if membership.role == "lawyer":
+        raise HTTPException(
+            status_code=403, detail="Only an owner or staff can define custom fields"
+        )
+    try:
+        return fields.create_definition(conn, organization_id, **body.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    except UniqueViolation:
+        conn.rollback()
+        raise HTTPException(
+            status_code=409, detail="A field with that key already exists."
+        )
+
+
+@router.patch("/custom-fields/{definition_id}")
+def patch_custom_field(
+    organization_id: int,
+    definition_id: int,
+    body: FieldDefinitionPatch,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    try:
+        return fields.update_definition(
+            conn, organization_id, definition_id, **body.model_dump(exclude_unset=True)
+        )
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Custom field not found")
+
+
+@router.delete("/custom-fields/{definition_id}", status_code=204)
+def remove_custom_field(
+    organization_id: int,
+    definition_id: int,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    if membership.role == "lawyer":
+        raise HTTPException(
+            status_code=403, detail="Only an owner or staff can remove custom fields"
+        )
+    try:
+        fields.delete_definition(conn, organization_id, definition_id)
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Custom field not found")
+    return Response(status_code=204)
+
+
+@router.get("/matters/{matter_id}/custom-fields")
+def get_matter_custom_fields(
+    organization_id: int,
+    matter_id: int,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    return fields.list_matter_values(conn, organization_id, matter_id)
+
+
+@router.put("/matters/{matter_id}/custom-fields/{definition_id}")
+def put_matter_custom_field(
+    organization_id: int,
+    matter_id: int,
+    definition_id: int,
+    body: FieldValueIn,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    try:
+        return fields.set_matter_value(
+            conn, organization_id, matter_id, definition_id, body.value
+        )
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+
+# --- conflict checks --------------------------------------------------------
+
+
+@router.get("/matters/{matter_id}/conflict-checks")
+def get_conflict_checks(
+    organization_id: int,
+    matter_id: int,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    return conflicts.list_checks(conn, organization_id, matter_id)
+
+
+@router.post("/matters/{matter_id}/conflict-checks", status_code=201)
+def post_conflict_check(
+    organization_id: int,
+    matter_id: int,
+    body: ConflictCheckIn,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    try:
+        check, hits = conflicts.run_check(
+            conn,
+            organization_id,
+            matter_id,
+            terms=body.terms,
+            run_by=membership.clerk_user_id,
+            notes=body.notes,
+        )
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Matter not found")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    # The hits are returned alongside the stored check so the caller can show
+    # what was matched; only the summary is persisted.
+    return {"check": check, "hits": hits}
+
+
+@router.post("/conflict-checks/{check_id}/resolve")
+def post_resolve_conflict_check(
+    organization_id: int,
+    check_id: int,
+    body: ConflictResolveIn,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    try:
+        return conflicts.resolve_check(
+            conn,
+            organization_id,
+            check_id,
+            result=body.result,
+            cleared_by=membership.clerk_user_id,
+            notes=body.notes,
+        )
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Conflict check not found")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
 
 # --- activity and dashboard -------------------------------------------------

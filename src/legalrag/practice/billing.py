@@ -189,15 +189,22 @@ def create_invoice(
     return invoice
 
 
-def generate_from_unbilled_time(
+def generate_from_unbilled(
     conn: psycopg.Connection,
     organization_id: int,
     *,
     matter_id: int,
     issued_date: date | None = None,
     payment_terms_days: int = 30,
+    include_expenses: bool = True,
 ) -> Invoice:
-    """Draft an invoice for every unbilled billable hour on a matter."""
+    """Draft an invoice for every unbilled billable hour and expense on a matter.
+
+    Time and disbursements are recovered on the same invoice because that is
+    what a client receives: one bill for the period, fees and outlays together.
+    Both are stamped with the invoice id in the same transaction that creates
+    it, so neither can be pulled onto a second invoice.
+    """
     issued = issued_date or date.today()
     with conn.cursor() as cur:
         cur.execute(
@@ -219,12 +226,26 @@ def generate_from_unbilled_time(
             (organization_id, matter_id),
         )
         entries = cur.fetchall()
-        if not entries:
-            raise ValueError("no unbilled billable time on this matter")
 
-        currency = entries[0][5]
+        expense_rows: list[tuple] = []
+        if include_expenses:
+            cur.execute(
+                "SELECT id, entry_date, description, category, quantity, "
+                "unit_amount, currency FROM expenses "
+                "WHERE organization_id = %s AND matter_id = %s "
+                "AND billable AND invoice_id IS NULL ORDER BY entry_date FOR UPDATE",
+                (organization_id, matter_id),
+            )
+            expense_rows = cur.fetchall()
+
+        if not entries and not expense_rows:
+            raise ValueError("no unbilled billable time or expenses on this matter")
+
+        currency = entries[0][5] if entries else expense_rows[0][6]
         number = next_invoice_number(conn, organization_id)
-        total = sum(hours * rate for _, _, _, hours, rate, _ in entries)
+        total = sum(hours * rate for _, _, _, hours, rate, _ in entries) + sum(
+            quantity * unit for _, _, _, _, quantity, unit, _ in expense_rows
+        )
         cur.execute(
             "INSERT INTO invoices (organization_id, matter_id, client_id, number, "
             "amount, currency, status, issued_date, due_date) "
@@ -251,6 +272,25 @@ def generate_from_unbilled_time(
             cur.execute(
                 "UPDATE time_entries SET invoice_id = %s WHERE id = %s",
                 (invoice_id, entry_id),
+            )
+        for expense_id, entry_date, description, category, quantity, unit, _ in (
+            expense_rows
+        ):
+            label = description or category.replace("_", " ")
+            cur.execute(
+                "INSERT INTO invoice_lines (invoice_id, description, quantity, "
+                "unit_amount, line_total) VALUES (%s, %s, %s, %s, %s)",
+                (
+                    invoice_id,
+                    f"{entry_date:%Y-%m-%d} — {label} (disbursement)",
+                    quantity,
+                    unit,
+                    quantity * unit,
+                ),
+            )
+            cur.execute(
+                "UPDATE expenses SET invoice_id = %s WHERE id = %s",
+                (invoice_id, expense_id),
             )
     conn.commit()
     invoice = get_invoice(conn, organization_id, invoice_id)

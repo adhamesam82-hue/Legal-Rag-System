@@ -38,6 +38,25 @@ export type DocumentStatus =
 export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue";
 export type SubmittedBy = "us" | "opposing_party" | "court";
 export type TimelineKind = "milestone" | "filing" | "communication" | "billing";
+export type ExpenseCategory =
+  | "court_fees"
+  | "filing"
+  | "expert"
+  | "travel"
+  | "translation"
+  | "courier"
+  | "other";
+export type CommunicationChannel = "phone" | "email" | "meeting" | "letter";
+export type CommunicationDirection = "incoming" | "outgoing";
+export type PortalStatus = "invited" | "active" | "revoked";
+export type TrustKind = "deposit" | "withdrawal" | "invoice_payment" | "refund";
+export type CustomFieldType =
+  | "text"
+  | "number"
+  | "date"
+  | "checkbox"
+  | "select";
+export type ConflictResult = "clear" | "potential_conflict" | "conflict";
 
 export interface Contact {
   id: number;
@@ -74,6 +93,10 @@ export interface Deadline {
 export interface Matter {
   id: number;
   organization_id: number;
+  /** Per-firm ordinal the number series is derived from; never rewritten. */
+  number_seq: number;
+  /** What the matter is quoted by — editable to a firm's own convention. */
+  matter_number: string;
   client_id: number;
   client_name: string;
   name: string;
@@ -266,6 +289,208 @@ export interface ActivityEntry {
   occurred_at: string;
 }
 
+export interface MatterContact {
+  id: number;
+  matter_id: number;
+  /** Set when this is a contact on file at a client; null for an outside party. */
+  contact_id: number | null;
+  name: string;
+  relationship: string;
+  email: string;
+  phone: string;
+  is_bill_recipient: boolean;
+  created_at: string;
+  client_id: number | null;
+  client_name: string | null;
+}
+
+export interface Expense {
+  id: number;
+  organization_id: number;
+  matter_id: number;
+  matter_name: string;
+  clerk_user_id: string;
+  entry_date: string;
+  description: string;
+  category: ExpenseCategory;
+  quantity: number;
+  unit_amount: number;
+  /** Derived by the database from quantity × unit_amount; read-only. */
+  amount: number;
+  billable: boolean;
+  currency: string;
+  invoice_id: number | null;
+  created_at: string;
+}
+
+export interface ExpenseSummary {
+  total_amount: number;
+  billable_amount: number;
+  unbilled_amount: number;
+}
+
+export interface Communication {
+  id: number;
+  organization_id: number;
+  matter_id: number | null;
+  matter_name: string | null;
+  client_id: number | null;
+  client_name: string | null;
+  channel: CommunicationChannel;
+  direction: CommunicationDirection;
+  subject: string;
+  body: string;
+  counterparty: string;
+  logged_by: string;
+  occurred_at: string;
+  duration_minutes: number | null;
+  created_at: string;
+}
+
+export interface ClientPortal {
+  id: number;
+  organization_id: number;
+  matter_id: number;
+  matter_name: string;
+  contact_id: number;
+  contact_name: string;
+  contact_email: string;
+  status: PortalStatus;
+  can_view_documents: boolean;
+  can_view_bills: boolean;
+  can_message: boolean;
+  invited_by: string;
+  invited_at: string;
+  activated_at: string | null;
+  revoked_at: string | null;
+  last_active_at: string | null;
+}
+
+export interface SecureMessage {
+  id: number;
+  thread_id: number;
+  author_kind: "firm" | "client";
+  /** Clerk id when the firm wrote it; resolve through useMemberName(). */
+  author_user: string | null;
+  author_contact_id: number | null;
+  /** The client contact's name; empty for firm-authored messages. */
+  author_name: string;
+  body: string;
+  sent_at: string;
+  read_at: string | null;
+}
+
+export interface SecureThread {
+  id: number;
+  organization_id: number;
+  matter_id: number;
+  portal_id: number | null;
+  subject: string;
+  created_by: string;
+  created_at: string;
+  last_message_at: string;
+  contact_name: string | null;
+  message_count: number;
+  unread_count: number;
+  messages: SecureMessage[];
+}
+
+export interface TrustAccount {
+  id: number;
+  organization_id: number;
+  name: string;
+  bank_name: string;
+  account_number: string;
+  currency: string;
+  is_default: boolean;
+  created_at: string;
+}
+
+export interface TrustTransaction {
+  id: number;
+  organization_id: number;
+  trust_account_id: number;
+  account_name: string;
+  matter_id: number;
+  matter_name: string;
+  client_id: number;
+  client_name: string;
+  kind: TrustKind;
+  amount: number;
+  currency: string;
+  description: string;
+  reference: string;
+  invoice_id: number | null;
+  invoice_number: string | null;
+  transaction_date: string;
+  recorded_by: string;
+  created_at: string;
+}
+
+export interface TrustBalance {
+  matter_id: number | null;
+  balance: number;
+  deposits: number;
+  disbursed: number;
+}
+
+export interface CustomFieldDefinition {
+  id: number;
+  organization_id: number;
+  field_key: string;
+  label: string;
+  field_type: CustomFieldType;
+  options: string[];
+  is_required: boolean;
+  display_order: number;
+  /** null applies the field to every matter type. */
+  matter_type: MatterType | null;
+  created_at: string;
+}
+
+/** A definition paired with this matter's value, which may be unset. */
+export interface CustomFieldValue {
+  definition_id: number;
+  matter_id: number;
+  field_key: string;
+  label: string;
+  field_type: CustomFieldType;
+  options: string[];
+  is_required: boolean;
+  display_order: number;
+  value: string | null;
+  updated_at: string | null;
+}
+
+export interface ConflictCheck {
+  id: number;
+  organization_id: number;
+  matter_id: number;
+  search_terms: string[];
+  result: ConflictResult;
+  hit_summary: string;
+  notes: string;
+  run_by: string;
+  run_at: string;
+  cleared_by: string | null;
+  cleared_at: string | null;
+}
+
+export interface ConflictHit {
+  kind: "client" | "matter_party" | "opposing_party" | "opposing_counsel";
+  name: string;
+  matched_term: string;
+  matter_id: number | null;
+  matter_name: string | null;
+  detail: string;
+}
+
+/** A run returns both the stored record and the hits behind its summary. */
+export interface ConflictCheckRun {
+  check: ConflictCheck;
+  hits: ConflictHit[];
+}
+
 export interface UpcomingItem {
   kind: "hearing" | "task" | "deadline";
   label: string;
@@ -358,6 +583,134 @@ export function practiceApi(organizationId: number) {
         post<MatterTimelineEvent>(`/matters/${id}/timeline`, body),
       /** 404s when the matter holds no litigation case; callers treat that as "none". */
       case: (id: number) => request<CaseRecord>(`${base}/matters/${id}/case`),
+
+      contacts: (id: number) =>
+        request<MatterContact[]>(`${base}/matters/${id}/contacts`),
+      addContact: (id: number, body: Partial<MatterContact>) =>
+        post<MatterContact>(`/matters/${id}/contacts`, body),
+      updateContact: (
+        id: number,
+        contactRowId: number,
+        body: Partial<MatterContact>,
+      ) => patch<MatterContact>(`/matters/${id}/contacts/${contactRowId}`, body),
+      removeContact: (id: number, contactRowId: number) =>
+        remove(`/matters/${id}/contacts/${contactRowId}`),
+
+      /** Copies the engagement's shape onto a new number; carries no work over. */
+      duplicate: (id: number, body: { name?: string; opened_date?: string } = {}) =>
+        post<Matter>(`/matters/${id}/duplicate`, body),
+
+      customFields: (id: number) =>
+        request<CustomFieldValue[]>(`${base}/matters/${id}/custom-fields`),
+      /** An empty or null value clears the field. */
+      setCustomField: (id: number, definitionId: number, value: string | null) =>
+        request<CustomFieldValue>(
+          `${base}/matters/${id}/custom-fields/${definitionId}`,
+          { method: "PUT", body: JSON.stringify({ value }) },
+        ),
+
+      conflictChecks: (id: number) =>
+        request<ConflictCheck[]>(`${base}/matters/${id}/conflict-checks`),
+      runConflictCheck: (id: number, terms: string[], notes = "") =>
+        post<ConflictCheckRun>(`/matters/${id}/conflict-checks`, { terms, notes }),
+
+      trustBalance: (id: number) =>
+        request<TrustBalance>(`${base}/matters/${id}/trust-balance`),
+
+      portals: (id: number) =>
+        request<ClientPortal[]>(`${base}/portals${query({ matter_id: id })}`),
+      invitePortal: (id: number, body: Record<string, unknown>) =>
+        post<ClientPortal>(`/matters/${id}/portals`, body),
+
+      threads: (id: number) =>
+        request<SecureThread[]>(`${base}/matters/${id}/threads`),
+      startThread: (
+        id: number,
+        body: { subject: string; body: string; portal_id?: number },
+      ) => post<SecureThread>(`/matters/${id}/threads`, body),
+    },
+
+    expenses: {
+      list: (
+        filters: {
+          matter_id?: number;
+          clerk_user_id?: string;
+          since?: string;
+          until?: string;
+          unbilled_only?: boolean;
+        } = {},
+      ) => request<Expense[]>(`${base}/expenses${query(filters)}`),
+      summary: (filters: { matter_id?: number; since?: string; until?: string } = {}) =>
+        request<ExpenseSummary>(`${base}/expenses/summary${query(filters)}`),
+      create: (body: Record<string, unknown>) => post<Expense>("/expenses", body),
+      update: (id: number, body: Record<string, unknown>) =>
+        patch<Expense>(`/expenses/${id}`, body),
+      remove: (id: number) => remove(`/expenses/${id}`),
+    },
+
+    communications: {
+      list: (
+        filters: {
+          matter_id?: number;
+          client_id?: number;
+          channel?: string;
+          direction?: string;
+          since?: string;
+          until?: string;
+          q?: string;
+          limit?: number;
+        } = {},
+      ) => request<Communication[]>(`${base}/communications${query(filters)}`),
+      log: (body: Record<string, unknown>) =>
+        post<Communication>("/communications", body),
+      update: (id: number, body: Record<string, unknown>) =>
+        patch<Communication>(`/communications/${id}`, body),
+      remove: (id: number) => remove(`/communications/${id}`),
+    },
+
+    portals: {
+      list: (filters: { matter_id?: number; status?: string } = {}) =>
+        request<ClientPortal[]>(`${base}/portals${query(filters)}`),
+      update: (id: number, body: Record<string, unknown>) =>
+        patch<ClientPortal>(`/portals/${id}`, body),
+      reply: (threadId: number, body: string) =>
+        post<SecureMessage>(`/threads/${threadId}/messages`, { body }),
+      markRead: (threadId: number) =>
+        post<void>(`/threads/${threadId}/read`, {}),
+    },
+
+    trust: {
+      accounts: () => request<TrustAccount[]>(`${base}/trust-accounts`),
+      createAccount: (body: Record<string, unknown>) =>
+        post<TrustAccount>("/trust-accounts", body),
+      transactions: (
+        filters: {
+          matter_id?: number;
+          client_id?: number;
+          trust_account_id?: number;
+          since?: string;
+          until?: string;
+        } = {},
+      ) => request<TrustTransaction[]>(`${base}/trust-transactions${query(filters)}`),
+      record: (body: Record<string, unknown>) =>
+        post<TrustTransaction>("/trust-transactions", body),
+    },
+
+    customFields: {
+      list: (filters: { matter_type?: string } = {}) =>
+        request<CustomFieldDefinition[]>(`${base}/custom-fields${query(filters)}`),
+      create: (body: Record<string, unknown>) =>
+        post<CustomFieldDefinition>("/custom-fields", body),
+      update: (id: number, body: Record<string, unknown>) =>
+        patch<CustomFieldDefinition>(`/custom-fields/${id}`, body),
+      remove: (id: number) => remove(`/custom-fields/${id}`),
+    },
+
+    conflicts: {
+      resolve: (
+        checkId: number,
+        body: { result: ConflictResult; notes?: string },
+      ) => post<ConflictCheck>(`/conflict-checks/${checkId}/resolve`, body),
     },
 
     cases: {

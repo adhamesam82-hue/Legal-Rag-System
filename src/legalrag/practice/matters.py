@@ -3,6 +3,12 @@
 A matter belongs to one client and may hold one litigation `case` (see
 cases.py). Its "next deadline" is not stored: it is derived from the matter's
 open tasks and its case deadlines, so the two cannot drift apart.
+
+A matter also carries the number it is quoted by — on invoices, in court
+filings and to the client. That number is a per-firm ordinal (`number_seq`)
+with a display string (`matter_number`) the firm may rewrite; the ordinal is
+what the next number is derived from, so renaming one matter cannot disturb
+the series.
 """
 from __future__ import annotations
 
@@ -21,10 +27,10 @@ MATTER_STATUSES = ("active", "on_hold", "closed")
 BILLING_TYPES = ("hourly", "fixed_fee", "retainer")
 
 _COLUMNS = """
-    m.id, m.organization_id, m.client_id, c.name AS client_name, m.name,
-    m.matter_type, m.status, m.responsible_user, m.opened_date, m.closed_date,
-    m.description, m.billing_type, m.budget_amount, m.budget_is_estimate,
-    m.tags, m.created_at
+    m.id, m.organization_id, m.number_seq, m.matter_number, m.client_id,
+    c.name AS client_name, m.name, m.matter_type, m.status, m.responsible_user,
+    m.opened_date, m.closed_date, m.description, m.billing_type,
+    m.budget_amount, m.budget_is_estimate, m.tags, m.created_at
 """
 
 
@@ -38,6 +44,8 @@ class Deadline:
 class Matter:
     id: int
     organization_id: int
+    number_seq: int
+    matter_number: str
     client_id: int
     client_name: str
     name: str
@@ -156,6 +164,29 @@ def get_matter(
     return _enrich(conn, [matter])[0]
 
 
+# Namespace for the per-firm advisory lock taken while allocating a matter
+# number. Arbitrary, but must stay fixed: two callers using different
+# namespaces would not exclude each other.
+_NUMBERING_LOCK = 4207
+
+
+def _allocate_number(cur: psycopg.Cursor, organization_id: int) -> tuple[int, str]:
+    """Reserves the next matter number for a firm, inside the caller's transaction.
+
+    Two matters opened at the same moment would otherwise read the same max and
+    both claim it; the unique constraint would reject the loser, failing an
+    operation that had nothing wrong with it. The advisory lock serialises the
+    read-then-insert per firm and is released when the transaction ends.
+    """
+    cur.execute("SELECT pg_advisory_xact_lock(%s, %s)", (_NUMBERING_LOCK, organization_id))
+    cur.execute(
+        "SELECT coalesce(max(number_seq), 0) + 1 FROM matters WHERE organization_id = %s",
+        (organization_id,),
+    )
+    seq = cur.fetchone()[0]
+    return seq, f"{seq:05d}"
+
+
 def _validate(matter_type: str | None, status: str | None, billing_type: str | None):
     if matter_type is not None and matter_type not in MATTER_TYPES:
         raise ValueError(f"invalid matter_type {matter_type!r}")
@@ -182,6 +213,7 @@ def create_matter(
     budget_is_estimate: bool = False,
     tags: list[str] | None = None,
     staff: list[str] | None = None,
+    matter_number: str | None = None,
 ) -> Matter:
     _validate(matter_type, status, billing_type)
     with conn.cursor() as cur:
@@ -193,13 +225,17 @@ def create_matter(
         )
         if cur.fetchone() is None:
             raise NotFoundError(f"client {client_id}")
+        number_seq, generated = _allocate_number(cur, organization_id)
         cur.execute(
-            "INSERT INTO matters (organization_id, client_id, name, matter_type, "
+            "INSERT INTO matters (organization_id, number_seq, matter_number, "
+            "client_id, name, matter_type, "
             "status, responsible_user, opened_date, closed_date, description, "
             "billing_type, budget_amount, budget_is_estimate, tags) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
+            "RETURNING id",
             (
-                organization_id, client_id, name, matter_type, status,
+                organization_id, number_seq, matter_number or generated,
+                client_id, name, matter_type, status,
                 responsible_user, opened_date, closed_date, description,
                 billing_type, budget_amount, budget_is_estimate, tags or [],
             ),
@@ -216,10 +252,12 @@ def create_matter(
     return matter
 
 
+# number_seq is deliberately absent: the display number may be rewritten to a
+# firm's own convention, but the ordinal the series is derived from may not.
 _UPDATABLE = {
-    "client_id", "name", "matter_type", "status", "responsible_user",
-    "opened_date", "closed_date", "description", "billing_type",
-    "budget_amount", "budget_is_estimate", "tags",
+    "client_id", "name", "matter_number", "matter_type", "status",
+    "responsible_user", "opened_date", "closed_date", "description",
+    "billing_type", "budget_amount", "budget_is_estimate", "tags",
 }
 
 
@@ -279,6 +317,239 @@ def delete_matter(
         )
         if cur.rowcount == 0:
             raise NotFoundError(f"matter {matter_id}")
+    conn.commit()
+
+
+def duplicate_matter(
+    conn: psycopg.Connection,
+    organization_id: int,
+    matter_id: int,
+    *,
+    name: str | None = None,
+    opened_date: date | None = None,
+) -> Matter:
+    """Opens a new matter from an existing one's shape.
+
+    Copies what describes the engagement — client, type, billing, team, tags,
+    custom field values, the parties on the file — and nothing that records
+    work done. Carrying over time, documents, invoices or the activity trail
+    would put another matter's history under a new number.
+    """
+    source = get_matter(conn, organization_id, matter_id)
+    if source is None:
+        raise NotFoundError(f"matter {matter_id}")
+
+    copy = create_matter(
+        conn,
+        organization_id,
+        client_id=source.client_id,
+        name=name or f"{source.name} (copy)",
+        matter_type=source.matter_type,
+        billing_type=source.billing_type,
+        responsible_user=source.responsible_user,
+        opened_date=opened_date or date.today(),
+        description=source.description,
+        budget_amount=source.budget_amount,
+        budget_is_estimate=source.budget_is_estimate,
+        tags=list(source.tags),
+        staff=list(source.staff),
+    )
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO matter_contacts (matter_id, contact_id, name, "
+            "relationship, email, phone, is_bill_recipient) "
+            "SELECT %s, contact_id, name, relationship, email, phone, "
+            "is_bill_recipient FROM matter_contacts WHERE matter_id = %s",
+            (copy.id, matter_id),
+        )
+        cur.execute(
+            "INSERT INTO matter_custom_values (matter_id, definition_id, value) "
+            "SELECT %s, definition_id, value FROM matter_custom_values "
+            "WHERE matter_id = %s",
+            (copy.id, matter_id),
+        )
+    conn.commit()
+    return copy
+
+
+# --- contacts on the matter -------------------------------------------------
+
+
+@dataclass
+class MatterContact:
+    id: int
+    matter_id: int
+    contact_id: int | None
+    name: str
+    relationship: str
+    email: str
+    phone: str
+    is_bill_recipient: bool
+    created_at: datetime
+    client_id: int | None = None
+    client_name: str | None = None
+
+
+# A linked contact's name, email and phone are read from client_contacts so
+# they follow the contact record; an external party keeps its own inline copy.
+_CONTACT_COLUMNS = """
+    mc.id, mc.matter_id, mc.contact_id,
+    coalesce(nullif(cc.name, ''), mc.name) AS name,
+    mc.relationship,
+    coalesce(nullif(cc.email, ''), mc.email) AS email,
+    coalesce(nullif(cc.phone, ''), mc.phone) AS phone,
+    mc.is_bill_recipient, mc.created_at,
+    cl.id AS client_id, cl.name AS client_name
+"""
+
+_CONTACT_FROM = """
+    FROM matter_contacts mc
+    LEFT JOIN client_contacts cc ON cc.id = mc.contact_id
+    LEFT JOIN clients cl ON cl.id = cc.client_id
+    JOIN matters m ON m.id = mc.matter_id
+"""
+
+
+def list_matter_contacts(
+    conn: psycopg.Connection, organization_id: int, matter_id: int
+) -> list[MatterContact]:
+    return fetch_all(
+        conn,
+        MatterContact,
+        f"SELECT {_CONTACT_COLUMNS} {_CONTACT_FROM} "
+        "WHERE m.organization_id = %s AND mc.matter_id = %s "
+        "ORDER BY mc.is_bill_recipient DESC, mc.id",
+        (organization_id, matter_id),
+    )
+
+
+def _get_matter_contact(
+    conn: psycopg.Connection, organization_id: int, contact_row_id: int
+) -> MatterContact | None:
+    return fetch_one(
+        conn,
+        MatterContact,
+        f"SELECT {_CONTACT_COLUMNS} {_CONTACT_FROM} "
+        "WHERE m.organization_id = %s AND mc.id = %s",
+        (organization_id, contact_row_id),
+    )
+
+
+def add_matter_contact(
+    conn: psycopg.Connection,
+    organization_id: int,
+    matter_id: int,
+    *,
+    contact_id: int | None = None,
+    name: str = "",
+    relationship: str = "",
+    email: str = "",
+    phone: str = "",
+    is_bill_recipient: bool = False,
+) -> MatterContact:
+    if contact_id is None and not name.strip():
+        raise ValueError("a contact not on file at a client must have a name")
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT 1 FROM matters WHERE organization_id = %s AND id = %s",
+            (organization_id, matter_id),
+        )
+        if cur.fetchone() is None:
+            raise NotFoundError(f"matter {matter_id}")
+        if contact_id is not None:
+            # A contact belonging to another firm's client would otherwise be
+            # attachable by id alone.
+            cur.execute(
+                "SELECT 1 FROM client_contacts cc JOIN clients c ON c.id = cc.client_id "
+                "WHERE c.organization_id = %s AND cc.id = %s",
+                (organization_id, contact_id),
+            )
+            if cur.fetchone() is None:
+                raise NotFoundError(f"contact {contact_id}")
+        if is_bill_recipient:
+            _clear_bill_recipient(cur, matter_id)
+        cur.execute(
+            "INSERT INTO matter_contacts (matter_id, contact_id, name, "
+            "relationship, email, phone, is_bill_recipient) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            (
+                matter_id, contact_id, name.strip(), relationship, email, phone,
+                is_bill_recipient,
+            ),
+        )
+        row_id = cur.fetchone()[0]
+    conn.commit()
+    contact = _get_matter_contact(conn, organization_id, row_id)
+    assert contact is not None
+    return contact
+
+
+def _clear_bill_recipient(cur: psycopg.Cursor, matter_id: int) -> None:
+    """Demotes the current bill recipient so the new one can take the flag.
+
+    The partial unique index allows only one per matter, so promoting without
+    demoting first would fail rather than move the designation.
+    """
+    cur.execute(
+        "UPDATE matter_contacts SET is_bill_recipient = FALSE "
+        "WHERE matter_id = %s AND is_bill_recipient",
+        (matter_id,),
+    )
+
+
+_CONTACT_UPDATABLE = {"name", "relationship", "email", "phone"}
+
+
+def update_matter_contact(
+    conn: psycopg.Connection,
+    organization_id: int,
+    contact_row_id: int,
+    *,
+    is_bill_recipient: bool | None = None,
+    **changes,
+) -> MatterContact:
+    fields = {
+        k: v for k, v in changes.items() if k in _CONTACT_UPDATABLE and v is not None
+    }
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT mc.matter_id FROM matter_contacts mc "
+            "JOIN matters m ON m.id = mc.matter_id "
+            "WHERE m.organization_id = %s AND mc.id = %s",
+            (organization_id, contact_row_id),
+        )
+        row = cur.fetchone()
+        if row is None:
+            raise NotFoundError(f"matter contact {contact_row_id}")
+        matter_id = row[0]
+        if is_bill_recipient:
+            _clear_bill_recipient(cur, matter_id)
+        if is_bill_recipient is not None:
+            fields["is_bill_recipient"] = is_bill_recipient
+        if fields:
+            assignments = ", ".join(f"{name} = %s" for name in fields)
+            cur.execute(
+                f"UPDATE matter_contacts SET {assignments} WHERE id = %s",
+                (*fields.values(), contact_row_id),
+            )
+    conn.commit()
+    contact = _get_matter_contact(conn, organization_id, contact_row_id)
+    if contact is None:
+        raise NotFoundError(f"matter contact {contact_row_id}")
+    return contact
+
+
+def remove_matter_contact(
+    conn: psycopg.Connection, organization_id: int, contact_row_id: int
+) -> None:
+    with conn.cursor() as cur:
+        cur.execute(
+            "DELETE FROM matter_contacts mc USING matters m "
+            "WHERE m.id = mc.matter_id AND m.organization_id = %s AND mc.id = %s",
+            (organization_id, contact_row_id),
+        )
+        if cur.rowcount == 0:
+            raise NotFoundError(f"matter contact {contact_row_id}")
     conn.commit()
 
 
