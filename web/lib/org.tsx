@@ -32,6 +32,12 @@ interface OrgContextValue {
   members: OrgMember[];
   /** Practice API bound to the current organization; null until one resolves. */
   practice: PracticeApi | null;
+  /**
+   * True once /api/orgs/me has answered. While false, `organizationId` may be
+   * the provisional one restored from the last session, which is almost always
+   * right but is not yet proven to be a firm this account still belongs to.
+   */
+  orgConfirmed: boolean;
   loading: boolean;
   error: string | null;
   setOrganizationId: (id: number) => void;
@@ -96,6 +102,31 @@ function OrgProviderInner({
   const [error, setError] = useState<string | null>(null);
   const [membersNonce, setMembersNonce] = useState(0);
   const [orgsNonce, setOrgsNonce] = useState(0);
+  const [orgConfirmed, setOrgConfirmed] = useState(false);
+
+  /**
+   * Bind the organization from the last session before the membership check
+   * answers.
+   *
+   * Every screen's data request is keyed on `practice`, which stays null until
+   * an organization id exists -- so leaving it null until /api/orgs/me returns
+   * put a full API round-trip in front of the first byte of page data on every
+   * cold load, on top of Clerk's own session resolution. The id is already
+   * persisted here for the firm switcher, so reusing it lets a screen's request
+   * leave at the same time as the membership check rather than behind it.
+   *
+   * Provisional, not trusted: the reconciliation below replaces it if the
+   * account no longer belongs to that firm, and useResource holds back any
+   * error raised against it until `orgConfirmed`. Runs in an effect rather than
+   * a lazy initial state because localStorage does not exist while the tree is
+   * rendered on the server, and seeding it there would be a hydration mismatch.
+   */
+  useEffect(() => {
+    if (authState !== "signed-in") return;
+    const stored = Number(window.localStorage.getItem(STORAGE_KEY));
+    if (!stored) return;
+    setOrganizationIdState((current) => current ?? stored);
+  }, [authState]);
 
   useEffect(() => {
     // Waiting on Clerk: hold the loading state rather than briefly claiming
@@ -106,6 +137,7 @@ function OrgProviderInner({
     if (authState === "signed-out") {
       setMemberships([]);
       setOrganizationIdState(null);
+      setOrgConfirmed(true);
       setLoading(false);
       return;
     }
@@ -115,6 +147,9 @@ function OrgProviderInner({
       .then((rows) => {
         if (cancelled) return;
         setMemberships(rows);
+        // Reconciles the provisional id bound above: when the remembered firm
+        // is still one of this account's, this resolves to the same number and
+        // React bails out, so the fetches already in flight against it stand.
         const stored = Number(window.localStorage.getItem(STORAGE_KEY));
         const remembered = rows.find((m) => m.organization_id === stored);
         setOrganizationIdState(
@@ -131,7 +166,12 @@ function OrgProviderInner({
         );
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (cancelled) return;
+        // Set even on failure: it means "the membership check is no longer
+        // outstanding", so a screen holding back a provisional error stops
+        // waiting for an answer that is not coming.
+        setOrgConfirmed(true);
+        setLoading(false);
       });
     return () => {
       cancelled = true;
@@ -149,6 +189,24 @@ function OrgProviderInner({
       cancelled = true;
     };
   }, [organizationId, membersNonce, authState]);
+
+  /**
+   * Persist whichever organization is active, however it was chosen.
+   *
+   * The switcher used to be the only writer, so an account that never switched
+   * firms -- almost all of them, since most belong to one -- had nothing stored
+   * to restore on the next load, and the provisional binding above could never
+   * fire. Writing it here covers the id resolved from /api/orgs/me too.
+   */
+  useEffect(() => {
+    if (organizationId !== null) {
+      window.localStorage.setItem(STORAGE_KEY, String(organizationId));
+      return;
+    }
+    // Confirmed to belong to no firm: drop the remembered id rather than let it
+    // seed a provisional binding that can only 403 on every future load.
+    if (orgConfirmed) window.localStorage.removeItem(STORAGE_KEY);
+  }, [organizationId, orgConfirmed]);
 
   const setOrganizationId = useCallback((id: number) => {
     window.localStorage.setItem(STORAGE_KEY, String(id));
@@ -173,13 +231,23 @@ function OrgProviderInner({
       memberships,
       members,
       practice,
+      orgConfirmed,
       loading,
       error,
       setOrganizationId,
       reloadMembers: () => setMembersNonce((n) => n + 1),
       reloadOrganizations: () => setOrgsNonce((n) => n + 1),
     };
-  }, [organizationId, memberships, members, practice, loading, error, setOrganizationId]);
+  }, [
+    organizationId,
+    memberships,
+    members,
+    practice,
+    orgConfirmed,
+    loading,
+    error,
+    setOrganizationId,
+  ]);
 
   return <OrgContext.Provider value={value}>{children}</OrgContext.Provider>;
 }
@@ -226,7 +294,7 @@ export function useResource<T>(
   fetcher: (practice: PracticeApi) => Promise<T>,
   deps: unknown[],
 ): Resource<T> {
-  const { practice, loading: orgLoading } = useOrg();
+  const { practice, orgConfirmed, loading: orgLoading } = useOrg();
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -234,6 +302,9 @@ export function useResource<T>(
 
   const fetcherRef = useRef(fetcher);
   fetcherRef.current = fetcher;
+  // Whether this hook has ever produced a value, read inside the effect without
+  // making `data` a dependency of it.
+  const hasDataRef = useRef(false);
 
   useEffect(() => {
     if (!practice) {
@@ -243,26 +314,43 @@ export function useResource<T>(
       return;
     }
     let cancelled = false;
-    setLoading(true);
+    // Held back rather than surfaced, so the run that follows confirmation can
+    // decide whether this was a stale organization id or a real failure.
+    let provisionalFailure = false;
+    // Re-running against an already-loaded screen must not blank it back to a
+    // spinner -- the confirmation pass below re-enters this effect on every
+    // cold load, and it almost always resolves from the GET cache.
+    if (!hasDataRef.current) setLoading(true);
     fetcherRef
       .current(practice)
       .then((result) => {
         if (cancelled) return;
+        hasDataRef.current = true;
         setData(result);
         setError(null);
       })
       .catch((exc: unknown) => {
         if (cancelled) return;
+        // The organization id may still be the provisional one restored from
+        // the last session; if the account has left that firm, the API answers
+        // 403. Showing that would flash an error on a screen that is about to
+        // load correctly, so hold it: confirmation re-enters this effect, and
+        // the retry either succeeds or raises the error for real.
+        if (!orgConfirmed) {
+          provisionalFailure = true;
+          return;
+        }
         setError(exc instanceof ApiError ? exc.message : "Something went wrong.");
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (cancelled || provisionalFailure) return;
+        setLoading(false);
       });
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [practice, orgLoading, nonce, ...deps]);
+  }, [practice, orgConfirmed, orgLoading, nonce, ...deps]);
 
   return {
     data,

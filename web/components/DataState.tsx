@@ -83,7 +83,14 @@ export function DataView<T>({
   const { organizationId, loading: orgLoading, error: orgError } = useOrg();
   const t = useTranslator();
 
-  if (orgLoading) return <LoadingState label={t("@legalos.common.loadingFirm")} />;
+  // Only wait on the membership check while there is no organization to work
+  // with. Once one is bound -- including the provisional id restored from the
+  // last session -- this screen's own request is already in flight, and
+  // blocking on /api/orgs/me here would hold its result behind a round-trip
+  // that has nothing left to contribute to what is being rendered.
+  if (orgLoading && organizationId === null) {
+    return <LoadingState label={t("@legalos.common.loadingFirm")} />;
+  }
   if (orgError) return <ErrorState message={orgError} />;
   if (organizationId === null) return <NoOrganizationState />;
   if (resource.loading && resource.data === null) {
