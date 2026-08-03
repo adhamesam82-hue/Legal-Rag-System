@@ -73,6 +73,42 @@
 }
 
 /*
+  Scrollbars are hidden everywhere -- the sidebar, the content region, every
+  table and panel that scrolls inside itself.
+
+  A classic (non-overlay) scrollbar is laid out, not painted over: it takes a
+  permanent ~15px strip out of the content box of every scroll container on the
+  page, and this app nests several of them (shell > content region > card >
+  table). On a narrow screen that adds up to a column of chrome that never
+  shows anything.
+
+  Astryx already asks for this, but only in the Firefox dialect
+  (`scrollbar-width: none` on its own scroll regions in astryx.css) and only on
+  the containers it owns. WebKit needs the pseudo-element, and the containers
+  this app introduces need both -- so the rule is global rather than a class
+  applied at each site.
+
+  Scrolling itself is untouched: wheel, trackpad, touch, keyboard (arrows,
+  Page Up/Down, Home/End, space) and programmatic scrollIntoView all behave
+  exactly as before. What is lost is the position indicator -- the cue that a
+  region has more content below, and how far down you are. macOS with its
+  default "show scrollbars automatically" already hides them this way; Windows,
+  Linux, and macOS set to "always" are where this is a visible change.
+*/
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge */
+}
+
+*::-webkit-scrollbar {
+  /* Chrome, Safari, and every other WebKit/Blink browser. `width: 0` rather
+     than `display: none` so a container that has scrollbar rules of its own
+     keeps them well-formed instead of losing the element entirely. */
+  width: 0;
+  height: 0;
+}
+
+/*
   Nothing in a layout may refuse to shrink. Grid items default to
   `min-width: auto`, which means they will not go narrower than their content:
   a Table or a long unbroken name inside a `columns={3}` grid pushes its own
