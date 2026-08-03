@@ -25,10 +25,9 @@ import { useTranslator } from "@astryxdesign/core/i18n";
 import { useOrg, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import {
-  formatDate,
-  formatEGP,
   type InvoiceStatus,
 } from "@/lib/practice";
+import { useFormat } from "@/lib/i18n/format";
 
 interface LineRow extends Record<string, unknown> {
   id: number;
@@ -56,6 +55,7 @@ export default function InvoiceDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { formatDate, formatEGP } = useFormat();
   const { id } = use(params);
   const invoiceId = Number(id);
   const { practice } = useOrg();
@@ -198,7 +198,7 @@ export default function InvoiceDetailPage({
                     <GridSpan columns={2}>
                       <Card>
                         <VStack gap={4}>
-                          <Heading level={4}>Line items</Heading>
+                          <Heading level={4}>{t("@legalos.billing.detail.lineItems")}</Heading>
                           {rows.length > 0 ? (
                             <>
                               <Table<LineRow>
@@ -232,11 +232,10 @@ export default function InvoiceDetailPage({
                                   color="secondary"
                                 />
                               }
-                              title="No line items"
-                              description={`This invoice carries a total of ${formatEGP(
-                                Number(loaded.amount),
-                                loaded.currency,
-                              )} without an itemized breakdown.`}
+                              title={t("@legalos.billing.detail.noLineItems")}
+                              description={t("@legalos.billing.detail.noLineItemsDescription", {
+                                total: formatEGP(Number(loaded.amount), loaded.currency),
+                              })}
                             />
                           )}
                         </VStack>
@@ -245,33 +244,33 @@ export default function InvoiceDetailPage({
 
                     <Card>
                       <VStack gap={4}>
-                        <Heading level={4}>Details</Heading>
+                        <Heading level={4}>{t("@legalos.billing.detail.heading")}</Heading>
                         <MetadataList>
-                          <MetadataListItem label="Client">
+                          <MetadataListItem label={t("@legalos.billing.table.client")}>
                               <Link href={`/clients/${loaded.client_id}`}>
                                 {loaded.client_name}
                               </Link>
                           </MetadataListItem>
                           {loaded.matter_id && (
-                            <MetadataListItem label="Matter">
+                            <MetadataListItem label={t("@legalos.billing.table.matter")}>
                                 <Link href={`/matters/${loaded.matter_id}`}>
                                   {loaded.matter_name}
                                 </Link>
                             </MetadataListItem>
                           )}
-                          <MetadataListItem label="Issued">
-                              formatDate(loaded.issued_date)
+                          <MetadataListItem label={t("@legalos.billing.table.issued")}>
+                            {formatDate(loaded.issued_date)}
                           </MetadataListItem>
-                          <MetadataListItem label="Due">
-                              formatDate(loaded.due_date)
+                          <MetadataListItem label={t("@legalos.billing.table.due")}>
+                            {formatDate(loaded.due_date)}
                           </MetadataListItem>
                           {loaded.paid_date && (
-                            <MetadataListItem label="Paid">
-                                formatDate(loaded.paid_date)
+                            <MetadataListItem label={t("@legalos.billing.status.paid")}>
+                              {formatDate(loaded.paid_date)}
                             </MetadataListItem>
                           )}
-                          <MetadataListItem label="Amount">
-                              formatEGP(Number(loaded.amount), loaded.currency)
+                          <MetadataListItem label={t("@legalos.billing.table.amount")}>
+                            {formatEGP(Number(loaded.amount), loaded.currency)}
                           </MetadataListItem>
                         </MetadataList>
                       </VStack>

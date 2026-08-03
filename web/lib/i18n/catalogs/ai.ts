@@ -126,9 +126,9 @@ export const en: Catalog = {
   "@legalos.contractReview.severityBadge.medium": { defaultMessage: "Medium risk" },
   "@legalos.contractReview.severityBadge.low": { defaultMessage: "Low risk" },
 
-  "@legalos.contractReview.matterTitle": { defaultMessage: "Mutual NDA — Delta Foods" },
+  "@legalos.contractReview.matterTitle": { defaultMessage: "Mutual NDA — شركة دلتا للأغذية" },
   "@legalos.contractReview.reviewCompleteBadge": { defaultMessage: "AI review complete" },
-  "@legalos.contractReview.matterLink": { defaultMessage: "Delta Foods NDA Review" },
+  "@legalos.contractReview.matterLink": { defaultMessage: "مراجعة اتفاقية عدم إفشاء — دلتا للأغذية" },
   "@legalos.contractReview.matterMeta": {
     defaultMessage: "· {count} clauses · reviewed against the firm's standard NDA template",
   },
@@ -173,7 +173,7 @@ export const en: Catalog = {
   "@legalos.contractReview.recommendationsHeading": { defaultMessage: "Recommendations" },
   "@legalos.contractReview.summary.intro": {
     defaultMessage:
-      "This NDA is signable once the perpetual term and the uncapped liability clause are addressed. Both deviate from the firm's standard template in ways that favour the disclosing party, and Delta Foods is the receiving party on the majority of expected disclosures under this engagement.",
+      "This NDA is signable once the perpetual term and the uncapped liability clause are addressed. Both deviate from the firm's standard template in ways that favour the disclosing party, and شركة دلتا للأغذية is the receiving party on the majority of expected disclosures under this engagement.",
   },
   "@legalos.contractReview.summary.item1.label": {
     defaultMessage: "Negotiate Clause 3 to a 5-year term",
@@ -320,9 +320,9 @@ export const ar: Catalog = {
   "@legalos.contractReview.severityBadge.medium": { defaultMessage: "مخاطرة متوسطة" },
   "@legalos.contractReview.severityBadge.low": { defaultMessage: "مخاطرة منخفضة" },
 
-  "@legalos.contractReview.matterTitle": { defaultMessage: "اتفاقية سرية متبادلة — دلتا فودز" },
+  "@legalos.contractReview.matterTitle": { defaultMessage: "اتفاقية سرية متبادلة — شركة دلتا للأغذية" },
   "@legalos.contractReview.reviewCompleteBadge": { defaultMessage: "اكتملت المراجعة بالذكاء الاصطناعي" },
-  "@legalos.contractReview.matterLink": { defaultMessage: "مراجعة اتفاقية سرية دلتا فودز" },
+  "@legalos.contractReview.matterLink": { defaultMessage: "مراجعة اتفاقية سرية شركة دلتا للأغذية" },
   "@legalos.contractReview.matterMeta": {
     defaultMessage: "· {count} بنود · رُوجعت وفق قالب اتفاقية السرية المعتمد لدى المكتب",
   },
@@ -341,7 +341,7 @@ export const ar: Catalog = {
   "@legalos.contractReview.riskScoreAriaLabel": { defaultMessage: "إجمالي مخاطر العقد" },
   "@legalos.contractReview.riskScoreDescription": {
     defaultMessage:
-      "مرتفعة — {highCount} بنود عالية المخاطرة و{missingCount} بنود قياسية مفقودة. عادةً ما تسجل اتفاقيات السرية المماثلة التي راجعها المكتب بين ٢٥ و٤٠.",
+      "مرتفعة — {highCount} بنود عالية المخاطرة و{missingCount} بنود قياسية مفقودة. عادةً ما تسجل اتفاقيات السرية المماثلة التي راجعها المكتب بين 25 و40.",
   },
   "@legalos.contractReview.draftingAidDisclaimer": {
     defaultMessage: "أداة مساعدة في الصياغة، وليست استشارة قانونية. كل بند تم رصده يحتاج إلى تقدير محامٍ قبل الاعتماد عليه.",
@@ -366,13 +366,13 @@ export const ar: Catalog = {
   "@legalos.contractReview.recommendationsHeading": { defaultMessage: "التوصيات" },
   "@legalos.contractReview.summary.intro": {
     defaultMessage:
-      "يمكن التوقيع على اتفاقية السرية هذه بعد معالجة مدة السريان غير المحددة وبند المسؤولية غير المحدود. فكلاهما يخالف قالب المكتب المعتمد على نحوٍ يميل لصالح الطرف المُفصِح، ودلتا فودز هي الطرف المتلقي في أغلب الإفصاحات المتوقعة في هذا التكليف.",
+      "يمكن التوقيع على اتفاقية السرية هذه بعد معالجة مدة السريان غير المحددة وبند المسؤولية غير المحدود. فكلاهما يخالف قالب المكتب المعتمد على نحوٍ يميل لصالح الطرف المُفصِح، وشركة دلتا للأغذية هي الطرف المتلقي في أغلب الإفصاحات المتوقعة في هذا التكليف.",
   },
   "@legalos.contractReview.summary.item1.label": {
     defaultMessage: "التفاوض على تعديل البند الثالث إلى مدة خمس سنوات",
   },
   "@legalos.contractReview.summary.item1.description": {
-    defaultMessage: "أهم تعديل من حيث الأثر؛ وقد قبل الطرف الآخر التعديل ذاته في عقد التوريد لسنة ٢٠٢٥.",
+    defaultMessage: "أهم تعديل من حيث الأثر؛ وقد قبل الطرف الآخر التعديل ذاته في عقد التوريد لسنة 2025.",
   },
   "@legalos.contractReview.summary.item2.label": {
     defaultMessage: "وضع حد أقصى للمسؤولية في البند الخامس",

@@ -121,6 +121,12 @@ export const en: Catalog = {
   "@legalos.article.previousArticle": { defaultMessage: "Previous article" },
   "@legalos.article.nextArticle": { defaultMessage: "Next article" },
 
+  // ArticleCard — the citation block reused by chat sources, search results
+  // and the library listing.
+  "@legalos.article.card.showFull": { defaultMessage: "Show full article" },
+  "@legalos.article.card.showLess": { defaultMessage: "Show less" },
+  "@legalos.article.card.open": { defaultMessage: "Open article →" },
+
   // ---------------------------------------------------------------------
   // app/dashboard/page.tsx
   // ---------------------------------------------------------------------
@@ -274,6 +280,10 @@ export const ar: Catalog = {
   },
   "@legalos.article.previousArticle": { defaultMessage: "المادة السابقة" },
   "@legalos.article.nextArticle": { defaultMessage: "المادة التالية" },
+
+  "@legalos.article.card.showFull": { defaultMessage: "عرض المادة كاملة" },
+  "@legalos.article.card.showLess": { defaultMessage: "عرض أقل" },
+  "@legalos.article.card.open": { defaultMessage: "فتح المادة ←" },
 
   // ---------------------------------------------------------------------
   // app/dashboard/page.tsx

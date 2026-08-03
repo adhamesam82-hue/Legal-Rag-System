@@ -261,7 +261,7 @@ function UtilityControls({ onSearch }: { onSearch: () => void }) {
           label: t("@legalos.shell.account.menuAriaLabel"),
           variant: "ghost",
           isIconOnly: true,
-          icon: <Avatar name="Ahmed Al-Sayed" size="sm" tooltip={false} />,
+          icon: <Avatar name="أحمد السيد" size="sm" tooltip={false} />,
         }}
         hasChevron={false}
         items={[

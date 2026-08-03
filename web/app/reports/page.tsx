@@ -27,7 +27,7 @@ import { ProgressBar } from "@astryxdesign/core/ProgressBar";
 import { Divider } from "@astryxdesign/core/Divider";
 import { Link } from "@astryxdesign/core/Link";
 import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
-import { formatEGP } from "@/lib/legalos-data";
+import { useFormat } from "@/lib/i18n/format";
 import { useTranslator } from "@astryxdesign/core/i18n";
 
 // ---------------------------------------------------------------------------
@@ -112,16 +112,13 @@ const tooltipStyle = {
   borderRadius: "var(--radius-element)",
 };
 
-function egpK(v: number) {
-  return `EGP ${Math.round(v / 1000)}k`;
-}
-
 const totalOutcomes = OUTCOMES.reduce((s, o) => s + o.value, 0);
 const collectionRate =
   (REVENUE.reduce((s, r) => s + r.collected, 0) / REVENUE.reduce((s, r) => s + r.revenue, 0)) * 100;
 
 export default function ReportsPage() {
   const t = useTranslator();
+  const { formatEGP, formatEGPCompact } = useFormat();
 
   const revenue = REVENUE.map((r) => ({
     month: t(r.monthKey),
@@ -220,7 +217,7 @@ export default function ReportsPage() {
                     <CartesianGrid horizontal vertical={false} stroke="var(--color-border)" />
                     <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                     <YAxis
-                      tickFormatter={egpK}
+                      tickFormatter={(v: number) => formatEGPCompact(v)}
                       tick={AXIS_TICK}
                       axisLine={false}
                       tickLine={false}

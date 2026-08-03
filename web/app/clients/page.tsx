@@ -20,10 +20,10 @@ import { PlusIcon, MagnifyingGlassIcon, UserGroupIcon } from "@heroicons/react/2
 import { useOrg, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import {
-  formatDate,
   type Client,
   type ClientType,
 } from "@/lib/practice";
+import { useFormat } from "@/lib/i18n/format";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 
@@ -40,6 +40,7 @@ interface ClientRow extends Record<string, unknown> {
 }
 
 export default function ClientsPage() {
+  const { formatDate } = useFormat();
   const t = useTranslator();
   const enumLabel = useEnumLabel();
   const { practice, organizationName } = useOrg();
@@ -373,7 +374,7 @@ function NewClientDialog({
                 label={t("@legalos.clients.dialog.nameLabel")}
                 value={name}
                 onChange={setName}
-                placeholder="Nile Trading Co."
+                placeholder="شركة النيل للتجارة"
                 isRequired
               />
               <Selector

@@ -37,12 +37,10 @@ import {
 import { useMemberName, useOrg } from "@/lib/org";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 import {
-  formatDate,
-  formatDateTime,
-  formatEGP,
   type ConflictHit,
   type ConflictResult,
 } from "@/lib/practice";
+import { useFormat } from "@/lib/i18n/format";
 import {
   Panel,
   StatTile,
@@ -74,6 +72,7 @@ export function DashboardTab({
   onRecordDeposit: () => void;
   onOpenBills: () => void;
 }) {
+  const { formatDate, formatDateTime, formatEGP } = useFormat();
   const t = useTranslator();
   const enumLabel = useEnumLabel();
   const memberName = useMemberName();
@@ -727,6 +726,7 @@ type WorkspaceDataProp = TabProps["data"];
 // --- conflict checks --------------------------------------------------------
 
 function ConflictChecksCard({ data, reload, onError }: TabProps) {
+  const { formatDate } = useFormat();
   const t = useTranslator();
   const memberName = useMemberName();
   const { practice } = useOrg();

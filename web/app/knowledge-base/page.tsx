@@ -144,7 +144,9 @@ export default function KnowledgeBasePage() {
                   </HStack>
                   <Text type="body" color="secondary">
                     {t("@legalos.knowledgeBase.showingFor", {
-                      matter: "Nabil v. Nile Trading Co.",
+                      // The matter these mock recommendations pretend to be
+                      // scoped to; same name the seeded firm carries.
+                      matter: "نبيل ضد شركة النيل للتجارة",
                     })}
                   </Text>
                   <List hasDividers density="compact">

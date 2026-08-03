@@ -32,11 +32,9 @@ import { useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView } from "@/components/DataState";
 import {
   daysUntil,
-  formatDate,
-  formatDateTime,
-  formatEGP,
   todayIso,
 } from "@/lib/practice";
+import { useFormat } from "@/lib/i18n/format";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 
 // Every figure here comes from the practice tables. The concept build's
@@ -44,11 +42,8 @@ import { useEnumLabel } from "@/lib/i18n/enum-label";
 // gone rather than kept as decoration: a dashboard that mixes real and
 // fabricated numbers is worse than one that shows fewer, true ones.
 
-function egpShort(value: number) {
-  return `EGP ${Math.round(value / 1000)}k`;
-}
-
 export default function DashboardPage() {
+  const { formatDate, formatDateTime, formatEGP, intlLocale, formatEGPCompact } = useFormat();
   const t = useTranslator();
   const enumLabel = useEnumLabel();
   const { organizationName } = useOrg();
@@ -79,7 +74,7 @@ export default function DashboardPage() {
       .sort(([a], [b]) => a.localeCompare(b))
       .slice(-6)
       .map(([key, collected]) => ({
-        month: new Date(`${key}-01T00:00:00`).toLocaleDateString("en-US", {
+        month: new Date(`${key}-01T00:00:00`).toLocaleDateString(intlLocale, {
           month: "short",
         }),
         collected,
@@ -212,12 +207,22 @@ export default function DashboardPage() {
                                           {days < 0 ? (
                                             <Badge
                                               variant="error"
-                                              label={`${formatDate(item.due_date)} · ${days}d`}
+                                              label={t(
+                                                "@legalos.matters.list.deadlineBadgeOverdue",
+                                                {
+                                                  date: formatDate(item.due_date),
+                                                  days: Math.abs(days),
+                                                },
+                                              )}
                                             />
                                           ) : (
                                             <Text type="supporting" color="secondary">
-                                              {formatDate(item.due_date)}
-                                              {days <= 3 ? ` · ${days}d` : ""}
+                                              {days <= 3
+                                                ? t("@legalos.matters.list.deadlineBadge", {
+                                                    date: formatDate(item.due_date),
+                                                    days,
+                                                  })
+                                                : formatDate(item.due_date)}
                                             </Text>
                                           )}
                                         </HStack>
@@ -304,7 +309,7 @@ export default function DashboardPage() {
                                 tickLine={false}
                               />
                               <YAxis
-                                tickFormatter={egpShort}
+                                tickFormatter={(v: number) => formatEGPCompact(v)}
                                 tick={{ fontSize: "var(--font-size-sm)", fill: "var(--color-text-secondary)" }}
                                 axisLine={false}
                                 tickLine={false}

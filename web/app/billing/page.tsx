@@ -34,7 +34,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { useOrg, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
-import { formatDate, formatEGP, type InvoiceStatus } from "@/lib/practice";
+import { type InvoiceStatus } from "@/lib/practice";
+import { useFormat } from "@/lib/i18n/format";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 
@@ -61,11 +62,8 @@ const STATUS_VARIANT: Record<InvoiceStatus, "neutral" | "accent" | "success" | "
   overdue: "error",
 };
 
-function egpShort(value: number) {
-  return `EGP ${Math.round(value / 1000)}k`;
-}
-
 export default function BillingPage() {
+  const { formatDate, formatEGP, intlLocale, formatEGPCompact } = useFormat();
   const t = useTranslator();
   const enumLabel = useEnumLabel();
   const { practice } = useOrg();
@@ -102,7 +100,7 @@ export default function BillingPage() {
       .sort(([a], [b]) => a.localeCompare(b))
       .slice(-6)
       .map(([key, totals]) => ({
-        month: new Date(`${key}-01T00:00:00`).toLocaleDateString("en-US", {
+        month: new Date(`${key}-01T00:00:00`).toLocaleDateString(intlLocale, {
           month: "short",
         }),
         ...totals,
@@ -365,7 +363,7 @@ export default function BillingPage() {
                                 tickLine={false}
                               />
                               <YAxis
-                                tickFormatter={egpShort}
+                                tickFormatter={(v: number) => formatEGPCompact(v)}
                                 tick={{ fontSize: "var(--font-size-sm)", fill: "var(--color-text-secondary)" }}
                                 axisLine={false}
                                 tickLine={false}
@@ -445,6 +443,7 @@ function GenerateInvoiceDialog({
   onOpenChange: (open: boolean) => void;
   onCreated: () => void;
 }) {
+  const { formatEGP } = useFormat();
   const t = useTranslator();
   const { practice } = useOrg();
   const [matterId, setMatterId] = useState<string | null>(null);

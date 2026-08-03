@@ -195,7 +195,7 @@ export const ar: Catalog = {
     defaultMessage: "اسحب الشعار هنا، أو انقر للاختيار",
   },
   "@legalos.settings.firm.logoHint": {
-    defaultMessage: "PNG أو JPG أو SVG. يُفضَّل ٥١٢×٥١٢ بكسل، وبحد أقصى ٢ ميجابايت.",
+    defaultMessage: "PNG أو JPG أو SVG. يُفضَّل 512×512 بكسل، وبحد أقصى 2 ميجابايت.",
   },
   "@legalos.settings.firm.detailsHeading": { defaultMessage: "بيانات المكتب" },
   "@legalos.settings.firm.nameLabel": { defaultMessage: "اسم المكتب" },
@@ -219,7 +219,7 @@ export const ar: Catalog = {
       "تحكَّم في من يملك حق الوصول إلى {firm} وما يمكنه فعله. المُلَّاك وحدهم يمكنهم دعوة أعضاء جدد.",
   },
   "@legalos.settings.users.invitationsHint": {
-    defaultMessage: "الدعوات روابط تُستخدم مرة واحدة وتنتهي صلاحيتها بعد ٧ أيام من إرسالها.",
+    defaultMessage: "الدعوات روابط تُستخدم مرة واحدة وتنتهي صلاحيتها بعد 7 أيام من إرسالها.",
   },
   "@legalos.settings.users.you": { defaultMessage: "أنت" },
   "@legalos.settings.users.nameWithYou": { defaultMessage: "{name} (أنت)" },
@@ -249,7 +249,7 @@ export const ar: Catalog = {
   "@legalos.settings.invite.title": { defaultMessage: "دعوة عضو للفريق" },
   "@legalos.settings.invite.subtitle": {
     defaultMessage:
-      "سيصله بريد إلكتروني يتضمن رابطاً للانضمام إلى {firm}. تنتهي صلاحية الدعوات بعد ٧ أيام.",
+      "سيصله بريد إلكتروني يتضمن رابطاً للانضمام إلى {firm}. تنتهي صلاحية الدعوات بعد 7 أيام.",
   },
   "@legalos.settings.invite.emailLabel": { defaultMessage: "البريد الإلكتروني" },
   "@legalos.settings.invite.roleLabel": { defaultMessage: "الصلاحية" },
@@ -269,7 +269,7 @@ export const ar: Catalog = {
   "@legalos.settings.profile.removePhoto": { defaultMessage: "إزالة الصورة" },
   "@legalos.settings.profile.remove": { defaultMessage: "إزالة" },
   "@legalos.settings.profile.photoHint": {
-    defaultMessage: "JPG أو PNG، بحد أدنى ٢٥٦×٢٥٦ بكسل. وإلا فستظهر الأحرف الأولى من اسمك.",
+    defaultMessage: "JPG أو PNG، بحد أدنى 256×256 بكسل. وإلا فستظهر الأحرف الأولى من اسمك.",
   },
   "@legalos.settings.profile.detailsHeading": { defaultMessage: "البيانات" },
   "@legalos.settings.profile.fullName": { defaultMessage: "الاسم بالكامل" },
@@ -304,7 +304,7 @@ export const ar: Catalog = {
   "@legalos.settings.profile.securityHeading": { defaultMessage: "الأمان" },
   "@legalos.settings.profile.password": { defaultMessage: "كلمة المرور" },
   "@legalos.settings.profile.passwordChanged": {
-    defaultMessage: "آخر تغيير منذ ٤ أشهر",
+    defaultMessage: "آخر تغيير منذ 4 أشهر",
   },
   "@legalos.settings.profile.changePassword": { defaultMessage: "تغيير كلمة المرور" },
   "@legalos.settings.profile.twoFactor": { defaultMessage: "التحقق بخطوتين" },

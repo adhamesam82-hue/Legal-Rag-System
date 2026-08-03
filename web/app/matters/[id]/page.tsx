@@ -42,11 +42,9 @@ import { useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import {
   daysUntil,
-  formatBytes,
-  formatDate,
-  formatDateTime,
   type MatterStatus,
 } from "@/lib/practice";
+import { useFormat } from "@/lib/i18n/format";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 import {
   Panel,
@@ -85,6 +83,7 @@ export default function MatterWorkspacePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { formatDate } = useFormat();
   const { id } = use(params);
   const matterId = Number(id);
   const t = useTranslator();
@@ -561,6 +560,7 @@ function EditMatterDialog({
 // --- tabs that read straight from the snapshot ------------------------------
 
 function NotesTab({ data, reload, onError }: TabProps) {
+  const { formatDateTime } = useFormat();
   const t = useTranslator();
   const memberName = useMemberName();
   const { practice } = useOrg();
@@ -644,6 +644,7 @@ function NotesTab({ data, reload, onError }: TabProps) {
 }
 
 function DocumentsTab({ data }: TabProps) {
+  const { formatDate, formatBytes } = useFormat();
   const t = useTranslator();
   const enumLabel = useEnumLabel();
   const memberName = useMemberName();
@@ -694,6 +695,7 @@ function DocumentsTab({ data }: TabProps) {
 }
 
 function TasksTab({ data, reload, onError }: TabProps) {
+  const { formatDate } = useFormat();
   const t = useTranslator();
   const memberName = useMemberName();
   const { practice } = useOrg();
@@ -777,6 +779,7 @@ function TasksTab({ data, reload, onError }: TabProps) {
 }
 
 function TimelineTab({ data }: TabProps) {
+  const { formatDate } = useFormat();
   const t = useTranslator();
   const enumLabel = useEnumLabel();
 

@@ -26,12 +26,11 @@ import { useTranslator } from "@astryxdesign/core/i18n";
 import { BanknotesIcon, ClockIcon } from "@heroicons/react/24/outline";
 import { useMemberName, useOrg } from "@/lib/org";
 import {
-  formatDate,
-  formatEGP,
   todayIso,
   type ExpenseCategory,
   type ISODateString,
 } from "@/lib/practice";
+import { useFormat } from "@/lib/i18n/format";
 import { Panel, useWrite, type TabProps } from "./shared";
 
 const CATEGORIES: ExpenseCategory[] = [
@@ -71,6 +70,7 @@ export function ActivitiesTab({
   onAddTimeChange: (open: boolean) => void;
   onAddExpenseChange: (open: boolean) => void;
 }) {
+  const { formatDate, formatEGP } = useFormat();
   const t = useTranslator();
   const memberName = useMemberName();
   const [filter, setFilter] = useState<"all" | "time" | "expense">("all");
@@ -347,6 +347,7 @@ function AddExpenseDialog({
   reload: () => void;
   onError: (message: string) => void;
 }) {
+  const { formatEGP } = useFormat();
   const t = useTranslator();
   const { practice } = useOrg();
   const write = useWrite(reload, onError);

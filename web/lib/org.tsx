@@ -18,6 +18,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import { useAuth } from "@clerk/nextjs";
 import { ApiError, api, type Membership, type OrgMember } from "@/lib/api";
 import { USING_CLERK } from "@/lib/auth-mode";
@@ -192,14 +193,19 @@ export function useOrg(): OrgContextValue {
 /** Maps a Clerk user id to something worth showing a human. */
 export function useMemberName() {
   const { members } = useOrg();
+  const t = useTranslator();
   return useCallback(
     (clerkUserId: string | null | undefined): string => {
       if (!clerkUserId) return "—";
-      if (clerkUserId === "system:ai") return "AI Assistant";
+      // The assistant is the one "member" with no row behind it, so its name
+      // is chrome rather than data and comes from the catalog — it used to be
+      // the literal "AI Assistant", sitting untranslated in an Arabic
+      // activity feed between Arabic names.
+      if (clerkUserId === "system:ai") return t("@legalos.shell.nav.aiAssistant");
       const member = members.find((m) => m.clerk_user_id === clerkUserId);
       return member?.display_name ?? clerkUserId;
     },
-    [members],
+    [members, t],
   );
 }
 

@@ -25,7 +25,7 @@ import { List, ListItem } from "@astryxdesign/core/List";
 import { Divider } from "@astryxdesign/core/Divider";
 import { Link } from "@astryxdesign/core/Link";
 import { ArrowUpIcon, ArrowDownIcon } from "@heroicons/react/24/outline";
-import { formatEGP } from "@/lib/legalos-data";
+import { useFormat } from "@/lib/i18n/format";
 import { useTranslator } from "@astryxdesign/core/i18n";
 
 // ---------------------------------------------------------------------------
@@ -124,10 +124,6 @@ const PAYROLL = [
 
 const AXIS_TICK = { fontSize: "var(--font-size-sm)", fill: "var(--color-text-secondary)" };
 
-function egpK(v: number) {
-  return `EGP ${Math.round(v / 1000)}k`;
-}
-
 const tooltipStyle = {
   background: "var(--color-background-popover)",
   border: "1px solid var(--color-border)",
@@ -136,6 +132,7 @@ const tooltipStyle = {
 
 export default function AccountingPage() {
   const t = useTranslator();
+  const { formatEGP, formatEGPCompact } = useFormat();
   const currentMonth = t(CURRENT_MONTH_KEY);
 
   const monthly = MONTHLY.map((m) => ({
@@ -295,7 +292,7 @@ export default function AccountingPage() {
                         <CartesianGrid horizontal vertical={false} stroke="var(--color-border)" />
                         <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                         <YAxis
-                          tickFormatter={egpK}
+                          tickFormatter={(v: number) => formatEGPCompact(v)}
                           tick={AXIS_TICK}
                           axisLine={false}
                           tickLine={false}
@@ -332,7 +329,7 @@ export default function AccountingPage() {
                       <CartesianGrid horizontal vertical={false} stroke="var(--color-border)" />
                       <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
                       <YAxis
-                        tickFormatter={egpK}
+                        tickFormatter={(v: number) => formatEGPCompact(v)}
                         tick={AXIS_TICK}
                         axisLine={false}
                         tickLine={false}

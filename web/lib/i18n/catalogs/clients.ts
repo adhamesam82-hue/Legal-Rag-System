@@ -95,6 +95,9 @@ export const en: Catalog = {
   "@legalos.clients.detail.field.address": { defaultMessage: "Address" },
   "@legalos.clients.detail.field.phone": { defaultMessage: "Phone" },
   "@legalos.clients.detail.field.email": { defaultMessage: "Email" },
+  "@legalos.clients.detail.invoiceDates": {
+    defaultMessage: "Issued {issued} · due {due}",
+  },
 };
 
 export const ar: Catalog = {
@@ -191,4 +194,7 @@ export const ar: Catalog = {
   "@legalos.clients.detail.field.address": { defaultMessage: "العنوان" },
   "@legalos.clients.detail.field.phone": { defaultMessage: "الهاتف" },
   "@legalos.clients.detail.field.email": { defaultMessage: "البريد الإلكتروني" },
+  "@legalos.clients.detail.invoiceDates": {
+    defaultMessage: "صدرت في {issued} · تستحق في {due}",
+  },
 };

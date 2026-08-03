@@ -8,6 +8,13 @@ import type { Catalog } from "@astryxdesign/core/i18n";
 
 export const en: Catalog = {
   // --- Messages ---------------------------------------------------------
+  "@legalos.messages.heading": { defaultMessage: "Messages" },
+  "@legalos.messages.newMessage": { defaultMessage: "New message" },
+  "@legalos.messages.presence.online": { defaultMessage: "Online" },
+  "@legalos.messages.presence.busy": { defaultMessage: "Busy" },
+  "@legalos.messages.presence.offline": { defaultMessage: "Offline" },
+  "@legalos.messages.composer.toPerson": { defaultMessage: "Message {name}" },
+  "@legalos.messages.composer.toChannel": { defaultMessage: "Message #{name}" },
   "@legalos.messages.jumpTo.label": { defaultMessage: "Jump to" },
   "@legalos.messages.jumpTo.placeholder": {
     defaultMessage: "Jump to a channel or person...",
@@ -49,6 +56,13 @@ export const en: Catalog = {
 
 export const ar: Catalog = {
   // --- Messages ---------------------------------------------------------
+  "@legalos.messages.heading": { defaultMessage: "الرسائل" },
+  "@legalos.messages.newMessage": { defaultMessage: "رسالة جديدة" },
+  "@legalos.messages.presence.online": { defaultMessage: "متصل" },
+  "@legalos.messages.presence.busy": { defaultMessage: "مشغول" },
+  "@legalos.messages.presence.offline": { defaultMessage: "غير متصل" },
+  "@legalos.messages.composer.toPerson": { defaultMessage: "رسالة إلى {name}" },
+  "@legalos.messages.composer.toChannel": { defaultMessage: "رسالة في #{name}" },
   "@legalos.messages.jumpTo.label": { defaultMessage: "انتقال سريع" },
   "@legalos.messages.jumpTo.placeholder": {
     defaultMessage: "انتقل إلى قناة أو شخص...",

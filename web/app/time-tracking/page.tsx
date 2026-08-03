@@ -42,20 +42,22 @@ import { useTranslator } from "@astryxdesign/core/i18n";
 import { useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import {
-  formatDate,
-  formatEGP,
   todayIso,
   type ISODateString,
   type Matter,
   type TimeEntry,
 } from "@/lib/practice";
+import { useFormat } from "@/lib/i18n/format";
 
 const WEEKLY_TARGET_HOURS = 40;
 const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 type DayKey = (typeof DAY_KEYS)[number];
 
 /** Monday-anchored week containing `iso`. */
-function weekDays(iso: string): { dayKey: DayKey; date: string; iso: string }[] {
+function weekDays(
+  iso: string,
+  intlLocale: string,
+): { dayKey: DayKey; date: string; iso: string }[] {
   const anchor = new Date(`${iso}T00:00:00`);
   const offsetToMonday = (anchor.getDay() + 6) % 7;
   const monday = new Date(anchor);
@@ -66,7 +68,7 @@ function weekDays(iso: string): { dayKey: DayKey; date: string; iso: string }[] 
     const key = `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, "0")}-${`${date.getDate()}`.padStart(2, "0")}`;
     return {
       dayKey: DAY_KEYS[date.getDay()],
-      date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      date: date.toLocaleDateString(intlLocale, { month: "short", day: "numeric" }),
       iso: key,
     };
   });
@@ -92,6 +94,7 @@ interface EntryRow extends Record<string, unknown> {
 }
 
 export default function TimeTrackingPage() {
+  const { formatDate, formatEGP, intlLocale } = useFormat();
   const t = useTranslator();
   const memberName = useMemberName();
   const [view, setView] = useState<"day" | "week">("week");
@@ -99,7 +102,7 @@ export default function TimeTrackingPage() {
   const [isCreating, setIsCreating] = useState(false);
 
   const today = todayIso();
-  const week = useMemo(() => weekDays(today), [today]);
+  const week = useMemo(() => weekDays(today, intlLocale), [today, intlLocale]);
   const weekStart = week[0].iso;
   const weekEnd = week[6].iso;
 
