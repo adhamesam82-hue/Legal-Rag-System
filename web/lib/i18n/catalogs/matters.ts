@@ -58,7 +58,15 @@ export const en: Catalog = {
   "@legalos.matters.list.filter.allStatuses": { defaultMessage: "All statuses" },
   "@legalos.matters.list.table.matter": { defaultMessage: "Matter" },
   "@legalos.matters.list.noDeadline": { defaultMessage: "None scheduled" },
-  "@legalos.matters.list.deadlineBadge": { defaultMessage: "{date} · {days}d" },
+  "@legalos.matters.list.deadlineBadge": {
+    defaultMessage: "{date} · {days, plural, one {# day} other {# days}}",
+  },
+  // Overdue takes its own key rather than letting a negative {days} through:
+  // "-1 يوم" is not a sentence in any language, and Arabic needs the count
+  // word to agree with the number besides.
+  "@legalos.matters.list.deadlineBadgeOverdue": {
+    defaultMessage: "{date} · {days, plural, one {# day} other {# days}} overdue",
+  },
   "@legalos.matters.list.emptyTitle": {
     defaultMessage: "No matters match your filters",
   },
@@ -71,7 +79,7 @@ export const en: Catalog = {
   // New matter dialog
   "@legalos.matters.dialog.nameLabel": { defaultMessage: "Matter name" },
   "@legalos.matters.dialog.namePlaceholder": {
-    defaultMessage: "Nabil v. Nile Trading Co.",
+    defaultMessage: "نبيل ضد شركة النيل للتجارة",
   },
   "@legalos.matters.dialog.selectClient": { defaultMessage: "Select a client" },
   "@legalos.matters.dialog.clientsLoading": { defaultMessage: "Loading clients…" },
@@ -234,7 +242,14 @@ export const ar: Catalog = {
   "@legalos.matters.list.filter.allStatuses": { defaultMessage: "جميع الحالات" },
   "@legalos.matters.list.table.matter": { defaultMessage: "الملف" },
   "@legalos.matters.list.noDeadline": { defaultMessage: "لا يوجد موعد محدد" },
-  "@legalos.matters.list.deadlineBadge": { defaultMessage: "{date} · {days} يوم" },
+  "@legalos.matters.list.deadlineBadge": {
+    defaultMessage:
+      "{date} · {days, plural, zero {اليوم} one {يوم واحد} two {يومان} few {# أيام} many {# يومًا} other {# يوم}}",
+  },
+  "@legalos.matters.list.deadlineBadgeOverdue": {
+    defaultMessage:
+      "{date} · متأخر {days, plural, one {يومًا واحدًا} two {يومين} few {# أيام} many {# يومًا} other {# يوم}}",
+  },
   "@legalos.matters.list.emptyTitle": {
     defaultMessage: "لا توجد ملفات مطابقة لعوامل التصفية",
   },

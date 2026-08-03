@@ -26,11 +26,10 @@ import { API_BASE } from "@/lib/api";
 import { useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import {
-  formatBytes,
-  formatDate,
   type DocumentStatus,
   type MatterDocument,
 } from "@/lib/practice";
+import { useFormat } from "@/lib/i18n/format";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 
@@ -73,6 +72,7 @@ interface DocRow extends Record<string, unknown> {
 }
 
 export default function DocumentsPage() {
+  const { formatDate, formatBytes } = useFormat();
   const t = useTranslator();
   const enumLabel = useEnumLabel();
   const { practice, organizationId } = useOrg();

@@ -99,10 +99,12 @@ export const en: Catalog = {
   "@legalos.accounting.column.share": { defaultMessage: "Share" },
   "@legalos.accounting.column.monthPayout": { defaultMessage: "{month} payout" },
 
-  "@legalos.accounting.person.ahmed": { defaultMessage: "Ahmed Al-Sayed" },
-  "@legalos.accounting.person.mona": { defaultMessage: "Mona Farouk" },
-  "@legalos.accounting.person.youssef": { defaultMessage: "Youssef Adel" },
-  "@legalos.accounting.person.layla": { defaultMessage: "Layla Hassan" },
+  // Team names are data: the same people, spelled the same way, in either
+  // UI language — matching TEAM in scripts/seed_demo_firm.py.
+  "@legalos.accounting.person.ahmed": { defaultMessage: "أحمد السيد" },
+  "@legalos.accounting.person.mona": { defaultMessage: "منى فاروق" },
+  "@legalos.accounting.person.youssef": { defaultMessage: "يوسف عادل" },
+  "@legalos.accounting.person.layla": { defaultMessage: "ليلى حسن" },
 
   "@legalos.accounting.payroll.heading": { defaultMessage: "Payroll" },
   "@legalos.accounting.payroll.role.ownerPartner": { defaultMessage: "Owner · Partner" },
@@ -173,10 +175,10 @@ export const en: Catalog = {
       "New matters have outpaced closures in 4 of the last 6 months — the active caseload is growing.",
   },
 
-  "@legalos.reports.person.ahmed": { defaultMessage: "Ahmed Al-Sayed" },
-  "@legalos.reports.person.mona": { defaultMessage: "Mona Farouk" },
-  "@legalos.reports.person.youssef": { defaultMessage: "Youssef Adel" },
-  "@legalos.reports.person.layla": { defaultMessage: "Layla Hassan" },
+  "@legalos.reports.person.ahmed": { defaultMessage: "أحمد السيد" },
+  "@legalos.reports.person.mona": { defaultMessage: "منى فاروق" },
+  "@legalos.reports.person.youssef": { defaultMessage: "يوسف عادل" },
+  "@legalos.reports.person.layla": { defaultMessage: "ليلى حسن" },
 };
 
 export const ar: Catalog = {

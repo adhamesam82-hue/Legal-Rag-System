@@ -35,13 +35,12 @@ import {
 import { useMemberName, useOrg } from "@/lib/org";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 import {
-  formatDate,
-  formatEGP,
   todayIso,
   type ISODateString,
   type InvoiceStatus,
   type TrustKind,
 } from "@/lib/practice";
+import { useFormat } from "@/lib/i18n/format";
 import { Panel, StatTile, financialsOf, useWrite, type TabProps } from "./shared";
 
 const INVOICE_VARIANT: Record<InvoiceStatus, "neutral" | "info" | "success" | "error"> =
@@ -68,6 +67,7 @@ export function BillsTab({
   quickBillOpen: boolean;
   onQuickBillChange: (open: boolean) => void;
 }) {
+  const { formatDate, formatEGP } = useFormat();
   const t = useTranslator();
   const enumLabel = useEnumLabel();
   const money = financialsOf(data);
@@ -154,6 +154,7 @@ function QuickBillDialog({
   reload: () => void;
   onError: (message: string) => void;
 }) {
+  const { formatEGP } = useFormat();
   const t = useTranslator();
   const { practice } = useOrg();
   const write = useWrite(reload, onError);
@@ -266,6 +267,7 @@ export function TransactionsTab({
   recordOpen: boolean;
   onRecordChange: (open: boolean) => void;
 }) {
+  const { formatDate, formatEGP } = useFormat();
   const t = useTranslator();
   const memberName = useMemberName();
   const { role } = useOrg();
@@ -516,6 +518,7 @@ function RecordTransactionDialog({
   reload: () => void;
   onError: (message: string) => void;
 }) {
+  const { formatEGP } = useFormat();
   const t = useTranslator();
   const { practice } = useOrg();
   const write = useWrite(reload, onError);

@@ -17,7 +17,8 @@ import { MagnifyingGlassIcon, ScaleIcon } from "@heroicons/react/24/outline";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useResource } from "@/lib/org";
 import { DataView } from "@/components/DataState";
-import { formatDate, todayIso } from "@/lib/practice";
+import { todayIso } from "@/lib/practice";
+import { useFormat } from "@/lib/i18n/format";
 
 interface CaseRow extends Record<string, unknown> {
   id: number;
@@ -38,6 +39,7 @@ function statusVariant(status: string): "success" | "warning" | "neutral" {
 }
 
 export default function CasesPage() {
+  const { formatDate } = useFormat();
   const t = useTranslator();
   const [query, setQuery] = useState("");
   const [courtFilter, setCourtFilter] = useState<string>("all");

@@ -12,6 +12,7 @@ import { Icon } from "@astryxdesign/core/Icon";
 import { HStack } from "@astryxdesign/core/Stack";
 import { ArrowLeftIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
 import { useTranslator, useDirection } from "@astryxdesign/core/i18n";
+import { useFormat } from "@/lib/i18n/format";
 import { ArticleCard } from "@/components/ArticleCard";
 import { api, ApiError, Article, Instrument, dirOf } from "@/lib/api";
 
@@ -24,6 +25,7 @@ export default function InstrumentPage({
 }) {
   const { id } = use(params);
   const t = useTranslator();
+  const { intlLocale } = useFormat();
   const direction = useDirection();
   const instrumentId = Number(id);
 
@@ -97,7 +99,7 @@ export default function InstrumentPage({
           <div style={{ marginBlock: 8 }}>
             <Text type="supporting">
               {t("@legalos.library.instrument.meta", {
-                total: total.toLocaleString(),
+                total: total.toLocaleString(intlLocale),
                 from: offset + 1,
                 to: shown,
               })}

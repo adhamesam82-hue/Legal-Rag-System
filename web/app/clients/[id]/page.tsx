@@ -22,11 +22,9 @@ import {
 import { useMemberName, useResource } from "@/lib/org";
 import { DataView } from "@/components/DataState";
 import {
-  formatDate,
-  formatDateTime,
-  formatEGP,
   type MatterStatus,
 } from "@/lib/practice";
+import { useFormat } from "@/lib/i18n/format";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 
@@ -41,6 +39,7 @@ export default function ClientDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { formatDate, formatDateTime, formatEGP } = useFormat();
   const { id } = use(params);
   const t = useTranslator();
   const clientId = Number(id);
@@ -198,7 +197,10 @@ export default function ClientDetailPage({
                                     key={invoice.id}
                                     label={invoice.number}
                                     href={`/billing/${invoice.id}`}
-                                    description={`Issued ${formatDate(invoice.issued_date)} · due ${formatDate(invoice.due_date)}`}
+                                    description={t("@legalos.clients.detail.invoiceDates", {
+                                      issued: formatDate(invoice.issued_date),
+                                      due: formatDate(invoice.due_date),
+                                    })}
                                     startContent={
                                       <Icon
                                         icon={BanknotesIcon}

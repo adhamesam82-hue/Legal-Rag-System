@@ -37,10 +37,10 @@ import { useTranslator } from "@astryxdesign/core/i18n";
 import {
   getLead,
   STAGE_META,
-  formatEGP,
   type TimelineEntryType,
   type ConsultationInfo,
 } from "../data";
+import { useFormat } from "@/lib/i18n/format";
 
 const TIMELINE_ICON: Record<TimelineEntryType, typeof PhoneIcon> = {
   call: PhoneIcon,
@@ -51,13 +51,13 @@ const TIMELINE_ICON: Record<TimelineEntryType, typeof PhoneIcon> = {
   stage: FlagIcon,
 };
 
-const TIMELINE_LABEL: Record<TimelineEntryType, string> = {
-  call: "Call",
-  email: "Email",
-  whatsapp: "WhatsApp",
-  meeting: "Meeting",
-  note: "Note",
-  stage: "Pipeline",
+const TIMELINE_LABEL_KEY: Record<TimelineEntryType, string> = {
+  call: "@legalos.crm.timeline.call",
+  email: "@legalos.crm.timeline.email",
+  whatsapp: "@legalos.crm.timeline.whatsapp",
+  meeting: "@legalos.crm.timeline.meeting",
+  note: "@legalos.crm.timeline.note",
+  stage: "@legalos.crm.timeline.stage",
 };
 
 const CONFLICT_META = {
@@ -72,6 +72,7 @@ export default function LeadProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const t = useTranslator();
+  const { formatEGP, intlLocale } = useFormat();
   const { id } = use(params);
   const lead = getLead(id);
 
@@ -119,8 +120,8 @@ export default function LeadProfilePage({
     const dt = new Date(scheduleValue);
     setConsultation({
       status: "scheduled",
-      date: dt.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }),
-      time: dt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+      date: dt.toLocaleDateString(intlLocale, { weekday: "short", month: "short", day: "numeric" }),
+      time: dt.toLocaleTimeString(intlLocale, { hour: "numeric", minute: "2-digit" }),
     });
     setIsScheduling(false);
   }
@@ -180,7 +181,7 @@ export default function LeadProfilePage({
                         {lead.timeline.map((entry, i) => (
                           <ListItem
                             key={`${entry.time}-${i}`}
-                            label={`${entry.who} · ${TIMELINE_LABEL[entry.type]}`}
+                            label={`${entry.who} · ${t(TIMELINE_LABEL_KEY[entry.type])}`}
                             description={entry.text}
                             startContent={
                               <Icon icon={TIMELINE_ICON[entry.type]} size="sm" color="secondary" />
@@ -217,7 +218,7 @@ export default function LeadProfilePage({
                             {logged.map((entry, i) => (
                               <ListItem
                                 key={`${entry.time}-${i}`}
-                                label={`${entry.who} · ${TIMELINE_LABEL[entry.type]}`}
+                                label={`${entry.who} · ${t(TIMELINE_LABEL_KEY[entry.type])}`}
                                 description={entry.text}
                                 startContent={
                                   <Icon

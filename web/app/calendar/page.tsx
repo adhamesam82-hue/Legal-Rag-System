@@ -33,11 +33,11 @@ import { useTranslator } from "@astryxdesign/core/i18n";
 import { useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import {
-  formatDate,
   todayIso,
   type ISODateString,
   type Matter,
 } from "@/lib/practice";
+import { useFormat } from "@/lib/i18n/format";
 
 type EventKind = "hearing" | "deadline" | "task";
 
@@ -83,6 +83,7 @@ function monthKey(year: number, month: number) {
 }
 
 export default function CalendarPage() {
+  const { formatDate, formatMonth } = useFormat();
   const t = useTranslator();
   const { practice, members } = useOrg();
   const memberName = useMemberName();
@@ -206,10 +207,7 @@ export default function CalendarPage() {
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 6);
 
-  const monthLabel = new Date(`${monthStart}T00:00:00`).toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
+  const monthLabel = formatMonth(monthStart);
 
   function shiftMonth(delta: number) {
     setCursor(({ year, month }) => {

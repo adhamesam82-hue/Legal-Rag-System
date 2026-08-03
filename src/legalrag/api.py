@@ -208,7 +208,11 @@ class ArticleDetail(BaseModel):
 
 
 class ExplainRequest(BaseModel):
-    language: Literal["en", "ar"] = "en"
+    # Arabic by default: the corpus is Egyptian statute text in Arabic, so a
+    # caller that does not say otherwise wants the explanation in the language
+    # the article is written in. The web client sends the UI locale explicitly;
+    # this covers everything else.
+    language: Literal["en", "ar"] = "ar"
 
 
 class OrganizationOut(BaseModel):

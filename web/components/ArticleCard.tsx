@@ -6,6 +6,7 @@ import { Card } from "@astryxdesign/core/Card";
 import { Badge } from "@astryxdesign/core/Badge";
 import { Text } from "@astryxdesign/core/Text";
 import { Button } from "@astryxdesign/core/Button";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import { Article, dirOf } from "@/lib/api";
 
 const COLLAPSE_AT = 460;
@@ -26,6 +27,7 @@ export function ArticleCard({
   cited?: boolean;
   rank?: number;
 }) {
+  const t = useTranslator();
   const [expanded, setExpanded] = useState(false);
   const isLong = article.text.length > COLLAPSE_AT;
   const body =
@@ -83,14 +85,18 @@ export function ArticleCard({
           <Button
             size="sm"
             variant="ghost"
-            label={expanded ? "Show less" : "Show full article"}
+            label={t(
+              expanded
+                ? "@legalos.article.card.showLess"
+                : "@legalos.article.card.showFull",
+            )}
             onClick={() => setExpanded((v) => !v)}
           />
         )}
         <div style={{ marginInlineStart: "auto" }}>
           <NextLink href={`/article/${article.id}`}>
             <Text type="label" color="accent">
-              Open article →
+              {t("@legalos.article.card.open")}
             </Text>
           </NextLink>
         </div>

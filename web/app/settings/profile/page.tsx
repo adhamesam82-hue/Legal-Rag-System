@@ -24,15 +24,15 @@ import { useOrg } from "@/lib/org";
 import type { Locale } from "@/lib/i18n/locale";
 
 const SESSIONS = [
-  { device: "MacBook Pro · Cairo, Egypt", detail: "Chrome · current session", current: true },
-  { device: "iPhone 15 · Cairo, Egypt", detail: "LegalOS mobile · last active 2 days ago", current: false },
+  { device: "MacBook Pro · القاهرة، مصر", detail: "Chrome · الجلسة الحالية", current: true },
+  { device: "iPhone 15 · القاهرة، مصر", detail: "تطبيق LegalOS · آخر نشاط منذ يومين", current: false },
 ];
 
 export default function ProfileSettingsPage() {
-  const [name, setName] = useState("Ahmed Al-Sayed");
+  const [name, setName] = useState("أحمد السيد");
   const [email, setEmail] = useState("ahmed@alsayed-partners.eg");
   const [phone, setPhone] = useState("+20 100 555 0142");
-  const [title, setTitle] = useState("Managing Partner");
+  const [title, setTitle] = useState("الشريك المدير");
   // Unlike the other fields on this page, language switches the whole app
   // live rather than waiting on "Save changes" — matching how the Astryx
   // InternationalizationProvider is meant to be driven (see lib/i18n).

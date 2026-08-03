@@ -86,6 +86,14 @@ export const en: Catalog = {
   "@legalos.crm.empty.description": {
     defaultMessage: "Leads moved to this stage appear here.",
   },
+
+  // Timeline entry kinds on a lead's profile.
+  "@legalos.crm.timeline.call": { defaultMessage: "Call" },
+  "@legalos.crm.timeline.email": { defaultMessage: "Email" },
+  "@legalos.crm.timeline.whatsapp": { defaultMessage: "WhatsApp" },
+  "@legalos.crm.timeline.meeting": { defaultMessage: "Meeting" },
+  "@legalos.crm.timeline.note": { defaultMessage: "Note" },
+  "@legalos.crm.timeline.stage": { defaultMessage: "Pipeline" },
 };
 
 export const ar: Catalog = {
@@ -171,4 +179,11 @@ export const ar: Catalog = {
   "@legalos.crm.empty.description": {
     defaultMessage: "سيظهر هنا العملاء المحتملون المنقولون إلى هذه المرحلة.",
   },
+
+  "@legalos.crm.timeline.call": { defaultMessage: "مكالمة" },
+  "@legalos.crm.timeline.email": { defaultMessage: "بريد إلكتروني" },
+  "@legalos.crm.timeline.whatsapp": { defaultMessage: "واتساب" },
+  "@legalos.crm.timeline.meeting": { defaultMessage: "اجتماع" },
+  "@legalos.crm.timeline.note": { defaultMessage: "ملاحظة" },
+  "@legalos.crm.timeline.stage": { defaultMessage: "المسار" },
 };

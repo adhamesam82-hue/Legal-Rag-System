@@ -24,10 +24,9 @@ import { API_BASE } from "@/lib/api";
 import { useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import {
-  formatBytes,
-  formatDateTime,
   type DocumentStatus,
 } from "@/lib/practice";
+import { useFormat } from "@/lib/i18n/format";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 
@@ -48,6 +47,7 @@ export default function DocumentDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { formatDateTime, formatBytes } = useFormat();
   const { id } = use(params);
   const t = useTranslator();
   const documentId = Number(id);

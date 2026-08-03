@@ -41,14 +41,13 @@ import {
 } from "@heroicons/react/24/outline";
 import { useMemberName, useOrg } from "@/lib/org";
 import {
-  formatDate,
-  formatDateTime,
   type ClientPortal,
   type CommunicationChannel,
   type CommunicationDirection,
   type PortalStatus,
   type SecureThread,
 } from "@/lib/practice";
+import { useFormat } from "@/lib/i18n/format";
 import { Panel, useWrite, type TabProps } from "./shared";
 
 const CHANNELS: CommunicationChannel[] = ["phone", "email", "meeting", "letter"];
@@ -105,6 +104,7 @@ export function CommunicationsTab(props: TabProps) {
 // --- logs -------------------------------------------------------------------
 
 function LogsPanel({ data, reload, onError }: TabProps) {
+  const { formatDateTime } = useFormat();
   const t = useTranslator();
   const memberName = useMemberName();
   const [channel, setChannel] = useState<"all" | CommunicationChannel>("all");
@@ -442,6 +442,7 @@ function ThreadCard({
   reload: () => void;
   onError: (message: string) => void;
 }) {
+  const { formatDateTime } = useFormat();
   const t = useTranslator();
   const memberName = useMemberName();
   const { practice } = useOrg();
@@ -669,6 +670,7 @@ function StartThreadDialog({
 // --- client portals ---------------------------------------------------------
 
 export function PortalsPanel({ data, reload, onError }: TabProps) {
+  const { formatDate } = useFormat();
   const t = useTranslator();
   const { practice } = useOrg();
   const write = useWrite(reload, onError);

@@ -56,7 +56,9 @@ export const en: Catalog = {
     defaultMessage: "Nothing outstanding on this case.",
   },
   "@legalos.cases.detail.deadlineDone": { defaultMessage: "Done" },
-  "@legalos.cases.detail.daysSuffix": { defaultMessage: "{days}d" },
+  "@legalos.cases.detail.daysSuffix": {
+    defaultMessage: "{days, plural, one {# day} other {# days}}",
+  },
   "@legalos.cases.detail.submittedBy.us": { defaultMessage: "Us" },
   "@legalos.cases.detail.submittedBy.opposingParty": { defaultMessage: "Opposing party" },
   "@legalos.cases.detail.submittedBy.court": { defaultMessage: "Court" },
@@ -201,7 +203,10 @@ export const ar: Catalog = {
     defaultMessage: "لا يوجد أي التزام معلّق في هذه القضية.",
   },
   "@legalos.cases.detail.deadlineDone": { defaultMessage: "منجز" },
-  "@legalos.cases.detail.daysSuffix": { defaultMessage: "{days} يوم" },
+  "@legalos.cases.detail.daysSuffix": {
+    defaultMessage:
+      "{days, plural, zero {اليوم} one {يوم واحد} two {يومان} few {# أيام} many {# يومًا} other {# يوم}}",
+  },
   "@legalos.cases.detail.submittedBy.us": { defaultMessage: "نحن" },
   "@legalos.cases.detail.submittedBy.opposingParty": { defaultMessage: "الخصم" },
   "@legalos.cases.detail.submittedBy.court": { defaultMessage: "المحكمة" },

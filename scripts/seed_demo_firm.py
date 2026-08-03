@@ -5,6 +5,15 @@ hard-coded TypeScript module. It is sample data, not real firm data -- the
 same caveat that file carried applies here, it just lives in Postgres now so
 the UI exercises real queries, real ids and real writes.
 
+The content is Arabic, because the firm it portrays is Egyptian: a Cairo
+practice's client names, matter titles, court papers and file notes are
+written in Arabic whichever language its software happens to be set to. The
+UI chrome around it still follows the locale toggle -- an English-language
+session shows English labels over this same Arabic record. Only the parts a
+real file would keep in Latin script stay that way: slugs (they are ids and
+URL segments), enum values (the UI translates those from catalogs), e-mail
+addresses, file formats and invoice references.
+
 Run:
     uv run python scripts/seed_demo_firm.py
     uv run python scripts/seed_demo_firm.py --reset --owner-email you@example.com
@@ -28,13 +37,17 @@ import psycopg
 from legalrag.config import get_clerk_secret_key
 from legalrag.db import get_connection
 
-FIRM_NAME = "Al-Sayed & Partners"
+FIRM_NAME = "السيد وشركاه للمحاماة والاستشارات القانونية"
+
+# Names this same demo firm has been seeded under before. --reset clears these
+# too, so renaming the firm replaces it rather than seeding a second one.
+FORMER_FIRM_NAMES = ["Al-Sayed & Partners"]
 
 TEAM = [
-    ("seed_ahmed_al_sayed", "owner", "Ahmed Al-Sayed", "Managing Partner"),
-    ("seed_mona_farouk", "lawyer", "Mona Farouk", "Senior Associate"),
-    ("seed_youssef_adel", "lawyer", "Youssef Adel", "Associate"),
-    ("seed_layla_hassan", "staff", "Layla Hassan", "Paralegal"),
+    ("seed_ahmed_al_sayed", "owner", "أحمد السيد", "الشريك المدير"),
+    ("seed_mona_farouk", "lawyer", "منى فاروق", "محامية أولى"),
+    ("seed_youssef_adel", "lawyer", "يوسف عادل", "محامٍ"),
+    ("seed_layla_hassan", "staff", "ليلى حسن", "مساعدة قانونية"),
 ]
 
 AHMED, MONA, YOUSSEF, LAYLA = (member[0] for member in TEAM)
@@ -42,123 +55,124 @@ AHMED, MONA, YOUSSEF, LAYLA = (member[0] for member in TEAM)
 CLIENTS = [
     {
         "slug": "nile-trading",
-        "name": "Nile Trading Co.",
+        "name": "شركة النيل للتجارة",
         "client_type": "company",
-        "industry": "Import & Export Trading",
+        "industry": "الاستيراد والتصدير",
         "status": "active",
         "client_since": date(2022, 3, 14),
-        "registration_number": "CR-88213-Cairo",
+        "registration_number": "س.ت 88213 — القاهرة",
         "tax_id": "300-215-664",
-        "address": "12 Corniche El Nil, Maadi, Cairo",
+        "address": "12 كورنيش النيل، المعادي، القاهرة",
         "phone": "+20 2 2519 4432",
         "email": "legal@niletradingco.com",
-        "notes": "Long-standing client. Prefers all filings copied to General Counsel directly.",
+        "notes": "عميل قديم للمكتب. يفضّل إرسال صورة من كل مذكرة تُقدَّم للمحكمة إلى المستشار القانوني للشركة مباشرةً.",
         "contacts": [
-            ("Karim Fahmy", "General Counsel", "k.fahmy@niletradingco.com", "+20 100 555 2010", True),
-            ("Rania Samy", "CFO", "r.samy@niletradingco.com", "+20 100 555 2044", False),
+            ("كريم فهمي", "المستشار القانوني", "k.fahmy@niletradingco.com", "+20 100 555 2010", True),
+            ("رانيا سامي", "المدير المالي", "r.samy@niletradingco.com", "+20 100 555 2044", False),
         ],
     },
     {
         "slug": "delta-foods",
-        "name": "Delta Foods",
+        "name": "شركة دلتا للأغذية",
         "client_type": "company",
-        "industry": "Food Manufacturing & Distribution",
+        "industry": "تصنيع وتوزيع الأغذية",
         "status": "active",
         "client_since": date(2023, 6, 2),
-        "registration_number": "CR-51092-Giza",
+        "registration_number": "س.ت 51092 — الجيزة",
         "tax_id": "301-884-119",
-        "address": "Industrial Zone A, 6th of October City, Giza",
+        "address": "المنطقة الصناعية الأولى، مدينة 6 أكتوبر، الجيزة",
         "phone": "+20 2 3821 7765",
         "email": "contact@deltafoods.eg",
-        "notes": "Two concurrent matters: routine contract review and an active labour dispute.",
+        "notes": "قضيتان جاريتان في وقت واحد: مراجعة عقود اعتيادية، ونزاع عمالي منظور أمام المحكمة.",
         "contacts": [
-            ("Tamer Gaber", "HR Director", "t.gaber@deltafoods.eg", "+20 101 442 8830", True),
-            ("Nourhan Ezzat", "Operations Manager", "n.ezzat@deltafoods.eg", "+20 101 442 8871", False),
+            ("تامر جابر", "مدير الموارد البشرية", "t.gaber@deltafoods.eg", "+20 101 442 8830", True),
+            ("نورهان عزت", "مدير العمليات", "n.ezzat@deltafoods.eg", "+20 101 442 8871", False),
         ],
     },
     {
         "slug": "khalil-holdings",
-        "name": "Khalil Holdings",
+        "name": "مجموعة خليل القابضة",
         "client_type": "company",
-        "industry": "Diversified Holding Group",
+        "industry": "أنشطة قابضة متنوعة",
         "status": "active",
         "client_since": date(2021, 11, 20),
-        "registration_number": "CR-40217-Cairo",
+        "registration_number": "س.ت 40217 — القاهرة",
         "tax_id": "299-733-502",
-        "address": "Nile City Towers, Ramlet Boulaq, Cairo",
+        "address": "أبراج نايل سيتي، رملة بولاق، القاهرة",
         "phone": "+20 2 2461 9900",
         "email": "counsel@khalilholdings.com",
         "notes": None,
         "contacts": [
-            ("Hossam Khalil", "Chairman", "h.khalil@khalilholdings.com", "+20 100 111 7620", True),
+            ("حسام خليل", "رئيس مجلس الإدارة", "h.khalil@khalilholdings.com", "+20 100 111 7620", True),
+            ("نادية خليل", "المدير المالي للمجموعة", "n.khalil@khalilholdings.com", "+20 100 111 7644", False),
         ],
     },
     {
         "slug": "al-amal-trading",
-        "name": "Al Amal Trading",
+        "name": "شركة الأمل للتجارة",
         "client_type": "company",
-        "industry": "Retail & Wholesale Trading",
+        "industry": "تجارة الجملة والتجزئة",
         "status": "active",
         "client_since": date(2024, 1, 9),
-        "registration_number": "CR-77410-Cairo",
+        "registration_number": "س.ت 77410 — القاهرة",
         "tax_id": "302-556-284",
-        "address": "18 El Merghany St, Heliopolis, Cairo",
+        "address": "18 شارع المرغني، مصر الجديدة، القاهرة",
         "phone": "+20 2 2418 3350",
         "email": "info@alamaltrading.eg",
         "notes": None,
         "contacts": [
-            ("Sherif Nabil", "Owner", "sherif@alamaltrading.eg", "+20 122 340 5511", True),
+            ("شريف نبيل", "المالك", "sherif@alamaltrading.eg", "+20 122 340 5511", True),
         ],
     },
     {
         "slug": "el-sayed-estate",
-        "name": "El-Sayed Estate",
+        "name": "تركة المرحوم محمود السيد",
         "client_type": "individual",
-        "industry": "Private Estate",
+        "industry": "تركة خاصة",
         "status": "active",
         "client_since": date(2025, 9, 1),
         "registration_number": None,
         "tax_id": None,
-        "address": "9 Gameat El Dowal El Arabeya St, Mohandessin, Giza",
+        "address": "9 شارع جامعة الدول العربية، المهندسين، الجيزة",
         "phone": "+20 100 222 8890",
         "email": "farida.elsayed@gmail.com",
-        "notes": "Sensitive family matter — coordinate all outreach through Farida El-Sayed only.",
+        "notes": "قضية أسرة حساسة — يقتصر التواصل على الأستاذة فريدة السيد وحدها.",
         "contacts": [
-            ("Farida El-Sayed", "Executor", "farida.elsayed@gmail.com", "+20 100 222 8890", True),
+            ("فريدة السيد", "وكيلة الورثة", "farida.elsayed@gmail.com", "+20 100 222 8890", True),
         ],
     },
     {
         "slug": "zahran-construction",
-        "name": "Zahran Construction Group",
+        "name": "مجموعة زهران للمقاولات",
         "client_type": "company",
-        "industry": "Construction & Real Estate Development",
+        "industry": "المقاولات والتطوير العقاري",
         "status": "active",
         "client_since": date(2023, 2, 27),
-        "registration_number": "CR-63305-Cairo",
+        "registration_number": "س.ت 63305 — القاهرة",
         "tax_id": "300-990-441",
-        "address": "New Cairo Business Park, Building 4, Cairo",
+        "address": "نيو كايرو بيزنس بارك، مبنى 4، القاهرة الجديدة",
         "phone": "+20 2 2758 6120",
         "email": "legal@zahrancg.com",
         "notes": None,
         "contacts": [
-            ("Omar Zahran", "Managing Director", "o.zahran@zahrancg.com", "+20 122 987 1145", True),
+            ("عمر زهران", "العضو المنتدب", "o.zahran@zahrancg.com", "+20 122 987 1145", True),
         ],
     },
     {
         "slug": "samir-nassar",
-        "name": "Samir Nassar",
+        "name": "سمير نصار",
         "client_type": "individual",
-        "industry": "Independent Consultant",
+        "industry": "مستشار مستقل",
         "status": "inactive",
         "client_since": date(2024, 5, 18),
         "registration_number": None,
         "tax_id": None,
-        "address": "22 Syria St, Mohandessin, Giza",
+        "address": "22 شارع سوريا، المهندسين، الجيزة",
         "phone": "+20 122 604 7731",
         "email": "samir.nassar@outlook.com",
         "notes": None,
         "contacts": [
-            ("Samir Nassar", "Self", "samir.nassar@outlook.com", "+20 122 604 7731", True),
+            ("سمير نصار", "بصفته الشخصية", "samir.nassar@outlook.com", "+20 122 604 7731", True),
         ],
     },
 ]
@@ -166,7 +180,7 @@ CLIENTS = [
 MATTERS = [
     {
         "slug": "nabil-v-nile-trading",
-        "name": "Nabil v. Nile Trading Co.",
+        "name": "نبيل ضد شركة النيل للتجارة",
         "client": "nile-trading",
         "matter_type": "litigation",
         "status": "active",
@@ -175,19 +189,18 @@ MATTERS = [
         "opened_date": date(2025, 11, 3),
         "closed_date": None,
         "description": (
-            "Commercial dispute over an alleged breach of a distribution agreement. "
-            "Nile Trading Co. is the defendant; the claimant, Ahmed Nabil, seeks EGP 2.4M "
-            "in damages plus contract termination. Currently in the evidence phase before "
-            "the Cairo Economic Court."
+            "نزاع تجاري حول إخلال مزعوم بعقد توزيع. شركة النيل للتجارة هي المدعى عليها، "
+            "والمدعي أحمد نبيل يطالب بتعويض قدره 2.4 مليون جنيه مع فسخ العقد. القضية "
+            "الآن في مرحلة الإثبات أمام محكمة القاهرة الاقتصادية."
         ),
         "billing_type": "hourly",
         "budget_amount": Decimal("180000"),
         "budget_is_estimate": True,
-        "tags": ["Commercial", "Breach of Contract", "Economic Court"],
+        "tags": ["تجاري", "إخلال بالعقد", "محكمة اقتصادية"],
     },
     {
         "slug": "delta-foods-nda-review",
-        "name": "NDA Review — Delta Foods",
+        "name": "مراجعة اتفاقية عدم إفشاء — دلتا للأغذية",
         "client": "delta-foods",
         "matter_type": "contract_review",
         "status": "closed",
@@ -196,19 +209,18 @@ MATTERS = [
         "opened_date": date(2026, 6, 10),
         "closed_date": date(2026, 6, 24),
         "description": (
-            "Review of a mutual non-disclosure agreement with a prospective co-packing "
-            "partner. AI-assisted clause review flagged two deviations from the firm's "
-            "standard NDA template (liability cap, jurisdiction clause); both were "
-            "resolved with the counterparty before signature."
+            "مراجعة اتفاقية عدم إفشاء متبادلة مع شريك تعبئة محتمل. أظهرت المراجعة "
+            "المدعومة بالذكاء الاصطناعي خروجَين عن نموذج المكتب المعتمد (حد المسؤولية "
+            "وشرط الاختصاص القضائي)، وجرت تسويتهما مع الطرف الآخر قبل التوقيع."
         ),
         "billing_type": "fixed_fee",
         "budget_amount": Decimal("12000"),
         "budget_is_estimate": False,
-        "tags": ["NDA", "Commercial Contracts"],
+        "tags": ["عدم إفشاء", "عقود تجارية"],
     },
     {
         "slug": "delta-foods-labour-dispute",
-        "name": "Delta Foods Labour Dispute",
+        "name": "نزاع عمالي — دلتا للأغذية",
         "client": "delta-foods",
         "matter_type": "litigation",
         "status": "active",
@@ -217,19 +229,19 @@ MATTERS = [
         "opened_date": date(2026, 4, 18),
         "closed_date": None,
         "description": (
-            "Collective claim brought by seven former production-line employees alleging "
-            "wrongful termination during a facility downsizing. Delta Foods maintains the "
-            "terminations followed Labour Law No. 14 of 2025 severance procedures. Pending "
-            "ruling before the Cairo Labour Court."
+            "دعوى جماعية من سبعة عمال سابقين بخطوط الإنتاج يدّعون الفصل التعسفي أثناء "
+            "تقليص حجم المصنع. وتتمسك دلتا للأغذية بأن إنهاء الخدمة تم وفق إجراءات "
+            "مكافأة نهاية الخدمة المقررة في قانون العمل رقم 14 لسنة 2025. القضية محجوزة "
+            "للحكم أمام محكمة العمل بالقاهرة."
         ),
         "billing_type": "hourly",
         "budget_amount": Decimal("95000"),
         "budget_is_estimate": True,
-        "tags": ["Labour", "Wrongful Termination", "Labour Court"],
+        "tags": ["عمالي", "فصل تعسفي", "محكمة العمل"],
     },
     {
         "slug": "khalil-tax-objection",
-        "name": "Tax Objection — Khalil Holdings",
+        "name": "تظلم ضريبي — مجموعة خليل القابضة",
         "client": "khalil-holdings",
         "matter_type": "tax",
         "status": "active",
@@ -238,18 +250,18 @@ MATTERS = [
         "opened_date": date(2026, 5, 22),
         "closed_date": None,
         "description": (
-            "Formal objection to a 2025 tax-year reassessment issued by the Egyptian Tax "
-            "Authority against Khalil Holdings' consolidated group return, disputing a "
-            "EGP 3.1M adjustment to intercompany transfer pricing."
+            "تظلم رسمي من إعادة تقدير الضريبة عن السنة الضريبية 2025 الصادرة من مصلحة "
+            "الضرائب المصرية على الإقرار المجمّع لمجموعة خليل القابضة، طعنًا في تعديل "
+            "قدره 3.1 مليون جنيه على أسعار التحويل بين الشركات الشقيقة."
         ),
         "billing_type": "hourly",
         "budget_amount": Decimal("60000"),
         "budget_is_estimate": True,
-        "tags": ["Tax", "Transfer Pricing"],
+        "tags": ["ضرائب", "أسعار التحويل"],
     },
     {
         "slug": "al-amal-commercial-registration",
-        "name": "Commercial Registration — Al Amal Trading",
+        "name": "تجديد السجل التجاري — شركة الأمل للتجارة",
         "client": "al-amal-trading",
         "matter_type": "corporate",
         "status": "active",
@@ -258,18 +270,17 @@ MATTERS = [
         "opened_date": date(2026, 6, 30),
         "closed_date": None,
         "description": (
-            "Renewal of Al Amal Trading's commercial registration and update of its trade "
-            "license activities to include e-commerce distribution, ahead of a new online "
-            "storefront launch."
+            "تجديد السجل التجاري لشركة الأمل للتجارة وتعديل أنشطة الرخصة لتشمل التوزيع "
+            "عبر التجارة الإلكترونية، تمهيدًا لإطلاق متجر إلكتروني جديد."
         ),
         "billing_type": "fixed_fee",
         "budget_amount": Decimal("8500"),
         "budget_is_estimate": False,
-        "tags": ["Corporate", "Licensing"],
+        "tags": ["شركات", "تراخيص"],
     },
     {
         "slug": "el-sayed-estate-partition",
-        "name": "El-Sayed Estate Partition",
+        "name": "قسمة تركة المرحوم محمود السيد",
         "client": "el-sayed-estate",
         "matter_type": "family_probate",
         "status": "active",
@@ -278,18 +289,18 @@ MATTERS = [
         "opened_date": date(2025, 9, 15),
         "closed_date": None,
         "description": (
-            "Partition of the late Mahmoud El-Sayed's estate among four heirs, including a "
-            "residential property in Mohandessin and a minority stake in a family trading "
-            "business. Currently in court-supervised mediation before the Giza Family Court."
+            "قسمة تركة المرحوم محمود السيد بين أربعة ورثة، وتشمل عقارًا سكنيًا "
+            "بالمهندسين وحصة أقلية في شركة تجارية عائلية. القضية الآن في وساطة تحت "
+            "إشراف محكمة الأسرة بالجيزة."
         ),
         "billing_type": "retainer",
         "budget_amount": Decimal("45000"),
         "budget_is_estimate": False,
-        "tags": ["Family", "Probate", "Estate Partition"],
+        "tags": ["أحوال شخصية", "تركات", "قسمة تركة"],
     },
     {
         "slug": "zahran-contract-dispute",
-        "name": "Contract Dispute — Zahran Construction",
+        "name": "نزاع تعاقدي — مجموعة زهران للمقاولات",
         "client": "zahran-construction",
         "matter_type": "litigation",
         "status": "on_hold",
@@ -298,18 +309,17 @@ MATTERS = [
         "opened_date": date(2025, 8, 11),
         "closed_date": None,
         "description": (
-            "Dispute with a cement supplier over delayed deliveries on a New Cairo "
-            "residential project. Proceedings paused pending direct settlement negotiations "
-            "between the parties."
+            "نزاع مع مورّد أسمنت بسبب تأخر التوريدات في مشروع سكني بالقاهرة الجديدة. "
+            "أوقِف السير في الدعوى لحين استكمال مفاوضات التسوية المباشرة بين الطرفين."
         ),
         "billing_type": "hourly",
         "budget_amount": Decimal("70000"),
         "budget_is_estimate": True,
-        "tags": ["Commercial", "Construction", "Supplier Dispute"],
+        "tags": ["تجاري", "مقاولات", "نزاع مع مورّد"],
     },
     {
         "slug": "samir-nassar-consulting-agreement",
-        "name": "Consulting Agreement Review — Samir Nassar",
+        "name": "مراجعة عقد استشارات — سمير نصار",
         "client": "samir-nassar",
         "matter_type": "contract_review",
         "status": "closed",
@@ -318,208 +328,206 @@ MATTERS = [
         "opened_date": date(2025, 5, 2),
         "closed_date": date(2025, 5, 14),
         "description": (
-            "Review of an independent consulting agreement with a multinational client, "
-            "focused on IP assignment and non-compete scope."
+            "مراجعة عقد استشارات مستقل مع عميل متعدد الجنسيات، بالتركيز على التنازل عن "
+            "حقوق الملكية الفكرية ونطاق شرط عدم المنافسة."
         ),
         "billing_type": "fixed_fee",
         "budget_amount": Decimal("6000"),
         "budget_is_estimate": False,
-        "tags": ["Contract Review", "Consulting"],
+        "tags": ["مراجعة عقود", "استشارات"],
     },
 ]
 
 CASES = [
     {
         "matter": "nabil-v-nile-trading",
-        "court": "Cairo Economic Court",
-        "judge": "Counselor Hesham Fathy",
-        "case_number": "CEC-2026-1345",
-        "status": "Active — Evidence Phase",
-        "opposing_party": "Ahmed Nabil (individual, plaintiff)",
-        "opposing_counsel": "Adv. Samia Reda, Reda & Co.",
+        "court": "محكمة القاهرة الاقتصادية",
+        "judge": "المستشار هشام فتحي",
+        "case_number": "1345 لسنة 2026 — اقتصادية القاهرة",
+        "status": "جارية — مرحلة الإثبات",
+        "opposing_party": "أحمد نبيل (شخص طبيعي، مدّعٍ)",
+        "opposing_counsel": "الأستاذة سامية رضا — مكتب رضا وشركاه",
         "filed_date": date(2025, 11, 3),
         "ai_summary": (
-            "The court-appointed expert's report (filed 2026-07-14) is the strongest "
-            "development in our favor: it found the claimant's damages calculation "
-            "overstated by roughly 40%, largely due to double-counted freight costs. "
-            "Recommend anchoring the appeal brief on the expert findings and the delivery "
-            "logs already in evidence, rather than reopening the breach question."
+            "تقرير الخبير المنتدب من المحكمة (المودع في 14 يوليو 2026) هو أقوى تطور في "
+            "صالحنا: انتهى إلى أن حساب التعويض المطالب به مبالغ فيه بنحو 40% لسبب رئيسي "
+            "هو احتساب مصروفات الشحن مرتين. يوصى ببناء مذكرة الاستئناف على ما انتهى إليه "
+            "الخبير وعلى سجلات التسليم المقدمة بالفعل ضمن أوراق الإثبات، بدل إعادة فتح "
+            "مسألة الإخلال من جديد."
         ),
         "timeline": [
-            (date(2025, 11, 3), "Claim filed", "Plaintiff filed breach-of-contract claim seeking EGP 2.4M."),
-            (date(2025, 12, 1), "First hearing", "Court set the evidence-exchange schedule."),
-            (date(2026, 2, 18), "Defense memorandum submitted", "Filed response denying breach and disputing damages calculation."),
-            (date(2026, 5, 6), "Expert appointed", "Court appointed an accounting expert to assess claimed damages."),
-            (date(2026, 7, 14), "Expert report received", "Expert report found claimed damages overstated by roughly 40%."),
+            (date(2025, 11, 3), "رفع الدعوى", "أقام المدعي دعوى إخلال بالعقد بطلب تعويض قدره 2.4 مليون جنيه."),
+            (date(2025, 12, 1), "الجلسة الأولى", "حددت المحكمة جدول تبادل المستندات."),
+            (date(2026, 2, 18), "إيداع مذكرة الدفاع", "قُدمت مذكرة تنكر الإخلال وتطعن في حساب التعويض."),
+            (date(2026, 5, 6), "ندب خبير", "ندبت المحكمة خبيرًا محاسبيًا لتقدير التعويض المطالب به."),
+            (date(2026, 7, 14), "ورود تقرير الخبير", "انتهى تقرير الخبير إلى أن التعويض المطالب به مبالغ فيه بنحو 40%."),
         ],
         "deadlines": [
-            ("File appeal brief", date(2026, 8, 2)),
-            ("Submit rebuttal to expert report", date(2026, 8, 8)),
+            ("إيداع مذكرة الاستئناف", date(2026, 8, 2)),
+            ("تقديم الرد على تقرير الخبير", date(2026, 8, 8)),
         ],
         "evidence": [
-            ("Distribution Agreement (original, signed)", "Contract", "us", date(2025, 11, 20)),
-            ("Delivery logs — Q3 2025", "Business Records", "us", date(2025, 12, 15)),
-            ("Email correspondence re: delivery delays", "Correspondence", "opposing_party", date(2026, 1, 10)),
-            ("Court-appointed expert accounting report", "Expert Report", "court", date(2026, 7, 14)),
+            ("عقد التوزيع (الأصل الموقّع)", "عقد", "us", date(2025, 11, 20)),
+            ("سجلات التسليم — الربع الثالث 2025", "سجلات تجارية", "us", date(2025, 12, 15)),
+            ("مراسلات بريد إلكتروني بشأن تأخر التسليم", "مراسلات", "opposing_party", date(2026, 1, 10)),
+            ("تقرير الخبير المحاسبي المنتدب", "تقرير خبرة", "court", date(2026, 7, 14)),
         ],
         "court_documents": [
-            ("Statement of Claim", "Filing", date(2025, 11, 3)),
-            ("Defense Memorandum", "Filing", date(2026, 2, 18)),
-            ("Expert Report", "Court Order", date(2026, 7, 14)),
+            ("صحيفة الدعوى", "إيداع", date(2025, 11, 3)),
+            ("مذكرة الدفاع", "إيداع", date(2026, 2, 18)),
+            ("تقرير الخبير", "قرار محكمة", date(2026, 7, 14)),
         ],
     },
     {
         "matter": "delta-foods-labour-dispute",
-        "court": "Cairo Labour Court",
-        "judge": "Counselor Mervat Shawky",
-        "case_number": "CLC-2026-0892",
-        "status": "Active — Pending Ruling",
-        "opposing_party": "7 former employees (collective claim)",
-        "opposing_counsel": "Adv. Tarek Younis",
+        "court": "محكمة العمل بالقاهرة",
+        "judge": "المستشارة ميرفت شوقي",
+        "case_number": "892 لسنة 2026 — عمال القاهرة",
+        "status": "جارية — محجوزة للحكم",
+        "opposing_party": "سبعة عمال سابقين (دعوى جماعية)",
+        "opposing_counsel": "الأستاذ طارق يونس",
         "filed_date": date(2026, 4, 18),
         "ai_summary": (
-            "Severance calculations filed on 2026-07-20 match Labour Law No. 14 of 2025 "
-            "minimums for all seven claimants, which is a strong procedural defense. The "
-            "open risk is documentation of individualized termination cause for two of the "
-            "seven employees — recommend confirming those personnel files before final "
-            "arguments on 2026-08-12."
+            "حسابات مكافأة نهاية الخدمة المودعة في 20 يوليو 2026 تطابق الحدود الدنيا "
+            "المقررة في قانون العمل رقم 14 لسنة 2025 بالنسبة للعمال السبعة جميعًا، وهو "
+            "دفع إجرائي قوي. والخطر القائم هو توثيق سبب إنهاء الخدمة بشكل فردي لاثنين من "
+            "السبعة — يوصى بمراجعة هذين الملفين قبل جلسة المرافعة الختامية في 12 أغسطس 2026."
         ),
         "timeline": [
-            (date(2026, 4, 18), "Claim filed", "Seven claimants allege wrongful termination during downsizing."),
-            (date(2026, 5, 5), "Mediation attempt", "Labour office mediation failed to reach settlement."),
-            (date(2026, 6, 2), "First hearing", "Court requested full severance documentation from Delta Foods."),
-            (date(2026, 7, 20), "Documents submitted", "Severance calculations and termination notices filed with the court."),
+            (date(2026, 4, 18), "رفع الدعوى", "سبعة مدّعين يدّعون الفصل التعسفي أثناء تقليص العمالة."),
+            (date(2026, 5, 5), "محاولة وساطة", "فشلت وساطة مكتب العمل في التوصل إلى تسوية."),
+            (date(2026, 6, 2), "الجلسة الأولى", "طلبت المحكمة من دلتا للأغذية مستندات مكافأة نهاية الخدمة كاملة."),
+            (date(2026, 7, 20), "إيداع المستندات", "أودعت حسابات مكافأة نهاية الخدمة وإخطارات إنهاء الخدمة بالمحكمة."),
         ],
-        "deadlines": [("Respond to discovery request", date(2026, 8, 4))],
+        "deadlines": [("الرد على طلب المستندات", date(2026, 8, 4))],
         "evidence": [
-            ("Termination notices (7)", "HR Records", "us", date(2026, 7, 20)),
-            ("Severance calculation worksheets", "Financial Records", "us", date(2026, 7, 20)),
-            ("Claimants' joint statement", "Pleading", "opposing_party", date(2026, 4, 18)),
+            ("إخطارات إنهاء الخدمة (7)", "سجلات موارد بشرية", "us", date(2026, 7, 20)),
+            ("كشوف حساب مكافأة نهاية الخدمة", "سجلات مالية", "us", date(2026, 7, 20)),
+            ("المذكرة المشتركة للمدّعين", "مذكرة", "opposing_party", date(2026, 4, 18)),
         ],
         "court_documents": [
-            ("Statement of Claim", "Filing", date(2026, 4, 18)),
-            ("Defense Response", "Filing", date(2026, 6, 2)),
+            ("صحيفة الدعوى", "إيداع", date(2026, 4, 18)),
+            ("مذكرة الرد", "إيداع", date(2026, 6, 2)),
         ],
     },
     {
         "matter": "el-sayed-estate-partition",
-        "court": "Giza Family Court",
-        "judge": "Counselor Amal Zaki",
-        "case_number": "GFC-2026-0456",
-        "status": "Active — Mediation",
-        "opposing_party": "Co-heirs (3, represented separately)",
+        "court": "محكمة الأسرة بالجيزة",
+        "judge": "المستشارة أمل زكي",
+        "case_number": "456 لسنة 2026 — أسرة الجيزة",
+        "status": "جارية — وساطة",
+        "opposing_party": "الورثة الشركاء (ثلاثة، لكلٍّ وكيله)",
         "opposing_counsel": None,
         "filed_date": date(2025, 9, 15),
         "ai_summary": (
-            "All three co-heirs' counsel have signaled openness to a cash buyout of the "
-            "minority business stake rather than an in-kind split, which would materially "
-            "simplify the property partition. Recommend proposing a buyout structured "
-            "against the EGP 1.6M court valuation at the 2026-08-05 mediation session."
+            "أبدى وكلاء الورثة الثلاثة جميعًا انفتاحًا على شراء حصة الأقلية في الشركة "
+            "نقدًا بدلًا من القسمة العينية، وهو ما يبسّط قسمة العقار إلى حد كبير. يوصى "
+            "بعرض صفقة شراء مبنية على تقدير المحكمة البالغ 1.6 مليون جنيه في جلسة "
+            "الوساطة المحددة في 5 أغسطس 2026."
         ),
         "timeline": [
-            (date(2025, 9, 15), "Partition petition filed", "Filed on behalf of executor Farida El-Sayed."),
-            (date(2025, 10, 20), "Asset valuation ordered", "Court ordered independent valuation of the Mohandessin property."),
-            (date(2026, 3, 11), "Valuation report received", "Property valued at EGP 9.2M; business stake valued at EGP 1.6M."),
-            (date(2026, 6, 1), "Mediation opened", "Court referred the parties to mediation over the property's disposition."),
+            (date(2025, 9, 15), "إيداع دعوى القسمة", "أقيمت الدعوى نيابة عن وكيلة الورثة فريدة السيد."),
+            (date(2025, 10, 20), "الأمر بتقدير الأصول", "أمرت المحكمة بتقدير مستقل لعقار المهندسين."),
+            (date(2026, 3, 11), "ورود تقرير التقدير", "قُدّر العقار بمبلغ 9.2 مليون جنيه وحصة الشركة بمبلغ 1.6 مليون جنيه."),
+            (date(2026, 6, 1), "فتح باب الوساطة", "أحالت المحكمة الطرفين إلى الوساطة بشأن التصرف في العقار."),
         ],
-        "deadlines": [("Mediation session", date(2026, 8, 5))],
+        "deadlines": [("جلسة الوساطة", date(2026, 8, 5))],
         "evidence": [
-            ("Property valuation report", "Valuation", "court", date(2026, 3, 11)),
-            ("Business stake valuation", "Valuation", "court", date(2026, 3, 11)),
-            ("Heirship certificate", "Official Record", "us", date(2025, 9, 15)),
+            ("تقرير تقدير العقار", "تقدير", "court", date(2026, 3, 11)),
+            ("تقدير حصة الشركة", "تقدير", "court", date(2026, 3, 11)),
+            ("إعلام الوراثة", "محرر رسمي", "us", date(2025, 9, 15)),
         ],
         "court_documents": [
-            ("Partition Petition", "Filing", date(2025, 9, 15)),
-            ("Valuation Report", "Court Order", date(2026, 3, 11)),
+            ("صحيفة دعوى القسمة", "إيداع", date(2025, 9, 15)),
+            ("تقرير التقدير", "قرار محكمة", date(2026, 3, 11)),
         ],
     },
     {
         "matter": "zahran-contract-dispute",
-        "court": "Cairo Economic Court",
-        "judge": "Counselor Nabila Roshdy",
-        "case_number": "CEC-2025-2210",
-        "status": "On Hold — Awaiting Settlement Talks",
-        "opposing_party": "Al-Fouad Cement Suppliers",
-        "opposing_counsel": "Adv. Bassem Farag",
+        "court": "محكمة القاهرة الاقتصادية",
+        "judge": "المستشارة نبيلة رشدي",
+        "case_number": "2210 لسنة 2025 — اقتصادية القاهرة",
+        "status": "موقوفة — في انتظار مفاوضات التسوية",
+        "opposing_party": "شركة الفؤاد لتوريد الأسمنت",
+        "opposing_counsel": "الأستاذ باسم فرج",
         "filed_date": date(2025, 8, 11),
         "ai_summary": (
-            "No court activity since proceedings were suspended in January. Recommend a "
-            "status check with the client before the case can be reactivated or formally "
-            "withdrawn if settlement concludes."
+            "لا يوجد نشاط قضائي منذ وقف السير في الدعوى في يناير. يوصى بمراجعة الموقف مع "
+            "العميل قبل إعادة تحريك الدعوى، أو تركها نهائيًا إذا اكتملت التسوية."
         ),
         "timeline": [
-            (date(2025, 8, 11), "Claim filed", "Zahran Construction claims delivery delays caused a 6-week project overrun."),
-            (date(2025, 10, 2), "First hearing", "Court adjourned at both parties' request to pursue settlement."),
-            (date(2026, 1, 15), "Proceedings suspended", "Case placed on hold pending direct settlement negotiations."),
+            (date(2025, 8, 11), "رفع الدعوى", "تدّعي زهران للمقاولات أن تأخر التوريد تسبب في تجاوز جدول المشروع بستة أسابيع."),
+            (date(2025, 10, 2), "الجلسة الأولى", "أجّلت المحكمة الدعوى بناءً على طلب الطرفين للسعي في التسوية."),
+            (date(2026, 1, 15), "وقف السير في الدعوى", "أُوقفت الدعوى لحين استكمال مفاوضات التسوية المباشرة."),
         ],
         "deadlines": [],
         "evidence": [
-            ("Supply contract (original)", "Contract", "us", date(2025, 8, 11)),
-            ("Delivery delay log", "Business Records", "us", date(2025, 8, 11)),
+            ("عقد التوريد (الأصل)", "عقد", "us", date(2025, 8, 11)),
+            ("سجل تأخر التوريدات", "سجلات تجارية", "us", date(2025, 8, 11)),
         ],
-        "court_documents": [("Statement of Claim", "Filing", date(2025, 8, 11))],
+        "court_documents": [("صحيفة الدعوى", "إيداع", date(2025, 8, 11))],
     },
 ]
 
 # (matter, name, doc_type, uploaded_by, uploaded_at, size_bytes, status)
 DOCUMENTS = [
-    ("nabil-v-nile-trading", "Distribution Agreement (original, signed)", "PDF", MONA, date(2025, 11, 5), 1_258_291, "final"),
-    ("nabil-v-nile-trading", "Defense Memorandum — draft v3", "DOCX", MONA, date(2026, 2, 15), 348_160, "filed"),
-    ("nabil-v-nile-trading", "Delivery logs — Q3 2025", "XLSX", LAYLA, date(2025, 12, 12), 90_112, "final"),
-    ("nabil-v-nile-trading", "Expert accounting report — annotated", "PDF", MONA, date(2026, 7, 16), 2_516_582, "under_review"),
-    ("nabil-v-nile-trading", "Appeal brief — draft", "DOCX", MONA, date(2026, 7, 28), 215_040, "draft"),
-    ("nabil-v-nile-trading", "Client authorization letter", "PDF", AHMED, date(2025, 11, 4), 153_600, "signed"),
-    ("delta-foods-nda-review", "Mutual NDA — final signed", "PDF", YOUSSEF, date(2026, 6, 24), 419_840, "signed"),
-    ("delta-foods-nda-review", "Redline vs. standard template", "DOCX", YOUSSEF, date(2026, 6, 18), 97_280, "final"),
-    ("delta-foods-labour-dispute", "Termination notices (7, combined)", "PDF", LAYLA, date(2026, 7, 20), 696_320, "filed"),
-    ("delta-foods-labour-dispute", "Severance calculation worksheets", "XLSX", YOUSSEF, date(2026, 7, 20), 122_880, "filed"),
-    ("delta-foods-labour-dispute", "Personnel files — under review", "ZIP", LAYLA, date(2026, 7, 29), 5_347_737, "under_review"),
-    ("khalil-tax-objection", "Tax Authority reassessment notice", "PDF", AHMED, date(2026, 5, 22), 307_200, "final"),
-    ("khalil-tax-objection", "Transfer pricing study", "PDF", AHMED, date(2026, 6, 10), 1_887_437, "under_review"),
-    ("al-amal-commercial-registration", "Trade license renewal application", "PDF", LAYLA, date(2026, 7, 1), 225_280, "draft"),
-    ("el-sayed-estate-partition", "Property valuation report", "PDF", AHMED, date(2026, 3, 11), 1_153_434, "final"),
-    ("el-sayed-estate-partition", "Heirship certificate", "PDF", AHMED, date(2025, 9, 16), 97_280, "final"),
-    ("zahran-contract-dispute", "Supply contract (original)", "PDF", MONA, date(2025, 8, 11), 552_960, "final"),
-    ("samir-nassar-consulting-agreement", "Consulting Agreement — final", "PDF", YOUSSEF, date(2025, 5, 14), 184_320, "signed"),
+    ("nabil-v-nile-trading", "عقد التوزيع (الأصل الموقّع)", "PDF", MONA, date(2025, 11, 5), 1_258_291, "final"),
+    ("nabil-v-nile-trading", "مذكرة الدفاع — المسودة الثالثة", "DOCX", MONA, date(2026, 2, 15), 348_160, "filed"),
+    ("nabil-v-nile-trading", "سجلات التسليم — الربع الثالث 2025", "XLSX", LAYLA, date(2025, 12, 12), 90_112, "final"),
+    ("nabil-v-nile-trading", "تقرير الخبير المحاسبي — نسخة معلّق عليها", "PDF", MONA, date(2026, 7, 16), 2_516_582, "under_review"),
+    ("nabil-v-nile-trading", "مذكرة الاستئناف — مسودة", "DOCX", MONA, date(2026, 7, 28), 215_040, "draft"),
+    ("nabil-v-nile-trading", "توكيل العميل", "PDF", AHMED, date(2025, 11, 4), 153_600, "signed"),
+    ("delta-foods-nda-review", "اتفاقية عدم الإفشاء المتبادلة — النسخة الموقّعة", "PDF", YOUSSEF, date(2026, 6, 24), 419_840, "signed"),
+    ("delta-foods-nda-review", "بيان الفروق مقارنةً بالنموذج المعتمد", "DOCX", YOUSSEF, date(2026, 6, 18), 97_280, "final"),
+    ("delta-foods-labour-dispute", "إخطارات إنهاء الخدمة (7 مجمّعة)", "PDF", LAYLA, date(2026, 7, 20), 696_320, "filed"),
+    ("delta-foods-labour-dispute", "كشوف حساب مكافأة نهاية الخدمة", "XLSX", YOUSSEF, date(2026, 7, 20), 122_880, "filed"),
+    ("delta-foods-labour-dispute", "ملفات العاملين — تحت المراجعة", "ZIP", LAYLA, date(2026, 7, 29), 5_347_737, "under_review"),
+    ("khalil-tax-objection", "إخطار إعادة التقدير من مصلحة الضرائب", "PDF", AHMED, date(2026, 5, 22), 307_200, "final"),
+    ("khalil-tax-objection", "دراسة أسعار التحويل", "PDF", AHMED, date(2026, 6, 10), 1_887_437, "under_review"),
+    ("al-amal-commercial-registration", "طلب تجديد الرخصة التجارية", "PDF", LAYLA, date(2026, 7, 1), 225_280, "draft"),
+    ("el-sayed-estate-partition", "تقرير تقدير العقار", "PDF", AHMED, date(2026, 3, 11), 1_153_434, "final"),
+    ("el-sayed-estate-partition", "إعلام الوراثة", "PDF", AHMED, date(2025, 9, 16), 97_280, "final"),
+    ("zahran-contract-dispute", "عقد التوريد (الأصل)", "PDF", MONA, date(2025, 8, 11), 552_960, "final"),
+    ("samir-nassar-consulting-agreement", "عقد الاستشارات — النسخة النهائية", "PDF", YOUSSEF, date(2025, 5, 14), 184_320, "signed"),
 ]
 
 # (matter, date, time, court, purpose, outcome)
 HEARINGS = [
-    ("nabil-v-nile-trading", date(2025, 12, 1), "10:00 AM", "Cairo Economic Court", "First hearing — evidence schedule set", "Schedule set; no ruling"),
-    ("nabil-v-nile-trading", date(2026, 2, 18), "10:30 AM", "Cairo Economic Court", "Defense memorandum review", "Accepted for filing"),
-    ("nabil-v-nile-trading", date(2026, 5, 6), "9:30 AM", "Cairo Economic Court", "Expert appointment hearing", "Accounting expert appointed"),
-    ("nabil-v-nile-trading", date(2026, 8, 10), "10:00 AM", "Cairo Economic Court", "Evidence submission review", None),
-    ("delta-foods-labour-dispute", date(2026, 6, 2), "1:00 PM", "Cairo Labour Court", "First hearing — documents requested", None),
-    ("delta-foods-labour-dispute", date(2026, 8, 12), "1:30 PM", "Cairo Labour Court", "Final arguments", None),
-    ("el-sayed-estate-partition", date(2026, 6, 1), "11:00 AM", "Giza Family Court", "Mediation referral", None),
-    ("el-sayed-estate-partition", date(2026, 8, 5), "11:00 AM", "Giza Family Court", "Mediation session", None),
-    ("zahran-contract-dispute", date(2025, 10, 2), "10:00 AM", "Cairo Economic Court", "First hearing — adjourned for settlement talks", None),
+    ("nabil-v-nile-trading", date(2025, 12, 1), "10:00 ص", "محكمة القاهرة الاقتصادية", "الجلسة الأولى — تحديد جدول الإثبات", "حُدد الجدول، دون حكم"),
+    ("nabil-v-nile-trading", date(2026, 2, 18), "10:30 ص", "محكمة القاهرة الاقتصادية", "نظر مذكرة الدفاع", "قُبلت للإيداع"),
+    ("nabil-v-nile-trading", date(2026, 5, 6), "9:30 ص", "محكمة القاهرة الاقتصادية", "جلسة ندب الخبير", "نُدب خبير محاسبي"),
+    ("nabil-v-nile-trading", date(2026, 8, 10), "10:00 ص", "محكمة القاهرة الاقتصادية", "نظر مستندات الإثبات", None),
+    ("delta-foods-labour-dispute", date(2026, 6, 2), "1:00 م", "محكمة العمل بالقاهرة", "الجلسة الأولى — طلب مستندات", None),
+    ("delta-foods-labour-dispute", date(2026, 8, 12), "1:30 م", "محكمة العمل بالقاهرة", "المرافعة الختامية", None),
+    ("el-sayed-estate-partition", date(2026, 6, 1), "11:00 ص", "محكمة الأسرة بالجيزة", "الإحالة إلى الوساطة", None),
+    ("el-sayed-estate-partition", date(2026, 8, 5), "11:00 ص", "محكمة الأسرة بالجيزة", "جلسة الوساطة", None),
+    ("zahran-contract-dispute", date(2025, 10, 2), "10:00 ص", "محكمة القاهرة الاقتصادية", "الجلسة الأولى — تأجيل للتسوية", None),
 ]
 
 # (matter, title, assignee, due_date, status, priority)
 TASKS = [
-    ("nabil-v-nile-trading", "Draft appeal brief responding to expert report", MONA, date(2026, 8, 2), "in_progress", "high"),
-    ("nabil-v-nile-trading", "Prepare rebuttal exhibits to expert accounting report", LAYLA, date(2026, 8, 6), "todo", "high"),
-    ("nabil-v-nile-trading", "Brief client on expert report findings", MONA, date(2026, 7, 30), "done", "medium"),
-    ("nabil-v-nile-trading", "Confirm hearing logistics with court clerk", LAYLA, date(2026, 8, 8), "todo", "low"),
-    ("delta-foods-labour-dispute", "Respond to discovery request", YOUSSEF, date(2026, 8, 4), "in_progress", "high"),
-    ("delta-foods-labour-dispute", "Verify termination cause documentation for 2 claimants", LAYLA, date(2026, 8, 6), "todo", "high"),
-    ("khalil-tax-objection", "Submit tax objection filing", AHMED, date(2026, 8, 14), "todo", "high"),
-    ("al-amal-commercial-registration", "Renew commercial registration", LAYLA, date(2026, 8, 9), "in_progress", "medium"),
-    ("el-sayed-estate-partition", "Prepare buyout proposal for mediation session", AHMED, date(2026, 8, 5), "in_progress", "high"),
+    ("nabil-v-nile-trading", "صياغة مذكرة الاستئناف ردًّا على تقرير الخبير", MONA, date(2026, 8, 2), "in_progress", "high"),
+    ("nabil-v-nile-trading", "إعداد حافظة مستندات الرد على تقرير الخبير المحاسبي", LAYLA, date(2026, 8, 6), "todo", "high"),
+    ("nabil-v-nile-trading", "إحاطة العميل بما انتهى إليه تقرير الخبير", MONA, date(2026, 7, 30), "done", "medium"),
+    ("nabil-v-nile-trading", "تأكيد ترتيبات الجلسة مع قلم الكتّاب", LAYLA, date(2026, 8, 8), "todo", "low"),
+    ("delta-foods-labour-dispute", "الرد على طلب المستندات", YOUSSEF, date(2026, 8, 4), "in_progress", "high"),
+    ("delta-foods-labour-dispute", "التحقق من توثيق سبب إنهاء الخدمة لمدّعيَين", LAYLA, date(2026, 8, 6), "todo", "high"),
+    ("khalil-tax-objection", "إيداع صحيفة التظلم الضريبي", AHMED, date(2026, 8, 14), "todo", "high"),
+    ("al-amal-commercial-registration", "تجديد السجل التجاري", LAYLA, date(2026, 8, 9), "in_progress", "medium"),
+    ("el-sayed-estate-partition", "إعداد عرض شراء الحصة لجلسة الوساطة", AHMED, date(2026, 8, 5), "in_progress", "high"),
 ]
 
 # (matter, user, date, hours, description, billable, rate)
 TIME_ENTRIES = [
-    ("nabil-v-nile-trading", MONA, date(2026, 7, 28), Decimal("3.5"), "Drafted appeal brief responding to expert report", True, Decimal("1800")),
-    ("nabil-v-nile-trading", MONA, date(2026, 7, 17), Decimal("2.0"), "Reviewed and annotated expert accounting report", True, Decimal("1800")),
-    ("nabil-v-nile-trading", LAYLA, date(2026, 7, 18), Decimal("1.5"), "Compiled rebuttal exhibits from delivery logs", True, Decimal("650")),
-    ("nabil-v-nile-trading", MONA, date(2026, 5, 6), Decimal("1.0"), "Attended expert appointment hearing", True, Decimal("1800")),
-    ("nabil-v-nile-trading", MONA, date(2026, 2, 14), Decimal("4.0"), "Drafted defense memorandum", True, Decimal("1800")),
-    ("delta-foods-labour-dispute", YOUSSEF, date(2026, 7, 29), Decimal("2.5"), "Prepared response to discovery request", True, Decimal("1400")),
-    ("delta-foods-labour-dispute", LAYLA, date(2026, 7, 25), Decimal("3.0"), "Cross-referenced personnel files against severance worksheets", True, Decimal("650")),
-    ("khalil-tax-objection", AHMED, date(2026, 6, 10), Decimal("5.0"), "Reviewed transfer pricing study against reassessment notice", True, Decimal("2200")),
-    ("el-sayed-estate-partition", AHMED, date(2026, 7, 22), Decimal("1.5"), "Prepared buyout proposal for mediation", True, Decimal("2200")),
+    ("nabil-v-nile-trading", MONA, date(2026, 7, 28), Decimal("3.5"), "صياغة مذكرة الاستئناف ردًّا على تقرير الخبير", True, Decimal("1800")),
+    ("nabil-v-nile-trading", MONA, date(2026, 7, 17), Decimal("2.0"), "مراجعة تقرير الخبير المحاسبي والتعليق عليه", True, Decimal("1800")),
+    ("nabil-v-nile-trading", LAYLA, date(2026, 7, 18), Decimal("1.5"), "تجميع حافظة الرد من واقع سجلات التسليم", True, Decimal("650")),
+    ("nabil-v-nile-trading", MONA, date(2026, 5, 6), Decimal("1.0"), "حضور جلسة ندب الخبير", True, Decimal("1800")),
+    ("nabil-v-nile-trading", MONA, date(2026, 2, 14), Decimal("4.0"), "صياغة مذكرة الدفاع", True, Decimal("1800")),
+    ("delta-foods-labour-dispute", YOUSSEF, date(2026, 7, 29), Decimal("2.5"), "إعداد الرد على طلب المستندات", True, Decimal("1400")),
+    ("delta-foods-labour-dispute", LAYLA, date(2026, 7, 25), Decimal("3.0"), "مطابقة ملفات العاملين على كشوف مكافأة نهاية الخدمة", True, Decimal("650")),
+    ("khalil-tax-objection", AHMED, date(2026, 6, 10), Decimal("5.0"), "مراجعة دراسة أسعار التحويل في مواجهة إخطار إعادة التقدير", True, Decimal("2200")),
+    ("el-sayed-estate-partition", AHMED, date(2026, 7, 22), Decimal("1.5"), "إعداد عرض شراء الحصة تمهيدًا للوساطة", True, Decimal("2200")),
 ]
 
 # (matter, client, number, amount, status, issued, due)
@@ -535,42 +543,42 @@ INVOICES = [
 
 # (matter, author, date, content)
 NOTES = [
-    ("nabil-v-nile-trading", MONA, date(2026, 7, 16), "Expert report is favorable — damages overstated ~40% due to double-counted freight costs. Client briefed and agrees with appeal strategy."),
-    ("nabil-v-nile-trading", AHMED, date(2026, 7, 20), "Confirmed budget headroom with Karim Fahmy for appeal-stage work. No change to fee arrangement."),
-    ("delta-foods-labour-dispute", YOUSSEF, date(2026, 7, 26), "Two personnel files (claimants #4 and #6) are missing documented termination cause — following up with Tamer Gaber before final arguments."),
-    ("el-sayed-estate-partition", AHMED, date(2026, 6, 5), "Farida El-Sayed open to a cash buyout of the business stake if priced at or near the court valuation."),
+    ("nabil-v-nile-trading", MONA, date(2026, 7, 16), "تقرير الخبير في صالحنا — التعويض مبالغ فيه بنحو 40% بسبب احتساب مصروفات الشحن مرتين. أُحيط العميل علمًا ووافق على خطة الاستئناف."),
+    ("nabil-v-nile-trading", AHMED, date(2026, 7, 20), "تأكدت من كريم فهمي وجود متسع في الميزانية لأعمال مرحلة الاستئناف. لا تغيير في اتفاق الأتعاب."),
+    ("delta-foods-labour-dispute", YOUSSEF, date(2026, 7, 26), "ملفان من ملفات العاملين (المدّعيان رقم 4 و6) خاليان من توثيق سبب إنهاء الخدمة — أتابع مع تامر جابر قبل المرافعة الختامية."),
+    ("el-sayed-estate-partition", AHMED, date(2026, 6, 5), "فريدة السيد منفتحة على شراء حصة الشركة نقدًا إذا كان السعر عند تقدير المحكمة أو قريبًا منه."),
 ]
 
 # (matter, client, actor, action, timestamp)
 ACTIVITY = [
-    ("nabil-v-nile-trading", "nile-trading", MONA, "uploaded the annotated expert accounting report", "2026-07-16 14:20"),
-    ("nabil-v-nile-trading", "nile-trading", MONA, "started drafting the appeal brief", "2026-07-28 09:05"),
-    ("nabil-v-nile-trading", "nile-trading", LAYLA, "logged 1.5h compiling rebuttal exhibits", "2026-07-18 16:40"),
-    ("nabil-v-nile-trading", "nile-trading", "system:ai", "flagged the expert report's freight double-count in the matter summary", "2026-07-16 15:02"),
-    ("nabil-v-nile-trading", "nile-trading", AHMED, "confirmed appeal-stage budget with the client", "2026-07-20 11:15"),
-    ("delta-foods-labour-dispute", "delta-foods", YOUSSEF, "filed severance calculation worksheets with the court", "2026-07-20 10:30"),
-    ("delta-foods-nda-review", "delta-foods", "system:ai", "finished reviewing the NDA — 2 clauses flagged against the standard template", "2026-06-18 12:00"),
-    ("el-sayed-estate-partition", "el-sayed-estate", AHMED, "drafted a buyout proposal for the upcoming mediation session", "2026-07-22 13:10"),
-    ("al-amal-commercial-registration", "al-amal-trading", LAYLA, "submitted the trade license renewal application draft for review", "2026-07-01 09:45"),
-    (None, "nile-trading", AHMED, "invited Mona Farouk to the Nabil v. Nile Trading Co. matter", "2025-11-03 08:30"),
+    ("nabil-v-nile-trading", "nile-trading", MONA, "رفعت تقرير الخبير المحاسبي بعد التعليق عليه", "2026-07-16 14:20"),
+    ("nabil-v-nile-trading", "nile-trading", MONA, "بدأت صياغة مذكرة الاستئناف", "2026-07-28 09:05"),
+    ("nabil-v-nile-trading", "nile-trading", LAYLA, "سجّلت ساعة ونصف في تجميع حافظة الرد", "2026-07-18 16:40"),
+    ("nabil-v-nile-trading", "nile-trading", "system:ai", "نبّه في ملخص القضية إلى احتساب مصروفات الشحن مرتين في تقرير الخبير", "2026-07-16 15:02"),
+    ("nabil-v-nile-trading", "nile-trading", AHMED, "أكّد ميزانية مرحلة الاستئناف مع العميل", "2026-07-20 11:15"),
+    ("delta-foods-labour-dispute", "delta-foods", YOUSSEF, "أودع كشوف حساب مكافأة نهاية الخدمة بالمحكمة", "2026-07-20 10:30"),
+    ("delta-foods-nda-review", "delta-foods", "system:ai", "أنهى مراجعة اتفاقية عدم الإفشاء — تنبيه على بندين مخالفين للنموذج المعتمد", "2026-06-18 12:00"),
+    ("el-sayed-estate-partition", "el-sayed-estate", AHMED, "أعدّ عرض شراء الحصة لجلسة الوساطة القادمة", "2026-07-22 13:10"),
+    ("al-amal-commercial-registration", "al-amal-trading", LAYLA, "قدّمت مسودة طلب تجديد الرخصة التجارية للمراجعة", "2026-07-01 09:45"),
+    (None, "nile-trading", AHMED, "ضمّ منى فاروق إلى قضية نبيل ضد شركة النيل للتجارة", "2025-11-03 08:30"),
 ]
 
 # (matter, date, label, detail, kind)
 MATTER_TIMELINE = [
-    ("nabil-v-nile-trading", date(2025, 11, 3), "Matter opened", "Engagement letter signed by Karim Fahmy.", "milestone"),
-    ("nabil-v-nile-trading", date(2025, 11, 5), "Distribution agreement collected from client", None, "communication"),
-    ("nabil-v-nile-trading", date(2025, 12, 1), "First hearing held", "Evidence-exchange schedule set by the court.", "filing"),
-    ("nabil-v-nile-trading", date(2026, 2, 18), "Defense memorandum filed", None, "filing"),
-    ("nabil-v-nile-trading", date(2026, 6, 1), "Invoice INV-2026-0142 sent and paid", None, "billing"),
-    ("nabil-v-nile-trading", date(2026, 7, 14), "Expert report received — favorable finding", None, "milestone"),
-    ("nabil-v-nile-trading", date(2026, 7, 20), "Client briefed on appeal strategy", None, "communication"),
-    ("nabil-v-nile-trading", date(2026, 7, 25), "Invoice INV-2026-0178 sent", None, "billing"),
-    ("delta-foods-labour-dispute", date(2026, 4, 18), "Matter opened", None, "milestone"),
-    ("delta-foods-labour-dispute", date(2026, 5, 5), "Mediation attempt failed", None, "filing"),
-    ("delta-foods-labour-dispute", date(2026, 7, 20), "Severance documentation filed", None, "filing"),
-    ("el-sayed-estate-partition", date(2025, 9, 15), "Matter opened", "Retainer agreement signed by Farida El-Sayed.", "milestone"),
-    ("el-sayed-estate-partition", date(2026, 3, 11), "Valuation report received", None, "filing"),
-    ("el-sayed-estate-partition", date(2026, 6, 1), "Referred to mediation", None, "milestone"),
+    ("nabil-v-nile-trading", date(2025, 11, 3), "فتح ملف القضية", "وقّع كريم فهمي خطاب التكليف.", "milestone"),
+    ("nabil-v-nile-trading", date(2025, 11, 5), "استلام عقد التوزيع من العميل", None, "communication"),
+    ("nabil-v-nile-trading", date(2025, 12, 1), "انعقاد الجلسة الأولى", "حددت المحكمة جدول تبادل المستندات.", "filing"),
+    ("nabil-v-nile-trading", date(2026, 2, 18), "إيداع مذكرة الدفاع", None, "filing"),
+    ("nabil-v-nile-trading", date(2026, 6, 1), "إرسال الفاتورة INV-2026-0142 وسدادها", None, "billing"),
+    ("nabil-v-nile-trading", date(2026, 7, 14), "ورود تقرير الخبير — نتيجة في صالحنا", None, "milestone"),
+    ("nabil-v-nile-trading", date(2026, 7, 20), "إحاطة العميل بخطة الاستئناف", None, "communication"),
+    ("nabil-v-nile-trading", date(2026, 7, 25), "إرسال الفاتورة INV-2026-0178", None, "billing"),
+    ("delta-foods-labour-dispute", date(2026, 4, 18), "فتح ملف القضية", None, "milestone"),
+    ("delta-foods-labour-dispute", date(2026, 5, 5), "فشل محاولة الوساطة", None, "filing"),
+    ("delta-foods-labour-dispute", date(2026, 7, 20), "إيداع مستندات مكافأة نهاية الخدمة", None, "filing"),
+    ("el-sayed-estate-partition", date(2025, 9, 15), "فتح ملف القضية", "وقّعت فريدة السيد عقد الأتعاب.", "milestone"),
+    ("el-sayed-estate-partition", date(2026, 3, 11), "ورود تقرير التقدير", None, "filing"),
+    ("el-sayed-estate-partition", date(2026, 6, 1), "الإحالة إلى الوساطة", None, "milestone"),
 ]
 
 
@@ -581,99 +589,99 @@ MATTER_TIMELINE = [
 # staff — carry their own details; contacts on file at a client are attached
 # separately below, by name.
 MATTER_PARTIES = [
-    ("nabil-v-nile-trading", "Hisham Nabil", "Opposing party", "", "", False),
-    ("nabil-v-nile-trading", "Sherif Zaki", "Opposing counsel", "s.zaki@zakilaw.example", "+20 2 2735 1180", False),
-    ("nabil-v-nile-trading", "Dr. Amira Sobhy", "Court-appointed expert", "", "", False),
-    ("delta-foods-labour-dispute", "Mahmoud Rashad", "Opposing counsel", "m.rashad@rashad.example", "", False),
-    ("khalil-tax-objection", "Egyptian Tax Authority — Cairo Investment Office", "Authority", "", "", False),
-    ("el-sayed-estate-partition", "Farida El-Sayed", "Co-heir", "", "", False),
+    ("nabil-v-nile-trading", "هشام نبيل", "خصم", "", "", False),
+    ("nabil-v-nile-trading", "شريف زكي", "محامي الخصم", "s.zaki@zakilaw.example", "+20 2 2735 1180", False),
+    ("nabil-v-nile-trading", "د. أميرة صبحي", "خبيرة منتدبة من المحكمة", "", "", False),
+    ("delta-foods-labour-dispute", "محمود رشاد", "محامي الخصم", "m.rashad@rashad.example", "", False),
+    ("khalil-tax-objection", "مصلحة الضرائب المصرية — مأمورية استثمار القاهرة", "جهة إدارية", "", "", False),
+    ("el-sayed-estate-partition", "فريدة السيد", "وريثة شريكة", "", "", False),
 ]
 
 # Contacts already on file at a client, attached to a matter by contact name.
 # (matter, client, contact name, relationship, is_bill_recipient)
 MATTER_CLIENT_CONTACTS = [
-    ("nabil-v-nile-trading", "nile-trading", "Karim Fahmy", "Client", True),
-    ("delta-foods-labour-dispute", "delta-foods", "Tamer Gaber", "Client", True),
-    ("khalil-tax-objection", "khalil-holdings", "Nadia Khalil", "Client", True),
+    ("nabil-v-nile-trading", "nile-trading", "كريم فهمي", "العميل", True),
+    ("delta-foods-labour-dispute", "delta-foods", "تامر جابر", "العميل", True),
+    ("khalil-tax-objection", "khalil-holdings", "نادية خليل", "العميل", True),
 ]
 
 # (matter, user, date, description, category, quantity, unit_amount, billable)
 EXPENSES = [
-    ("nabil-v-nile-trading", LAYLA, date(2026, 7, 15), "Appeal filing fee", "court_fees", Decimal("1"), Decimal("2400"), True),
-    ("nabil-v-nile-trading", LAYLA, date(2026, 7, 16), "Certified copies of the expert report", "filing", Decimal("6"), Decimal("85"), True),
-    ("nabil-v-nile-trading", MONA, date(2026, 5, 6), "Courier to Cairo Economic Court", "courier", Decimal("2"), Decimal("120"), True),
-    ("delta-foods-labour-dispute", YOUSSEF, date(2026, 7, 22), "Labour office filing fee", "court_fees", Decimal("1"), Decimal("900"), True),
-    ("khalil-tax-objection", AHMED, date(2026, 6, 12), "Sworn translation of transfer pricing study", "translation", Decimal("34"), Decimal("110"), True),
-    ("el-sayed-estate-partition", AHMED, date(2026, 3, 11), "Independent valuation of the business stake", "expert", Decimal("1"), Decimal("12000"), True),
-    ("nabil-v-nile-trading", MONA, date(2026, 7, 28), "Team lunch during trial prep", "other", Decimal("1"), Decimal("450"), False),
+    ("nabil-v-nile-trading", LAYLA, date(2026, 7, 15), "رسم رفع الاستئناف", "court_fees", Decimal("1"), Decimal("2400"), True),
+    ("nabil-v-nile-trading", LAYLA, date(2026, 7, 16), "صور رسمية من تقرير الخبير", "filing", Decimal("6"), Decimal("85"), True),
+    ("nabil-v-nile-trading", MONA, date(2026, 5, 6), "خدمة توصيل إلى محكمة القاهرة الاقتصادية", "courier", Decimal("2"), Decimal("120"), True),
+    ("delta-foods-labour-dispute", YOUSSEF, date(2026, 7, 22), "رسم إيداع لدى مكتب العمل", "court_fees", Decimal("1"), Decimal("900"), True),
+    ("khalil-tax-objection", AHMED, date(2026, 6, 12), "ترجمة محلّفة لدراسة أسعار التحويل", "translation", Decimal("34"), Decimal("110"), True),
+    ("el-sayed-estate-partition", AHMED, date(2026, 3, 11), "تقدير مستقل لحصة الشركة", "expert", Decimal("1"), Decimal("12000"), True),
+    ("nabil-v-nile-trading", MONA, date(2026, 7, 28), "غداء فريق العمل أثناء الإعداد للجلسة", "other", Decimal("1"), Decimal("450"), False),
 ]
 
 # (matter, channel, direction, subject, body, counterparty, who, when, minutes)
 COMMUNICATIONS = [
-    ("nabil-v-nile-trading", "phone", "outgoing", "Appeal strategy", "Walked Karim through the expert's freight double-count and the appeal timetable. He approved proceeding.", "Karim Fahmy", MONA, "2026-07-20 11:15", 24),
-    ("nabil-v-nile-trading", "email", "incoming", "Re: Expert report", "Client confirms the delivery logs we used for the rebuttal are the complete set.", "Karim Fahmy", MONA, "2026-07-17 09:42", None),
-    ("nabil-v-nile-trading", "email", "outgoing", "Appeal brief for review", "Sent the draft appeal brief for client comment ahead of the 12 August filing.", "Karim Fahmy", MONA, "2026-07-29 17:05", None),
-    ("nabil-v-nile-trading", "meeting", "outgoing", "Pre-hearing conference", "Met opposing counsel at the court to narrow the disputed heads of damage. No agreement reached.", "Sherif Zaki", AHMED, "2026-07-24 10:00", 45),
-    ("delta-foods-labour-dispute", "phone", "incoming", "Missing personnel files", "Tamer confirmed HR is retrieving the two missing termination-cause records.", "Tamer Gaber", YOUSSEF, "2026-07-26 13:30", 12),
-    ("delta-foods-labour-dispute", "letter", "incoming", "Labour office notice", "Notice setting the final arguments date.", "Cairo Labour Office", LAYLA, "2026-07-18 00:00", None),
-    ("khalil-tax-objection", "email", "outgoing", "Objection filing draft", "Circulated the draft objection and supporting schedules.", "Nadia Khalil", AHMED, "2026-07-30 15:20", None),
-    ("el-sayed-estate-partition", "phone", "outgoing", "Buyout proposal", "Farida is open to a cash buyout at or near the court valuation.", "Farida El-Sayed", AHMED, "2026-06-05 12:00", 31),
+    ("nabil-v-nile-trading", "phone", "outgoing", "خطة الاستئناف", "شرحت لكريم مسألة احتساب الشحن مرتين في تقرير الخبير والجدول الزمني للاستئناف، ووافق على المضي قدمًا.", "كريم فهمي", MONA, "2026-07-20 11:15", 24),
+    ("nabil-v-nile-trading", "email", "incoming", "رد: تقرير الخبير", "العميل يؤكد أن سجلات التسليم التي استندنا إليها في الرد هي المجموعة الكاملة.", "كريم فهمي", MONA, "2026-07-17 09:42", None),
+    ("nabil-v-nile-trading", "email", "outgoing", "مذكرة الاستئناف للمراجعة", "أُرسلت مسودة مذكرة الاستئناف لملاحظات العميل قبل الإيداع في 12 أغسطس.", "كريم فهمي", MONA, "2026-07-29 17:05", None),
+    ("nabil-v-nile-trading", "meeting", "outgoing", "اجتماع تمهيدي قبل الجلسة", "قابلت محامي الخصم بالمحكمة لحصر عناصر التعويض محل النزاع. لم يتم التوصل إلى اتفاق.", "شريف زكي", AHMED, "2026-07-24 10:00", 45),
+    ("delta-foods-labour-dispute", "phone", "incoming", "ملفات عاملين ناقصة", "أكّد تامر أن الموارد البشرية تستخرج المستندين الناقصين الخاصين بسبب إنهاء الخدمة.", "تامر جابر", YOUSSEF, "2026-07-26 13:30", 12),
+    ("delta-foods-labour-dispute", "letter", "incoming", "إخطار من مكتب العمل", "إخطار بتحديد موعد المرافعة الختامية.", "مكتب عمل القاهرة", LAYLA, "2026-07-18 00:00", None),
+    ("khalil-tax-objection", "email", "outgoing", "مسودة صحيفة التظلم", "تم تعميم مسودة التظلم والجداول المؤيدة له.", "نادية خليل", AHMED, "2026-07-30 15:20", None),
+    ("el-sayed-estate-partition", "phone", "outgoing", "عرض شراء الحصة", "فريدة منفتحة على شراء نقدي عند تقدير المحكمة أو قريبًا منه.", "فريدة السيد", AHMED, "2026-06-05 12:00", 31),
 ]
 
 # (matter, client, contact name, status, documents, bills, messages)
 PORTALS = [
-    ("nabil-v-nile-trading", "nile-trading", "Karim Fahmy", "active", True, True, True),
-    ("delta-foods-labour-dispute", "delta-foods", "Tamer Gaber", "invited", True, False, True),
+    ("nabil-v-nile-trading", "nile-trading", "كريم فهمي", "active", True, True, True),
+    ("delta-foods-labour-dispute", "delta-foods", "تامر جابر", "invited", True, False, True),
 ]
 
 # (matter, portal contact or None, subject, [(author kind, author, body)])
 THREADS = [
     (
         "nabil-v-nile-trading",
-        "Karim Fahmy",
-        "Appeal brief — your comments",
+        "كريم فهمي",
+        "مذكرة الاستئناف — ملاحظاتكم",
         [
-            ("firm", MONA, "Karim, the draft appeal brief is attached in Documents. The key argument is the freight double-count. Could you confirm the delivery log dates by Thursday?"),
-            ("client", None, "Reviewed — the dates are right. One correction: the Alexandria consignment shipped on the 14th, not the 12th."),
-            ("firm", MONA, "Noted, corrected in the brief. Filing on 12 August."),
+            ("firm", MONA, "أستاذ كريم، مسودة مذكرة الاستئناف مرفقة في قسم المستندات. الحجة الأساسية هي احتساب مصروفات الشحن مرتين. هل يمكنكم تأكيد تواريخ سجلات التسليم قبل يوم الخميس؟"),
+            ("client", None, "راجعتها — التواريخ صحيحة. تصحيح واحد: شحنة الإسكندرية خرجت يوم 14 وليس 12."),
+            ("firm", MONA, "تم التصحيح في المذكرة. الإيداع يوم 12 أغسطس."),
         ],
     ),
 ]
 
 # (matter, kind, amount, date, description, reference, who)
 TRUST_TRANSACTIONS = [
-    ("nabil-v-nile-trading", "deposit", Decimal("100000"), date(2025, 11, 5), "Retainer on account", "TRF-99182", AHMED),
-    ("nabil-v-nile-trading", "invoice_payment", Decimal("45500"), date(2026, 6, 2), "Settled INV-2026-0142 from funds on account", "", LAYLA),
-    ("nabil-v-nile-trading", "withdrawal", Decimal("2400"), date(2026, 7, 15), "Appeal filing fee paid to the court", "CHQ-4471", LAYLA),
-    ("el-sayed-estate-partition", "deposit", Decimal("60000"), date(2025, 9, 15), "Retainer on account", "TRF-88301", AHMED),
-    ("el-sayed-estate-partition", "invoice_payment", Decimal("15000"), date(2026, 5, 2), "Settled INV-2026-0110 from funds on account", "", AHMED),
+    ("nabil-v-nile-trading", "deposit", Decimal("100000"), date(2025, 11, 5), "دفعة أتعاب مقدمة تحت الحساب", "TRF-99182", AHMED),
+    ("nabil-v-nile-trading", "invoice_payment", Decimal("45500"), date(2026, 6, 2), "سداد الفاتورة INV-2026-0142 من الرصيد تحت الحساب", "", LAYLA),
+    ("nabil-v-nile-trading", "withdrawal", Decimal("2400"), date(2026, 7, 15), "سداد رسم رفع الاستئناف للمحكمة", "CHQ-4471", LAYLA),
+    ("el-sayed-estate-partition", "deposit", Decimal("60000"), date(2025, 9, 15), "دفعة أتعاب مقدمة تحت الحساب", "TRF-88301", AHMED),
+    ("el-sayed-estate-partition", "invoice_payment", Decimal("15000"), date(2026, 5, 2), "سداد الفاتورة INV-2026-0110 من الرصيد تحت الحساب", "", AHMED),
 ]
 
 # (field_key, label, type, options, required, order, matter_type)
 CUSTOM_FIELDS = [
-    ("referral_source", "Referral source", "text", [], False, 1, None),
-    ("risk_band", "Risk band", "select", ["Low", "Medium", "High"], False, 2, None),
-    ("court_circuit", "Court circuit", "text", [], False, 3, "litigation"),
-    ("engagement_letter_signed", "Engagement letter signed", "checkbox", [], False, 4, None),
-    ("tax_year_under_review", "Tax year under review", "number", [], False, 5, "tax"),
+    ("referral_source", "مصدر التوصية", "text", [], False, 1, None),
+    ("risk_band", "درجة المخاطر", "select", ["منخفضة", "متوسطة", "مرتفعة"], False, 2, None),
+    ("court_circuit", "الدائرة القضائية", "text", [], False, 3, "litigation"),
+    ("engagement_letter_signed", "توقيع خطاب التكليف", "checkbox", [], False, 4, None),
+    ("tax_year_under_review", "السنة الضريبية محل الفحص", "number", [], False, 5, "tax"),
 ]
 
 # (matter, field_key, value)
 CUSTOM_VALUES = [
-    ("nabil-v-nile-trading", "referral_source", "Existing client"),
-    ("nabil-v-nile-trading", "risk_band", "Medium"),
-    ("nabil-v-nile-trading", "court_circuit", "Cairo Economic Court — Circuit 7"),
+    ("nabil-v-nile-trading", "referral_source", "عميل حالي"),
+    ("nabil-v-nile-trading", "risk_band", "متوسطة"),
+    ("nabil-v-nile-trading", "court_circuit", "محكمة القاهرة الاقتصادية — الدائرة السابعة"),
     ("nabil-v-nile-trading", "engagement_letter_signed", "true"),
-    ("delta-foods-labour-dispute", "risk_band", "High"),
+    ("delta-foods-labour-dispute", "risk_band", "مرتفعة"),
     ("delta-foods-labour-dispute", "engagement_letter_signed", "true"),
     ("khalil-tax-objection", "tax_year_under_review", "2023"),
-    ("khalil-tax-objection", "risk_band", "High"),
+    ("khalil-tax-objection", "risk_band", "مرتفعة"),
 ]
 
 # (matter, terms, result, hit summary, notes, who, cleared)
 CONFLICT_CHECKS = [
-    ("nabil-v-nile-trading", ["Hisham Nabil", "Nabil Import"], "clear", "no matching records", "No prior engagement with either party.", AHMED, True),
-    ("delta-foods-labour-dispute", ["Delta Foods"], "clear", "Delta Foods Manufacturing (client)", "Match is our own client, not an adverse party.", AHMED, True),
+    ("nabil-v-nile-trading", ["هشام نبيل", "نبيل للاستيراد"], "clear", "لا توجد سجلات مطابقة", "لا توجد أعمال سابقة مع أيٍّ من الطرفين.", AHMED, True),
+    ("delta-foods-labour-dispute", ["دلتا للأغذية"], "clear", "شركة دلتا للأغذية (عميل)", "المطابقة على عميلنا نفسه وليست على خصم.", AHMED, True),
 ]
 
 
@@ -1001,7 +1009,7 @@ def seed(conn: psycopg.Connection, owner_clerk_id: str | None) -> int:
             cur.execute(
                 "INSERT INTO trust_accounts (organization_id, name, bank_name, "
                 "account_number, is_default) VALUES (%s, %s, %s, %s, TRUE) RETURNING id",
-                (org, "Client account", "Banque Misr", "****4471"),
+                (org, "حساب أمانات العملاء", "بنك مصر", "****4471"),
             )
             trust_account = cur.fetchone()[0]
             for matter, kind, amount, day, description, reference, who in (
@@ -1121,8 +1129,18 @@ def main() -> None:
     conn = get_connection()
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT id FROM organizations WHERE name = %s", (FIRM_NAME,))
-            existing = cur.fetchone()
+            # Match the firm under any name it has been seeded with, not just
+            # the current one. Renaming FIRM_NAME (as the Arabic pass did)
+            # would otherwise leave the old firm orphaned in the database and
+            # seed a second one beside it -- two entries in the firm switcher,
+            # one of them stale.
+            cur.execute(
+                "SELECT id FROM organizations WHERE name = ANY(%s) ORDER BY id",
+                ([FIRM_NAME, *FORMER_FIRM_NAMES],),
+            )
+            found = cur.fetchall()
+
+        existing = found[0] if found else None
 
         if existing and not args.reset:
             print(
@@ -1130,13 +1148,13 @@ def main() -> None:
                 "Re-run with --reset to replace its practice data."
             )
             return
-        if existing:
-            print(f"Resetting organization {existing[0]}...")
-            reset(conn, existing[0])
+        for (org_id,) in found:
+            print(f"Resetting organization {org_id}...")
+            reset(conn, org_id)
             with conn.cursor() as cur:
-                cur.execute("DELETE FROM memberships WHERE organization_id = %s", (existing[0],))
-                cur.execute("DELETE FROM invitations WHERE organization_id = %s", (existing[0],))
-                cur.execute("DELETE FROM organizations WHERE id = %s", (existing[0],))
+                cur.execute("DELETE FROM memberships WHERE organization_id = %s", (org_id,))
+                cur.execute("DELETE FROM invitations WHERE organization_id = %s", (org_id,))
+                cur.execute("DELETE FROM organizations WHERE id = %s", (org_id,))
             conn.commit()
 
         org = seed(conn, owner_clerk_id)

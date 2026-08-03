@@ -17,11 +17,11 @@ import { Avatar } from "@astryxdesign/core/Avatar";
 export default function FirmSettingsPage() {
   const t = useTranslator();
   const { organizationName } = useOrg();
-  const [name, setName] = useState("Al-Sayed & Partners");
-  const [registrationNumber, setRegistrationNumber] = useState("CR-2019-004821");
+  const [name, setName] = useState("السيد وشركاه للمحاماة والاستشارات القانونية");
+  const [registrationNumber, setRegistrationNumber] = useState("س.ت 4821 لسنة 2019");
   const [phone, setPhone] = useState("+20 2 2735 1190");
   const [address, setAddress] = useState(
-    "14 Talaat Harb Street, Downtown\nCairo, Egypt",
+    "14 شارع طلعت حرب، وسط البلد\nالقاهرة، مصر",
   );
   const [logo, setLogo] = useState<File | null>(null);
 

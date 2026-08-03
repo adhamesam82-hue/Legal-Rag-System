@@ -24,12 +24,12 @@ import { useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import {
   daysUntil,
-  formatDate,
   todayIso,
   type ISODateString,
   type MatterStatus,
   type MatterType,
 } from "@/lib/practice";
+import { useFormat } from "@/lib/i18n/format";
 
 interface MatterRow extends Record<string, unknown> {
   id: number;
@@ -73,6 +73,7 @@ const MATTER_TYPE_KEY: Record<MatterType, string> = {
 };
 
 export default function MattersPage() {
+  const { formatDate } = useFormat();
   const { practice } = useOrg();
   const memberName = useMemberName();
   const t = useTranslator();
@@ -162,10 +163,12 @@ export default function MattersPage() {
         }
         const days = daysUntil(row.deadlineDate);
         const overdue = days < 0;
-        const deadlineText = t("@legalos.matters.list.deadlineBadge", {
-          date: formatDate(row.deadlineDate),
-          days,
-        });
+        const deadlineText = t(
+          overdue
+            ? "@legalos.matters.list.deadlineBadgeOverdue"
+            : "@legalos.matters.list.deadlineBadge",
+          { date: formatDate(row.deadlineDate), days: Math.abs(days) },
+        );
         return (
           <VStack gap={0}>
             <Text type="body" maxLines={2}>

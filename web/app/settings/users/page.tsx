@@ -46,7 +46,7 @@ interface Member {
 const MEMBERS: Member[] = [
   {
     id: "ahmed",
-    name: "Ahmed Al-Sayed",
+    name: "أحمد السيد",
     email: "ahmed@alsayedpartners.com",
     role: "owner",
     isYou: true,
@@ -54,7 +54,7 @@ const MEMBERS: Member[] = [
   },
   {
     id: "mona",
-    name: "Mona Farouk",
+    name: "منى فاروق",
     email: "mona.farouk@alsayedpartners.com",
     role: "lawyer",
     joinedMonthKey: "@legalos.settings.month.mar",
@@ -62,7 +62,7 @@ const MEMBERS: Member[] = [
   },
   {
     id: "youssef",
-    name: "Youssef Adel",
+    name: "يوسف عادل",
     email: "youssef.adel@alsayedpartners.com",
     role: "lawyer",
     joinedMonthKey: "@legalos.settings.month.apr",
@@ -70,7 +70,7 @@ const MEMBERS: Member[] = [
   },
   {
     id: "layla",
-    name: "Layla Hassan",
+    name: "ليلى حسن",
     email: "layla.hassan@alsayedpartners.com",
     role: "staff",
     joinedMonthKey: "@legalos.settings.month.may",

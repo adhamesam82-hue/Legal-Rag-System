@@ -24,18 +24,19 @@ import { useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import {
   daysUntil,
-  formatDate,
   todayIso,
   type ISODateString,
   type Priority,
   type Task,
 } from "@/lib/practice";
+import { useFormat } from "@/lib/i18n/format";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 
 type Filter = "mine" | "all" | "overdue";
 
 export default function TasksPage() {
+  const { formatDate } = useFormat();
   const t = useTranslator();
   const enumLabel = useEnumLabel();
   const { practice, members } = useOrg();

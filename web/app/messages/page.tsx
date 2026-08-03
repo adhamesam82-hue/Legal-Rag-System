@@ -46,6 +46,8 @@ import {
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import { useTranslator } from "@astryxdesign/core/i18n";
+import { useEnumLabel } from "@/lib/i18n/enum-label";
+import { useFormat } from "@/lib/i18n/format";
 
 // ---------------------------------------------------------------------------
 // Messages — Slack-like internal firm messaging. No backend yet; this is the
@@ -96,14 +98,17 @@ type Presence = "online" | "busy" | "offline";
 
 interface Person {
   name: string;
-  role: string;
+  /** Enum value, resolved through the catalog — see useEnumLabel below. It
+   *  used to be a literal ("Owner"), which was the one label on this screen
+   *  that stayed English after the locale switched. */
+  role: "owner" | "lawyer" | "staff";
 }
 
 const PEOPLE: Record<string, Person> = {
-  ahmed: { name: "Ahmed Al-Sayed", role: "Owner" },
-  mona: { name: "Mona Farouk", role: "Lawyer" },
-  youssef: { name: "Youssef Adel", role: "Lawyer" },
-  layla: { name: "Layla Hassan", role: "Staff" },
+  ahmed: { name: "أحمد السيد", role: "owner" },
+  mona: { name: "منى فاروق", role: "lawyer" },
+  youssef: { name: "يوسف عادل", role: "lawyer" },
+  layla: { name: "ليلى حسن", role: "staff" },
 };
 
 const YOU = "ahmed";
@@ -119,22 +124,22 @@ interface Channel {
 const CHANNELS: Channel[] = [
   {
     id: "general",
-    name: "general",
-    topic: "Firm-wide announcements and chat",
+    name: "عام",
+    topic: "إعلانات المكتب والنقاش العام",
     isMatter: false,
     unread: 0,
   },
   {
     id: "nabil-v-nile",
-    name: "Nabil v. Nile Trading Co.",
-    topic: "Matter channel · Commercial litigation",
+    name: "نبيل ضد شركة النيل للتجارة",
+    topic: "قناة قضية · تقاضٍ تجاري",
     isMatter: true,
     unread: 2,
   },
   {
     id: "delta-foods-nda",
-    name: "Delta Foods NDA",
-    topic: "Matter channel · Contract review",
+    name: "اتفاقية عدم الإفشاء — دلتا للأغذية",
+    topic: "قناة قضية · مراجعة عقود",
     isMatter: true,
     unread: 0,
   },
@@ -159,10 +164,10 @@ const PRESENCE_VARIANT: Record<Presence, "success" | "error" | "neutral"> = {
   offline: "neutral",
 };
 
-const PRESENCE_LABEL: Record<Presence, string> = {
-  online: "Online",
-  busy: "Busy",
-  offline: "Offline",
+const PRESENCE_KEY: Record<Presence, string> = {
+  online: "@legalos.messages.presence.online",
+  busy: "@legalos.messages.presence.busy",
+  offline: "@legalos.messages.presence.offline",
 };
 
 interface Attachment {
@@ -185,7 +190,7 @@ const MESSAGES_BY_CHANNEL: Record<string, StreamMessage[]> = {
       userId: "youssef",
       time: "2026-07-31T08:45:00",
       bubbles: [
-        "Court moved tomorrow's hearing to 10:00 AM — can you confirm the brief is ready?",
+        "المحكمة قدّمت جلسة الغد إلى الساعة 10:00 ص — هل تؤكدين أن المذكرة جاهزة؟",
       ],
     },
     {
@@ -193,23 +198,23 @@ const MESSAGES_BY_CHANNEL: Record<string, StreamMessage[]> = {
       userId: "mona",
       time: "2026-07-31T09:10:00",
       bubbles: [
-        "@Ahmed Al-Sayed I've attached the updated settlement draft — one clause under 4.2 still needs your sign-off.",
+        "@أحمد السيد أرفقت مسودة التسوية المحدَّثة — ما زال البند 4/2 يحتاج موافقتك.",
       ],
-      attachment: { name: "Settlement_Agreement_Draft_v3.pdf", size: "812 KB" },
+      attachment: { name: "مسودة_اتفاق_التسوية_ن3.pdf", size: "812 كيلوبايت" },
     },
     {
       id: "n3",
       userId: "ahmed",
       time: "2026-07-31T09:32:00",
       bubbles: [
-        "Reviewed — clause 4.2 looks fine. Go ahead and send it to opposing counsel.",
+        "راجعتها — البند 4/2 سليم. أرسليها لمحامي الخصم.",
       ],
     },
     {
       id: "n4",
       userId: "mona",
       time: "2026-07-31T09:34:00",
-      bubbles: ["On it. I'll loop in @Layla Hassan for the filing paperwork."],
+      bubbles: ["تمام. سأضم @ليلى حسن لإجراءات الإيداع."],
     },
   ],
   "delta-foods-nda": [
@@ -218,20 +223,20 @@ const MESSAGES_BY_CHANNEL: Record<string, StreamMessage[]> = {
       userId: "youssef",
       time: "2026-07-30T14:05:00",
       bubbles: [
-        "AI review flagged 2 clauses that deviate from our standard template — full summary is in Contract Review.",
+        "مراجعة الذكاء الاصطناعي نبّهت إلى بندين يخرجان عن نموذجنا المعتمد — الملخص الكامل في شاشة مراجعة العقود.",
       ],
     },
     {
       id: "d2",
       userId: "layla",
       time: "2026-07-30T15:20:00",
-      bubbles: ["Client wants to sign by Friday — can we turn this around in time?"],
+      bubbles: ["العميل يريد التوقيع قبل الجمعة — هل نلحق بالموعد؟"],
     },
     {
       id: "d3",
       userId: "ahmed",
       time: "2026-07-30T15:26:00",
-      bubbles: ["@Youssef Adel let's prioritize this today, then."],
+      bubbles: ["@يوسف عادل إذن لنعطِ هذا الأولوية اليوم."],
     },
   ],
   general: [
@@ -239,18 +244,21 @@ const MESSAGES_BY_CHANNEL: Record<string, StreamMessage[]> = {
       id: "g1",
       userId: "layla",
       time: "2026-07-29T11:00:00",
-      bubbles: ["Reminder: firm all-hands Thursday at 5 PM in the main conference room."],
+      bubbles: ["تذكير: اجتماع المكتب العام يوم الخميس الساعة 5 مساءً بقاعة الاجتماعات الكبرى."],
     },
     {
       id: "g2",
       userId: "mona",
       time: "2026-07-29T11:42:00",
-      bubbles: ["New client intake for Khalil Holdings landed in the CRM — assigning it now."],
+      bubbles: ["وصل طلب عميل جديد من مجموعة خليل القابضة إلى إدارة العملاء المحتملين — أُسنده الآن."],
     },
   ],
 };
 
-const MENTION_RE = /(@[A-Z][\w'-]*(?:\s[A-Z][\w'-]*)?)/g;
+// \p{L}, not [A-Z]: an Arabic script has no case, so the old pattern matched
+// no mention at all once the names were Arabic. Two words at most, as before,
+// so "@يوسف عادل إذن" highlights the name and not the sentence after it.
+const MENTION_RE = /(@\p{L}[\p{L}\p{M}'’-]*(?:[  ]\p{L}[\p{L}\p{M}'’-]*)?)/gu;
 
 function MessageText({ text }: { text: string }) {
   const parts = text.split(MENTION_RE).filter(Boolean);
@@ -334,6 +342,8 @@ function StreamMessageGroup({ message }: { message: StreamMessage }) {
 
 export default function MessagesPage() {
   const t = useTranslator();
+  const enumLabel = useEnumLabel();
+  const { formatDayLong } = useFormat();
   const [selectedChannelId, setSelectedChannelId] = useState("nabil-v-nile");
   const [selectedDmId, setSelectedDmId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -359,18 +369,20 @@ export default function MessagesPage() {
 
   const headingLabel = selectedDm ? PEOPLE[selectedDm.userId].name : selectedChannel.name;
   const composerPlaceholder = selectedDm
-    ? `Message ${PEOPLE[selectedDm.userId].name}`
-    : `Message #${selectedChannel.name}`;
+    ? t("@legalos.messages.composer.toPerson", {
+        name: PEOPLE[selectedDm.userId].name,
+      })
+    : t("@legalos.messages.composer.toChannel", { name: selectedChannel.name });
 
   const channelSidebar = (
     <Stack direction="vertical" style={styles.sidebar}>
       <HStack gap={2} style={styles.sidebarHeader}>
         <StackItem size="fill">
-          <Heading level={5}>Messages</Heading>
+          <Heading level={5}>{t("@legalos.messages.heading")}</Heading>
         </StackItem>
         <IconButton
-          label="New message"
-          tooltip="New message"
+          label={t("@legalos.messages.newMessage")}
+          tooltip={t("@legalos.messages.newMessage")}
           icon={<Icon icon={PencilSquareIcon} size="sm" color="inherit" />}
           variant="ghost"
           size="sm"
@@ -445,7 +457,7 @@ export default function MessagesPage() {
                     status={
                       <AvatarStatusDot
                         variant={PRESENCE_VARIANT[dm.presence]}
-                        label={PRESENCE_LABEL[dm.presence]}
+                        label={t(PRESENCE_KEY[dm.presence])}
                       />
                     }
                   />
@@ -474,7 +486,7 @@ export default function MessagesPage() {
         <Heading level={5}>{headingLabel}</Heading>
         <StackItem size="fill" style={styles.streamTopic}>
           <Text type="supporting" color="secondary" maxLines={1}>
-            {selectedDm ? PEOPLE[selectedDm.userId].role : selectedChannel.topic}
+            {selectedDm ? enumLabel(PEOPLE[selectedDm.userId].role) : selectedChannel.topic}
           </Text>
         </StackItem>
         {!selectedDm && (
@@ -507,7 +519,7 @@ export default function MessagesPage() {
                 headerActions={
                   <IconButton
                     label={t("@legalos.messages.attachFile")}
-                    tooltip="Attach a file"
+                    tooltip={t("@legalos.messages.attachFile")}
                     icon={<Icon icon={PaperClipIcon} size="sm" color="inherit" />}
                     variant="ghost"
                     size="sm"
@@ -537,11 +549,7 @@ export default function MessagesPage() {
             {messages.length > 0 ? (
               <ChatMessageList density="balanced">
                 <ChatSystemMessage variant="divider">
-                  {new Date(messages[0].time).toLocaleDateString("en-US", {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric",
-                  })}
+                  {formatDayLong(messages[0].time)}
                 </ChatSystemMessage>
                 {messages.map((message) => (
                   <StreamMessageGroup key={message.id} message={message} />

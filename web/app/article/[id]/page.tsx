@@ -13,6 +13,7 @@ import { ToggleButton, ToggleButtonGroup } from "@astryxdesign/core/ToggleButton
 import { Icon } from "@astryxdesign/core/Icon";
 import { ArrowLeftIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
 import { useTranslator, useDirection } from "@astryxdesign/core/i18n";
+import { useLocale } from "@/lib/i18n/provider";
 import { api, ApiError, ArticleDetail, dirOf } from "@/lib/api";
 
 export default function ArticlePage({
@@ -28,7 +29,12 @@ export default function ArticlePage({
   const [detail, setDetail] = useState<ArticleDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const [language, setLanguage] = useState<"en" | "ar">("en");
+  // Seeded from the UI locale, not hardcoded "en": asking for a plain-language
+  // explanation of an Arabic statute from an Arabic interface and getting
+  // English back was the wrong default. Still a selector — a lawyer drafting
+  // for a foreign client can switch it.
+  const { locale } = useLocale();
+  const [language, setLanguage] = useState<"en" | "ar">(locale);
   const [explanation, setExplanation] = useState<string | null>(null);
   const [explaining, setExplaining] = useState(false);
   const [explainError, setExplainError] = useState<{

@@ -828,35 +828,10 @@ export type PracticeApi = ReturnType<typeof practiceApi>;
 // lib/i18n/catalogs/enums.ts and are resolved through useEnumLabel() so they
 // translate; the English-only LABELS table that used to sit here is gone.
 
-export function formatEGP(amount: number | null | undefined, currency = "EGP"): string {
-  if (amount === null || amount === undefined) return "—";
-  return `${currency} ${Number(amount).toLocaleString("en-US", {
-    maximumFractionDigits: 0,
-  })}`;
-}
-
-export function formatDate(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const date = new Date(iso.length === 10 ? `${iso}T00:00:00` : iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
-
-export function formatDateTime(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
+// formatEGP, formatDate, formatDateTime and formatBytes used to live here,
+// pinned to "en-US". They now live in lib/i18n/format.ts and follow the
+// active locale; components reach them through useFormat(). What stays here
+// is the arithmetic that has no locale in it.
 
 /** Whole days from today to `iso`; negative when the date has passed. */
 export function daysUntil(iso: string | null | undefined): number {
@@ -877,13 +852,3 @@ export function todayIso(): ISODateString {
   return `${now.getFullYear()}-${month}-${day}` as ISODateString;
 }
 
-export function formatBytes(bytes: number): string {
-  if (!bytes) return "—";
-  const units = ["B", "KB", "MB", "GB"];
-  const exponent = Math.min(
-    Math.floor(Math.log(bytes) / Math.log(1024)),
-    units.length - 1,
-  );
-  const value = bytes / 1024 ** exponent;
-  return `${value.toFixed(value >= 10 || exponent === 0 ? 0 : 1)} ${units[exponent]}`;
-}

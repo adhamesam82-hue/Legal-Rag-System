@@ -23,7 +23,8 @@ import {
   ScaleIcon,
 } from "@heroicons/react/24/outline";
 import { useMemberName } from "@/lib/org";
-import { daysUntil, formatDate } from "@/lib/practice";
+import { daysUntil } from "@/lib/practice";
+import { useFormat } from "@/lib/i18n/format";
 import { Panel, type TabProps } from "./shared";
 
 type EventKind = "hearing" | "deadline" | "task";
@@ -125,6 +126,7 @@ function EventList({
   events: CalendarEvent[];
   isPast?: boolean;
 }) {
+  const { formatDate } = useFormat();
   const t = useTranslator();
 
   return (

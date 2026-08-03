@@ -132,6 +132,12 @@ export const en: Catalog = {
   "@legalos.billing.chart.collected": { defaultMessage: "Collected" },
 
   "@legalos.billing.table.invoice": { defaultMessage: "Invoice" },
+  "@legalos.billing.detail.heading": { defaultMessage: "Details" },
+  "@legalos.billing.detail.lineItems": { defaultMessage: "Line items" },
+  "@legalos.billing.detail.noLineItems": { defaultMessage: "No line items" },
+  "@legalos.billing.detail.noLineItemsDescription": {
+    defaultMessage: "This invoice carries a total of {total} without an itemized breakdown.",
+  },
   "@legalos.billing.table.client": { defaultMessage: "Client" },
   "@legalos.billing.table.matter": { defaultMessage: "Matter" },
   "@legalos.billing.table.issued": { defaultMessage: "Issued" },
@@ -314,6 +320,12 @@ export const ar: Catalog = {
   "@legalos.billing.chart.collected": { defaultMessage: "محصَّل" },
 
   "@legalos.billing.table.invoice": { defaultMessage: "الفاتورة" },
+  "@legalos.billing.detail.heading": { defaultMessage: "البيانات" },
+  "@legalos.billing.detail.lineItems": { defaultMessage: "بنود الفاتورة" },
+  "@legalos.billing.detail.noLineItems": { defaultMessage: "لا توجد بنود" },
+  "@legalos.billing.detail.noLineItemsDescription": {
+    defaultMessage: "هذه الفاتورة بإجمالي {total} دون تفصيل بالبنود.",
+  },
   "@legalos.billing.table.client": { defaultMessage: "العميل" },
   "@legalos.billing.table.matter": { defaultMessage: "الملف" },
   "@legalos.billing.table.issued": { defaultMessage: "تاريخ الإصدار" },

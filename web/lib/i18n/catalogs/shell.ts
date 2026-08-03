@@ -3,8 +3,11 @@ import type { Catalog } from "@astryxdesign/core/i18n";
 export const en: Catalog = {
   "@legalos.shell.brand": { defaultMessage: "LegalOS" },
   "@legalos.shell.mainNavAriaLabel": { defaultMessage: "Main navigation" },
-  "@legalos.shell.firm.alSayed": { defaultMessage: "Al-Sayed & Partners" },
-  "@legalos.shell.firm.cairoLegal": { defaultMessage: "Cairo Legal Group" },
+  // Firm names are data, not chrome: a Cairo practice is called what it is
+  // called on its letterhead, in either UI language. Same strings as the `ar`
+  // catalog below, and as FIRM_NAME in scripts/seed_demo_firm.py.
+  "@legalos.shell.firm.alSayed": { defaultMessage: "السيد وشركاه" },
+  "@legalos.shell.firm.cairoLegal": { defaultMessage: "مجموعة القاهرة القانونية" },
 
   "@legalos.shell.nav.section.overview": { defaultMessage: "Overview" },
   "@legalos.shell.nav.section.clients": { defaultMessage: "Clients" },
@@ -49,16 +52,16 @@ export const en: Catalog = {
   "@legalos.shell.notifications.button": { defaultMessage: "Notifications" },
   "@legalos.shell.notifications.today": { defaultMessage: "Today" },
   "@legalos.shell.notifications.hearingReminder": {
-    defaultMessage: "Hearing reminder — Nabil vs. Nile Trading, 2:00 PM",
+    defaultMessage: "Hearing reminder — نبيل ضد شركة النيل للتجارة, 2:00 PM",
   },
   "@legalos.shell.notifications.inviteAccepted": {
-    defaultMessage: "Mona Farouk accepted your invite",
+    defaultMessage: "منى فاروق accepted your invite",
   },
   "@legalos.shell.notifications.contractReviewFinished": {
-    defaultMessage: "Contract review finished: NDA — Delta Foods",
+    defaultMessage: "Contract review finished: NDA — شركة دلتا للأغذية",
   },
 
-  "@legalos.shell.account.menuAriaLabel": { defaultMessage: "Ahmed Al-Sayed account menu" },
+  "@legalos.shell.account.menuAriaLabel": { defaultMessage: "أحمد السيد account menu" },
   "@legalos.shell.account.profile": { defaultMessage: "Profile" },
   "@legalos.shell.account.firmSettings": { defaultMessage: "Firm settings" },
   "@legalos.shell.account.signOut": { defaultMessage: "Sign out" },
@@ -113,13 +116,13 @@ export const ar: Catalog = {
   "@legalos.shell.notifications.button": { defaultMessage: "الإشعارات" },
   "@legalos.shell.notifications.today": { defaultMessage: "اليوم" },
   "@legalos.shell.notifications.hearingReminder": {
-    defaultMessage: "تذكير بجلسة — نبيل ضد شركة النيل للتجارة، الساعة ٢:٠٠ ظهراً",
+    defaultMessage: "تذكير بجلسة — نبيل ضد شركة النيل للتجارة، الساعة 2:00 ظهراً",
   },
   "@legalos.shell.notifications.inviteAccepted": {
     defaultMessage: "قبلت منى فاروق دعوتك",
   },
   "@legalos.shell.notifications.contractReviewFinished": {
-    defaultMessage: "اكتملت مراجعة العقد: اتفاقية سرية — دلتا فودز",
+    defaultMessage: "اكتملت مراجعة العقد: اتفاقية عدم إفشاء — شركة دلتا للأغذية",
   },
 
   "@legalos.shell.account.menuAriaLabel": { defaultMessage: "قائمة حساب أحمد السيد" },

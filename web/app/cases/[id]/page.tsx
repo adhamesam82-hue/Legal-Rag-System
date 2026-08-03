@@ -24,7 +24,8 @@ import {
 import { useTranslator, useDirection, type TranslatorFn } from "@astryxdesign/core/i18n";
 import { useResource } from "@/lib/org";
 import { DataView } from "@/components/DataState";
-import { daysUntil, formatDate } from "@/lib/practice";
+import { daysUntil } from "@/lib/practice";
+import { useFormat } from "@/lib/i18n/format";
 import { enumLabelWith } from "@/lib/i18n/enum-label";
 
 function statusVariant(status: string): "success" | "warning" | "neutral" {
@@ -50,6 +51,7 @@ export default function CaseDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { formatDate } = useFormat();
   const { id } = use(params);
   const caseId = Number(id);
   const t = useTranslator();
@@ -148,7 +150,7 @@ export default function CaseDetailPage({
 
                       <Card>
                         <VStack gap={4}>
-                          <Heading level={4}>Evidence</Heading>
+                          <Heading level={4}>{t("@legalos.cases.detail.evidenceHeading")}</Heading>
                           {record.evidence.length === 0 ? (
                             <Text type="body" color="secondary">
                               No evidence filed yet.
@@ -187,7 +189,7 @@ export default function CaseDetailPage({
 
                       <Card>
                         <VStack gap={4}>
-                          <Heading level={4}>Court documents</Heading>
+                          <Heading level={4}>{t("@legalos.cases.detail.courtDocumentsHeading")}</Heading>
                           {record.court_documents.length === 0 ? (
                             <Text type="body" color="secondary">
                               No court documents recorded.
@@ -223,22 +225,22 @@ export default function CaseDetailPage({
                   <VStack gap={6}>
                     <Card>
                       <VStack gap={4}>
-                        <Heading level={4}>Case details</Heading>
+                        <Heading level={4}>{t("@legalos.cases.detail.detailsHeading")}</Heading>
                         <MetadataList>
-                          <MetadataListItem label="Court">
+                          <MetadataListItem label={t("@legalos.cases.field.court")}>
                             {record.court || "—"}
                           </MetadataListItem>
-                          <MetadataListItem label="Judge">
+                          <MetadataListItem label={t("@legalos.cases.field.judge")}>
                             {record.judge || "—"}
                           </MetadataListItem>
-                          <MetadataListItem label="Filed">
+                          <MetadataListItem label={t("@legalos.cases.field.filed")}>
                             {formatDate(record.filed_date)}
                           </MetadataListItem>
-                          <MetadataListItem label="Opposing party">
+                          <MetadataListItem label={t("@legalos.cases.field.opposingParty")}>
                             {record.opposing_party || "—"}
                           </MetadataListItem>
                           {record.opposing_counsel && (
-                            <MetadataListItem label="Opposing counsel">
+                            <MetadataListItem label={t("@legalos.cases.field.opposingCounsel")}>
                               {record.opposing_counsel}
                             </MetadataListItem>
                           )}
@@ -248,7 +250,7 @@ export default function CaseDetailPage({
 
                     <Card>
                       <VStack gap={4}>
-                        <Heading level={4}>Next hearing</Heading>
+                        <Heading level={4}>{t("@legalos.cases.detail.nextHearingHeading")}</Heading>
                         {record.next_hearing ? (
                           <VStack gap={2}>
                             <HStack gap={2} vAlign="center">
@@ -274,12 +276,12 @@ export default function CaseDetailPage({
 
                     <Card>
                       <VStack gap={4}>
-                        <Heading level={4}>Deadlines</Heading>
+                        <Heading level={4}>{t("@legalos.cases.detail.deadlinesHeading")}</Heading>
                         {record.deadlines.length === 0 ? (
                           <EmptyState
                             icon={<Icon icon={ClockIcon} size="lg" color="secondary" />}
-                            title="No deadlines"
-                            description="Nothing outstanding on this case."
+                            title={t("@legalos.cases.detail.deadlinesEmptyTitle")}
+                            description={t("@legalos.cases.detail.deadlinesEmptyDescription")}
                           />
                         ) : (
                           <List hasDividers density="compact">
@@ -299,11 +301,11 @@ export default function CaseDetailPage({
                                   }
                                   endContent={
                                     deadline.completed ? (
-                                      <Badge variant="success" label="Done" />
+                                      <Badge variant="success" label={t("@legalos.cases.detail.deadlineDone")} />
                                     ) : days <= 3 ? (
                                       <Badge
                                         variant={days < 0 ? "error" : "warning"}
-                                        label={`${days}d`}
+                                        label={t("@legalos.cases.detail.daysSuffix", { days })}
                                       />
                                     ) : (
                                       <Text type="supporting" color="secondary">

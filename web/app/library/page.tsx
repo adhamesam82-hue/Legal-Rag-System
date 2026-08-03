@@ -13,9 +13,11 @@ import { TextInput } from "@astryxdesign/core/TextInput";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { api, ApiError, Instrument, dirOf } from "@/lib/api";
 import { useTranslator } from "@astryxdesign/core/i18n";
+import { useFormat } from "@/lib/i18n/format";
 
 export default function LibraryPage() {
   const t = useTranslator();
+  const { intlLocale } = useFormat();
   const [instruments, setInstruments] = useState<Instrument[] | null>(null);
   const [filter, setFilter] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export default function LibraryPage() {
                 {instruments
                   ? t("@legalos.library.summary", {
                       count: instruments.length,
-                      articles: totalArticles.toLocaleString(),
+                      articles: totalArticles.toLocaleString(intlLocale),
                     })
                   : t("@legalos.library.loadingCorpus")}
               </Text>

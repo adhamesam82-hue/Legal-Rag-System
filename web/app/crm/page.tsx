@@ -18,7 +18,8 @@ import {
   InboxIcon,
 } from "@heroicons/react/24/outline";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { LEADS, STAGE_META, STAGE_ORDER, formatEGP, formatEGPCompact, type Lead } from "./data";
+import { LEADS, STAGE_META, STAGE_ORDER, type Lead } from "./data";
+import { useFormat } from "@/lib/i18n/format";
 
 // ---------------------------------------------------------------------------
 // CRM pipeline for prospective clients (leads). Distinct from /clients, which
@@ -35,6 +36,7 @@ const flaggedCount = LEADS.filter((l) => l.conflictStatus === "flagged").length;
 
 function LeadCard({ lead }: { lead: Lead }) {
   const t = useTranslator();
+  const { formatEGPCompact } = useFormat();
   return (
     <NextLink href={`/crm/${lead.id}`} className="block">
       <Card
@@ -72,6 +74,7 @@ function LeadCard({ lead }: { lead: Lead }) {
 
 function PipelineColumn({ stage }: { stage: (typeof STAGE_ORDER)[number] }) {
   const t = useTranslator();
+  const { formatEGPCompact } = useFormat();
   const leads = LEADS.filter((l) => l.stage === stage);
   const total = leads.reduce((sum, l) => sum + l.estValue, 0);
   const meta = STAGE_META[stage];
@@ -121,6 +124,7 @@ function PipelineColumn({ stage }: { stage: (typeof STAGE_ORDER)[number] }) {
 
 export default function CrmPage() {
   const t = useTranslator();
+  const { formatEGP, formatEGPCompact } = useFormat();
   return (
     <Layout
       height="fill"
