@@ -7,10 +7,11 @@ through every call.
 from __future__ import annotations
 
 import dataclasses
+from collections.abc import Iterator
 
 import psycopg
 
-from legalrag.answer import Answer, answer
+from legalrag.answer import Answer, StreamEvent, answer, stream_answer
 from legalrag.expand import Expansion, expand_query
 from legalrag.rerank import RERANK_POOL, rerank
 from legalrag.retrieve import Retrieval, search
@@ -120,3 +121,35 @@ def ask(
         use_vectors=use_vectors,
     )
     return answer(question, retrieval)
+
+
+def ask_stream(
+    conn: psycopg.Connection,
+    question: str,
+    jurisdiction: str,
+    limit: int = 8,
+    expand: bool = False,
+    do_rerank: bool = False,
+    use_vectors: bool = True,
+) -> tuple[Retrieval, Iterator[StreamEvent]]:
+    """ask(), split so the caller can show retrieval before generation starts.
+
+    Retrieval is done by the time this returns; the iterator is the answer
+    forming. The two are handed back separately because that ordering is the
+    whole point on a phone -- the articles the answer will be built from can be
+    on screen while the model is still writing, and they are already verified
+    text, so nothing is being shown ahead of its check.
+
+    The connection is only used before the iterator is consumed, so callers may
+    close it as soon as this returns.
+    """
+    retrieval = retrieve_for(
+        conn,
+        question,
+        jurisdiction,
+        limit=limit,
+        expand=expand,
+        do_rerank=do_rerank,
+        use_vectors=use_vectors,
+    )
+    return retrieval, stream_answer(question, retrieval)

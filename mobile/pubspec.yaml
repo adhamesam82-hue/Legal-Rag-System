@@ -1,0 +1,61 @@
+name: legalos_mobile
+description: "Legal assistant for Egyptian law — grounded answers over the statute corpus."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # State management. Cubit for screen-level state, Bloc where a screen has a
+  # real event vocabulary -- the chat does: ask, cancel, retry, open a source.
+  flutter_bloc: ^9.0.0
+  bloc: ^9.0.0
+  equatable: ^2.0.7
+
+  # HTTP. Dio rather than package:http because the answer arrives as
+  # Server-Sent Events, and Dio can hand back the raw byte stream
+  # (ResponseType.stream) that parsing SSE requires.
+  dio: ^5.7.0
+
+  # Identity. Firebase, not Clerk: the consumer app is a separate business
+  # from LegalOS with a separate customer base, so the two products do not
+  # share an identity provider. Firebase also has a first-party Flutter SDK
+  # (Clerk's is community-maintained and still pre-1.0), handles ID-token
+  # refresh, and is free to 50k MAU.
+  firebase_core: ^3.8.0
+  firebase_auth: ^5.3.3
+
+  # Sign in with Apple is not optional: Apple requires it on iOS for any app
+  # that offers another social login, and this one offers Google.
+  google_sign_in: ^6.2.2
+  sign_in_with_apple: ^6.1.3
+
+  # SHA-256 for the Sign in with Apple nonce. Apple is handed the hash and
+  # Firebase the raw value, which is what ties the credential to this request
+  # and stops a stolen Apple token being replayed.
+  crypto: ^3.0.6
+
+# Deliberately absent:
+#   go_router — two screens and a modal sheet. Auth is handled by rebuilding on
+#               the auth state stream rather than by route redirects, so its
+#               main draw does not apply yet.
+#   flutter_secure_storage — firebase_auth already persists credentials in the
+#               Keychain (iOS) and Keystore-encrypted storage (Android). A
+#               second store would be a second thing to get wrong.
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  bloc_test: ^10.0.0
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

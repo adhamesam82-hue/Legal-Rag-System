@@ -6,10 +6,17 @@ afterwards, and an answer containing one that does not resolve is blocked
 outright. A hallucinated article number is otherwise indistinguishable from a
 correct one -- it is the primary failure mode of legal RAG and it looks
 completely convincing.
+
+finalize() is the one place that decides refused/blocked/grounded.
+stream_answer() exists so a phone can show an answer forming instead of a
+spinner, and it releases text only once that text can no longer belong to an
+answer the enforcement would discard -- see the "streaming" section below for
+what that costs and the one case it cannot cover.
 """
 from __future__ import annotations
 
 import re
+from collections.abc import Iterator
 from dataclasses import dataclass
 
 from openai import OpenAI
@@ -135,44 +142,35 @@ def _refusal(question: str, retrieval: Retrieval) -> Answer:
     )
 
 
-def answer(
-    question: str,
-    retrieval: Retrieval,
-    client: OpenAI | None = None,
-    model: str | None = None,
-) -> Answer:
-    """Compose an answer from retrieved articles, or refuse."""
-    if not retrieval.candidates:
-        return _refusal(question, retrieval)
-    if client is None or model is None:
-        default_client, default_model = client_for("answer")
-        client = client or default_client
-        model = model or default_model
-
-    # The system prompt asks the model to match the question's language, but
-    # that alone was not reliable: llama-3.3-70b answered an English question in
-    # Arabic on a real query during testing. Detecting the language server-side
-    # and stating it as an instruction, rather than leaving inference to the
-    # model, is what actually holds across providers.
-    answer_language = "Arabic" if _is_arabic(question) else "English"
-
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": _SYSTEM_PROMPT},
-            {
-                "role": "user",
-                "content": (
-                    f"Question: {question}\n\n"
-                    f"Answer in {answer_language}.\n\n"
-                    f"Supplied articles:\n\n"
-                    f"{build_context(retrieval.candidates, retrieval.jurisdiction)}"
-                ),
-            },
-        ],
-        temperature=0,
+def _blocked(citations: list[str], retrieval: Retrieval, unresolvable: tuple[str, ...]) -> Answer:
+    # The model cited an article it was not given. The answer is discarded
+    # rather than shown with a warning: a plausible-looking legal answer with
+    # a footnote is still read as an answer.
+    blocked_text = (
+        "This answer was blocked because it cited articles that were not "
+        "retrieved from the corpus, which means they cannot be verified: "
+        + ", ".join(unresolvable)
+        + f"\n\n_{DISCLAIMER_EN}_"
     )
-    text = (response.choices[0].message.content or "").strip()
+    return Answer(
+        text=blocked_text,
+        citations=citations,
+        retrieval=retrieval,
+        refused=False,
+        blocked=True,
+        blocked_citations=unresolvable,
+    )
+
+
+def finalize(question: str, text: str, retrieval: Retrieval) -> Answer:
+    """Turn raw model output into a verdict: refused, blocked, or grounded.
+
+    The single place that decides whether text may be shown as an answer.
+    Both answer() and stream_answer() end here, so streaming cannot drift into
+    a weaker version of the enforcement -- which is the failure this function
+    exists to prevent, not a stylistic preference.
+    """
+    text = text.strip()
 
     if REFUSAL_MARKER in text:
         return _refusal(question, retrieval)
@@ -182,24 +180,10 @@ def answer(
     unresolvable = tuple(c for c in citations if c not in retrieved)
 
     if unresolvable:
-        # The model cited an article it was not given. The answer is discarded
-        # rather than shown with a warning: a plausible-looking legal answer with
-        # a footnote is still read as an answer.
-        blocked_text = (
-            "This answer was blocked because it cited articles that were not "
-            "retrieved from the corpus, which means they cannot be verified: "
-            + ", ".join(unresolvable)
-            + f"\n\n_{DISCLAIMER_EN}_"
-        )
-        return Answer(
-            text=blocked_text,
-            citations=citations,
-            retrieval=retrieval,
-            refused=False,
-            blocked=True,
-            blocked_citations=unresolvable,
-        )
+        return _blocked(citations, retrieval, unresolvable)
 
+    # An answer that cites nothing is not grounded in anything, whatever it
+    # says. Treated as a refusal rather than shown uncited.
     if not citations:
         return _refusal(question, retrieval)
 
@@ -211,3 +195,174 @@ def answer(
         refused=False,
         blocked=False,
     )
+
+
+def _request_messages(question: str, retrieval: Retrieval) -> list[dict]:
+    # The system prompt asks the model to match the question's language, but
+    # that alone was not reliable: llama-3.3-70b answered an English question in
+    # Arabic on a real query during testing. Detecting the language server-side
+    # and stating it as an instruction, rather than leaving inference to the
+    # model, is what actually holds across providers.
+    answer_language = "Arabic" if _is_arabic(question) else "English"
+    return [
+        {"role": "system", "content": _SYSTEM_PROMPT},
+        {
+            "role": "user",
+            "content": (
+                f"Question: {question}\n\n"
+                f"Answer in {answer_language}.\n\n"
+                f"Supplied articles:\n\n"
+                f"{build_context(retrieval.candidates, retrieval.jurisdiction)}"
+            ),
+        },
+    ]
+
+
+def _resolve_client(
+    client: OpenAI | None, model: str | None
+) -> tuple[OpenAI, str]:
+    if client is not None and model is not None:
+        return client, model
+    default_client, default_model = client_for("answer")
+    return client or default_client, model or default_model
+
+
+def answer(
+    question: str,
+    retrieval: Retrieval,
+    client: OpenAI | None = None,
+    model: str | None = None,
+) -> Answer:
+    """Compose an answer from retrieved articles, or refuse."""
+    if not retrieval.candidates:
+        return _refusal(question, retrieval)
+    client, model = _resolve_client(client, model)
+
+    response = client.chat.completions.create(
+        model=model,
+        messages=_request_messages(question, retrieval),
+        temperature=0,
+    )
+    return finalize(question, response.choices[0].message.content or "", retrieval)
+
+
+# --- streaming --------------------------------------------------------------
+#
+# Streaming is gated, not raw. A token is released to the caller only once it
+# cannot still turn out to belong to an answer that must not be shown, which
+# means two things are withheld:
+#
+#   1. Everything, until the first citation appears AND resolves against the
+#      retrieved set. Before that point the reply may still be REFUSAL_MARKER
+#      (rule 2), or may end up citing nothing at all -- both of which discard
+#      the text entirely. Nothing is shown while either is still possible.
+#   2. Any trailing fragment that could still be growing into a citation or
+#      into the refusal marker. A citation is checked at the moment its closing
+#      bracket arrives, before the bracket is released, so an unverifiable
+#      citation never reaches a screen.
+#
+# One reversal survives this and cannot be designed away short of not
+# streaming: a valid citation early followed by an invented one later blocks
+# the whole answer after some text has already been released. The stream aborts
+# at that token and the terminal Completed event carries blocked=True; clients
+# MUST replace the text they have rendered with Completed.answer.text rather
+# than appending to it. That is the contract -- a client that treats deltas as
+# final will show a blocked answer.
+
+
+@dataclass(frozen=True)
+class TextDelta:
+    """A run of answer text cleared for display."""
+
+    text: str
+
+
+@dataclass(frozen=True)
+class Completed:
+    """Terminal event. `answer.text` is authoritative and replaces all deltas."""
+
+    answer: Answer
+
+
+StreamEvent = TextDelta | Completed
+
+
+def _hold_from(text: str) -> int:
+    """Index from which `text` must be withheld because it may still be growing.
+
+    Two things are unsafe to release half-formed: a citation (its article
+    number is what gets verified, and the check needs the closing bracket) and
+    the refusal marker (releasing 'NO_ANSWER' would show a fragment of a reply
+    that is about to be discarded).
+    """
+    open_bracket = text.rfind("[")
+    if open_bracket != -1 and "]" not in text[open_bracket:]:
+        return open_bracket
+
+    for length in range(min(len(text), len(REFUSAL_MARKER) - 1), 0, -1):
+        if REFUSAL_MARKER.startswith(text[-length:]):
+            return len(text) - length
+
+    return len(text)
+
+
+def stream_answer(
+    question: str,
+    retrieval: Retrieval,
+    client: OpenAI | None = None,
+    model: str | None = None,
+) -> Iterator[StreamEvent]:
+    """Stream an answer, releasing only text that has cleared enforcement.
+
+    Yields zero or more TextDelta events followed by exactly one Completed.
+    """
+    if not retrieval.candidates:
+        yield Completed(_refusal(question, retrieval))
+        return
+    client, model = _resolve_client(client, model)
+
+    retrieved = {c.citation for c in retrieval.candidates}
+    raw = ""
+    released = 0
+    gate_open = False
+
+    stream = client.chat.completions.create(
+        model=model,
+        messages=_request_messages(question, retrieval),
+        temperature=0,
+        stream=True,
+    )
+
+    for chunk in stream:
+        if not chunk.choices:
+            # Providers send a final usage-only chunk with no choices.
+            continue
+        delta = chunk.choices[0].delta.content
+        if not delta:
+            continue
+        raw += delta
+
+        if REFUSAL_MARKER in raw:
+            yield Completed(_refusal(question, retrieval))
+            return
+
+        citations = extract_citations(raw)
+        unresolvable = tuple(c for c in citations if c not in retrieved)
+        if unresolvable:
+            yield Completed(_blocked(citations, retrieval, unresolvable))
+            return
+
+        # The first resolvable citation is what opens the gate: past it, the
+        # reply can no longer be discarded for citing nothing, and it is no
+        # longer a bare refusal marker.
+        gate_open = gate_open or bool(citations)
+        if not gate_open:
+            continue
+
+        safe_upto = _hold_from(raw)
+        if safe_upto > released:
+            yield TextDelta(raw[released:safe_upto])
+            released = safe_upto
+
+    yield Completed(finalize(question, raw, retrieval))
+

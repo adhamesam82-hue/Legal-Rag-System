@@ -1,0 +1,9 @@
+# Declares the `live` tag so `flutter test` does not warn about it.
+#
+# Tests tagged `live` need a running backend. They are not excluded here on
+# purpose -- they detect an unreachable server in setUpAll and skip themselves,
+# so a plain `flutter test` stays green on a laptop with nothing running, and
+# the same command exercises the real wire format on a machine where the API
+# is up.
+tags:
+  live:

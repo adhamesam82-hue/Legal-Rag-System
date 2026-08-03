@@ -1,0 +1,630 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-04T02:00:00Z",
+  "title": "Design System: LegalOS Marketing",
+  "scope": "marketing/ \u2014 the standalone dark landing page. Not the product app at web/, which is light-mode Astryx.",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Ground",
+        "canonical": "#08090B",
+        "tonalRamp": [
+          "#020203",
+          "#050608",
+          "#08090B",
+          "#101216",
+          "#1A1D23",
+          "#2A2E37",
+          "#4A505C",
+          "#9AA0AC"
+        ]
+      },
+      "ground-deep": {
+        "role": "neutral",
+        "displayName": "Hero Ground",
+        "canonical": "#050608",
+        "tonalRamp": [
+          "#010102",
+          "#030405",
+          "#050608",
+          "#0C0E11",
+          "#15181D",
+          "#242830",
+          "#434955",
+          "#939AA6"
+        ]
+      },
+      "brass": {
+        "role": "primary",
+        "displayName": "Brass Seal",
+        "canonical": "#E0A44C",
+        "tonalRamp": [
+          "#1E1405",
+          "#3A280C",
+          "#573C14",
+          "#77551F",
+          "#98702C",
+          "#BA8B3C",
+          "#E0A44C",
+          "#F5D9A8"
+        ]
+      },
+      "brass-lit": {
+        "role": "primary",
+        "displayName": "Brass Lit",
+        "canonical": "#F0BE76",
+        "tonalRamp": [
+          "#241906",
+          "#41300E",
+          "#5F4718",
+          "#806025",
+          "#A27B34",
+          "#C79945",
+          "#F0BE76",
+          "#FBE6C4"
+        ]
+      },
+      "violet": {
+        "role": "secondary",
+        "displayName": "Signal Violet",
+        "canonical": "#6D5BFF",
+        "tonalRamp": [
+          "#100B2E",
+          "#1C1450",
+          "#2C2178",
+          "#3A2E8C",
+          "#4F41B8",
+          "#6D5BFF",
+          "#8E7CFF",
+          "#D6D0FF"
+        ]
+      },
+      "violet-lit": {
+        "role": "secondary",
+        "displayName": "Violet Lit",
+        "canonical": "#8E7CFF",
+        "tonalRamp": [
+          "#15102F",
+          "#231A54",
+          "#34277E",
+          "#43349A",
+          "#5947C4",
+          "#7562E8",
+          "#8E7CFF",
+          "#E0DBFF"
+        ]
+      },
+      "violet-deep": {
+        "role": "secondary",
+        "displayName": "Violet Deep",
+        "canonical": "#3A2E8C",
+        "tonalRamp": [
+          "#0B0820",
+          "#150F3C",
+          "#1F1758",
+          "#2A2072",
+          "#3A2E8C",
+          "#4E3EB4",
+          "#6E5DDC",
+          "#C3BAF5"
+        ]
+      },
+      "navy": {
+        "role": "secondary",
+        "displayName": "Deep Navy",
+        "canonical": "#101A3D",
+        "tonalRamp": [
+          "#05070F",
+          "#0A0E22",
+          "#101A3D",
+          "#16225C",
+          "#1F2F7E",
+          "#2C40A5",
+          "#5468C8",
+          "#B9C2E8"
+        ]
+      },
+      "navy-lit": {
+        "role": "secondary",
+        "displayName": "Navy Lit",
+        "canonical": "#16225C",
+        "tonalRamp": [
+          "#060814",
+          "#0B0F2A",
+          "#111845",
+          "#16225C",
+          "#1E3080",
+          "#2B41A8",
+          "#5266CA",
+          "#BAC3E9"
+        ]
+      },
+      "ok": {
+        "role": "tertiary",
+        "displayName": "Ledger Green",
+        "canonical": "#4ED8A0",
+        "tonalRamp": [
+          "#032116",
+          "#06402B",
+          "#0A5F41",
+          "#0F7F57",
+          "#159F6E",
+          "#2CBF87",
+          "#4ED8A0",
+          "#B6F0DA"
+        ]
+      },
+      "warn": {
+        "role": "tertiary",
+        "displayName": "Docket Amber",
+        "canonical": "#F2C14E",
+        "tonalRamp": [
+          "#231A03",
+          "#3F2F08",
+          "#5C450F",
+          "#7C5E18",
+          "#9E7A24",
+          "#C29B34",
+          "#F2C14E",
+          "#FAE3AC"
+        ]
+      },
+      "risk": {
+        "role": "tertiary",
+        "displayName": "Exposure Red",
+        "canonical": "#FF7A6B",
+        "tonalRamp": [
+          "#2A0C08",
+          "#4A1610",
+          "#6B231A",
+          "#8D3226",
+          "#B04435",
+          "#D45A48",
+          "#FF7A6B",
+          "#FFC7BF"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#F5F6F8",
+        "tonalRamp": [
+          "#0F1113",
+          "#1D2024",
+          "#2E3238",
+          "#454A52",
+          "#5F656F",
+          "#7E8492",
+          "#A9AEB9",
+          "#F5F6F8"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Ink Secondary (7.9:1 on ground)",
+        "canonical": "#A9AEB9",
+        "tonalRamp": [
+          "#0E0F12",
+          "#1B1D21",
+          "#2B2E34",
+          "#41454C",
+          "#5B5F68",
+          "#7E8492",
+          "#A9AEB9",
+          "#E7E9ED"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Ink Tertiary (4.7:1 on ground \u2014 the contrast floor)",
+        "canonical": "#7E8492",
+        "tonalRamp": [
+          "#0C0D10",
+          "#17191D",
+          "#25272D",
+          "#383C43",
+          "#4E535C",
+          "#666C77",
+          "#7E8492",
+          "#CFD3DA"
+        ]
+      },
+      "surface-1": {
+        "role": "neutral",
+        "displayName": "Surface 1 (white @ 2.8%)",
+        "canonical": "rgba(255, 255, 255, 0.028)"
+      },
+      "surface-2": {
+        "role": "neutral",
+        "displayName": "Surface 2 (white @ 4.6%, declared, unused)",
+        "canonical": "rgba(255, 255, 255, 0.046)"
+      },
+      "surface-3": {
+        "role": "neutral",
+        "displayName": "Surface 3 (white @ 7%)",
+        "canonical": "rgba(255, 255, 255, 0.07)"
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline (white @ 9%)",
+        "canonical": "rgba(255, 255, 255, 0.09)"
+      },
+      "hairline-strong": {
+        "role": "neutral",
+        "displayName": "Hairline Strong (white @ 16%)",
+        "canonical": "rgba(255, 255, 255, 0.16)"
+      },
+      "hairline-bright": {
+        "role": "neutral",
+        "displayName": "Hairline Bright (white @ 28%)",
+        "canonical": "rgba(255, 255, 255, 0.28)"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display / Hero",
+        "purpose": "The H1 only. Sora 600, capped at 17ch above 860px, text-wrap: balance."
+      },
+      "headline": {
+        "displayName": "Headline / Section",
+        "purpose": "Every section h2. Security section overrides down to clamp(1.9rem, 3vw, 2.7rem) because it sits inside a pane."
+      },
+      "title": {
+        "displayName": "Title / Sub",
+        "purpose": "Panel and card h3."
+      },
+      "lede": {
+        "displayName": "Lede",
+        "purpose": "Section-opening paragraph, --ink-2, max 62ch. Hero lede overrides to 56ch."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running copy, --ink-2, max 68ch, text-wrap: pretty."
+      },
+      "label": {
+        "displayName": "Eyebrow / Label",
+        "purpose": "Uppercase section label with an 18x1px lead rule. Names the section's place in the product, never restates the heading. Deliberately neutral \u2014 it wore brass once and cost the citation seal its meaning."
+      },
+      "statute": {
+        "displayName": "Statute / Document (Noto Naskh Arabic)",
+        "purpose": "Arabic statute and document body \u2014 the naskh style Egyptian legal text is actually set in. Carries unicode-bidi: isolate but NOT direction: rtl."
+      },
+      "arabic-ui": {
+        "displayName": "Arabic UI (Tajawal)",
+        "purpose": "Arabic UI labels, matter names, chips and citation seals, so Arabic sits beside Manrope without a jolt."
+      }
+    },
+    "fonts": [
+      {
+        "family": "Sora",
+        "weights": "400 700",
+        "subset": "latin",
+        "file": "assets/fonts/Sora-400-700-latin.woff2",
+        "preloaded": true
+      },
+      {
+        "family": "Manrope",
+        "weights": "400 800",
+        "subset": "latin",
+        "file": "assets/fonts/Manrope-400-800-latin.woff2",
+        "preloaded": true
+      },
+      {
+        "family": "Noto Naskh Arabic",
+        "weights": "400 700",
+        "subset": "arabic",
+        "file": "assets/fonts/NotoNaskhArabic-400-700-arabic.woff2"
+      },
+      {
+        "family": "Tajawal",
+        "weights": "400, 500, 700 (three files)",
+        "subset": "arabic",
+        "file": "assets/fonts/Tajawal-{400,500,700}-arabic.woff2"
+      }
+    ],
+    "shadows": [
+      {
+        "name": "lift",
+        "value": "0 2px 4px rgba(0, 0, 0, 0.4), 0 18px 40px -12px rgba(0, 0, 0, 0.7)",
+        "purpose": "Hover state for interactive panes (.pane--action), and any pane that must detach slightly at rest."
+      },
+      {
+        "name": "deep",
+        "value": "0 4px 10px rgba(0, 0, 0, 0.45), 0 48px 90px -28px rgba(0, 0, 0, 0.85)",
+        "purpose": "Product surfaces (.ui) and the lightbox frame. Makes a screenshot read as an object on the page rather than an inset panel."
+      },
+      {
+        "name": "solid-button-seat",
+        "value": "0 1px 0 rgba(255,255,255,0.5) inset, 0 8px 24px -8px rgba(0,0,0,0.9)",
+        "purpose": "Primary button at rest. The inset white line is a top bevel, not a glow."
+      },
+      {
+        "name": "solid-button-hover",
+        "value": "0 1px 0 rgba(255,255,255,0.7) inset, 0 12px 34px -10px rgba(109,91,255,0.6)",
+        "purpose": "Primary button hover \u2014 the ambient half turns violet."
+      },
+      {
+        "name": "violet-button-glow",
+        "value": "0 1px 0 rgba(255,255,255,0.28) inset, 0 10px 30px -10px rgba(109,91,255,0.85)",
+        "purpose": "Violet CTA at rest; hover extends to 0 16px 40px -10px rgba(109,91,255,1)."
+      },
+      {
+        "name": "ui-top-highlight",
+        "value": "inset 0 1px 0 rgba(255,255,255,0.09)",
+        "purpose": "Lit top edge inside a product surface, painted by .ui::after."
+      },
+      {
+        "name": "pane-lit-edge",
+        "value": "linear-gradient(160deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 42%) masked into a 1px ring via mask-composite: exclude",
+        "purpose": "Not a shadow \u2014 the glass pane's lit top edge. Every .pane carries it on ::before."
+      },
+      {
+        "name": "focus-ring",
+        "value": "outline: 2px solid #8E7CFF; outline-offset: 3px; border-radius: 5px",
+        "purpose": "Global :focus-visible. Violet, never brass."
+      },
+      {
+        "name": "field",
+        "value": "radial-gradient(closest-side, \u2026), filter: blur(90px), opacity 0.4\u20130.8, sized in vw/rem",
+        "purpose": "Navy/violet atmosphere. A region behind a whole section, never an edge on a component."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Exponential ease-out. The page's single motion curve: reveals, hovers, tab indicators, nav condense, accordion, lightbox."
+      },
+      {
+        "name": "ease-soft",
+        "value": "cubic-bezier(0.33, 0.9, 0.35, 1)",
+        "purpose": "Used for exactly one thing \u2014 the CTA sheen sweep. Do not introduce a third curve."
+      },
+      {
+        "name": "count-up",
+        "value": "1 - Math.pow(2, -10 * t) over 1500ms",
+        "purpose": "Stat count-up in JS, the numeric mirror of the CSS curve."
+      },
+      {
+        "name": "reveal",
+        "value": "opacity 0.85s var(--ease), transform 0.95s var(--ease); from translateY(22px)",
+        "purpose": "The page's only reveal gesture. Staggered by an inline --reveal-delay in 70\u201390ms steps."
+      },
+      {
+        "name": "reveal-observer",
+        "value": "IntersectionObserver { rootMargin: '0px 0px -12% 0px', threshold: 0.06 }",
+        "purpose": "Reveal trigger. Unobserves after firing; will-change released on transitionend."
+      },
+      {
+        "name": "ambient-cycle",
+        "value": "ambCycle 27s linear infinite, delays -1s / -10s / -19s",
+        "purpose": "Three-scene hero loop: matter board breathing, clause resolving to its article of law, timeline drawing. Masked to the open right region, off below 680px and under reduced motion, paused off-screen by IntersectionObserver."
+      },
+      {
+        "name": "nav-condense",
+        "value": "transform 0.5s var(--ease), opacity 0.45s var(--ease); plate scaleY(62/76), row translate3d(0,-7px,0)",
+        "purpose": "Condense without touching height, so --nav-h and scroll-padding-top stay in agreement. Transform + opacity only, rAF-throttled."
+      },
+      {
+        "name": "accordion",
+        "value": "grid-template-rows 0fr \u2192 1fr over 0.6s var(--ease); visibility 0s linear 0.6s on close",
+        "purpose": "Feature panels below 900px. The delayed visibility keeps collapsing content out of the tab order mid-animation."
+      },
+      {
+        "name": "marquee",
+        "value": "translate3d(-50%, 0, 0) over 46s linear (34s below 680px)",
+        "purpose": "Firm logo track, duplicated in JS for a seamless loop. Pauses on hover and focus-within; under reduced motion it becomes a plain scroller."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation-duration / transition-duration: 0.001ms !important; reveals forced visible; ambient loop, weave, sheen and eyebrow pulse removed rather than frozen",
+        "purpose": "The hero swaps to its static poster frame, exactly as a paused film would look."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "nav-links",
+        "value": "1180px",
+        "note": "Primary nav links hide; testimonial re-grids; integrations 8 \u2192 6 columns."
+      },
+      {
+        "name": "stack",
+        "value": "980px",
+        "note": "Every two-column section grid collapses; footer stacks; .ui-report stacks."
+      },
+      {
+        "name": "accordion",
+        "value": "900px",
+        "note": "JS-driven via data-accordion-below on .feat, not a CSS media query \u2014 the swap also rewrites roles and aria-*."
+      },
+      {
+        "name": "burger",
+        "value": "860px",
+        "note": "Burger appears; testimonial, stats and every .ui internal split go single-column; the .ui rail hides."
+      },
+      {
+        "name": "phone",
+        "value": "680px",
+        "note": "--nav-h: 66px; ambient loop removed and the poster becomes the hero background; mockup tilt off; .ui surfaces shed columns rather than shrink type."
+      },
+      {
+        "name": "tabs-compact",
+        "value": "540px",
+        "note": "Overview tab bar goes full-width and drops its icons."
+      },
+      {
+        "name": "narrow",
+        "value": "420px",
+        "note": "Integration grid held at 4 columns; pull-quote fixed at 1.15rem."
+      }
+    ],
+    "layout": {
+      "shell": "1200px max-width, padding-inline clamp(1.25rem, 4vw, 2.75rem)",
+      "shellWide": "1400px \u2014 nav, hero stage, testimonial, final CTA",
+      "sectionRhythm": "padding-block clamp(6rem, 11vw, 11rem); .section--tight clamp(4rem, 7vw, 7rem)",
+      "measures": "headings 46rem; lede 62ch (hero 56ch); body 68ch; hero H1 17ch; mission statement 24ch; CTA heading 15ch",
+      "gridRatios": "overview 0.82/1.18 \u00b7 features 0.86/1.14 \u00b7 showcase 0.88/1.12 \u00b7 security 1.05/0.95 \u00b7 case study 1/1.08 \u00b7 solutions 1.28/0.72 \u00b7 testimonial 15rem/1fr/15.5rem",
+      "bleedingRail": "padding-inline: max(var(--shell-pad), (100% - var(--shell)) / 2 + var(--shell-pad)) \u2014 lets the insights carousel bleed to both viewport edges while its first card still aligns with the section heading"
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-solid",
+      "description": "The single conversion action \u2014 'Book a Demo'. The page's only high-contrast surface; do not spend it twice in one viewport.",
+      "html": "<a class=\"ds-btn ds-btn-solid ds-btn-lg\" href=\"#\">Book a Demo</a>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem; padding: 0.95rem 1.6rem; border-radius: 999px; font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; font-weight: 700; font-size: 0.94rem; letter-spacing: -0.005em; white-space: nowrap; text-decoration: none; cursor: pointer; transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), background 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s cubic-bezier(0.16,1,0.3,1); } .ds-btn-lg { padding: 1.1rem 2rem; font-size: 1rem; } .ds-btn-solid { background: var(--ink, #F5F6F8); color: #0A0B0E; box-shadow: 0 1px 0 rgba(255,255,255,0.5) inset, 0 8px 24px -8px rgba(0,0,0,0.9); } .ds-btn-solid:hover { background: #fff; box-shadow: 0 1px 0 rgba(255,255,255,0.7) inset, 0 12px 34px -10px rgba(109,91,255,0.6); } .ds-btn-solid:focus-visible { outline: 2px solid var(--violet-lit, #8E7CFF); outline-offset: 3px; } .ds-btn-solid:active { transform: translateY(1px) scale(0.99); }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary action beside the primary \u2014 tour, pricing. Real backdrop blur so it picks up whatever field it crosses.",
+      "html": "<button class=\"ds-btn ds-btn-ghost ds-btn-lg\" type=\"button\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M9 6.8v10.4L18 12z\"/></svg>See LegalOS in action</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem; padding: 1.1rem 2rem; border-radius: 999px; font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; font-weight: 700; font-size: 1rem; white-space: nowrap; cursor: pointer; background: rgba(255,255,255,0.045); border: 1px solid var(--hairline-strong, rgba(255,255,255,0.16)); color: var(--ink, #F5F6F8); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); transition: background 0.4s cubic-bezier(0.16,1,0.3,1), border-color 0.4s cubic-bezier(0.16,1,0.3,1); } .ds-btn-ghost:hover { background: rgba(255,255,255,0.09); border-color: var(--hairline-bright, rgba(255,255,255,0.28)); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--violet-lit, #8E7CFF); outline-offset: 3px; } .ds-btn-ghost:active { transform: translateY(1px) scale(0.99); }"
+    },
+    {
+      "name": "Violet Button",
+      "kind": "button",
+      "refersTo": "button-violet",
+      "description": "Used exactly once on the page ('Talk to Sales'), inside the one violet-tinted card. Its scarcity is the point.",
+      "html": "<a class=\"ds-btn-violet\" href=\"#\">Talk to Sales</a>",
+      "css": ".ds-btn-violet { display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem; padding: 0.95rem 1.6rem; border-radius: 999px; font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; font-weight: 700; font-size: 0.94rem; text-decoration: none; cursor: pointer; background: linear-gradient(135deg, #7A66FF, #5B47E8); color: #fff; box-shadow: 0 1px 0 rgba(255,255,255,0.28) inset, 0 10px 30px -10px rgba(109,91,255,0.85); transition: box-shadow 0.4s cubic-bezier(0.16,1,0.3,1), transform 0.4s cubic-bezier(0.16,1,0.3,1); } .ds-btn-violet:hover { box-shadow: 0 1px 0 rgba(255,255,255,0.36) inset, 0 16px 40px -10px rgba(109,91,255,1); } .ds-btn-violet:focus-visible { outline: 2px solid var(--violet-lit, #8E7CFF); outline-offset: 3px; } .ds-btn-violet:active { transform: translateY(1px) scale(0.99); }"
+    },
+    {
+      "name": "Citation Seal",
+      "kind": "custom",
+      "refersTo": "cite-seal",
+      "description": "The page's one recurring product mark and the only place brass is earned. Wraps rather than clips \u2014 an article reference running off the edge of its own panel is the opposite of what the mark is for.",
+      "html": "<span class=\"ds-cite\" dir=\"rtl\"><svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 3.2 20 7.4v5.2c0 4.2-3.2 7.1-8 8.2-4.8-1.1-8-4-8-8.2V7.4z\"/><path d=\"M8.9 12.2 11 14.4l4.2-4.6\"/></svg>\u0642\u0627\u0646\u0648\u0646 \u0627\u0644\u0639\u0645\u0644 12/2003 \u2014 \u0645.122</span>",
+      "css": ".ds-cite { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.16rem 0.5rem 0.16rem 0.4rem; border-radius: 5px; border: 1px solid rgba(224, 164, 76, 0.42); background: rgba(224, 164, 76, 0.11); color: var(--brass-lit, #F0BE76); font-family: 'Tajawal', 'Noto Naskh Arabic', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.005em; white-space: normal; } .ds-cite svg { flex: none; }"
+    },
+    {
+      "name": "Glass Pane",
+      "kind": "card",
+      "refersTo": "pane",
+      "description": "The one glass recipe: 1px light border, low-alpha white fill, real backdrop blur, and a masked pseudo-element giving a lit top edge. Interactive panes brighten the border on hover rather than changing fill.",
+      "html": "<article class=\"ds-pane ds-pane-action\"><span class=\"ds-pane-ico\"><svg width=\"21\" height=\"21\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3.4 13.6 6.2 5a1.6 1.6 0 0 1 1.5-1.1h8.6A1.6 1.6 0 0 1 17.8 5l2.8 8.6\"/><path d=\"M3.4 13.6h4.4l1.2 2.4h5.9l1.3-2.4h4.4v4.6a2 2 0 0 1-2 2H5.4a2 2 0 0 1-2-2z\"/></svg></span><h3 class=\"ds-pane-h\">Smart Intake</h3><p class=\"ds-pane-p\">A new enquiry arrives as a form, a WhatsApp message or a phone note and leaves as a matter.</p></article>",
+      "css": ".ds-pane { position: relative; display: flex; flex-direction: column; max-width: 24rem; padding: 2rem; border: 1px solid var(--hairline, rgba(255,255,255,0.09)); border-radius: 28px; background: var(--surface-1, rgba(255,255,255,0.028)); backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%); overflow: hidden; color: var(--ink, #F5F6F8); font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; } .ds-pane::before { content: \"\"; position: absolute; inset: 0; border-radius: inherit; padding: 1px; background: linear-gradient(160deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 42%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; pointer-events: none; } .ds-pane-action { transition: transform 0.5s cubic-bezier(0.16,1,0.3,1), border-color 0.5s cubic-bezier(0.16,1,0.3,1), box-shadow 0.5s cubic-bezier(0.16,1,0.3,1); } .ds-pane-action:hover { transform: translateY(-4px); border-color: var(--hairline-strong, rgba(255,255,255,0.16)); box-shadow: 0 2px 4px rgba(0,0,0,0.4), 0 18px 40px -12px rgba(0,0,0,0.7); } .ds-pane-ico { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--hairline-strong, rgba(255,255,255,0.16)); background: rgba(255,255,255,0.05); color: var(--ink-2, #A9AEB9); margin-bottom: 1.2rem; } .ds-pane-h { font-family: 'Sora', ui-sans-serif, system-ui, sans-serif; font-size: 1.24rem; font-weight: 600; letter-spacing: -0.028em; margin: 0 0 0.7rem; } .ds-pane-p { color: var(--ink-2, #A9AEB9); line-height: 1.65; margin: 0; }"
+    },
+    {
+      "name": "Newsletter Email Input",
+      "kind": "input",
+      "refersTo": "input-email",
+      "description": "Pill input with a violet focus ring. The form it belongs to refuses to fake a confirmation: with no endpoint declared it says signup is not connected rather than thanking the visitor.",
+      "html": "<form class=\"ds-news\"><div class=\"ds-news-row\"><input class=\"ds-input\" type=\"email\" placeholder=\"you@firm.com\" aria-label=\"Work email\"><button class=\"ds-news-btn\" type=\"submit\">Subscribe</button></div><p class=\"ds-news-msg ds-is-err\">Signup is not connected yet. Email hello@legalos.com and we will add you.</p></form>",
+      "css": ".ds-news { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; max-width: 30rem; } .ds-news-row { display: flex; gap: 0.6rem; flex-wrap: wrap; } .ds-input { flex: 1 1 13rem; min-width: 0; padding: 0.9rem 1.1rem; border-radius: 999px; border: 1px solid var(--hairline-strong, rgba(255,255,255,0.16)); background: rgba(255,255,255,0.04); color: var(--ink, #F5F6F8); font: inherit; transition: border-color 0.4s cubic-bezier(0.16,1,0.3,1), background 0.4s cubic-bezier(0.16,1,0.3,1); } .ds-input::placeholder { color: var(--ink-3, #7E8492); } .ds-input:hover { border-color: var(--hairline-bright, rgba(255,255,255,0.28)); } .ds-input:focus-visible { outline: 2px solid var(--violet-lit, #8E7CFF); outline-offset: 2px; background: rgba(255,255,255,0.07); } .ds-input[aria-invalid=\"true\"] { border-color: rgba(255,122,107,0.6); } .ds-news-btn { padding: 0.95rem 1.6rem; border: 0; border-radius: 999px; background: var(--ink, #F5F6F8); color: #0A0B0E; font: inherit; font-weight: 700; cursor: pointer; box-shadow: 0 1px 0 rgba(255,255,255,0.5) inset, 0 8px 24px -8px rgba(0,0,0,0.9); } .ds-news-btn:hover { background: #fff; } .ds-news-msg { margin: 0.75rem 0 0; font-size: 0.85rem; font-weight: 600; min-height: 1.2rem; color: var(--ink-3, #7E8492); } .ds-news-msg.ds-is-err { color: #FF9E92; } .ds-news-msg.ds-is-ok { color: var(--ok, #4ED8A0); }"
+    },
+    {
+      "name": "Tab Group",
+      "kind": "nav",
+      "refersTo": "tab",
+      "description": "Pill-in-pill tablist for the platform overview. Real roving tabindex with arrow/Home/End keys; below 540px it goes full-width and drops its icons.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\" aria-label=\"Platform areas\"><button class=\"ds-tab\" role=\"tab\" aria-selected=\"true\" type=\"button\"><svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 4.2v15.6M7 19.8h10M5 7.6h14M5 7.6 2.6 13.4h4.8zM19 7.6l-2.4 5.8h4.8z\"/></svg>Matters</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\" tabindex=\"-1\" type=\"button\"><svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M14 3.2H7.4a1.6 1.6 0 0 0-1.6 1.6v14.4a1.6 1.6 0 0 0 1.6 1.6h9.2a1.6 1.6 0 0 0 1.6-1.6V7.4z\"/><path d=\"M14 3.2v4.2h4.2M9 12.4h6M9 16h4\"/></svg>Documents</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\" tabindex=\"-1\" type=\"button\">Client Portal</button></div>",
+      "css": ".ds-tabs { display: inline-flex; gap: 0.3rem; padding: 0.35rem; border-radius: 999px; border: 1px solid var(--hairline, rgba(255,255,255,0.09)); background: var(--surface-1, rgba(255,255,255,0.028)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; } .ds-tab { display: inline-flex; align-items: center; gap: 0.55rem; padding: 0.66rem 1.15rem; border: 0; border-radius: 999px; background: none; font: inherit; font-size: 0.92rem; font-weight: 700; color: var(--ink-3, #7E8492); white-space: nowrap; cursor: pointer; transition: color 0.4s cubic-bezier(0.16,1,0.3,1), background 0.4s cubic-bezier(0.16,1,0.3,1); } .ds-tab:hover { color: var(--ink-2, #A9AEB9); } .ds-tab[aria-selected=\"true\"] { background: rgba(255,255,255,0.1); color: var(--ink, #F5F6F8); } .ds-tab:focus-visible { outline: 2px solid var(--violet-lit, #8E7CFF); outline-offset: 3px; }"
+    },
+    {
+      "name": "Hero Eyebrow Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "The violet chip variant used once, above the H1. Its dot pulses on a 3.4s expanding ring, removed under reduced motion. Never brass.",
+      "html": "<p class=\"ds-eyebrow\"><span class=\"ds-eyebrow-dot\"></span>AI-powered legal operations</p>",
+      "css": ".ds-eyebrow { display: inline-flex; align-items: center; gap: 0.6rem; margin: 0; padding: 0.46rem 1rem 0.46rem 0.8rem; border-radius: 999px; border: 1px solid rgba(142,124,255,0.32); background: rgba(109,91,255,0.13); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #C9C0FF; } .ds-eyebrow-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--violet-lit, #8E7CFF); animation: dsPulse 3.4s cubic-bezier(0.16,1,0.3,1) infinite; } @keyframes dsPulse { 0% { box-shadow: 0 0 0 0 rgba(142,124,255,0.55); } 70% { box-shadow: 0 0 0 9px rgba(142,124,255,0); } 100% { box-shadow: 0 0 0 0 rgba(142,124,255,0); } } @media (prefers-reduced-motion: reduce) { .ds-eyebrow-dot { animation: none; } }"
+    },
+    {
+      "name": "Product Surface \u2014 KPI + Finding",
+      "kind": "custom",
+      "refersTo": "ui-surface",
+      "description": "The .ui family in miniature: real markup, never a raster, with every interior measurement in em so one font-size resizes the whole screenshot. Deltas are coloured by whether the movement is good for the firm, not by its sign \u2014 a 22% fall in aged receivables is green.",
+      "html": "<div class=\"ds-ui\"><div class=\"ds-ui-bar\"><span class=\"ds-ui-dots\"><i></i><i></i><i></i></span><span class=\"ds-ui-crumb\">Reports <em>/ Firm performance</em></span></div><div class=\"ds-ui-pad\"><div class=\"ds-ui-kpis\"><div class=\"ds-ui-kpi\"><span class=\"ds-ui-kpi-l\">Realisation</span><span class=\"ds-ui-kpi-v\">87%</span><span class=\"ds-ui-kpi-d ds-is-good\">+4 pts</span></div><div class=\"ds-ui-kpi\"><span class=\"ds-ui-kpi-l\">Aged &gt; 60 days</span><span class=\"ds-ui-kpi-v\">EGP 310K</span><span class=\"ds-ui-kpi-d ds-is-good\">&minus;22%</span></div></div><span class=\"ds-ui-find\"><i></i><b>Auto-renewal, 60-day window</b><em>Notice period runs from signature, not from the last renewal.</em><span class=\"ds-cite\" dir=\"rtl\">\u0645.147 \u2014 \u0645\u062f\u0646\u064a 131/1948</span></span></div></div>",
+      "css": ".ds-ui { position: relative; max-width: 32rem; border-radius: 14px; border: 1px solid var(--hairline-strong, rgba(255,255,255,0.16)); background: linear-gradient(178deg, #12141A 0%, #0A0B0F 62%); box-shadow: 0 4px 10px rgba(0,0,0,0.45), 0 48px 90px -28px rgba(0,0,0,0.85); overflow: hidden; font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; font-size: 0.8rem; line-height: 1.45; color: var(--ink, #F5F6F8); user-select: none; } .ds-ui::after { content: \"\"; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; box-shadow: inset 0 1px 0 rgba(255,255,255,0.09); } .ds-ui-bar { display: flex; align-items: center; gap: 1em; padding: 0.9em 1.15em; border-bottom: 1px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.025); } .ds-ui-dots { display: inline-flex; gap: 0.45em; } .ds-ui-dots i { width: 0.62em; height: 0.62em; border-radius: 50%; background: rgba(255,255,255,0.16); } .ds-ui-crumb { font-weight: 700; font-size: 0.95em; color: var(--ink-2, #A9AEB9); } .ds-ui-crumb em { font-style: normal; font-weight: 500; color: var(--ink-3, #7E8492); } .ds-ui-pad { padding: 1.3em 1.4em 1.5em; } .ds-ui-kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.7em; margin-bottom: 1.25em; } .ds-ui-kpi { display: flex; flex-direction: column; gap: 0.18em; padding: 0.85em 0.9em; border-radius: 9px; border: 1px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.028); } .ds-ui-kpi-l { font-size: 0.88em; font-weight: 600; color: var(--ink-3, #7E8492); } .ds-ui-kpi-v { font-family: 'Sora', ui-sans-serif, system-ui, sans-serif; font-size: 1.5em; font-weight: 600; letter-spacing: -0.035em; } .ds-ui-kpi-d { font-size: 0.85em; font-weight: 700; color: var(--ink-3, #7E8492); } .ds-ui-kpi-d.ds-is-good { color: var(--ok, #4ED8A0); } .ds-ui-kpi-d.ds-is-bad { color: var(--risk, #FF7A6B); } .ds-ui-find { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.25em 0.6em; padding: 0.7em 0.8em; border-radius: 9px; border: 1px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.03); } .ds-ui-find i { width: 0.55em; height: 0.55em; border-radius: 50%; margin-top: 0.45em; grid-row: span 3; background: var(--risk, #FF7A6B); box-shadow: 0 0 8px rgba(255,122,107,0.6); } .ds-ui-find b { font-weight: 700; min-width: 0; } .ds-ui-find em { font-style: normal; font-size: 0.94em; color: var(--ink-3, #7E8492); line-height: 1.5; min-width: 0; } .ds-ui-find .ds-cite { margin-top: 0.35em; justify-self: start; max-width: 100%; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Sealed Instrument",
+    "overview": "A legal instrument is a document that carries its own proof \u2014 a seal, an article number, a signature that resolves to an authority. The page is built as one: a near-black room with weather in it, glass sheets holding real product surfaces, and a single brass mark that appears only where something on screen can be traced back to Egyptian statute. Nothing decorative is allowed to wear the seal. That restriction is the whole design; every other decision exists to keep it legible.\n\nThe density is editorial, not brochure. Sections breathe at clamp(6rem, 11vw, 11rem), copy is capped at 46rem for headings and 62\u201368ch for prose, and the visual weight lives in the product surfaces rather than in decoration. There is no stock photography, no icon-tile feature grid, and no raster screenshot anywhere on the page \u2014 every product screen is real markup. Colour is spent sparingly against a monochrome ground: violet is atmosphere and system state, brass is verification, and green/amber/red appear only inside product surfaces where they carry data meaning.\n\nMotion is one authored idea repeated: a citation resolving. The hero's ambient loop draws an Arabic clause, underlines it in brass, then lands the article reference beneath it; the document panels hold the same moment statically. Everything else is arrival, not performance \u2014 a single fade-up on one easing curve, and a nav that condenses without animating layout.",
+    "keyCharacteristics": [
+      "Near-black ground (#08090B) with all surfaces as low-alpha white overlays, never separate hexes",
+      "Navy\u2192violet fields: blurred radial regions sized in viewport units, sitting behind whole sections",
+      "Brass as a functional, earned accent \u2014 never an eyebrow, tick, or icon tile",
+      "Four self-hosted faces (~167 KB), Arabic among them as product data rather than as a fallback",
+      "Real markup product screenshots that scale from one font-size",
+      "One glass recipe, one motion curve, one grain overlay",
+      "Content visible without JavaScript; every enhancement is additive"
+    ],
+    "rules": [
+      {
+        "name": "The Seal Rule",
+        "body": "Brass marks only material that resolves to a source. If a new element cannot be traced to an article of law or a verifiable figure, it is --ink-2, --ink-3, or --violet-lit. The audit test: count the brass elements in a viewport; if any of them is a decoration, a tick, an eyebrow or an icon tile, the rule is broken.",
+        "section": "colors"
+      },
+      {
+        "name": "The Field Rule",
+        "body": "Navy and violet are regions, never edges. A field is position: absolute, border-radius: 50%, filter: blur(90px), opacity 0.4\u20130.8, sized in vw/rem, and lives behind a whole section. Do not use either colour as a 1px border, a divider or a small fill outside the product surfaces.",
+        "section": "colors"
+      },
+      {
+        "name": "The Overlay Rule",
+        "body": "New surfaces are white at low alpha, not new dark hexes. Anything that needs to sit over a field must be translucent or it will read as a hole.",
+        "section": "colors"
+      },
+      {
+        "name": "The Isolate-Don't-Flip Rule",
+        "body": ".ar and .ar-doc carry unicode-bidi: isolate but deliberately NOT direction: rtl. The bidi algorithm already runs the Arabic right-to-left inside its own box; the box keeps the alignment of the row it sits in, so an Arabic matter title in an LTR table starts where its English subtitle starts. Surfaces that are genuinely right-to-left declare dir=\"rtl\" on the container and inherit the real thing.",
+        "section": "typography"
+      },
+      {
+        "name": "The Optical Size Rule",
+        "body": "Arabic set inline in English copy is scaled up and loosened: .ar at 1.06em, .ar-doc at 1.08em with line-height: 2. Naskh at Manrope's optical size looks broken; do not normalise them to 1em.",
+        "section": "typography"
+      },
+      {
+        "name": "The Lit-Edge Rule",
+        "body": "One glass recipe, everywhere: 1px solid --hairline, background --surface-1, backdrop-filter: blur(18px) saturate(140%), radius 28px, plus a masked ::before painting linear-gradient(160deg, rgba(255,255,255,0.22), transparent 42%) into a 1px ring via mask-composite: exclude. The blur is real and load-bearing \u2014 panes sit over violet fields and are supposed to pick them up.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Brighter-Not-Denser Rule",
+        "body": "Interactive panes hover by lifting 4px and brightening the border (--hairline \u2192 --hairline-strong) plus adding the lift shadow. The fill never changes. The glass reads as catching more light, not as changing material.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Grain Rule",
+        "body": "A fixed full-page .grain overlay sits at z-index 1, opacity 0.035, mix-blend-mode: overlay, from an inline SVG feTurbulence. It exists because the large dark gradients band on 8-bit displays. Never remove it when adding a new full-width gradient; never raise it above ~0.04.",
+        "section": "elevation"
+      },
+      {
+        "name": "The One Curve Rule",
+        "body": "cubic-bezier(0.16, 1, 0.3, 1) \u2014 exponential ease-out \u2014 is the page's motion curve. It drives reveals, hovers, tab indicators, the nav condense, the accordion, the lightbox, and (as 1 - 2^(-10t)) the stat count-up. --ease-soft exists for exactly one thing: the CTA sheen. Do not introduce a third.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do keep brass for material that resolves to a source. New elements default to --ink-2 / --ink-3 for neutral chrome and --violet-lit for system state.",
+      "Do build new surfaces as white-at-alpha overlays (--surface-1/2/3) so they pick up whatever field they cross.",
+      "Do express every interior measurement inside .ui in em. The whole product-surface system is one font-size away from being resizable; a single px value breaks that.",
+      "Do give any new section its atmosphere with a .field \u2014 absolutely positioned, blur(90px), sized in vw/rem, behind the content, with the section set to overflow: clip and its .shell raised to z-index: 1.",
+      "Do ship content visible and let script add the hiding class. Any new progressive-enhancement flag follows the js-boot pattern: set inline in <head>, removed at the end of init().",
+      "Do declare dir=\"rtl\" on a container when a surface is genuinely right-to-left, and use .ar / .ar-doc for Arabic set inline in LTR rows.",
+      "Do use logical properties (margin-inline-start, border-inline-end, padding-inline, text-align: start) \u2014 the page already does throughout, which is what lets dir=\"rtl\" surfaces work without a mirrored stylesheet.",
+      "Do colour status by meaning, not by arithmetic sign.",
+      "Do let a missing asset reveal an authored fallback (the ambient loop, the nameplate, the lightbox panel) rather than a broken element."
+    ],
+    "donts": [
+      "Don't put brass on eyebrows, ticks, icon tiles, headings or hover states. That was tried; it cost the citation seal its meaning and was reverted.",
+      "Don't add direction: rtl to .ar or .ar-doc. unicode-bidi: isolate alone is the rule, so Arabic keeps the alignment of the row it sits in.",
+      "Don't use navy or violet as a border, divider or small fill in page chrome. They are fields.",
+      "Don't introduce a new dark hex for a surface. If it needs to be darker, it needs less alpha or more blur.",
+      "Don't change a pane's fill on hover \u2014 brighten its border.",
+      "Don't add a third easing curve, or a second reveal gesture. One fade-up, one curve.",
+      "Don't animate layout properties on scroll. The nav's condense is transform + opacity precisely so --nav-h and scroll-padding-top stay in agreement.",
+      "Don't remove the :not(.field) in .testimonial > *:not(.field); it keeps the absolutely-positioned glow out of the grid.",
+      "Don't let the citation seal clip. white-space: normal on .cite is load-bearing.",
+      "Don't fake a success state. The newsletter refuses rather than confirming an unrecorded subscription; hold that line for any form added here.",
+      "Don't introduce raster screenshots. Every product surface on this page is markup, and the page's credibility rests on it staying that way.",
+      "Don't carry these tokens into web/. That app is light-mode Astryx with an emerald/navy palette and Inter; this world stops at marketing/."
+    ]
+  }
+}

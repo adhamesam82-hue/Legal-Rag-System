@@ -12,6 +12,11 @@ dependencies = [
     "pyyaml>=6.0",
     "fastapi>=0.141.1",
     "fastapi-clerk-auth>=0.0.9",
+    # Firebase ID token verification for the consumer mobile app (auth.py).
+    # Arrives transitively via fastapi-clerk-auth, but this is now a direct
+    # dependency and the signature check is security-critical -- it must not
+    # rest on another package continuing to pull it in.
+    "pyjwt[crypto]>=2.9",
     # Declared explicitly rather than relied on transitively: it is the server
     # that actually runs the API, so a deployment must not depend on FastAPI
     # happening to pull it in.

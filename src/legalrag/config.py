@@ -88,6 +88,22 @@ def get_clerk_secret_key() -> str:
     return key
 
 
+def get_firebase_project_id() -> str | None:
+    """The Firebase project backing the consumer mobile app.
+
+    Two products, two identity providers, on purpose: Clerk signs in law firms
+    (organizations, roles, invitations), Firebase signs in consumers (Apple and
+    Google, one account each, no firm). They are separate businesses with
+    separate customers, so they do not share an identity system.
+
+    Returned as None rather than raising when unset -- an API instance serving
+    only LegalOS has no consumer app to authenticate, and should not fail to
+    start over a variable it does not need. auth.py turns a missing project id
+    into a 503 on the consumer routes specifically.
+    """
+    return os.environ.get("FIREBASE_PROJECT_ID") or None
+
+
 def get_resend_api_key() -> str:
     key = os.environ.get("RESEND_API_KEY")
     if not key:

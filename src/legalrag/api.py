@@ -1,22 +1,30 @@
 """HTTP API. Run: uv run uvicorn legalrag.api:app --reload --port 8000
 
-Note on streaming: /api/ask deliberately does not stream. Citation enforcement
-runs on the completed text, and an answer is blocked when it cites an article
-that was not retrieved. Streaming tokens would put the unverified text on screen
-before the check that decides whether it may be shown at all.
+Note on streaming: /api/ask does not stream, and returns a verdict on completed
+text. /api/ask/stream does stream, but only text that has already cleared the
+same enforcement -- answer.stream_answer withholds every token that could still
+belong to an answer the check would discard. The rule both endpoints keep is
+that nothing unverified reaches a screen; the streaming one just releases the
+verified part earlier. See answer.py for the one reversal that survives it and
+the contract that obliges clients to honour it.
 """
 from __future__ import annotations
 
+import json
 import logging
+from collections.abc import Iterator
 from contextlib import contextmanager
+from datetime import datetime
 from typing import Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from openai import OpenAIError
 from pydantic import BaseModel, Field
 
-from legalrag.answer import Answer
+from legalrag.answer import Answer, Completed, TextDelta
+from legalrag.auth import get_current_subject
 from legalrag.clerk import (
     get_current_membership,
     get_current_user_id,
@@ -24,6 +32,19 @@ from legalrag.clerk import (
     require_owner,
 )
 from legalrag.config import get_cors_origins, get_dev_auth_user
+from legalrag.conversations import (
+    Conversation,
+    Message,
+    append_answer,
+    append_user_message,
+    create_conversation,
+    delete_conversation,
+    get_conversation,
+    list_conversations,
+    list_messages,
+    rename_conversation,
+    title_from_question,
+)
 from legalrag.db import get_connection
 from legalrag.email import send_invite_email
 from legalrag.explain import explain_article
@@ -51,7 +72,7 @@ from legalrag.orgs import (
     list_org_members,
     remove_membership,
 )
-from legalrag.pipeline import ask, retrieve_for
+from legalrag.pipeline import ask, ask_stream, retrieve_for
 from legalrag.practice_api import router as practice_router
 from legalrag.retrieve import Candidate
 
@@ -93,21 +114,31 @@ def db():
         conn.close()
 
 
-def upstream_guard(exc: Exception) -> HTTPException:
-    """Surface model-provider failures as themselves, not as a generic 500.
+def upstream_error(exc: Exception) -> tuple[int, str]:
+    """Classify a model-provider failure into (status, message).
 
     Running out of OpenRouter credits is the failure this project actually hits,
     and it needs to reach the UI as a distinct, actionable message.
+
+    Split out from upstream_guard because a streaming response cannot raise:
+    by the time the model call fails the response has already started, so the
+    same classification has to be deliverable as an SSE error event too.
     """
     detail = str(exc)
     status = getattr(exc, "status_code", None)
     if status == 402 or "credits" in detail.lower():
-        return HTTPException(
-            status_code=402,
-            detail="The model provider rejected the request for insufficient credits. "
+        return (
+            402,
+            "The model provider rejected the request for insufficient credits. "
             "Browsing and search still work; chat and explanations need credits.",
         )
-    return HTTPException(status_code=502, detail=f"Model provider error: {detail}")
+    return 502, f"Model provider error: {detail}"
+
+
+def upstream_guard(exc: Exception) -> HTTPException:
+    """Surface model-provider failures as themselves, not as a generic 500."""
+    status, detail = upstream_error(exc)
+    return HTTPException(status_code=status, detail=detail)
 
 
 # --- response models --------------------------------------------------------
@@ -171,6 +202,75 @@ class AskResponse(BaseModel):
             degraded=retrieval.debug.get("degraded", []),
             articles=[ArticleOut.of(c) for c in retrieval.candidates],
         )
+
+
+class AskStreamRequest(AskRequest):
+    """An ask that is persisted as a conversation turn.
+
+    conversation_id is optional: omitting it starts a new conversation titled
+    from this question, which is what a phone's "new chat" does. Supplying one
+    appends to it, and a conversation that is not the caller's 404s.
+    """
+
+    conversation_id: int | None = None
+
+
+class MessageOut(BaseModel):
+    id: int
+    role: str
+    text: str
+    created_at: datetime
+    status: str | None = None
+    citations: list[str] = []
+    blocked_citations: list[str] = []
+    articles: list[ArticleOut] = []
+
+    @classmethod
+    def of(cls, message: Message) -> "MessageOut":
+        return cls(
+            id=message.id,
+            role=message.role,
+            text=message.text,
+            created_at=message.created_at,
+            status=message.status,
+            citations=message.citations,
+            blocked_citations=message.blocked_citations,
+            articles=[ArticleOut.of(c) for c in message.articles],
+        )
+
+
+class ConversationOut(BaseModel):
+    id: int
+    title: str
+    jurisdiction: str
+    created_at: datetime
+    updated_at: datetime
+    message_count: int = 0
+
+    @classmethod
+    def of(cls, conversation: Conversation) -> "ConversationOut":
+        return cls(
+            id=conversation.id,
+            title=conversation.title,
+            jurisdiction=conversation.jurisdiction,
+            created_at=conversation.created_at,
+            updated_at=conversation.updated_at,
+            message_count=conversation.message_count,
+        )
+
+
+class ConversationDetail(BaseModel):
+    conversation: ConversationOut
+    messages: list[MessageOut]
+
+
+class CreateConversationRequest(BaseModel):
+    title: str = Field(default="New conversation", min_length=1, max_length=200)
+    jurisdiction: Jurisdiction = "EG"
+
+
+class RenameConversationRequest(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
 
 
 class SearchRequest(BaseModel):
@@ -290,6 +390,127 @@ def post_ask(request: AskRequest):
     return AskResponse.of(answer)
 
 
+def _sse(event: str, payload: dict) -> str:
+    # ensure_ascii=False keeps Arabic readable on the wire; json.dumps still
+    # escapes newlines inside strings, which SSE's line-based framing requires.
+    return f"event: {event}\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
+
+
+@app.post("/api/ask/stream")
+def post_ask_stream(
+    request: AskStreamRequest,
+    subject: str = Depends(get_current_subject),
+):
+    """Ask, streaming the answer as it clears enforcement, and save the turn.
+
+    Authenticated, unlike /api/ask: the turn is written to a user's history, so
+    there has to be a user. That also keeps the expensive endpoint off the open
+    internet, which /api/ask still is.
+
+    Event sequence: `articles` (the retrieved sources and the ids to write
+    back to), then zero or more `delta`, then exactly one of `done` or `error`.
+    """
+    with db() as conn:
+        conversation = _resolve_conversation(conn, request, subject)
+        try:
+            retrieval, events = ask_stream(
+                conn,
+                request.question,
+                request.jurisdiction,
+                limit=request.limit,
+                expand=request.expand,
+                do_rerank=request.rerank,
+            )
+        except RuntimeError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except OpenAIError as exc:
+            raise upstream_guard(exc) from exc
+
+        # Retrieval is done, so the question is a real turn now and is recorded
+        # before the answer starts. A stream the client abandons half way still
+        # leaves the conversation coherent: a question with no answer yet, not
+        # an answer with no question.
+        user_message = append_user_message(conn, conversation.id, request.question)
+
+    return StreamingResponse(
+        _ask_event_stream(conversation, user_message, retrieval, events),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            # Nginx buffers proxied responses by default, which holds the whole
+            # stream back until it completes and silently undoes the streaming.
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+def _resolve_conversation(conn, request: AskStreamRequest, subject: str) -> Conversation:
+    if request.conversation_id is None:
+        return create_conversation(
+            conn,
+            subject,
+            title=title_from_question(request.question),
+            jurisdiction=request.jurisdiction,
+        )
+    conversation = get_conversation(conn, request.conversation_id, subject)
+    if conversation is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return conversation
+
+
+def _ask_event_stream(
+    conversation: Conversation,
+    user_message: Message,
+    retrieval,
+    events: Iterator,
+) -> Iterator[str]:
+    yield _sse(
+        "articles",
+        {
+            "conversation_id": conversation.id,
+            "conversation_title": conversation.title,
+            "user_message_id": user_message.id,
+            "strategy": retrieval.strategy,
+            "degraded": retrieval.debug.get("degraded", []),
+            "articles": [
+                ArticleOut.of(c).model_dump() for c in retrieval.candidates
+            ],
+        },
+    )
+
+    try:
+        for event in events:
+            if isinstance(event, TextDelta):
+                yield _sse("delta", {"text": event.text})
+                continue
+
+            assert isinstance(event, Completed)  # the only other event type
+            answer = event.answer
+            with db() as conn:
+                message = append_answer(conn, conversation.id, answer)
+            yield _sse(
+                "done",
+                {
+                    "message_id": message.id,
+                    "text": answer.text,
+                    "citations": answer.citations,
+                    "refused": answer.refused,
+                    "blocked": answer.blocked,
+                    "blocked_citations": list(answer.blocked_citations),
+                    "status": message.status,
+                },
+            )
+    except OpenAIError as exc:
+        # Too late to raise: the response is already open. The client gets the
+        # same classification an HTTP error would have carried.
+        status, detail = upstream_error(exc)
+        yield _sse("error", {"status": status, "detail": detail})
+    except Exception as exc:  # noqa: BLE001 - a dropped stream must still terminate
+        logging.getLogger("uvicorn.error").exception("ask stream failed")
+        yield _sse("error", {"status": 500, "detail": f"{type(exc).__name__}: {exc}"})
+
+
 @app.post("/api/search", response_model=SearchResponse)
 def post_search(request: SearchRequest):
     # Search degrades to lexical-only rather than failing when a provider is
@@ -391,6 +612,78 @@ def post_explain(article_id: int, request: ExplainRequest):
         "language": explanation.language,
         "text": explanation.text,
     }
+
+
+# --- conversations ----------------------------------------------------------
+#
+# Every route here scopes on the calling user in SQL rather than checking
+# ownership after loading; see conversations.py for why.
+
+
+@app.post("/api/conversations", response_model=ConversationOut)
+def post_create_conversation(
+    request: CreateConversationRequest,
+    subject: str = Depends(get_current_subject),
+):
+    with db() as conn:
+        conversation = create_conversation(
+            conn, subject, request.title, request.jurisdiction
+        )
+    return ConversationOut.of(conversation)
+
+
+@app.get("/api/conversations", response_model=list[ConversationOut])
+def get_conversations(
+    subject: str = Depends(get_current_subject),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+):
+    with db() as conn:
+        return [
+            ConversationOut.of(c)
+            for c in list_conversations(conn, subject, limit=limit, offset=offset)
+        ]
+
+
+@app.get("/api/conversations/{conversation_id}", response_model=ConversationDetail)
+def get_conversation_detail(
+    conversation_id: int,
+    subject: str = Depends(get_current_subject),
+):
+    with db() as conn:
+        conversation = get_conversation(conn, conversation_id, subject)
+        if conversation is None:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        messages = list_messages(conn, conversation_id)
+    return ConversationDetail(
+        conversation=ConversationOut.of(conversation),
+        messages=[MessageOut.of(m) for m in messages],
+    )
+
+
+@app.patch("/api/conversations/{conversation_id}", response_model=ConversationOut)
+def patch_conversation(
+    conversation_id: int,
+    request: RenameConversationRequest,
+    subject: str = Depends(get_current_subject),
+):
+    with db() as conn:
+        conversation = rename_conversation(
+            conn, conversation_id, subject, request.title
+        )
+    if conversation is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return ConversationOut.of(conversation)
+
+
+@app.delete("/api/conversations/{conversation_id}", status_code=204)
+def delete_conversation_route(
+    conversation_id: int,
+    subject: str = Depends(get_current_subject),
+):
+    with db() as conn:
+        if not delete_conversation(conn, conversation_id, subject):
+            raise HTTPException(status_code=404, detail="Conversation not found")
 
 
 # --- organizations, invites, team management --------------------------------
