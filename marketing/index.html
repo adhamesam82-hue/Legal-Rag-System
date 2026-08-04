@@ -76,6 +76,9 @@ verdict, and DESIGN.md.
 <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 7.5h16M4 12h16M4 16.5h16"/></symbol>
 <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12.4 10 16.8 18.5 7.6"/></symbol>
 <symbol id="i-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M9.5 6.5v11M14.5 6.5v11"/></symbol>
+<!-- Filled rather than stroked: at 13px a hairline heart reads as a wobble.
+     It stands in for an emoji, so it needs the weight of a solid glyph. -->
+<symbol id="i-heart" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20.7 4.1 12.6a4.95 4.95 0 0 1 7-7l.9.9.9-.9a4.95 4.95 0 0 1 7 7z"/></symbol>
 </svg>
 
 <!-- ===================================================================
@@ -1236,6 +1239,12 @@ verdict, and DESIGN.md.
       <div class="foot-meta">
         <span>© 2026 LegalOS. All rights reserved.</span>
         <span class="foot-locale"><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg>Cairo · English<i>/</i><a href="/ar" class="ar">العربية</a></span>
+        <span class="foot-credit">
+          Built with
+          <svg class="ico foot-heart" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-heart"/></svg>
+          <span class="sr-only">love</span>
+          by <a href="https://ainativelabs.dev/" target="_blank" rel="noopener noreferrer">AI&nbsp;Native&nbsp;Labs</a>
+        </span>
       </div>
     </div>
   </div>

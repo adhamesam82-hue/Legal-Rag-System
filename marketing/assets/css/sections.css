@@ -1381,10 +1381,25 @@
 .foot-legal { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 1.5rem 3rem; align-items: start; }
 .foot-compliance { font-size: 0.875rem; line-height: 1.65; color: var(--ink-2); max-width: 68ch; }
 .foot-meta { display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.82rem; color: var(--ink-3); justify-self: end; text-align: end; }
-.foot-locale { display: inline-flex; align-items: center; gap: 0.45rem; }
+/* text-align on .foot-meta cannot reach these two: as flex items they are
+   blockified to full-width flex containers, so the alignment has to be
+   justify-content or they hang left while the copyright sits right. */
+.foot-locale { display: inline-flex; align-items: center; justify-content: flex-end; gap: 0.45rem; }
 .foot-locale .ico { width: 14px; height: 14px; }
 .foot-locale i { font-style: normal; opacity: 0.4; }
 .foot-locale a:hover { color: var(--ink); }
+
+/* Colophon. The heart takes the line's own colour rather than a red of its
+   own: brass is reserved for material that resolves to a source, and one
+   14px glyph is not worth a new hue on a page this controlled. */
+.foot-credit { display: inline-flex; align-items: center; justify-content: flex-end; gap: 0.4rem; }
+.foot-heart { width: 13px; height: 13px; flex: none; }
+.foot-credit a {
+  color: var(--ink-2);
+  font-weight: 600;
+  transition: color 0.3s var(--ease);
+}
+.foot-credit a:hover { color: var(--ink); }
 
 .foot-watermark {
   margin-top: clamp(2.5rem, 5vw, 4rem);
@@ -1490,6 +1505,7 @@ body.is-locked { overflow: hidden; }
   .foot-top { grid-template-columns: 1fr; }
   .foot-legal { grid-template-columns: 1fr; }
   .foot-meta { justify-self: start; text-align: start; }
+  .foot-locale, .foot-credit { justify-content: flex-start; }
   .ui-report { grid-template-columns: 1fr; }
   .ui-report-side { padding-inline-start: 0; border-inline-start: 0; padding-top: 1.2em; border-top: 1px solid rgba(255,255,255,0.07); }
 }
