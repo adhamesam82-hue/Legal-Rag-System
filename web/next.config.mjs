@@ -19,5 +19,17 @@ const nextConfig = {
     NEXT_PUBLIC_API_BASE:
       process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000",
   },
+  // The marketing page owns the origin's root; the app starts at /app. Served
+  // as a static file from public/, so it never enters the app router and never
+  // inherits the RTL <html dir> or the Shell. beforeFiles so the rewrite is
+  // decided ahead of the filesystem rather than depending on "/" having no
+  // page.tsx, which would make it break silently if one were ever added back.
+  async rewrites() {
+    return {
+      beforeFiles: [{ source: "/", destination: "/landing/index.html" }],
+      afterFiles: [],
+      fallback: [],
+    };
+  },
 };
 export default nextConfig;
