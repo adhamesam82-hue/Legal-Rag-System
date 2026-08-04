@@ -14,6 +14,11 @@ const isPublicRoute = createRouteMatcher([
   "/sign-up(.*)",
   // Invitation links are opened by people who have no session yet, by design.
   "/invite(.*)",
+  // The marketing page is the origin's front door: it has to answer a visitor
+  // who has never signed in. Without these two the root rewrites straight to
+  // /_not-found and the public face of the product is a 404.
+  "/",
+  "/landing(.*)",
 ]);
 
 export default hasClerk
