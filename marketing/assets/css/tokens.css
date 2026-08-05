@@ -1,19 +1,30 @@
 /* ==========================================================================
-   LegalOS — foundations
+   alsigil — foundations
    Ground, fields, type, and the primitives every section is built from.
    Section layout lives in sections.css; nothing here knows about a section.
+
+   This page is set in the alsigil identity ("The Stamp"): three colours —
+   Ink #12161C, Seal #A6301F, Paper #F6F3EE — and two faces. It was previously
+   a dark violet-and-brass system; what survives that change is the structure,
+   the rhythm and the motion, not the palette or the type.
    ========================================================================== */
 
 /* --- Faces ---------------------------------------------------------------
    Self-hosted, latin + arabic subsets only. Arabic is not a fallback here:
    matter names, statute text and firm names on this page are real Arabic,
    so the Arabic faces are part of the type system, not a polyfill.
-   Sora carries display, Manrope carries text and UI, Noto Naskh carries
-   statute and document body (the naskh style Egyptian legal text is set in),
-   Tajawal carries Arabic UI labels so it sits beside Manrope without a jolt.
+
+   Newsreader carries display, Archivo carries text, UI and the wordmark —
+   the identity's two faces, in the roles the identity sheet gives them.
+   Newsreader is the static 400 roman and a 300 italic rather than the
+   variable font: two optical-size axes cost 280KB and this page uses two
+   weights of it. Noto Naskh carries statute and document body (the naskh
+   style Egyptian legal text is set in), Tajawal carries Arabic UI labels so
+   it sits beside Archivo without a jolt.
    -------------------------------------------------------------------------- */
-@font-face{font-family:'Sora';font-style:normal;font-weight:400 700;font-display:swap;src:url(../fonts/Sora-400-700-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
-@font-face{font-family:'Manrope';font-style:normal;font-weight:400 800;font-display:swap;src:url(../fonts/Manrope-400-800-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
+@font-face{font-family:'Archivo';font-style:normal;font-weight:400 700;font-display:swap;src:url(../fonts/Archivo-400-700-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
+@font-face{font-family:'Newsreader';font-style:normal;font-weight:400;font-display:swap;src:url(../fonts/Newsreader-400-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
+@font-face{font-family:'Newsreader';font-style:italic;font-weight:300;font-display:swap;src:url(../fonts/Newsreader-italic-300-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
 @font-face{font-family:'Noto Naskh Arabic';font-style:normal;font-weight:400 700;font-display:swap;src:url(../fonts/NotoNaskhArabic-400-700-arabic.woff2) format('woff2');unicode-range:U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;}
 @font-face{font-family:'Tajawal';font-style:normal;font-weight:400;font-display:swap;src:url(../fonts/Tajawal-400-arabic.woff2) format('woff2');unicode-range:U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;}
 @font-face{font-family:'Tajawal';font-style:normal;font-weight:500;font-display:swap;src:url(../fonts/Tajawal-500-arabic.woff2) format('woff2');unicode-range:U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;}
@@ -21,50 +32,65 @@
 
 /* --- Tokens --------------------------------------------------------------- */
 :root {
-  /* Ground and the surfaces that sit on it. The ground is the brief's
-     #08090B; every surface above it is a white overlay rather than a
-     separate hex, so a pane over a violet field picks the field up. */
-  --ground: #08090B;
-  --ground-deep: #050608;
-  --surface-1: rgba(255, 255, 255, 0.028);
-  --surface-2: rgba(255, 255, 255, 0.046);
-  --surface-3: rgba(255, 255, 255, 0.07);
-  --hairline: rgba(255, 255, 255, 0.09);
-  --hairline-strong: rgba(255, 255, 255, 0.16);
-  --hairline-bright: rgba(255, 255, 255, 0.28);
+  /* Paper. Three steps: the sheet's own body wash for recessed bands, Paper
+     for the page, white for anything that has to read as a card lying on it.
+     Surfaces above the ground are white overlays rather than separate hexes,
+     so a pane over a tinted band picks the band up — the same rule the dark
+     system used, inverted. */
+  --paper: #F6F3EE;
+  --paper-deep: #E9E5DE;
+  --paper-lit: #FFFFFF;
+  --ground: var(--paper);
+  --ground-deep: var(--paper-deep);
+  --surface-1: rgba(255, 255, 255, 0.58);
+  --surface-2: rgba(255, 255, 255, 0.82);
+  --surface-3: #FFFFFF;
+  --hairline: rgba(18, 22, 28, 0.12);
+  --hairline-strong: rgba(18, 22, 28, 0.2);
+  --hairline-bright: rgba(18, 22, 28, 0.34);
 
-  /* Atmosphere. Navy is the far end of the glow, violet the near end;
-     they own whole regions rather than edging components. */
-  --navy: #101A3D;
-  --navy-lit: #16225C;
-  --violet: #6D5BFF;
-  --violet-lit: #8E7CFF;
-  --violet-deep: #3A2E8C;
+  /* Ink. The identity's one dark, and the two tints of it that stay legible
+     on Paper: --ink-2 at 6.0:1, --ink-3 at 4.9:1, both measured against
+     #F6F3EE rather than estimated. --ink-3 is the floor and it is a real
+     floor: the eyebrow sets it at 0.7rem/700, which is 11px and nowhere near
+     large enough for the 3:1 large-text allowance, so it has to clear 4.5:1
+     as body text does. The dark build's equivalent tint inverted to 3.8:1,
+     which is where this value came from. */
+  --ink: #12161C;
+  --ink-2: #565D66;
+  --ink-3: #656B72;
 
-  /* Brass is the one functional accent: it marks material the product has
-     verified against source law. Nothing decorative is allowed to wear it. */
-  --brass: #E0A44C;
-  --brass-lit: #F0BE76;
+  /* Seal is the one functional accent: it marks material the product has
+     verified against source law, and it is the colour of the mark itself.
+     Nothing decorative is allowed to wear it. --seal-deep is for text and
+     hover, where the flat Seal would sit too light against Paper. */
+  --seal: #A6301F;
+  --seal-deep: #7E2417;
+  --seal-wash: rgba(166, 48, 31, 0.09);
+  --seal-line: rgba(166, 48, 31, 0.34);
 
-  /* Semantic marks inside product surfaces. */
-  --ok: #4ED8A0;
-  --warn: #F2C14E;
-  --risk: #FF7A6B;
+  /* Semantic marks inside product surfaces, re-cut for Paper. Risk is Seal:
+     in this product the thing that is running out and the thing that has been
+     attested are the same red, which is how the identity sheet paints its own
+     "next deadline" figure. */
+  --ok: #1F6F4A;
+  --warn: #8A5F0B;
+  --risk: var(--seal);
 
-  --ink: #F5F6F8;
-  --ink-2: #A9AEB9;   /* 7.9:1 on ground */
-  --ink-3: #7E8492;   /* 4.7:1 on ground */
-
-  --font-display: 'Sora', ui-sans-serif, system-ui, sans-serif;
-  --font-text: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Newsreader', 'Iowan Old Style', Georgia, serif;
+  --font-text: 'Archivo', ui-sans-serif, system-ui, sans-serif;
   --font-ar-doc: 'Noto Naskh Arabic', 'Segoe UI', serif;
   --font-ar-ui: 'Tajawal', 'Noto Naskh Arabic', sans-serif;
 
-  --r-md: 14px;
-  --r-lg: 20px;
-  --r-xl: 28px;
-  --r-2xl: 36px;
-  --r-pill: 999px;
+  /* Corners. The stamp identity is a printed one — filings, letterhead, a
+     punch struck into paper — and none of that is round. The scale is kept
+     (four steps plus a pill) so nothing downstream has to change, but every
+     step is now a crisp edge rather than a soft one. */
+  --r-md: 2px;
+  --r-lg: 3px;
+  --r-xl: 4px;
+  --r-2xl: 5px;
+  --r-pill: 2px;
 
   /* One spacing rhythm. Sections breathe at --gap-section. */
   --gap-section: clamp(6rem, 11vw, 11rem);
@@ -77,8 +103,11 @@
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-soft: cubic-bezier(0.33, 0.9, 0.35, 1);
 
-  --shadow-lift: 0 2px 4px rgba(0, 0, 0, 0.4), 0 18px 40px -12px rgba(0, 0, 0, 0.7);
-  --shadow-deep: 0 4px 10px rgba(0, 0, 0, 0.45), 0 48px 90px -28px rgba(0, 0, 0, 0.85);
+  /* Paper shadows are contact shadows: a tight dark line where the sheet
+     meets the page, and a wide soft one under it. The dark system's near
+     -opaque blacks would read as soot here. */
+  --shadow-lift: 0 1px 2px rgba(18, 22, 28, 0.06), 0 14px 30px -14px rgba(18, 22, 28, 0.22);
+  --shadow-deep: 0 2px 5px rgba(18, 22, 28, 0.07), 0 44px 80px -34px rgba(18, 22, 28, 0.34);
 }
 
 /* --- Reset ---------------------------------------------------------------- */
@@ -111,12 +140,12 @@ a { color: inherit; text-decoration: none; }
 ul, ol { list-style: none; padding: 0; }
 
 :focus-visible {
-  outline: 2px solid var(--violet-lit);
+  outline: 2px solid var(--seal);
   outline-offset: 3px;
-  border-radius: 5px;
+  border-radius: 2px;
 }
 
-::selection { background: rgba(109, 91, 255, 0.4); color: #fff; }
+::selection { background: rgba(166, 48, 31, 0.22); color: var(--ink); }
 
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0;
@@ -126,7 +155,7 @@ ul, ol { list-style: none; padding: 0; }
 .skip-link {
   position: fixed; top: 12px; left: 12px; z-index: 999;
   padding: 0.7rem 1.1rem; border-radius: var(--r-pill);
-  background: var(--ink); color: var(--ground); font-weight: 700;
+  background: var(--ink); color: var(--paper); font-weight: 700;
   transform: translateY(-160%);
   transition: transform 0.35s var(--ease);
 }
@@ -150,17 +179,21 @@ ul, ol { list-style: none; padding: 0; }
   background: linear-gradient(90deg, transparent, var(--hairline) 18%, var(--hairline) 82%, transparent);
 }
 
-/* --- Type ----------------------------------------------------------------- */
+/* --- Type ----------------------------------------------------------------
+   Display is Newsreader at 400 — the only weight loaded, so nothing here may
+   ask for a bolder one or the browser will synthesise it. Weight is not how
+   this identity makes a heading loud; size is.
+   -------------------------------------------------------------------------- */
 .display {
   font-family: var(--font-display);
-  font-weight: 600;
-  line-height: 1.02;
-  letter-spacing: -0.035em;
+  font-weight: 400;
+  line-height: 1.03;
+  letter-spacing: -0.015em;
   text-wrap: balance;
 }
 .display--hero { font-size: clamp(2.65rem, 6.6vw, 5.5rem); }
 .display--section { font-size: clamp(2.1rem, 4.2vw, 3.6rem); line-height: 1.06; }
-.display--sub { font-size: clamp(1.5rem, 2.4vw, 2.1rem); line-height: 1.14; letter-spacing: -0.028em; }
+.display--sub { font-size: clamp(1.5rem, 2.4vw, 2.1rem); line-height: 1.16; letter-spacing: -0.012em; }
 
 .lede {
   font-size: clamp(1.05rem, 1.35vw, 1.2rem);
@@ -172,8 +205,18 @@ ul, ol { list-style: none; padding: 0; }
 .body-2 { color: var(--ink-2); line-height: 1.65; max-width: 68ch; text-wrap: pretty; }
 .muted { color: var(--ink-3); }
 
+/* The identity's editorial voice: Newsreader italic, for the one line under a
+   heading that is commentary rather than copy. */
+.aside-italic {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 300;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
 /* Arabic set inline inside English copy. Kept at a larger optical size and a
-   looser leading — naskh needs both to stay legible next to Manrope.
+   looser leading — naskh needs both to stay legible next to Archivo.
    These carry `unicode-bidi: isolate` but deliberately NOT `direction: rtl`:
    the bidi algorithm already runs the Arabic right-to-left inside its own box,
    while the box keeps the alignment of the row it sits in. A matter title in
@@ -186,9 +229,9 @@ ul, ol { list-style: none; padding: 0; }
 
 /* --- Eyebrow -------------------------------------------------------------
    The section's place in the product, not a restatement of the heading below
-   it. Deliberately neutral: it wore brass in an earlier pass, and nine quiet
-   labels in the accent colour cost the citation seal its meaning. Brass is
-   spent only where something resolves to a source.
+   it. Deliberately neutral: it wore the accent in an earlier pass, and nine
+   quiet labels in the accent colour cost the citation seal its meaning. Seal
+   is spent only where something resolves to a source.
    -------------------------------------------------------------------------- */
 .eyebrow {
   display: inline-flex;
@@ -214,38 +257,27 @@ ul, ol { list-style: none; padding: 0; }
 .section-head .lede { margin-top: 1.25rem; }
 .section-head--center .lede { margin-inline: auto; }
 
-/* --- Glass ---------------------------------------------------------------
-   One pane recipe: a 1px light border, a low-alpha white fill, and a top
-   highlight that reads as the lit edge of a physical sheet. Blur is real
-   here — panes sit over the violet fields and pick them up.
+/* --- Panes ---------------------------------------------------------------
+   One pane recipe: a sheet of white lying on the page, held by a hairline and
+   a contact shadow. The dark system built this out of a translucent fill and
+   a lit top edge, because glass over a violet field was the material. The
+   material here is paper on paper, so what separates two sheets is the edge
+   and the shadow under it, not a highlight along the top.
    -------------------------------------------------------------------------- */
 .pane {
   position: relative;
   border: 1px solid var(--hairline);
   border-radius: var(--r-xl);
-  background: var(--surface-1);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  background: var(--surface-3);
   overflow: hidden;
-}
-.pane::before {
-  content: "";
-  position: absolute; inset: 0; border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(160deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 42%);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  pointer-events: none;
 }
 .pane--flush { overflow: visible; }
 .pane--lift { box-shadow: var(--shadow-lift); }
 
 .pane-pad { padding: clamp(1.5rem, 2.6vw, 2.4rem); }
 
-/* Interactive panes lift on hover; the border brightens rather than the fill,
-   so the glass reads as catching more light instead of changing material. */
+/* Interactive panes lift on hover; the edge darkens rather than the fill, so
+   the sheet reads as being picked up rather than changing colour. */
 .pane--action {
   transition: transform 0.5s var(--ease), border-color 0.5s var(--ease), box-shadow 0.5s var(--ease);
 }
@@ -256,27 +288,45 @@ ul, ol { list-style: none; padding: 0; }
 }
 
 /* --- Fields ---------------------------------------------------------------
-   The navy→violet atmosphere. A field is a region, not an edge: it is sized
-   in viewport units and sits behind whole sections.
+   What the navy-and-violet atmosphere becomes on paper.
+   A dark page can glow; a light one cannot — a blurred coloured disc on Paper
+   is a stain, not an atmosphere. So the regions that used to be lit are now
+   ruled: the identity sheet's own device, a 32px graph-paper grid, laid behind
+   whole sections at an alpha that reads as tooth rather than as a table. The
+   seal field is the one exception, a warm flush under the sections that carry
+   the mark.
    -------------------------------------------------------------------------- */
 .field {
   position: absolute;
   pointer-events: none;
   z-index: 0;
+  opacity: 1;
+}
+.field--grid {
+  background-image:
+    repeating-linear-gradient(0deg, rgba(18,22,28,0.045) 0 1px, transparent 1px 32px),
+    repeating-linear-gradient(90deg, rgba(18,22,28,0.045) 0 1px, transparent 1px 32px);
+  mask-image: radial-gradient(closest-side, #000 30%, transparent 100%);
+  -webkit-mask-image: radial-gradient(closest-side, #000 30%, transparent 100%);
+}
+/* Kept low deliberately. On a narrow viewport a single field covers most of
+   the screen, and at the alpha that reads as a flush on a 1440px page it reads
+   as a colour cast on a phone — Paper with a pink tint rather than Paper. */
+.field--seal {
   border-radius: 50%;
   filter: blur(90px);
-  opacity: 0.75;
+  opacity: 0.5;
+  background: radial-gradient(closest-side, rgba(166, 48, 31, 0.14), rgba(166, 48, 31, 0));
 }
-.field--violet { background: radial-gradient(closest-side, rgba(109, 91, 255, 0.55), rgba(109, 91, 255, 0)); }
-.field--navy   { background: radial-gradient(closest-side, rgba(22, 34, 92, 0.9), rgba(16, 26, 61, 0)); }
 
-/* Fine grain over the whole page. Without it, the large dark gradients band
-   on 8-bit displays. */
+/* Fine grain over the whole page. On paper this is the tooth of the stock:
+   multiply rather than overlay, because it should darken into the sheet
+   rather than glow off it. */
 .grain {
   position: fixed; inset: 0; z-index: 1; pointer-events: none;
-  opacity: 0.035;
+  opacity: 0.05;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
-  mix-blend-mode: overlay;
+  mix-blend-mode: multiply;
 }
 
 /* --- Buttons -------------------------------------------------------------- */
@@ -287,7 +337,7 @@ ul, ol { list-style: none; padding: 0; }
   gap: 0.6rem;
   padding: 0.95rem 1.6rem;
   border-radius: var(--r-pill);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 0.94rem;
   letter-spacing: -0.005em;
   white-space: nowrap;
@@ -299,28 +349,31 @@ ul, ol { list-style: none; padding: 0; }
 }
 .btn:active { transform: translateY(1px) scale(0.99); }
 
+/* Ink on paper is the primary action. Seal is not a button colour: it belongs
+   to the mark and to attested material, and a page of red buttons would spend
+   it on the least meaningful thing on the screen. */
 .btn--solid {
   background: var(--ink);
-  color: #0A0B0E;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.5) inset, 0 8px 24px -8px rgba(0,0,0,0.9);
+  color: var(--paper);
+  box-shadow: 0 1px 2px rgba(18,22,28,0.18);
 }
-.btn--solid:hover { background: #fff; box-shadow: 0 1px 0 rgba(255,255,255,0.7) inset, 0 12px 34px -10px rgba(109,91,255,0.6); }
+.btn--solid:hover { background: #000; box-shadow: 0 2px 4px rgba(18,22,28,0.22), 0 10px 22px -10px rgba(18,22,28,0.4); }
 
 .btn--ghost {
-  background: rgba(255,255,255,0.045);
+  background: transparent;
   border: 1px solid var(--hairline-strong);
   color: var(--ink);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
 }
-.btn--ghost:hover { background: rgba(255,255,255,0.09); border-color: var(--hairline-bright); }
+.btn--ghost:hover { background: rgba(18,22,28,0.04); border-color: var(--hairline-bright); }
 
-.btn--violet {
-  background: linear-gradient(135deg, #7A66FF, #5B47E8);
-  color: #fff;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.28) inset, 0 10px 30px -10px rgba(109,91,255,0.85);
+/* The one filled accent button, for the single conversion point at the foot of
+   the page. Not a general variant. */
+.btn--seal {
+  background: var(--seal);
+  color: var(--paper-lit);
+  box-shadow: 0 1px 2px rgba(126,36,23,0.3);
 }
-.btn--violet:hover { box-shadow: 0 1px 0 rgba(255,255,255,0.36) inset, 0 16px 40px -10px rgba(109,91,255,1); }
+.btn--seal:hover { background: var(--seal-deep); box-shadow: 0 2px 5px rgba(126,36,23,0.34), 0 12px 26px -12px rgba(126,36,23,0.5); }
 
 .btn--sm { padding: 0.62rem 1.15rem; font-size: 0.85rem; }
 .btn--lg { padding: 1.1rem 2rem; font-size: 1rem; }
@@ -331,7 +384,7 @@ ul, ol { list-style: none; padding: 0; }
 /* Text link with an underline that draws from the leading edge. */
 .link-arrow {
   display: inline-flex; align-items: center; gap: 0.5rem;
-  font-weight: 700; font-size: 0.94rem; color: var(--ink);
+  font-weight: 600; font-size: 0.94rem; color: var(--ink);
   position: relative; padding-bottom: 3px;
 }
 .link-arrow::after {
@@ -349,22 +402,21 @@ ul, ol { list-style: none; padding: 0; }
   padding: 0.42rem 0.9rem 0.42rem 0.75rem;
   border-radius: var(--r-pill);
   border: 1px solid var(--hairline-strong);
-  background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: var(--surface-3);
   font-size: 0.8rem; font-weight: 600; letter-spacing: 0.01em;
   color: var(--ink-2);
 }
-.chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); flex: none; box-shadow: 0 0 8px currentColor; }
+.chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); flex: none; }
 
-/* The citation seal — the page's one recurring product mark. */
+/* The citation seal — the page's one recurring product mark, and the only
+   place besides the logo that Seal appears. */
 .cite {
   display: inline-flex; align-items: center; gap: 0.35rem;
   padding: 0.16rem 0.5rem 0.16rem 0.4rem;
-  border-radius: 5px;
-  border: 1px solid rgba(224, 164, 76, 0.42);
-  background: rgba(224, 164, 76, 0.11);
-  color: var(--brass-lit);
+  border-radius: 3px;
+  border: 1px solid var(--seal-line);
+  background: var(--seal-wash);
+  color: var(--seal-deep);
   font-size: 0.72rem; font-weight: 700; letter-spacing: 0.005em;
   white-space: nowrap;
 }

@@ -1,29 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-label="LegalOS product surfaces">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" role="img" aria-label="alsigil product surfaces">
   <defs>
     <linearGradient id="ground" x1="0" y1="0" x2="0.4" y2="1">
-      <stop offset="0%" stop-color="#0B0D18"/>
-      <stop offset="55%" stop-color="#07080B"/>
-      <stop offset="100%" stop-color="#050608"/>
+      <stop offset="0%" stop-color="#F2EEE7"/>
+      <stop offset="55%" stop-color="#F6F3EE"/>
+      <stop offset="100%" stop-color="#EFEAE1"/>
     </linearGradient>
     <radialGradient id="glowV" cx="0.74" cy="0.2" r="0.55">
-      <stop offset="0%" stop-color="#6D5BFF" stop-opacity="0.42"/>
-      <stop offset="100%" stop-color="#6D5BFF" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#A6301F" stop-opacity="0.07"/>
+      <stop offset="100%" stop-color="#A6301F" stop-opacity="0"/>
     </radialGradient>
     <radialGradient id="glowN" cx="0.14" cy="0.86" r="0.6">
-      <stop offset="0%" stop-color="#16225C" stop-opacity="0.75"/>
-      <stop offset="100%" stop-color="#101A3D" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#D9D2C6" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#E4DED2" stop-opacity="0"/>
     </radialGradient>
     <radialGradient id="vign" cx="0.5" cy="0.44" r="0.72">
       <stop offset="42%" stop-color="#000" stop-opacity="0"/>
-      <stop offset="100%" stop-color="#020305" stop-opacity="0.82"/>
+      <stop offset="100%" stop-color="#12161C" stop-opacity="0.1"/>
     </radialGradient>
     <linearGradient id="barV" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#8E7CFF" stop-opacity="0.6"/>
-      <stop offset="100%" stop-color="#8E7CFF" stop-opacity="0.05"/>
+      <stop offset="0%" stop-color="#A6301F" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#A6301F" stop-opacity="0.05"/>
     </linearGradient>
     <linearGradient id="rowV" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.24"/>
-      <stop offset="100%" stop-color="#8E7CFF" stop-opacity="0.14"/>
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#A6301F" stop-opacity="0.14"/>
     </linearGradient>
     <mask id="gridFade">
       <radialGradient id="gf" cx="0.42" cy="0.46" r="0.62">
@@ -38,7 +38,7 @@
   <rect width="1600" height="900" fill="url(#glowN)"/>
   <rect width="1600" height="900" fill="url(#glowV)"/>
 
-  <g mask="url(#gridFade)" stroke="#8E7CFF" stroke-opacity="0.13" stroke-width="1">
+  <g mask="url(#gridFade)" stroke="#A6301F" stroke-opacity="0.13" stroke-width="1">
     <path d="M112 0v900M224 0v900M336 0v900M448 0v900M560 0v900M672 0v900M784 0v900M896 0v900M1008 0v900M1120 0v900M1232 0v900M1344 0v900M1456 0v900"/>
     <path d="M0 112h1600M0 224h1600M0 336h1600M0 448h1600M0 560h1600M0 672h1600M0 784h1600"/>
   </g>
@@ -55,12 +55,12 @@
 
   <!-- the marked clause and its seal -->
   <g>
-    <rect x="150" y="386" width="450" height="13" rx="6.5" fill="#FFFFFF" opacity="0.3"/>
-    <rect x="150" y="408" width="450" height="2.5" rx="1.25" fill="#E0A44C" opacity="0.9"/>
-    <rect x="150" y="440" width="196" height="34" rx="8" fill="#E0A44C" fill-opacity="0.1" stroke="#E0A44C" stroke-opacity="0.4"/>
-    <path d="M170 449.5l7.5 4v5c0 4-3 6.8-7.5 7.9-4.5-1.1-7.5-3.9-7.5-7.9v-5z" fill="none" stroke="#E0A44C" stroke-opacity="0.9" stroke-width="1.4" stroke-linejoin="round"/>
-    <rect x="188" y="452" width="140" height="4" rx="2" fill="#E0A44C" opacity="0.55"/>
-    <rect x="188" y="461" width="96" height="4" rx="2" fill="#E0A44C" opacity="0.32"/>
+    <rect x="150" y="386" width="450" height="13" rx="6.5" fill="#12161C" opacity="0.3"/>
+    <rect x="150" y="408" width="450" height="2.5" rx="1.25" fill="#A6301F" opacity="0.9"/>
+    <rect x="150" y="440" width="196" height="34" rx="8" fill="#A6301F" fill-opacity="0.1" stroke="#A6301F" stroke-opacity="0.4"/>
+    <path d="M170 449.5l7.5 4v5c0 4-3 6.8-7.5 7.9-4.5-1.1-7.5-3.9-7.5-7.9v-5z" fill="none" stroke="#A6301F" stroke-opacity="0.9" stroke-width="1.4" stroke-linejoin="round"/>
+    <rect x="188" y="452" width="140" height="4" rx="2" fill="#A6301F" opacity="0.55"/>
+    <rect x="188" y="461" width="96" height="4" rx="2" fill="#A6301F" opacity="0.32"/>
   </g>
 
   <!-- performance bars -->
@@ -75,16 +75,16 @@
 
   <!-- matter timeline -->
   <g>
-    <path d="M1000 740h420" stroke="#FFFFFF" stroke-opacity="0.16" stroke-width="1.6"/>
-    <circle cx="1060" cy="740" r="5.5" fill="#E0A44C" opacity="0.85"/>
-    <circle cx="1170" cy="740" r="5.5" fill="#E0A44C" opacity="0.7"/>
-    <circle cx="1280" cy="740" r="5.5" fill="#E0A44C" opacity="0.5"/>
-    <circle cx="1390" cy="740" r="8" fill="#E0A44C" opacity="0.95"/>
+    <path d="M1000 740h420" stroke="#12161C" stroke-opacity="0.16" stroke-width="1.6"/>
+    <circle cx="1060" cy="740" r="5.5" fill="#A6301F" opacity="0.85"/>
+    <circle cx="1170" cy="740" r="5.5" fill="#A6301F" opacity="0.7"/>
+    <circle cx="1280" cy="740" r="5.5" fill="#A6301F" opacity="0.5"/>
+    <circle cx="1390" cy="740" r="8" fill="#A6301F" opacity="0.95"/>
   </g>
 
   <path d="M980 700 C1090 660, 1150 590, 1250 596 S1420 470, 1470 430"
-        fill="none" stroke="#A79BFF" stroke-opacity="0.55" stroke-width="3" stroke-linecap="round"/>
+        fill="none" stroke="#12161C" stroke-opacity="0.55" stroke-width="3" stroke-linecap="round"/>
 
   <rect width="1600" height="900" fill="url(#vign)"/>
-  <rect width="1600" height="900" fill="#050608" opacity="0.28"/>
+  <rect width="1600" height="900" fill="#EFEAE1" opacity="0.28"/>
 </svg>

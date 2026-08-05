@@ -14,3 +14,7 @@ verify-live.mjs
 
 # Playwright QA scratch scripts (session-local, not part of the app)
 .qa-*.mjs
+
+# Fonts the brand-mark generator downloads (scripts/brand/build-marks.py).
+# Upstream, pinned in the script, and 650KB — fetched on demand, not committed.
+scripts/brand/.cache/

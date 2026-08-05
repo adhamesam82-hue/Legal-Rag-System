@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="180" height="180">
+<!-- The alsigil app icon. Outlined from Archivo 600 — see
+     scripts/brand/build-marks.py — and composed exactly as
+     components/brand/Alsigil.tsx draws <AlsigilIcon> at launcher sizes, so the tab and the
+     interface cannot drift apart. Not hand-editable: regenerate the outlines
+     and re-place them rather than nudging numbers here. -->
+  <rect width="100" height="100" rx="23" fill="#12161C"/>
+  <path transform="translate(28.917 63.119) scale(0.058)" fill="#F6F3EE" d="M200 12Q178 12 150 6Q121 1 94 -14Q68 -29 51 -58Q34 -88 34 -136Q34 -190 58 -226Q82 -261 126 -282Q169 -302 230 -310Q290 -319 362 -319V-362Q362 -385 355 -403Q348 -421 330 -432Q311 -442 274 -442Q237 -442 216 -433Q195 -424 187 -411Q179 -398 179 -384V-370H61Q60 -375 60 -380Q60 -385 60 -392Q60 -437 87 -470Q114 -503 162 -520Q210 -538 273 -538Q345 -538 392 -518Q438 -498 461 -461Q484 -424 484 -371V-123Q484 -104 495 -96Q506 -88 519 -88H551V-4Q541 0 522 6Q503 11 475 11Q449 11 428 2Q408 -6 394 -22Q380 -38 374 -60H368Q351 -39 328 -22Q304 -6 272 3Q241 12 200 12ZM237 -88Q267 -88 290 -97Q314 -106 330 -122Q345 -138 354 -161Q362 -184 362 -211V-235Q307 -235 260 -228Q214 -221 186 -202Q159 -183 159 -148Q159 -130 168 -116Q176 -103 194 -96Q211 -88 237 -88Z M571 0V-723H693V0Z"/>
+  <circle cx="50" cy="72.815" r="6" fill="#A6301F"/>
+</svg>

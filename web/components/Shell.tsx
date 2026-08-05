@@ -4,13 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AppShell, useAppShellMobile } from "@astryxdesign/core/AppShell";
 import { TopNav, TopNavHeading } from "@astryxdesign/core/TopNav";
-import { NavIcon } from "@astryxdesign/core/NavIcon";
 import {
   SideNav,
   SideNavCollapseButton,
   SideNavHeading,
   SideNavItem,
   SideNavSection,
+  useSideNavCollapse,
 } from "@astryxdesign/core/SideNav";
 import { NavHeadingMenu, NavHeadingMenuItem } from "@astryxdesign/core/NavMenu";
 import { Button } from "@astryxdesign/core/Button";
@@ -49,6 +49,7 @@ import { useMediaQuery } from "@astryxdesign/core/hooks";
 import { useTranslator, type TranslatorFn } from "@astryxdesign/core/i18n";
 import { useThemeMode } from "@/app/providers";
 import { useLocale } from "@/lib/i18n/provider";
+import { Alsigil, AlsigilPunch } from "@/components/brand/Alsigil";
 
 // stylex.create() isn't compiled by this app's build (see globals.css); AI
 // accent color goes through the Tailwind token bridge instead.
@@ -154,15 +155,22 @@ function useCommandSource(t: TranslatorFn) {
   );
 }
 
-function LegalOSLogo() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M12 3v18M5 8h14M5 8l-2 5a3.5 3.5 0 0 0 7 0l-2-5m9 0l-2 5a3.5 3.5 0 0 0 7 0l-2-5"
-      />
-    </svg>
+/** The mark in the rail's brand slot.
+ *
+ *  SideNavHeading renders its `heading` as interface text, which is the right
+ *  treatment for a product name and the wrong one for a wordmark — the whole
+ *  point of the sheet is that the word *is* the mark. So the mark goes in the
+ *  icon slot and the heading is left empty; the anchor takes its accessible
+ *  name from the mark's own `aria-label` either way.
+ *
+ *  Collapsed, the rail is far narrower than the lockup's 64px floor, so it
+ *  gets the punch alone rather than a lockup squeezed under its minimum. */
+function SideNavBrand() {
+  const { isCollapsed } = useSideNavCollapse();
+  return isCollapsed ? (
+    <AlsigilPunch size={18} />
+  ) : (
+    <Alsigil width={112} tone="auto" />
   );
 }
 
@@ -212,8 +220,17 @@ function LanguageToggle() {
  *  the only case where two brand elements can't both be visible at once. */
 function TopNavBrand() {
   const { isMobile } = useAppShellMobile();
+  const t = useTranslator();
   if (!isMobile) return null;
-  return <TopNavHeading heading="" logo={<NavIcon icon={<LegalOSLogo />} />} href="/dashboard" />;
+  // No `heading`: the wordmark is the heading. 96px is the sheet's recommended
+  // screen size for the lockup, and the bar has room for it.
+  return (
+    <TopNavHeading
+      logo={<Alsigil width={96} tone="auto" />}
+      logoLabel={t("@legalos.shell.brand")}
+      headingHref="/dashboard"
+    />
+  );
 }
 
 /** Search, language, appearance, notifications, account — the controls that
@@ -349,8 +366,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
       }
       header={
         <SideNavHeading
-          heading={t("@legalos.shell.brand")}
-          icon={<LegalOSLogo />}
+          heading=""
+          icon={<SideNavBrand />}
           menu={
             <NavHeadingMenu size="lg">
               {FIRMS.map((firm) => (

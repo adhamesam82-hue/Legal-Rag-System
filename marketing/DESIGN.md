@@ -1,84 +1,85 @@
 ---
-name: LegalOS Marketing
-description: Dark, source-backed landing page for LegalOS — a legal-operations world where brass marks only what resolves to law.
+name: alsigil Marketing
+description: Source-backed landing page for alsigil — paper, ink and a single seal that marks only what resolves to law.
 colors:
-  ground: "#08090B"
-  ground-deep: "#050608"
-  surface-1: "rgba(255, 255, 255, 0.028)"
-  surface-2: "rgba(255, 255, 255, 0.046)"
-  surface-3: "rgba(255, 255, 255, 0.07)"
-  hairline: "rgba(255, 255, 255, 0.09)"
-  hairline-strong: "rgba(255, 255, 255, 0.16)"
-  hairline-bright: "rgba(255, 255, 255, 0.28)"
-  navy: "#101A3D"
-  navy-lit: "#16225C"
-  violet: "#6D5BFF"
-  violet-lit: "#8E7CFF"
-  violet-deep: "#3A2E8C"
-  brass: "#E0A44C"
-  brass-lit: "#F0BE76"
-  ok: "#4ED8A0"
-  warn: "#F2C14E"
-  risk: "#FF7A6B"
-  ink: "#F5F6F8"
-  ink-2: "#A9AEB9"
-  ink-3: "#7E8492"
-  # Action — the one gradient fill on the page, on .btn--violet
-  action: "#7A66FF"
-  action-deep: "#5B47E8"
-  # Tints of the semantic set, for text and small marks on their own fills
-  ok-lit: "#7FE6BC"
-  warn-lit: "#F5D384"
-  risk-lit: "#FF9E92"
-  risk-text: "#FFB3A9"
-  # Violet text tints, brightest first: data strokes, section labels, hero pill
-  violet-text: "#A79BFF"
-  violet-text-2: "#B8ACFF"
-  violet-text-3: "#C9C0FF"
-  violet-muted: "#A9A4C4"
+  paper: "#F6F3EE"
+  paper-deep: "#E9E5DE"
+  paper-lit: "#FFFFFF"
+  ground: "#F6F3EE"
+  ground-deep: "#E9E5DE"
+  surface-1: "rgba(255, 255, 255, 0.58)"
+  surface-2: "rgba(255, 255, 255, 0.82)"
+  surface-3: "#FFFFFF"
+  hairline: "rgba(18, 22, 28, 0.12)"
+  hairline-strong: "rgba(18, 22, 28, 0.2)"
+  hairline-bright: "rgba(18, 22, 28, 0.34)"
+  seal: "#A6301F"
+  seal-deep: "#7E2417"
+  seal-wash: "rgba(166, 48, 31, 0.09)"
+  seal-line: "rgba(166, 48, 31, 0.34)"
+  ok: "#1F6F4A"
+  warn: "#8A5F0B"
+  risk: "#A6301F"
+  ink: "#12161C"
+  ink-2: "#565D66"
+  ink-3: "#656B72"
+  # The Reversed plate. Only .cta wears these, by re-scoping the tokens above.
+  rev-ground: "#12161C"
+  rev-ground-lit: "#1D222B"
+  rev-ground-deep: "#0B0E13"
+  rev-ink: "#F6F3EE"
+  rev-seal-deep: "#E4785F"
   # Product-surface avatars, one per fee earner, deliberately low-chroma
-  av-1-bg: "#262A35"
-  av-1-ink: "#B7BDCC"
-  av-2-bg: "#2F2A3A"
-  av-2-ink: "#C2B8D2"
-  av-3-bg: "#233034"
-  av-3-ink: "#AFC6CC"
-  # Insight thumbnail grounds, category-tinted
-  thumb-compliance: "#131320"
-  thumb-ai: "#14122A"
-  thumb-ops: "#0E1A18"
-  thumb-funds: "#141220"
+  av-1-bg: "#E6E1D8"
+  av-1-ink: "#5A6068"
+  av-2-bg: "#EADFDA"
+  av-2-ink: "#6E5A54"
+  av-3-bg: "#DDE5E3"
+  av-3-ink: "#4C625F"
+  # Insight thumbnail grounds, category-tinted paper stocks
+  thumb-compliance: "#F1ECE3"
+  thumb-ai: "#F2EAE6"
+  thumb-ops: "#E9EFEB"
+  thumb-funds: "#EFEDE6"
 typography:
+  # Newsreader ships at one roman weight (400) and one italic (300). Nothing
+  # may ask it for more; a synthesised serif bold is visible at hero size.
   display:
-    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
     fontSize: "clamp(2.65rem, 6.6vw, 5.5rem)"
-    fontWeight: 600
-    lineHeight: 1.02
-    letterSpacing: "-0.035em"
+    fontWeight: 400
+    lineHeight: 1.03
+    letterSpacing: "-0.015em"
   headline:
-    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
     fontSize: "clamp(2.1rem, 4.2vw, 3.6rem)"
-    fontWeight: 600
+    fontWeight: 400
     lineHeight: 1.06
-    letterSpacing: "-0.035em"
+    letterSpacing: "-0.015em"
   title:
-    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
     fontSize: "clamp(1.5rem, 2.4vw, 2.1rem)"
-    fontWeight: 600
-    lineHeight: 1.14
-    letterSpacing: "-0.028em"
+    fontWeight: 400
+    lineHeight: 1.16
+    letterSpacing: "-0.012em"
   lede:
-    fontFamily: "Manrope, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
     fontSize: "clamp(1.05rem, 1.35vw, 1.2rem)"
     fontWeight: 400
     lineHeight: 1.65
   body:
-    fontFamily: "Manrope, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.6
+  aside:
+    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
+    fontSize: "1.14rem"
+    fontStyle: "italic"
+    fontWeight: 300
+    lineHeight: 1.5
   label:
-    fontFamily: "Manrope, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.7rem"
     fontWeight: 700
     letterSpacing: "0.16em"
@@ -91,89 +92,90 @@ typography:
     fontFamily: "Tajawal, Noto Naskh Arabic, sans-serif"
     fontSize: "1.06em"
     fontWeight: 500
-  # Working UI ramp. Chrome, controls, table furniture and the .ui product
-  # surfaces sit on this; it is finer-grained than the editorial scale above
-  # because a screenshot needs more steps than a page does.
   # One-off fluid display roles. Each is bespoke because it is the only thing
   # of its kind on the page and its endpoints are set by the composition it
   # sits in, not by a shared step.
   statement:
-    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
     fontSize: "clamp(1.6rem, 3.35vw, 3rem)"
-    fontWeight: 500
+    fontWeight: 400
     lineHeight: 1.24
-    letterSpacing: "-0.032em"
+    letterSpacing: "-0.015em"
   stat:
-    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
     fontSize: "clamp(3rem, 7vw, 5.4rem)"
-    fontWeight: 600
+    fontWeight: 400
     lineHeight: 1
-    letterSpacing: "-0.04em"
+    letterSpacing: "-0.018em"
   stat-callout:
-    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
     fontSize: "clamp(2.6rem, 4vw, 3.5rem)"
-    fontWeight: 600
+    fontWeight: 400
     lineHeight: 1
-    letterSpacing: "-0.04em"
+    letterSpacing: "-0.018em"
   headline-narrow:
-    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
     fontSize: "clamp(1.9rem, 3vw, 2.7rem)"
-    fontWeight: 600
+    fontWeight: 400
     lineHeight: 1.06
-    letterSpacing: "-0.035em"
+    letterSpacing: "-0.015em"
+  # The watermark is outlined artwork, not type. Kept as a role so the scale
+  # is documented; there is no font involved.
   watermark:
-    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "clamp(4.5rem, 19.5vw, 19rem)"
-    fontWeight: 600
-    letterSpacing: "-0.04em"
+    fontFamily: "outlined SVG — web/lib/brand/marks.ts"
+    fontSize: "106% of the footer width"
   surface-hero:
-    fontFamily: "Manrope, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
     fontSize: "clamp(0.62rem, 0.82vw, 0.82rem)"
     fontWeight: 400
   # Sub-display ramp: card headings, pull-quotes, the mobile drawer, and the
-  # Arabic on the testimonial nameplate. Sora above 1.2rem, Manrope below.
+  # Arabic on the testimonial nameplate. Newsreader above 1.1rem, Archivo below.
   card-title:
-    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "1.24rem"
-    fontWeight: 600
-    letterSpacing: "-0.028em"
-  quote:
-    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "1.12rem"
-    fontWeight: 500
-    letterSpacing: "-0.02em"
-  dialog-title:
-    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
     fontSize: "1.3rem"
-    fontWeight: 600
-    letterSpacing: "-0.03em"
+    fontWeight: 400
+    letterSpacing: "-0.014em"
+  quote:
+    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
+    fontSize: "1.16rem"
+    fontWeight: 400
+    letterSpacing: "-0.012em"
+  dialog-title:
+    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
+    fontSize: "1.35rem"
+    fontWeight: 400
+    letterSpacing: "-0.014em"
   drawer-link:
-    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "1.6rem"
-    fontWeight: 600
-    letterSpacing: "-0.03em"
+    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
+    fontSize: "1.75rem"
+    fontWeight: 400
+    letterSpacing: "-0.015em"
   plate-arabic:
     fontFamily: "Noto Naskh Arabic, Segoe UI, serif"
     fontSize: "1.75rem"
     lineHeight: 1.5
+  # Working UI ramp. Chrome, controls, table furniture and the .ui product
+  # surfaces sit on this; it is finer-grained than the editorial scale above
+  # because a screenshot needs more steps than a page does. All Archivo —
+  # the editorial serif does not enter a product surface.
   ui-lg:
-    fontFamily: "Manrope, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.98rem"
     fontWeight: 600
   ui:
-    fontFamily: "Manrope, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.94rem"
     fontWeight: 600
   ui-sm:
-    fontFamily: "Manrope, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.88rem"
     fontWeight: 600
   ui-xs:
-    fontFamily: "Manrope, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.82rem"
     fontWeight: 600
   micro:
-    fontFamily: "Manrope, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
     fontSize: "0.72rem"
     fontWeight: 800
     letterSpacing: "0.15em"
@@ -183,21 +185,21 @@ typography:
     fontWeight: 400
     lineHeight: 1.75
 rounded:
-  # Inside a .ui product surface, radii shrink with the component: a tag is
-  # 5px where a page card is 20px, because the surface is drawn at screenshot
-  # scale and the page scale would read as a cartoon.
+  # A printed identity has no round corners. Page radii are 2-5px; the .ui
+  # product surfaces keep softer ones because they are a screenshot of a
+  # different design system, not part of this one.
   chip: "2px"
   tag: "5px"
   control: "7px"
   panel: "9px"
   surface: "12px"
   frame: "14px"
-  sm: "10px"
-  md: "14px"
-  lg: "20px"
-  xl: "28px"
-  2xl: "36px"
-  pill: "999px"
+  sm: "2px"
+  md: "2px"
+  lg: "3px"
+  xl: "4px"
+  2xl: "5px"
+  pill: "2px"
 spacing:
   section: "clamp(6rem, 11vw, 11rem)"
   section-tight: "clamp(4rem, 7vw, 7rem)"
@@ -209,22 +211,22 @@ spacing:
 components:
   button-solid:
     backgroundColor: "{colors.ink}"
-    textColor: "#0A0B0E"
+    textColor: "{colors.paper}"
     rounded: "{rounded.pill}"
     padding: "0.95rem 1.6rem"
   button-solid-hover:
-    backgroundColor: "#FFFFFF"
-    textColor: "#0A0B0E"
+    backgroundColor: "#000000"
+    textColor: "{colors.paper}"
   button-ghost:
-    backgroundColor: "rgba(255,255,255,0.045)"
+    backgroundColor: "transparent"
     textColor: "{colors.ink}"
     rounded: "{rounded.pill}"
     padding: "0.95rem 1.6rem"
   button-ghost-hover:
-    backgroundColor: "rgba(255,255,255,0.09)"
-  button-violet:
-    backgroundColor: "linear-gradient(135deg, #7A66FF, #5B47E8)"
-    textColor: "#FFFFFF"
+    backgroundColor: "rgba(18,22,28,0.04)"
+  button-seal:
+    backgroundColor: "{colors.seal}"
+    textColor: "{colors.paper-lit}"
     rounded: "{rounded.pill}"
     padding: "0.95rem 1.6rem"
   button-lg:
@@ -232,36 +234,36 @@ components:
   button-sm:
     padding: "0.62rem 1.15rem"
   pane:
-    backgroundColor: "{colors.surface-1}"
+    backgroundColor: "{colors.surface-3}"
     textColor: "{colors.ink}"
     rounded: "{rounded.xl}"
     padding: "{spacing.pane-pad}"
   chip:
-    backgroundColor: "rgba(255,255,255,0.05)"
+    backgroundColor: "{colors.surface-3}"
     textColor: "{colors.ink-2}"
     rounded: "{rounded.pill}"
     padding: "0.42rem 0.9rem 0.42rem 0.75rem"
   cite-seal:
-    backgroundColor: "rgba(224, 164, 76, 0.11)"
-    textColor: "{colors.brass-lit}"
-    rounded: "6px"
+    backgroundColor: "{colors.seal-wash}"
+    textColor: "{colors.seal-deep}"
+    rounded: "3px"
     padding: "0.16rem 0.5rem 0.16rem 0.4rem"
   tab:
     textColor: "{colors.ink-3}"
     rounded: "{rounded.pill}"
     padding: "0.66rem 1.15rem"
   tab-selected:
-    backgroundColor: "rgba(255,255,255,0.1)"
+    backgroundColor: "{colors.surface-3}"
     textColor: "{colors.ink}"
   input-email:
-    backgroundColor: "rgba(255,255,255,0.04)"
+    backgroundColor: "{colors.surface-3}"
     textColor: "{colors.ink}"
     rounded: "{rounded.pill}"
     padding: "0.9rem 1.1rem"
   ui-surface:
-    backgroundColor: "linear-gradient(178deg, #12141A 0%, #0A0B0F 62%)"
+    backgroundColor: "linear-gradient(178deg, #FFFFFF 0%, #FBF9F6 62%)"
     textColor: "{colors.ink}"
-    rounded: "{rounded.md}"
+    rounded: "{rounded.frame}"
     typography: "{typography.body}"
   nav-link:
     textColor: "{colors.ink-2}"
@@ -269,16 +271,28 @@ components:
     padding: "0.5rem 0.9rem"
 ---
 
-# Design System: LegalOS Marketing
+# Design System: alsigil Marketing
 
 **Scope: `marketing/` only.** This file sits beside `index.html` rather than at the
-repository root because the root already belongs to a different visual world. The product
-app at `web/` is built on the Astryx design system: light mode, Arabic-first and RTL by
-default, Inter, an emerald/navy palette (see `PRODUCT.md` → Brand Commitments and
-`web/lib/theme.ts`). The page documented here is a separate deployable surface — a
-public, LTR, dark landing page with its own faces, its own ground and its own component
-family. A root-level `DESIGN.md` carrying these tokens would misdescribe the app to the
-next agent that opens it. Nothing below applies outside `marketing/`.
+repository root because the root belongs to a different surface. The product app at `web/`
+is built on the Astryx design system: Arabic-first and RTL by default, with an emerald
+accent for functional UI (see `PRODUCT.md` → Brand Commitments and `web/lib/theme.ts`).
+The page documented here is a separate deployable surface — public, LTR, with its own
+faces and its own component family. A root-level `DESIGN.md` carrying these tokens would
+misdescribe the app to the next agent that opens it. Nothing below applies outside
+`marketing/`.
+
+**The two surfaces now share a brand and not a palette.** Both wear the alsigil identity
+("The Stamp"): the same outlined mark, the same Ink / Seal / Paper. But Seal is the mark's
+colour and the citation colour in both, while the *functional* accent differs — this page
+spends Ink on its primary action, and the app keeps emerald for buttons and verified marks
+so red stays available for the destructive actions a legal product needs. The mark travels;
+the accent role does not.
+
+**Migrated from the dark build, 2026-08-05.** Everything below describes the paper build.
+Where a rule reads as a correction of something, the thing it corrects is the previous
+violet-and-brass system on a `#08090B` ground; those notes are kept because the reasoning
+survives the repaint.
 
 Everything is captured from the built code: `assets/css/tokens.css`,
 `assets/css/sections.css`, `assets/js/site.js`, `index.html`. Where the build and the
@@ -288,126 +302,164 @@ direction contract at the top of `<body>` disagree, the build is recorded as the
 
 | Contract says | Build does | Note |
 |---|---|---|
-| Brass worn by "attestation marks" | The three security badges (`.sec-badge-mark`) are neutral (`--ink-2`, `rgba(255,255,255,0.05)` fill). No brass. | Correct per the colour rule — a badge asserting an *in-progress* attestation does not resolve to a source. Contract and `README.md` are both stale on this line. |
+| Seal worn by "attestation marks" | The three security badges (`.sec-badge-mark`) are neutral (`--ink-2`, `--surface-3` fill). No seal. | Correct per the colour rule — a badge asserting an *in-progress* attestation does not resolve to a source. `README.md` is stale on this line. |
 | "full-bleed ambient product loop" in the first viewport | `.amb` is pinned to `left: 30%`, `height: min(100svh, 980px)`, and radially masked away from the headline column. | Deliberate, and commented in place. Full-bleed is reserved for a real film. |
 | "lede at 62ch" | `.lede` is 62ch, but `.hero-lede` overrides to `56ch`. | Hero lede is narrower than the page default. |
 | `sections.css` header: "six sections render one" `.ui` | Ten `.ui` instances across **five** sections (hero 1, platform overview 3, features 4, solutions 1, showcase 1). | Stale comment, not a design change. |
-| Brass "spent only where something resolves to a source" | One leak: the first insights thumbnail (`.ins-thumb--1`) draws a brass check-in-circle in decorative SVG. | The only decorative brass on the page. Either read it as a compliance seal or recolour it; do not treat it as licence for more. |
+| Seal "spent only where something resolves to a source" | One leak: the first insights thumbnail (`.ins-thumb--1`) draws a seal check-in-circle in decorative SVG. | The only decorative seal on the page. Either read it as a compliance seal or recolour it; do not treat it as licence for more. |
 
-Three tokens are declared and never used: `--brass-dim` (`#8A6529`), `--ink-on-violet`
-(`#EDEBFF`), `--r-sm` (`10px`). `--navy` / `--navy-lit` / `--violet-deep` are declared but
-the field gradients restate them as literal `rgba()` (blur + alpha stops need the channels).
-Leaving them in the frontmatter is intentional: they are the palette's stated range even
-where a rule inlines them.
+`--paper-lit` and `--r-2xl` survive the migration mostly as range rather than as heavy
+use. The seal tokens (`--seal-wash`, `--seal-line`) are restated as literal `rgba()` in the
+few gradients that need the channels for an alpha stop; that is deliberate, not drift.
 
 ## Overview
 
 **Creative North Star: "The Sealed Instrument"**
 
 A legal instrument is a document that carries its own proof — a seal, an article number, a
-signature that resolves to an authority. The page is built as one: a near-black room with
-weather in it, glass sheets holding real product surfaces, and a single brass mark that
-appears only where something on screen can be traced back to Egyptian statute. Nothing
-decorative is allowed to wear the seal. That restriction is the whole design; every other
-decision exists to keep it legible.
+signature that resolves to an authority. The page is built as one, and since the alsigil
+migration it is built as one *literally*: Paper stock, Ink type, sheets of white held by a
+hairline and a contact shadow, and a single Seal mark that appears only where something on
+screen can be traced back to Egyptian statute. Nothing decorative is allowed to wear the
+seal. That restriction is the whole design; every other decision exists to keep it legible.
+
+The dark build reached for the same idea through atmosphere — a near-black room with violet
+weather in it. The paper build reaches it through the material itself, which is the shorter
+route: the page now looks like the thing it is describing.
 
 The density is editorial, not brochure. Sections breathe at `clamp(6rem, 11vw, 11rem)`,
 copy is capped at 46rem for headings and 62–68ch for prose, and the visual weight lives in
 the product surfaces rather than in decoration. There is no stock photography, no icon-tile
 feature grid, and no raster screenshot anywhere on the page — every product screen is real
-markup. Colour is spent sparingly against a monochrome ground: violet is atmosphere and
-system state, brass is verification, and green/amber/red appear only inside product
-surfaces where they carry data meaning.
+markup. Colour is spent sparingly against a monochrome ground: Ink is structure, action and
+system state, Seal is verification, and green/amber appear only inside product surfaces
+where they carry data meaning. Risk is Seal too — in this product the thing that is running
+out and the thing that has been attested are the same red, which is how the identity sheet
+paints its own "next deadline" figure.
 
 Motion is one authored idea repeated: a citation resolving. The hero's ambient loop draws an
-Arabic clause, underlines it in brass, then lands the article reference beneath it; the
+Arabic clause, underlines it in seal, then lands the article reference beneath it; the
 document panels hold the same moment statically. Everything else is arrival, not
 performance — a single fade-up on one easing curve, and a nav that condenses without
 animating layout.
 
 **Key Characteristics:**
-- Near-black ground (`#08090B`) with all surfaces as low-alpha white overlays, never separate hexes
-- Navy→violet *fields*: blurred radial regions sized in viewport units, sitting behind whole sections
-- Brass as a functional, earned accent — never an eyebrow, tick, or icon tile
-- Four self-hosted faces (~167 KB), Arabic among them as product data rather than as a fallback
-- Real markup product screenshots that scale from one `font-size`
-- One glass recipe, one motion curve, one grain overlay
+- Paper ground (`#F6F3EE`) in three steps, with raised surfaces as white rather than as separate tinted hexes
+- Ruled *fields*: 32px graph-paper grids masked behind whole sections, plus one blurred Seal flush per page third. A light page cannot glow, so the atmosphere is drawn rather than lit
+- Seal as a functional, earned accent — never an eyebrow, tick, or icon tile
+- Square corners (2–5px). A filing has none, and the identity is a printed one
+- One outlined mark, shared byte-for-byte with the product app — artwork, not type
+- Five self-hosted faces (~172 KB), Arabic among them as product data rather than as a fallback
+- Real markup product screenshots that scale from one `font-size`, drawn light because the product is
+- One pane recipe, one motion curve, one grain overlay
+- Exactly one dark surface on the page: the final CTA, which is the identity's Reversed plate
 - Content visible without JavaScript; every enhancement is additive
 
 ## Colors
 
-A monochrome dark ground carrying two coloured atmospheres — a cold navy→violet weather
-system for the platform, and a single warm brass mark for verified law.
+Three colours and nothing else: the alsigil identity's Ink, Seal and Paper. The dark build
+ran two coloured atmospheres — a cold navy→violet weather system and a warm brass mark;
+both are gone. What replaced the atmosphere is not another colour but a drawn one: ruled
+grids.
 
 ### Primary
 
-- **Brass Seal** (`#E0A44C`): the functional accent. Worn by exactly five things in the built page: the citation seal (`.cite`, at 11% fill / 42% border with `--brass-lit` text), the clause an AI finding is anchored to (`.ui-clause mark`, 13% fill with a 65% inset underline), the ambient loop's resolving-clause underline and its citation chip, the three verifiable proof points under the hero (`.hero-proof .ico`), and the wordmark (`.wordmark-os` plus the dot in the mark) — the documented single brand exception. **History, because it is the rationale:** an earlier pass put brass on every eyebrow, tick and icon tile. Nine quiet labels in the accent colour cost the citation seal its meaning, and it was pulled back to source-backed material only. The comment above `.eyebrow` in `tokens.css` records this.
-- **Brass Lit** (`#F0BE76`): text and glyph colour *inside* brass-tinted containers, where the base brass would not hold contrast on a translucent fill.
+- **Seal** (`#A6301F`): the functional accent, and the mark's own colour. Worn by exactly six things in the built page: the citation seal (`.cite`, at `--seal-wash` fill / `--seal-line` border with `--seal-deep` text), the clause an AI finding is anchored to (`.ui-clause mark`, seal-wash fill with a solid inset underline), the ambient loop's resolving-clause underline and its citation chip, the three verifiable proof points under the hero (`.hero-proof .ico`), the risk state inside product surfaces, and the punch in the mark — the documented single brand exception. **History, because it is the rationale:** an earlier pass put the accent on every eyebrow, tick and icon tile. Nine quiet labels in the accent colour cost the citation seal its meaning, and it was pulled back to source-backed material only. The comment above `.eyebrow` in `tokens.css` records this.
+- **Seal Deep** (`#7E2417`): text and glyph colour *inside* seal-tinted containers, where flat Seal sits too light against Paper. Inside the Reversed CTA plate `--seal-deep` is re-pointed to `#E4785F`, because the same relationship inverts.
 
 ### Secondary
 
-- **Signal Violet** (`#6D5BFF`) and **Violet Lit** (`#8E7CFF`): the system's own colour. It is the near end of the atmosphere (fields, the hero stage glow, the CTA weave), the state colour inside product surfaces (active rail item at 15% fill, current timeline node, progress fills, chart series), the selection colour (`::selection` at 40%), and the focus ring (`2px solid` violet-lit, `3px` offset). Violet says *the software is doing something*; brass says *the law says so*. Never swap them.
-- **Deep Navy** (`#101A3D`) and **Navy Lit** (`#16225C`): the far end of the same atmosphere. Navy fields sit under the mission, testimonial and CTA; the violet fields sit under hero, features and showcase. Navy also tints the testimonial pane fill (`linear-gradient(150deg, rgba(22,34,92,0.42), …)`).
+There is no secondary colour. **Ink** does the work violet used to do — primary action, system state, active rail item, progress fills, chart series, the current timeline node. Violet said *the software is doing something* against a black room; on Paper, ink saying it is both quieter and more accurate to a product about documents. Seal still says *the law says so*. Never swap them.
 
 ### Tertiary — status, product-surface only
 
-- **Ledger Green** (`#4ED8A0`): reconciled, paid, cleared, approved. Also the chip dot.
-- **Docket Amber** (`#F2C14E`): due, pending review, written off.
-- **Exposure Red** (`#FF7A6B`): overdue, risk finding, blocked transfer.
+- **Ledger Green** (`#1F6F4A`): reconciled, paid, cleared, approved. Also the chip dot.
+- **Docket Amber** (`#8A5F0B`): due, pending review, written off.
+- **Exposure** = `var(--seal)`: overdue, risk finding, blocked transfer. Distinguished from a citation by form, not hue — a citation is an outlined chip, a risk is a filled dot or bar.
 
 These three never appear in page chrome — only inside `.ui` screens, `.ui-tag`, `.ui-find`, `.ui-guard`, and the newsletter's error/success line.
 
 ### Neutral
 
-- **Ground** (`#08090B`): the page. `theme-color` matches it.
-- **Ground Deep** (`#050608`): behind the hero only, so the hero reads as recessed relative to the sections below it.
-- **Surface 1 / 2 / 3** (white at 2.8% / 4.6% / 7%): every raised surface on the page. They are overlays, not hexes, which is why a pane crossing a violet field picks the field up instead of punching a grey hole in it.
-- **Hairline / Strong / Bright** (white at 9% / 16% / 28%): borders, dividers, and the eyebrow's 18px lead rule. `.rule` is a 1px gradient that fades to transparent at both ends.
-- **Ink** (`#F5F6F8`) primary text, **Ink 2** (`#A9AEB9`) secondary at 7.9:1 on ground, **Ink 3** (`#7E8492`) tertiary at 4.7:1 on ground. Both contrast figures are recorded in `tokens.css`; `--ink-3` is the floor and is used for labels and metadata, never for body copy.
+- **Paper** (`#F6F3EE`): the page. `theme-color` matches it.
+- **Paper Deep** (`#E9E5DE`): behind the hero and under the footer, so both read as recessed relative to the sections between them.
+- **Paper Lit** (`#FFFFFF`): a sheet lying on the page.
+- **Surface 1 / 2 / 3** (white at 58% / 82% / 100%): every raised surface. Still overlays rather than tinted hexes, for the same reason as before — a pane crossing a ruled or seal-flushed region should pick it up rather than punch a flat hole in it. The alphas inverted along with the ground: on black a surface separates by being lighter, and on Paper the delta is small enough that the *edge* does most of the work.
+- **Hairline / Strong / Bright** (ink at 12% / 20% / 34%): borders, dividers, and the eyebrow's 18px lead rule. `.rule` is a 1px gradient that fades to transparent at both ends.
+- **Ink** (`#12161C`) primary text at 16.4:1, **Ink 2** (`#565D66`) secondary at 6.0:1 on Paper, **Ink 3** (`#656B72`) tertiary at 4.9:1 on Paper. All three are measured against `#F6F3EE`, not estimated, and the figures are recorded in `tokens.css`. `--ink-3` is the floor and is used for labels and metadata, never for body copy — but note it still has to clear **4.5:1**, not 3:1: the eyebrow sets it at `0.7rem/700`, which is 11px, well under the 18.66px-bold threshold for the large-text allowance. A first pass at this migration inverted the dark build's tertiary tint arithmetically and landed at 3.8:1; the eyebrow, the footer headings and every metadata line on the page failed AA until it was measured.
 
 ### Named Rules
 
-**The Seal Rule.** Brass marks only material that resolves to a source. If a new element cannot be traced to an article of law or a verifiable figure, it is `--ink-2`, `--ink-3`, or violet. The audit test: count the brass elements in a viewport; if any of them is a decoration, a tick, an eyebrow or an icon tile, the rule is broken.
+**The Seal Rule.** Seal marks only material that resolves to a source. If a new element cannot be traced to an article of law or a verifiable figure, it is `--ink`, `--ink-2` or `--ink-3`. The audit test: count the seal elements in a viewport; if any of them is a decoration, a tick, an eyebrow or an icon tile, the rule is broken. Buttons are not an exception — `.btn--seal` exists once, for the single conversion point in the solutions hero.
 
-**The Field Rule.** Navy and violet are regions, never edges. A field is `position: absolute`, `border-radius: 50%`, `filter: blur(90px)`, `opacity: 0.4–0.8`, sized in `vw`/`rem` (e.g. `76vw` square), and lives behind a whole section. Do not use either colour as a 1px border, a divider or a small fill outside the product surfaces.
+**The Field Rule.** Fields are regions, never edges. `.field--grid` is a 32px ruled graph masked radially and sitting behind a whole section; `.field--seal` is the one blurred form that survives, at `blur(90px)` and 50% opacity. Do not use Seal as a 1px border, a divider or a small fill outside the product surfaces. **Why the grid replaced the glow:** a blurred coloured disc on Paper is a stain, not an atmosphere. The identity sheet's own device is a ruled ground, so the page borrowed it.
 
-**The Overlay Rule.** New surfaces are white at low alpha, not new dark hexes. Anything that needs to sit over a field must be translucent or it will read as a hole.
+**The Overlay Rule.** New surfaces are white at alpha, not new tinted hexes. Anything that needs to sit over a field must be translucent or it will read as a patch.
+
+**The One Dark Surface Rule.** The final CTA is the only ink block on the page, and it inverts by *re-scoping tokens* (`--ink`, `--paper`, `--surface-3`, the hairlines and `--seal-deep` are all redeclared on `.cta`) rather than by overriding each child. A second dark block would cost the first its force; if one is ever needed, it re-scopes the same way.
 
 ## Typography
 
-**Display Font:** Sora (with `ui-sans-serif, system-ui, sans-serif`)
-**Body Font:** Manrope (with `ui-sans-serif, system-ui, sans-serif`)
+**Display Font:** Newsreader (with `Iowan Old Style, Georgia, serif`)
+**Body / UI Font:** Archivo (with `ui-sans-serif, system-ui, sans-serif`)
 **Statute / document font:** Noto Naskh Arabic (with `Segoe UI, serif`)
 **Arabic UI font:** Tajawal (with `Noto Naskh Arabic, sans-serif`)
 
-**Character:** Sora is geometric and tightly tracked — at `-0.035em` and 600 weight it reads
-as engineered rather than corporate. Manrope underneath it is neutral and slightly warm, so
-long legal prose stays readable at 1.6–1.65 line-height. The two Arabic faces are not
-fallbacks: Naskh is the style Egyptian legal text is actually set in and carries statute and
-document body; Tajawal is the UI companion that sits beside Manrope in labels and chips
-without a jolt in weight or colour.
+**Character:** the identity's two faces, in the roles the identity sheet gives them.
+Newsreader is a screen-first text serif with a low, steady contrast — at 400 and
+`-0.015em` it reads as editorial and legal rather than as a tech company's grotesque, which
+is the whole point of the change from Sora. Archivo underneath it is a grotesque with a
+large x-height, so long legal prose stays readable at 1.6–1.65 line-height and UI labels
+stay crisp at `0.7rem`. The two Arabic faces are not fallbacks: Naskh is the style Egyptian
+legal text is actually set in and carries statute and document body; Tajawal is the UI
+companion that sits beside Archivo in labels and chips without a jolt in weight or colour.
 
-All four are self-hosted `woff2`, Latin **or** Arabic subset only, ~167 KB total. Sora and
-Manrope are `<link rel=preload>`ed; all faces are `font-display: swap`. Weight ranges:
-Sora 400–700, Manrope 400–800, Noto Naskh 400–700, Tajawal 400/500/700 as three files.
+**Newsreader ships at one weight.** The static 400 roman and a 300 italic, not the variable
+font — the two optical-size axes cost 280 KB and this page uses two cuts of it. Nothing may
+ask Newsreader for 500 or above or the browser will synthesise a bold, and a synthesised
+serif bold is visibly wrong at hero size. Weight is not how this identity makes a heading
+loud; size is.
+
+**Where each face goes.** Newsreader carries headings, pull-quotes, the mission statement
+and the stats-band figures. Archivo carries everything that is interface: tabs, nav, labels,
+firm names, nameplates, buttons, and **all ten product surfaces** — inside `.ui` the display
+face is Archivo, because the real app sets its figures in Archivo 600 and a marketing page's
+editorial serif has no business inside a screenshot of the product.
+
+All five are self-hosted `woff2`, Latin **or** Arabic subset only, ~172 KB total. Archivo
+and Newsreader roman are `<link rel=preload>`ed; all faces are `font-display: swap`. Weight
+ranges: Archivo 400–700 variable, Newsreader 400 roman + 300 italic as two static files,
+Noto Naskh 400–700, Tajawal 400/500/700 as three files.
+
+### The mark is not type
+
+The wordmark is outlined from Archivo 600 at −5% tracking and shipped as path data, not set
+as live text. It is the same artwork the product app ships (`web/lib/brand/marks.ts`,
+generated by `web/scripts/brand/build-marks.py`), inlined here as SVG. Consequences worth
+knowing before touching it: there is no font for it to fail to load, no `text-transform`
+that can reach it, no tracking to re-tune, and the nav, the footer and the 19rem watermark
+are all the same two paths at different scales. The punch's counter is knocked out
+(`fill-rule: evenodd`) rather than painted, which is why the identical markup works on Paper
+in the nav and on Ink inside the CTA.
 
 ### Hierarchy
 
-- **Display / hero** (`.display--hero`, Sora 600, `clamp(2.65rem, 6.6vw, 5.5rem)`, 1.02, `-0.035em`, `text-wrap: balance`): the H1 only. Capped at `17ch` above 860px so it breaks into three lines by measure rather than by `<br>`.
-- **Headline / section** (`.display--section`, Sora 600, `clamp(2.1rem, 4.2vw, 3.6rem)`, 1.06): every `<h2>`. The security section overrides down to `clamp(1.9rem, 3vw, 2.7rem)` because it lives inside a pane.
-- **Title / sub** (`.display--sub`, Sora 600, `clamp(1.5rem, 2.4vw, 2.1rem)`, 1.14, `-0.028em`): panel and card `<h3>`.
-- **Statement** (`.mission-statement`, Sora **500**, `clamp(1.6rem, 3.35vw, 3rem)`, 1.24, max `24ch`, `--ink-2` with `.mission-hi` lifting the operative clause to `--ink`): the mission paragraph, the one place display type is used for a run of prose. The pull-quote (`.tm-quote p`) and feature quotes use the same 500-weight display register.
-- **Lede** (`.lede`, Manrope, `clamp(1.05rem, 1.35vw, 1.2rem)`, 1.65, `--ink-2`, max `62ch`, `text-wrap: pretty`).
-- **Body** (`.body-2`, Manrope 400, 1rem, 1.65, `--ink-2`, max `68ch`).
-- **Label / eyebrow** (`.eyebrow`, Manrope 700, `0.7rem`, `0.16em`, uppercase, `--ink-3`, with an 18×1px `--hairline-bright` lead rule): names the section's place in the product rather than restating the heading. Related label sizes: `.foot-h` and `.sol-tag` at `0.72rem`/`0.14–0.15em`, `.ins-cat` and `.tm-plate-role` at `0.68rem`/`0.15–0.18em`.
-- **Numerals** (`.stat-v`, Sora 600, `clamp(3rem, 7vw, 5.4rem)`, `-0.04em`, `font-variant-numeric: tabular-nums`): the stats band. Counters ease up over 1500ms with `1 - 2^(-10t)` — the JS mirror of the CSS easing.
-- **Code** (`.code`, `ui-monospace, "SF Mono", Menlo`, `0.78rem`, 1.75 on `rgba(0,0,0,0.4)`): the one API sample. Keywords `#A79BFF`, payload `#9C90E8`.
+- **Display / hero** (`.display--hero`, Newsreader 400, `clamp(2.65rem, 6.6vw, 5.5rem)`, 1.03, `-0.015em`, `text-wrap: balance`): the H1 only. Capped at `17ch` above 860px so it breaks into three lines by measure rather than by `<br>`.
+- **Headline / section** (`.display--section`, Newsreader 400, `clamp(2.1rem, 4.2vw, 3.6rem)`, 1.06): every `<h2>`. The security section overrides down to `clamp(1.9rem, 3vw, 2.7rem)` because it lives inside a pane.
+- **Title / sub** (`.display--sub`, Newsreader 400, `clamp(1.5rem, 2.4vw, 2.1rem)`, 1.16, `-0.012em`): panel and card `<h3>`.
+- **Statement** (`.mission-statement`, Newsreader 400, `clamp(1.6rem, 3.35vw, 3rem)`, 1.24, max `24ch`, `--ink-2` with `.mission-hi` lifting the operative clause to `--ink`): the mission paragraph, the one place display type is used for a run of prose. The pull-quote (`.tm-quote p`) uses the same register; the feature quotes (`.feat-quote p`) use the **italic 300**, which is the identity's commentary voice.
+- **Lede** (`.lede`, Archivo, `clamp(1.05rem, 1.35vw, 1.2rem)`, 1.65, `--ink-2`, max `62ch`, `text-wrap: pretty`).
+- **Body** (`.body-2`, Archivo 400, 1rem, 1.65, `--ink-2`, max `68ch`).
+- **Aside** (`.aside-italic`, Newsreader italic 300, `--ink-2`): the identity's editorial voice, for a line of commentary under a heading.
+- **Label / eyebrow** (`.eyebrow`, Archivo 700, `0.7rem`, `0.16em`, uppercase, `--ink-3`, with an 18×1px `--hairline-bright` lead rule): names the section's place in the product rather than restating the heading. Related label sizes: `.foot-h` and `.sol-tag` at `0.72rem`/`0.14–0.15em`, `.ins-cat` and `.tm-plate-role` at `0.68rem`/`0.15–0.18em`.
+- **Numerals** (`.stat-v`, Newsreader 400, `clamp(3rem, 7vw, 5.4rem)`, `-0.018em`, `font-variant-numeric: tabular-nums`): the stats band. Counters ease up over 1500ms with `1 - 2^(-10t)` — the JS mirror of the CSS easing.
+- **Code** (`.code`, `ui-monospace, "SF Mono", Menlo`, `0.78rem`, 1.75 on `rgba(18,22,28,0.04)`): the one API sample. Keywords `--seal-deep`, payload `--ink-3`.
 
 ### Named Rules
 
 **The Isolate-Don't-Flip Rule.** `.ar` and `.ar-doc` carry `unicode-bidi: isolate` but deliberately **not** `direction: rtl`. The bidi algorithm already runs the Arabic right-to-left inside its own box; the box keeps the alignment of the row it sits in, so an Arabic matter title in an LTR table starts where its English subtitle starts. Surfaces that are genuinely right-to-left — the client portal, a document pane, an AI review pane, a citation seal — declare `dir="rtl"` on the *container* and inherit the real thing. Never put `direction: rtl` on the inline class.
 
-**The Optical Size Rule.** Arabic set inline in English copy is scaled up and loosened: `.ar` at `1.06em`, `.ar-doc` at `1.08em` with `line-height: 2`. Naskh at Manrope's optical size looks broken; do not normalise them to `1em`.
+**The Optical Size Rule.** Arabic set inline in English copy is scaled up and loosened: `.ar` at `1.06em`, `.ar-doc` at `1.08em` with `line-height: 2`. Naskh at Archivo's optical size looks broken; do not normalise them to `1em`.
 
 ## Layout
 
@@ -447,39 +499,46 @@ The reveal animation works the same way: `[data-reveal]` is styled only under `.
 
 ## Elevation & Depth
 
-Hybrid, weighted toward light rather than shadow. Depth comes from four stacked mechanisms,
-in order of importance: (1) translucency over blurred colour fields, (2) a lit top edge on
-glass, (3) hairline borders at three alphas, and (4) shadow — used almost exclusively on
-product surfaces and hover states, never as the primary separator. Flat panes at rest are
-the norm; `.pane--lift` and `.pane--action:hover` are the exceptions.
+Contact rather than glow, since the migration. Depth comes from three stacked mechanisms,
+in order of importance: (1) hairline borders at three alphas, (2) a tight contact shadow
+where a sheet meets the page plus a wide soft one under it, and (3) the small tonal step
+between Paper and white. Flat panes at rest are still the norm; `.pane--lift` and
+`.pane--action:hover` are the exceptions.
+
+**What changed and why.** The dark build's depth was translucency over blurred colour
+fields plus a lit top edge on glass — the right answer when the material is glass over
+violet weather. The material here is paper on paper, where a white highlight along the top
+of a white card is invisible. So the lit edge is gone, `backdrop-filter` is gone from the
+pane recipe, and what separates two sheets is the edge and the shadow under it.
 
 ### Shadow Vocabulary
 
-- **Lift** (`0 2px 4px rgba(0,0,0,0.4), 0 18px 40px -12px rgba(0,0,0,0.7)`): hover state for interactive panes, and any pane that needs to detach slightly at rest.
-- **Deep** (`0 4px 10px rgba(0,0,0,0.45), 0 48px 90px -28px rgba(0,0,0,0.85)`): the product surfaces (`.ui`) and the lightbox frame. This is what makes a screenshot read as an object on the page rather than an inset panel.
-- **Solid-button seat** (`0 1px 0 rgba(255,255,255,0.5) inset, 0 8px 24px -8px rgba(0,0,0,0.9)`): the inset white line is a top bevel, not a glow. On hover the ambient half becomes violet: `0 12px 34px -10px rgba(109,91,255,0.6)`.
-- **Violet button glow** (`0 10px 30px -10px rgba(109,91,255,0.85)` → `0 16px 40px -10px rgba(109,91,255,1)` on hover).
-- **Stage glow** (not a shadow): `.hero-stage-glow` is a radial violet region at 55% alpha, `filter: blur(56px)`, sitting behind and below the mockup.
+- **Lift** (`0 1px 2px rgba(18,22,28,0.06), 0 14px 30px -14px rgba(18,22,28,0.22)`): hover state for interactive panes, and any pane that needs to detach slightly at rest.
+- **Deep** (`0 2px 5px rgba(18,22,28,0.07), 0 44px 80px -34px rgba(18,22,28,0.34)`): the product surfaces (`.ui`) and the lightbox frame. This is what makes a screenshot read as an object on the page rather than an inset panel. The dark build's near-opaque blacks would read as soot on Paper; these are the same two-part structure at a quarter of the density.
+- **Solid-button seat** (`0 1px 2px rgba(18,22,28,0.18)`, hover adds `0 10px 22px -10px rgba(18,22,28,0.4)`): ink on paper, no bevel. There is no light source to bevel against.
+- **Seal button** (`0 1px 2px rgba(126,36,23,0.3)` → `+ 0 12px 26px -12px rgba(126,36,23,0.5)` on hover): the one filled accent button.
+- **Stage shadow** (not a glow): `.hero-stage-glow` keeps its name and its position but is now `rgba(18,22,28,0.3)` at `blur(46px)` — the shadow the tilted mockup casts on the page rather than the light it used to emit.
 
 ### Named Rules
 
-**The Lit-Edge Rule.** One glass recipe, everywhere: `1px solid var(--hairline)`, `background: var(--surface-1)`, `backdrop-filter: blur(18px) saturate(140%)`, radius `--r-xl` (28px), plus a masked `::before` that paints `linear-gradient(160deg, rgba(255,255,255,0.22), transparent 42%)` into a 1px ring via `mask-composite: exclude`. The blur is real and load-bearing — panes sit over violet fields and are supposed to pick them up. Do not replace it with a flat fill.
+**The Sheet Rule.** One pane recipe, everywhere: `1px solid var(--hairline)`, `background: var(--surface-3)`, radius `--r-xl` (4px). No blur, no `::before` ring. A sheet of white on Paper is separated by its edge and its shadow; adding a highlight to the top of it just makes it look like glass again.
 
-**The Brighter-Not-Denser Rule.** Interactive panes (`.pane--action`) hover by lifting `4px` and brightening the *border* (`--hairline` → `--hairline-strong`) plus adding the lift shadow. The fill never changes. The glass reads as catching more light, not as changing material.
+**The Darker-Not-Denser Rule.** Interactive panes (`.pane--action`) hover by lifting `4px` and darkening the *border* (`--hairline` → `--hairline-strong`) plus adding the lift shadow. The fill never changes. The sheet reads as being picked up, not as changing colour.
 
-**The Grain Rule.** A fixed full-page `.grain` overlay sits at `z-index: 1`, `opacity: 0.035`, `mix-blend-mode: overlay`, from an inline SVG `feTurbulence` (baseFrequency 0.85, 3 octaves, 140×140 tile). It exists because the large dark gradients band on 8-bit displays. Never remove it when adding a new full-width gradient; never raise it above ~0.04, where it starts reading as texture.
+**The Grain Rule.** A fixed full-page `.grain` overlay sits at `z-index: 1`, `opacity: 0.05`, `mix-blend-mode: multiply`, from an inline SVG `feTurbulence` (baseFrequency 0.85, 3 octaves, 140×140 tile). It began as banding insurance for large dark gradients; on Paper it is the tooth of the stock, and `multiply` rather than `overlay` is what makes it darken into the sheet instead of glowing off it. Never raise it above ~0.06, where it starts reading as noise.
 
 ## Shapes
 
-A soft-rectangular language with a wide radius range, chosen by surface size rather than by
-component type: the bigger the surface, the rounder it is.
+A crisp-rectangular language. The stamp identity is a printed one — filings, letterhead, a
+punch struck into paper — and none of that is round. The four-step scale and the pill are
+kept so nothing downstream has to change, but every step is now an edge:
 
-- **28px** (`--r-xl`) — the glass pane. Every `.pane`.
-- **36px** (`--r-2xl`) — the final CTA panel, the largest single surface on the page.
-- **20px** (`--r-lg`) — mid-size objects inside panes: the testimonial portrait, the stat card, the case-study art, security badges, the lightbox frame.
-- **14px** (`--r-md`) — the product surface `.ui` (written literally as `14px`, matching the token), insight thumbnails, the code block.
-- **999px** (`--r-pill`) — every control: buttons, chips, nav links, tabs, the newsletter input, the skip link, circular icon buttons at 40–46px.
-- **10px** (`--r-sm`) — declared, currently unused.
+- **4px** (`--r-xl`) — the pane. Every `.pane`.
+- **5px** (`--r-2xl`) — the final CTA panel, the largest single surface on the page.
+- **3px** (`--r-lg`) — mid-size objects inside panes: the testimonial portrait, the stat card, the case-study art, security badges, the lightbox frame.
+- **2px** (`--r-md`) — insight thumbnails, the code block.
+- **2px** (`--r-pill`) — every control: buttons, chips, nav links, tabs, the newsletter input, the skip link. **The name is now a lie and is kept deliberately**: renaming it would touch forty call sites to say the same thing. Read it as "the control radius".
+- **14px** — the product surface `.ui`, written literally rather than tokenised. Product chrome keeps its own softer radii because it is a screenshot of a different design system, not part of this one.
 
 Inside `.ui`, radii step down again and are written in `px` because they are chrome, not
 type-scaled content: `10px` lists and cards, `9px` KPIs and ledger rows, `8px` findings and
@@ -487,11 +546,11 @@ capture rows, `7px` rail items and search fields, `5–6px` tags and the citatio
 on marked text. Bars and progress fills are `999px`; column bars are asymmetric
 (`7px 7px 3px 3px`) so they read as growing from a baseline.
 
-Borders are always 1px and always white-at-alpha. Two exceptions carry colour, both
-functional: `.ui-guard` (blocked transfer) at `rgba(255,122,107,0.24)` and `.cite` at
-`rgba(224,164,76,0.42)`.
+Borders are always 1px and always ink-at-alpha. Two exceptions carry colour, both
+functional: `.ui-guard` (blocked transfer) and `.cite`, each at `--seal-line`.
 
-Circles are reserved for identity and controls: avatars, integration badges
+Circles are reserved for identity and controls — and the punch, which is the only circle on
+the page that means anything: avatars, integration badges
 (`clamp(48px, 5.2vw, 62px)`, `aspect-ratio: 1`), carousel buttons (46px), the lightbox
 close (40px), status dots (3–6px).
 
@@ -499,30 +558,30 @@ close (40px), status dots (3–6px).
 
 ### Buttons
 
-- **Shape:** fully pill (`999px`). Base padding `0.95rem 1.6rem`, `--sm` `0.62rem 1.15rem` at `0.85rem`, `--lg` `1.1rem 2rem` at `1rem`. Weight 700, `white-space: nowrap`, icons at 18px.
-- **Solid** (primary, "Book a Demo"): near-white `--ink` fill on `#0A0B0E` text with the bevel + ambient shadow. Hover goes to pure white and swaps the ambient shadow to violet. This is the page's only high-contrast surface and it is reserved for the single conversion action.
-- **Ghost** (secondary, "See LegalOS in action", "See pricing"): `rgba(255,255,255,0.045)` over a `--hairline-strong` border with its own `blur(14px)`. Hover doubles the fill and brightens the border.
-- **Violet** (used once, "Talk to Sales" in the solutions hero): `linear-gradient(135deg, #7A66FF, #5B47E8)`. Its scarcity is deliberate — it marks the one card that is itself violet-tinted.
+- **Shape:** square (`--r-pill`, now 2px). Base padding `0.95rem 1.6rem`, `--sm` `0.62rem 1.15rem` at `0.85rem`, `--lg` `1.1rem 2rem` at `1rem`. Weight 700, `white-space: nowrap`, icons at 18px.
+- **Solid** (primary, "Book a Demo"): `--ink` fill on `--paper` text with a contact shadow. Hover goes to pure black and deepens the shadow. This is the page's highest-contrast control and it is reserved for the conversion action. **Ink, not Seal** — a page of red buttons would spend the accent on the least meaningful thing on it.
+- **Ghost** (secondary, "See alsigil in action", "See pricing"): transparent over a `--hairline-strong` border. Hover adds a 4% ink fill and darkens the border.
+- **Seal** (used once, "Talk to Sales" in the solutions hero): flat `--seal` on `--paper-lit`. Its scarcity is deliberate — it marks the one card that is itself seal-tinted, and it is the only filled accent on the page.
 - **All:** `transform 0.4s var(--ease)` on transform/background/border/shadow/colour; `:active` is `translateY(1px) scale(0.99)`; `[disabled]` / `[aria-disabled]` is `opacity: 0.45` + `pointer-events: none`.
 - **Link-arrow** (tertiary): 700 weight text with a `::after` underline that draws `scaleX(0) → 1` from the leading edge over 0.5s, and an arrow that translates 4px. The case-study card triggers both from the *card's* hover, so the whole card behaves as one control.
 
 ### Chips and seals
 
-- **Chip** (`.chip`): pill, `rgba(255,255,255,0.05)` over `--hairline-strong`, `blur(14px)`, `0.8rem/600`, `--ink-2`. Optional 6px `.dot` in `--ok` with `box-shadow: 0 0 8px currentColor`.
-- **Hero eyebrow** (`.hero-eyebrow`): the violet variant — `rgba(109,91,255,0.13)` fill, `rgba(142,124,255,0.32)` border, `#C9C0FF` text, uppercase `0.09em`. Its dot pulses on a 3.4s expanding ring (`box-shadow: 0 0 0 0 → 0 0 0 9px`), disabled under reduced motion.
-- **Citation seal** (`.cite`) — the page's one recurring product mark. 6px radius, brass at 11% fill and 42% border, `--brass-lit` text at `0.72rem/700`, an 11px shield-check glyph, and `white-space: normal` so a long article reference **wraps rather than clips**. The override is commented: an article reference running off the edge of its own panel is the opposite of what the mark is for. Inside `.ui-find` it also takes `--font-ar-ui` and `justify-self: start`.
+- **Chip** (`.chip`): `--surface-3` over `--hairline-strong`, `0.8rem/600`, `--ink-2`. Optional 6px `.dot` in `--ok`, no halo — a glow on a light ground reads as a rendering artefact.
+- **Hero eyebrow** (`.hero-eyebrow`): a white plate on a `--hairline-strong` border, `--ink-2` text, uppercase `0.14em`. Its dot is Seal and pulses on a 3.4s expanding ring (`box-shadow: 0 0 0 0 → 0 0 0 9px`), disabled under reduced motion.
+- **Citation seal** (`.cite`) — the page's one recurring product mark. 3px radius, `--seal-wash` fill and `--seal-line` border, `--seal-deep` text at `0.72rem/700`, an 11px shield-check glyph, and `white-space: normal` so a long article reference **wraps rather than clips**. The override is commented: an article reference running off the edge of its own panel is the opposite of what the mark is for. Inside `.ui-find` it also takes `--font-ar-ui` and `justify-self: start`.
 
 ### Cards / Containers
 
 - **Pane** (`.pane`): see the Lit-Edge Rule. `overflow: hidden` by default; `.pane--flush` opts out (declared, unused). `.pane-pad` is `clamp(1.5rem, 2.6vw, 2.4rem)`.
-- **Solution card** (`.sol-card`): a pane with a 44px `12px`-radius icon tile — bordered `--hairline-strong` over `rgba(255,255,255,0.05)`, glyph in `--ink-2`. **The tile is never brass.**
+- **Solution card** (`.sol-card`): a pane with a 44px `12px`-radius icon tile — bordered `--hairline-strong` over `--surface-3`, glyph in `--ink-2`. **The tile is never Seal.**
 - **Solutions hero** (`.sol-hero`): a pane whose fill is overprinted with `linear-gradient(165deg, rgba(109,91,255,0.13), rgba(255,255,255,0.02) 46%)`, spanning two grid rows.
 - **Testimonial** (`.testimonial`): a pane with a navy overprint and a navy field inside it. The stacking fix is worth keeping: `.testimonial > *:not(.field)` gets `position: relative; z-index: 1`. Without `:not(.field)`, forcing the absolutely-positioned glow to `position: relative` would drop it back into the grid as a fourth 46rem track and blow the quote column out of the card.
-- **Portrait plate** (`.tm-plate`): an authored brass-door-plate fallback — Naskh name at `1.75rem`, Latin name in Sora, a 2.6rem rule, an uppercase role, and an inset 1px frame at `0.55rem`. A real headshot at `assets/img/partner-portrait.jpg` covers it; `data-optional-img` hides the `<img>` on error so a missing file reveals the plate instead of a broken-image glyph.
+- **Portrait plate** (`.tm-plate`): an authored plate fallback, pressed rather than brass since the migration — Naskh name at `1.75rem`, Latin name in Archivo, a 2.6rem rule, an uppercase role, and an inset 1px frame at `0.55rem`. A real headshot at `assets/img/partner-portrait.jpg` covers it; `data-optional-img` hides the `<img>` on error so a missing file reveals the plate instead of a broken-image glyph.
 
 ### Inputs
 
-- **Newsletter email** (`.news input`): pill, `rgba(255,255,255,0.04)` over `--hairline-strong`, `flex: 1 1 13rem`. Hover brightens the border; `:focus-visible` takes the global violet ring plus a lift to `rgba(255,255,255,0.07)`; `[aria-invalid="true"]` borders `rgba(255,122,107,0.6)`.
+- **Newsletter email** (`.news input`): `--surface-3` over `--hairline-strong`, `flex: 1 1 13rem`. Hover darkens the border; `:focus-visible` takes the global Seal ring plus a lift to `--paper-lit`; `[aria-invalid="true"]` borders `--seal`.
 - **Message line** (`.news-msg`): `role="status"`, `min-height: 1.2rem` so nothing shifts when it fills. `.is-err` `#FF9E92`, `.is-ok` `--ok`.
 - **Behaviour, and the reason it matters:** the form validates the address, then — with no `data-endpoint` declared — says *"Signup is not connected yet"* rather than thanking the visitor. Commented in place: confirming a subscription nobody recorded is worse than admitting the form is not wired. Preserve that refusal if you touch this component.
 
@@ -614,10 +673,10 @@ introduce a third.
 ## Do's and Don'ts
 
 ### Do:
-- **Do** keep brass for material that resolves to a source. New elements default to `--ink-2` / `--ink-3` for neutral chrome and `--violet-lit` for system state.
-- **Do** build new surfaces as white-at-alpha overlays (`--surface-1/2/3`) so they pick up whatever field they cross.
+- **Do** keep Seal for material that resolves to a source. New elements default to `--ink-2` / `--ink-3` for neutral chrome and `--ink` for system state.
+- **Do** build new surfaces as white-at-alpha overlays (`--surface-1/2/3`) so they pick up whatever field they cross, and let the hairline do the separating.
 - **Do** express every interior measurement inside `.ui` in `em`. The whole product-surface system is one `font-size` away from being resizable; a single `px` value breaks that.
-- **Do** give any new section its atmosphere with a `.field` — absolutely positioned, `blur(90px)`, sized in `vw`/`rem`, behind the content, with the section set to `overflow: clip` and its `.shell` raised to `z-index: 1`.
+- **Do** give any new section its atmosphere with a `.field` — `.field--grid` for a ruled ground, `.field--seal` for a warm flush — absolutely positioned, sized in `vw`/`rem`, behind the content, with the section set to `overflow: clip` and its `.shell` raised to `z-index: 1`.
 - **Do** ship content visible and let script add the hiding class. Any new progressive-enhancement flag follows the `js-boot` pattern: set inline in `<head>`, removed at the end of `init()`.
 - **Do** declare `dir="rtl"` on a *container* when a surface is genuinely right-to-left, and use `.ar` / `.ar-doc` for Arabic set inline in LTR rows.
 - **Do** use logical properties (`margin-inline-start`, `border-inline-end`, `padding-inline`, `text-align: start`) — the page already does throughout, which is what lets `dir="rtl"` surfaces work without a mirrored stylesheet.
@@ -625,15 +684,16 @@ introduce a third.
 - **Do** let a missing asset reveal an authored fallback (the ambient loop, the nameplate, the lightbox panel) rather than a broken element.
 
 ### Don't:
-- **Don't** put brass on eyebrows, ticks, icon tiles, headings or hover states. That was tried; it cost the citation seal its meaning and was reverted.
+- **Don't** put Seal on eyebrows, ticks, icon tiles, headings or hover states. That was tried in the dark build with brass; it cost the citation seal its meaning and was reverted. The colour changed, the rule did not.
+- **Don't** ask Newsreader for a weight above 400, or set it in a product surface. One weight is loaded; `.ui` is Archivo.
 - **Don't** add `direction: rtl` to `.ar` or `.ar-doc`. `unicode-bidi: isolate` alone is the rule, so Arabic keeps the alignment of the row it sits in.
-- **Don't** use navy or violet as a border, divider or small fill in page chrome. They are fields.
-- **Don't** introduce a new dark hex for a surface. If it needs to be darker, it needs less alpha or more blur.
-- **Don't** change a pane's fill on hover — brighten its border.
+- **Don't** use Seal as a border, divider or small fill in page chrome outside the citation seal. Fields are regions.
+- **Don't** introduce a new tinted hex for a surface, and don't add a second dark block. If a surface needs to invert, it re-scopes tokens the way `.cta` does.
+- **Don't** change a pane's fill on hover — darken its border.
 - **Don't** add a third easing curve, or a second reveal gesture. One fade-up, one curve.
 - **Don't** animate layout properties on scroll. The nav's condense is transform + opacity precisely so `--nav-h` and `scroll-padding-top` stay in agreement.
 - **Don't** remove the `:not(.field)` in `.testimonial > *:not(.field)`; it keeps the absolutely-positioned glow out of the grid.
 - **Don't** let the citation seal clip. `white-space: normal` on `.cite` is load-bearing.
 - **Don't** fake a success state. The newsletter refuses rather than confirming an unrecorded subscription; hold that line for any form added here.
 - **Don't** introduce raster screenshots. Every product surface on this page is markup, and the page's credibility rests on it staying that way.
-- **Don't** carry these tokens into `web/`. That app is light-mode Astryx with an emerald/navy palette and Inter; this world stops at `marketing/`.
+- **Don't** carry these tokens into `web/`. The two surfaces share the mark and the Ink/Seal/Paper hexes, not the type scale, the shadows or the accent role — that app is Astryx with an emerald functional accent. Import the mark from `web/lib/brand/`; leave the rest at the boundary.
