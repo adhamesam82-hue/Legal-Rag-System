@@ -37,7 +37,7 @@ export const en: Catalog = {
   "@legalos.automation.heading": { defaultMessage: "Automation" },
   "@legalos.automation.subtitle": {
     defaultMessage:
-      "Rule-based workflows that run automatically when something happens in LegalOS.",
+      "Rule-based workflows that run automatically when something happens in alsigil.",
   },
   "@legalos.automation.newAutomation": { defaultMessage: "New automation" },
   "@legalos.automation.toggle": { defaultMessage: "Turn {name} {state}" },
@@ -86,7 +86,7 @@ export const ar: Catalog = {
   "@legalos.automation.heading": { defaultMessage: "الأتمتة" },
   "@legalos.automation.subtitle": {
     defaultMessage:
-      "مسارات عمل قائمة على قواعد تعمل تلقائياً عند وقوع حدث في LegalOS.",
+      "مسارات عمل قائمة على قواعد تعمل تلقائياً عند وقوع حدث في alsigil.",
   },
   "@legalos.automation.newAutomation": { defaultMessage: "أتمتة جديدة" },
   "@legalos.automation.toggle": { defaultMessage: "{state} {name}" },
