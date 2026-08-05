@@ -28,6 +28,9 @@ assets/css/tokens.css      faces, tokens, reset, and the primitives every sectio
 assets/css/sections.css    section layout + the .ui product-surface system
 assets/js/site.js          reveal, nav, tabs/accordion, counters, carousel, lightbox, video, parallax
 assets/fonts/*.woff2       self-hosted Archivo, Newsreader, Noto Naskh Arabic, Tajawal (172 KB total)
+ar/index.html              the Arabic page — GENERATED, do not edit
+i18n/ar.json               the Arabic copy, keyed by the English string
+scripts/build-ar.py        generates ar/index.html from the two above
 assets/img/                favicon, hero + tour posters, OG card
 ```
 
@@ -141,3 +144,33 @@ do not exist yet.
   the citation seal its meaning. Keep it scarce.
 - **The direction contract** is the HTML comment at the top of `<body>`. It
   records what this page is committed to. Read it before changing the look.
+
+## The Arabic page
+
+The page ships in both languages at two URLs: English at `/`, Arabic at `/ar`,
+each with `hreflang` pointing at the other. The Arabic one is **generated** —
+edit `index.html` and `i18n/ar.json`, never `ar/index.html`:
+
+```
+python3 scripts/build-ar.py           # rewrite ar/index.html
+python3 scripts/build-ar.py --check   # exit 1 if stale or incomplete
+```
+
+Three things worth knowing before touching it:
+
+- **A separate URL, not a toggle.** Most of this market reads Arabic, so the
+  Arabic copy has to be in the HTML a crawler receives rather than swapped in
+  after load.
+- **Any new English string fails loudly.** The build reports every text node
+  that is in neither `translate` nor the `keep` list, so copy cannot ship
+  half-translated. Run `--check` after editing copy.
+- **RTL is almost free.** The layout is written in logical properties, so
+  `dir="rtl"` on `<html>` flips it. The exceptions are collected in one block
+  at the end of `sections.css`: the ambient loop and the decorative fields,
+  which are positioned in physical space on purpose.
+
+What is *not* translated is as deliberate as what is: brand names, API
+literals, and the wordmark, which stays Latin because the identity sheet has no
+Arabic mark yet. Firm and person names *are* translated — the English page is
+already bilingual in its marquee, and the product's own Arabic catalog names
+firms in Arabic.
