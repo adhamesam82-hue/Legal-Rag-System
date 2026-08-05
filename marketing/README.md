@@ -1,6 +1,6 @@
-# LegalOS — marketing site
+# alsigil — marketing site
 
-A single-page, dark-mode landing page for LegalOS. Self-contained static HTML,
+A single-page landing page for alsigil, in the "The Stamp" identity: Paper, Ink and one Seal. Self-contained static HTML,
 CSS and JavaScript: no build step, no dependencies, no runtime network calls.
 
 It lives outside `web/` on purpose. The product app is Clerk-gated, Arabic-first
@@ -27,11 +27,11 @@ index.html                 the whole page, including the direction contract at t
 assets/css/tokens.css      faces, tokens, reset, and the primitives every section reuses
 assets/css/sections.css    section layout + the .ui product-surface system
 assets/js/site.js          reveal, nav, tabs/accordion, counters, carousel, lightbox, video, parallax
-assets/fonts/*.woff2       self-hosted Sora, Manrope, Noto Naskh Arabic, Tajawal (167 KB total)
+assets/fonts/*.woff2       self-hosted Archivo, Newsreader, Noto Naskh Arabic, Tajawal (172 KB total)
 assets/img/                favicon, hero + tour posters, OG card
 ```
 
-Four faces, each with a job: **Sora** display, **Manrope** text and UI, **Noto
+Five faces, each with a job: **Newsreader** display, **Archivo** text, UI and the wordmark, **Noto
 Naskh Arabic** for statute and document text (the naskh style Egyptian legal
 material is actually set in), **Tajawal** for Arabic UI labels. Latin and Arabic
 subsets only.
@@ -136,8 +136,8 @@ do not exist yet.
 - **Brass is not a decorative accent.** `#E0A44C` is spent only on material
   that resolves to a source: citation seals, the clause an AI finding is
   anchored to, the security attestation marks, and the three verifiable proof
-  points under the hero. Selection, status and emphasis are violet or neutral.
-  An earlier pass had brass on every eyebrow, tick and icon tile, which cost
+  points under the hero. Selection, status and emphasis are ink or neutral.
+  An earlier pass had the accent on every eyebrow, tick and icon tile, which cost
   the citation seal its meaning. Keep it scarce.
 - **The direction contract** is the HTML comment at the top of `<body>`. It
   records what this page is committed to. Read it before changing the look.

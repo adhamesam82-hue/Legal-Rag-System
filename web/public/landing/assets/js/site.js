@@ -1,5 +1,5 @@
 /* ==========================================================================
-   LegalOS — page behaviour
+   alsigil — page behaviour
    No dependencies. Every enhancement degrades to a readable static page:
    nothing here is required to see content, only to see it arrive well.
    ========================================================================== */
@@ -429,7 +429,7 @@
       video.addEventListener('loadeddata', () => {
         if (fallback) fallback.hidden = true;
         const title = $('[data-tour-title]', box);
-        if (title) title.textContent = 'LegalOS — the two-minute tour';
+        if (title) title.textContent = 'alsigil — the two-minute tour';
         // The hero button names the film only now that one exists to play.
         $$('[data-tour-label]').forEach((el) => { el.textContent = 'Watch the 2-min tour'; });
       }, { once: true });

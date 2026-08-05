@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>LegalOS — The unified operating system for your law firm</title>
+<title>alsigil — The unified operating system for your law firm</title>
 <meta name="description" content="Matters, documents, time and billing, client funds and compliance in one system for Egyptian and MENA law firms, with legal research grounded in statute text, citation by citation.">
-<meta name="theme-color" content="#08090B">
+<meta name="theme-color" content="#F6F3EE">
 
 <meta property="og:type" content="website">
-<meta property="og:title" content="LegalOS — The unified operating system for your law firm">
+<meta property="og:title" content="alsigil — The unified operating system for your law firm">
 <meta property="og:description" content="Cut the administrative work, reduce the risk, and give every lawyer their billable hours back.">
 <meta property="og:image" content="assets/img/og.png">
 <meta name="twitter:card" content="summary_large_image">
 
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
-<link rel="preload" href="assets/fonts/Sora-400-700-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="assets/fonts/Manrope-400-800-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/Archivo-400-700-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/Newsreader-400-latin.woff2" as="font" type="font/woff2" crossorigin>
 <script>document.documentElement.classList.add('js-boot')</script>
 <link rel="stylesheet" href="assets/css/tokens.css">
 <link rel="stylesheet" href="assets/css/sections.css">
@@ -25,12 +25,13 @@
 THESIS: A legal-operations page where every claim on screen resolves to a source, the way the
 product does — the interface at work in real Arabic, carrying its citations. It refuses the
 category's arrangement: a claim-only hero over stock gradient, then three icon-and-heading cards.
-OWN-WORLD: #08090B ground; navy→violet fields owning whole regions, never edging components;
-brass #E0A44C as the one functional accent, worn only by verified/source-backed
-material (citation seals, anchored clauses, the hero proof ticks) plus the
-wordmark, its single brand exception; 1px
-glass panes with a lit top edge; Sora display / Manrope text / Noto Naskh + Tajawal for the
-Arabic that is product data, not decoration; authored product surfaces, no stock imagery.
+OWN-WORLD: the alsigil identity, "The Stamp" — Paper #F6F3EE ground, Ink #12161C, and Seal
+#A6301F as the one functional accent, worn only by verified/source-backed material (citation
+seals, anchored clauses, the hero proof ticks) plus the mark itself; ruled 32px graph fields
+where the old dark build had violet glow, because a light page cannot glow; white sheets held by
+a hairline and a contact shadow rather than glass with a lit edge; square corners, since a filing
+has none; Newsreader display / Archivo text / Noto Naskh + Tajawal for the Arabic that is product
+data, not decoration; authored product surfaces, no stock imagery.
 STORY: A managing partner sees their own file — Arabic matter names, Law 12/2003, client-money
 ledgers — running inside one system, understands that the AI cites rather than guesses, and books
 a demo.
@@ -86,17 +87,15 @@ verdict, and DESIGN.md.
      =================================================================== -->
 <header class="nav" id="nav" data-nav>
   <div class="nav-inner shell shell--wide">
-    <a class="wordmark" href="#top" aria-label="LegalOS — home">
-      <svg class="wordmark-mark" viewBox="0 0 32 32" aria-hidden="true">
-        <!-- A balance beam resolved into a bracket: the scale of law drawn
-             as the two halves of a system closing on one axis. -->
-        <path d="M16 4.5v23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <path d="M5.5 10.5h21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <path d="M5.5 10.5 2 18.4a3.5 3.5 0 0 0 7 0zM26.5 10.5 23 18.4a3.5 3.5 0 0 0 7 0z"
-              fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-        <circle cx="16" cy="7" r="2.6" fill="var(--brass)"/>
-      </svg>
-      <span class="wordmark-text">Legal<span class="wordmark-os">OS</span></span>
+    <!-- The mark is outlined from Archivo 600, not set in it: the same artwork
+         the product ships (web/lib/brand/marks.ts), so the page and the app
+         cannot drift. The counter is knocked out rather than filled, which is
+         why it works on Paper here and on Ink inside the final CTA. -->
+    <a class="wordmark" href="#top" aria-label="alsigil — home">
+      <svg viewBox="0 -723 3008.39 905" role="img" aria-label="alsigil">
+      <path d="M0,-337a210,210 0 1,0 420,0a210,210 0 1,0 -420,0ZM132.39,-337a77.61,77.61 0 1,0 155.22,0a77.61,77.61 0 1,0 -155.22,0Z" fill="#A6301F" fill-rule="evenodd"/>
+      <path d="M200 12Q178 12 150 6Q121 1 94 -14Q68 -29 51 -58Q34 -88 34 -136Q34 -190 58 -226Q82 -261 126 -282Q169 -302 230 -310Q290 -319 362 -319V-362Q362 -385 355 -403Q348 -421 330 -432Q311 -442 274 -442Q237 -442 216 -433Q195 -424 187 -411Q179 -398 179 -384V-370H61Q60 -375 60 -380Q60 -385 60 -392Q60 -437 87 -470Q114 -503 162 -520Q210 -538 273 -538Q345 -538 392 -518Q438 -498 461 -461Q484 -424 484 -371V-123Q484 -104 495 -96Q506 -88 519 -88H551V-4Q541 0 522 6Q503 11 475 11Q449 11 428 2Q408 -6 394 -22Q380 -38 374 -60H368Q351 -39 328 -22Q304 -6 272 3Q241 12 200 12ZM237 -88Q267 -88 290 -97Q314 -106 330 -122Q345 -138 354 -161Q362 -184 362 -211V-235Q307 -235 260 -228Q214 -221 186 -202Q159 -183 159 -148Q159 -130 168 -116Q176 -103 194 -96Q211 -88 237 -88Z M571 0V-723H693V0Z M978 12Q921 12 878 -0Q835 -13 806 -35Q777 -57 762 -86Q748 -116 748 -151Q748 -156 748 -160Q749 -164 749 -166H869Q869 -164 869 -162Q869 -160 869 -158Q870 -131 886 -114Q902 -98 928 -91Q954 -84 983 -84Q1009 -84 1032 -90Q1056 -95 1072 -108Q1087 -120 1087 -140Q1087 -166 1067 -180Q1047 -194 1014 -203Q982 -212 945 -222Q912 -231 879 -242Q846 -253 820 -270Q793 -287 776 -314Q760 -341 760 -381Q760 -420 777 -449Q794 -478 824 -498Q854 -517 895 -527Q936 -537 984 -537Q1031 -537 1070 -527Q1108 -517 1136 -498Q1165 -480 1180 -454Q1196 -427 1196 -395Q1196 -388 1196 -381Q1195 -374 1195 -373H1076V-380Q1076 -399 1064 -412Q1053 -426 1032 -434Q1010 -442 978 -442Q954 -442 936 -438Q918 -434 906 -427Q895 -420 889 -411Q883 -402 883 -391Q883 -372 898 -361Q913 -350 938 -342Q964 -334 994 -325Q1030 -315 1068 -304Q1106 -294 1138 -278Q1171 -262 1191 -233Q1211 -204 1211 -156Q1211 -110 1194 -78Q1176 -45 1144 -26Q1113 -6 1070 3Q1028 12 978 12Z M1264 -607V-723H1386V-607ZM1264 0V-526H1386V0Z M1553 182Q1518 182 1487 168Q1456 154 1437 126Q1418 99 1418 59Q1418 15 1444 -10Q1469 -36 1500 -49Q1477 -61 1462 -81Q1448 -101 1448 -129Q1448 -167 1476 -190Q1504 -212 1540 -219Q1503 -242 1484 -278Q1464 -314 1464 -360Q1464 -415 1490 -454Q1517 -494 1568 -516Q1619 -538 1691 -538Q1720 -538 1747 -534Q1774 -530 1796 -522Q1831 -543 1844 -570Q1857 -596 1858 -613H1977Q1977 -578 1964 -551Q1950 -524 1926 -506Q1902 -489 1868 -481Q1893 -459 1906 -428Q1919 -397 1919 -360Q1919 -305 1894 -265Q1868 -225 1818 -203Q1769 -181 1697 -181H1616Q1595 -181 1584 -172Q1572 -163 1572 -147Q1572 -134 1582 -124Q1593 -114 1612 -114H1842Q1901 -114 1940 -76Q1978 -37 1978 23Q1978 68 1954 104Q1931 140 1889 161Q1847 182 1791 182ZM1597 94H1790Q1809 94 1824 88Q1838 81 1846 69Q1855 57 1855 42Q1855 16 1838 3Q1822 -10 1798 -10H1597Q1573 -10 1557 4Q1541 19 1541 42Q1541 65 1556 80Q1572 94 1597 94ZM1692 -267Q1745 -267 1772 -292Q1798 -316 1798 -360Q1798 -404 1772 -428Q1745 -452 1692 -452Q1639 -452 1612 -428Q1586 -404 1586 -360Q1586 -331 1598 -310Q1609 -289 1632 -278Q1656 -267 1692 -267Z M2007 -607V-723H2129V-607ZM2007 0V-526H2129V0Z M2209 0V-723H2331V0Z" fill="#12161C" transform="translate(677.39,0)"/>
+    </svg>
     </a>
 
     <nav class="nav-links" aria-label="Primary">
@@ -197,8 +196,8 @@ verdict, and DESIGN.md.
 
     <div class="hero-scrim"></div>
     <div class="hero-vignette"></div>
-    <div class="field field--violet hero-field-a"></div>
-    <div class="field field--navy hero-field-b"></div>
+    <div class="field field--grid hero-field-a"></div>
+    <div class="field field--seal hero-field-b"></div>
   </div>
 
   <div class="hero-content shell">
@@ -218,7 +217,7 @@ verdict, and DESIGN.md.
       <a class="btn btn--solid btn--lg" href="/demo">Book a Demo</a>
       <button class="btn btn--ghost btn--lg" type="button" data-lightbox-open>
         <svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>
-        <span data-tour-label>See LegalOS in action</span>
+        <span data-tour-label>See alsigil in action</span>
       </button>
     </div>
     <ul class="hero-proof" data-reveal style="--reveal-delay:280ms">
@@ -344,7 +343,7 @@ verdict, and DESIGN.md.
 <!-- ===================================================================
      LOGO MARQUEE
      =================================================================== -->
-<section class="section section--tight marquee-sec" aria-label="Firms using LegalOS">
+<section class="section section--tight marquee-sec" aria-label="Firms using alsigil">
   <p class="marquee-label shell" data-reveal>Trusted by firms from solo practice to regional counsel</p>
   <div class="marquee" data-marquee>
     <div class="marquee-track">
@@ -364,7 +363,7 @@ verdict, and DESIGN.md.
      MISSION
      =================================================================== -->
 <section class="section mission" id="company">
-  <div class="field field--navy mission-field" aria-hidden="true"></div>
+  <div class="field field--grid mission-field" aria-hidden="true"></div>
   <div class="shell">
     <p class="eyebrow" data-reveal>Why we built it</p>
     <p class="mission-statement" data-reveal style="--reveal-delay:80ms">
@@ -375,7 +374,7 @@ verdict, and DESIGN.md.
     </p>
     <p class="mission-close body-2" data-reveal style="--reveal-delay:160ms">
       None of that is legal work. It is the tax a fragmented stack charges a firm for existing.
-      LegalOS is one system for the whole file, and the research engine underneath it reads the
+      alsigil is one system for the whole file, and the research engine underneath it reads the
       statute, not the internet.
     </p>
   </div>
@@ -498,7 +497,7 @@ verdict, and DESIGN.md.
      FEATURES — interactive tabs, accordion below 900px
      =================================================================== -->
 <section class="section features" id="features">
-  <div class="field field--violet features-field" aria-hidden="true"></div>
+  <div class="field field--grid features-field" aria-hidden="true"></div>
   <div class="shell">
     <div class="section-head section-head--center" data-reveal>
       <p class="eyebrow eyebrow--center">Four cost centres</p>
@@ -657,12 +656,12 @@ verdict, and DESIGN.md.
               <div class="ui-graph">
                 <svg viewBox="0 0 560 180" preserveAspectRatio="none" aria-hidden="true">
                   <defs><linearGradient id="gWip" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#8E7CFF" stop-opacity=".45"/>
-                    <stop offset="100%" stop-color="#8E7CFF" stop-opacity="0"/>
+                    <stop offset="0%" stop-color="#A6301F" stop-opacity=".45"/>
+                    <stop offset="100%" stop-color="#A6301F" stop-opacity="0"/>
                   </linearGradient></defs>
                   <path class="ui-grid-l" d="M0 45h560M0 90h560M0 135h560"/>
                   <path d="M0 150 L80 138 L160 142 L240 112 L320 96 L400 74 L480 62 L560 38 L560 180 L0 180Z" fill="url(#gWip)"/>
-                  <path d="M0 150 L80 138 L160 142 L240 112 L320 96 L400 74 L480 62 L560 38" fill="none" stroke="#A79BFF" stroke-width="2" stroke-linejoin="round"/>
+                  <path d="M0 150 L80 138 L160 142 L240 112 L320 96 L400 74 L480 62 L560 38" fill="none" stroke="#12161C" stroke-width="2" stroke-linejoin="round"/>
                   <path d="M0 168 L80 160 L160 164 L240 152 L320 150 L400 140 L480 142 L560 132" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.6" stroke-dasharray="4 5"/>
                 </svg>
                 <span class="ui-legend"><i class="is-v"></i>Billed value<i class="is-d"></i>Written off</span>
@@ -702,7 +701,7 @@ verdict, and DESIGN.md.
             behind each finding. Ask it to draft, and it drafts from your firm's templates, with
             the citation attached. When the corpus cannot support an answer, it says so instead
             of inventing one.</p>
-          <a class="btn btn--violet" href="/demo?team=sales">Talk to Sales</a>
+          <a class="btn btn--seal" href="/demo?team=sales">Talk to Sales</a>
         </div>
         <div class="sol-hero-shot" aria-hidden="true">
           <div class="ui ui--sm">
@@ -754,7 +753,7 @@ verdict, and DESIGN.md.
 <section class="section section--tight testimonial-sec">
   <div class="shell shell--wide">
     <article class="pane testimonial" data-reveal>
-      <div class="field field--navy testimonial-field" aria-hidden="true"></div>
+      <div class="field field--seal testimonial-field" aria-hidden="true"></div>
       <!-- The plate is authored, not decorative filler: a firm's brass door
            plate. Drop a real headshot at the img src below and it takes over
            the same slot — the plate stays as the fallback. -->
@@ -773,7 +772,7 @@ verdict, and DESIGN.md.
         <blockquote class="tm-quote">
           <p>“We were nine lawyers doing the work of nine lawyers and the administration of
             twenty. Every month ended the same way: three people rebuilding time entries from
-            memory and a partner reconciling the client account by hand. LegalOS did not make us
+            memory and a partner reconciling the client account by hand. alsigil did not make us
             work harder. It gave us back the hours we were already working.”</p>
         </blockquote>
         <div class="tm-foot">
@@ -794,7 +793,7 @@ verdict, and DESIGN.md.
 <!-- ===================================================================
      STATS BAND
      =================================================================== -->
-<section class="section section--tight stats-sec" aria-label="LegalOS at scale">
+<section class="section section--tight stats-sec" aria-label="alsigil at scale">
   <div class="shell">
     <div class="section-head section-head--center" data-reveal>
       <p class="eyebrow eyebrow--center">Platform figures</p>
@@ -825,7 +824,7 @@ verdict, and DESIGN.md.
     <div class="section-head section-head--center" data-reveal>
       <p class="eyebrow eyebrow--center">Integrations</p>
       <h2 class="display display--section">Fits the stack your firm already runs on</h2>
-      <p class="lede">Nobody changes email client to change practice management. LegalOS reads and
+      <p class="lede">Nobody changes email client to change practice management. alsigil reads and
         writes where the work already happens.</p>
     </div>
 
@@ -883,7 +882,7 @@ verdict, and DESIGN.md.
      PLATFORM SHOWCASE
      =================================================================== -->
 <section class="section showcase">
-  <div class="field field--violet showcase-field" aria-hidden="true"></div>
+  <div class="field field--grid showcase-field" aria-hidden="true"></div>
   <div class="shell">
     <div class="showcase-grid">
       <div class="showcase-copy" data-reveal>
@@ -913,7 +912,7 @@ verdict, and DESIGN.md.
                   <svg viewBox="0 0 560 120" preserveAspectRatio="none" aria-hidden="true">
                     <path class="ui-grid-l" d="M0 30h560M0 60h560M0 90h560"/>
                     <path d="M0 92 L62 88 L124 94 L186 76 L248 70 L310 58 L372 52 L434 40 L496 34 L560 22"
-                          fill="none" stroke="#A79BFF" stroke-width="2" stroke-linejoin="round"/>
+                          fill="none" stroke="#12161C" stroke-width="2" stroke-linejoin="round"/>
                     <path d="M0 104 L62 103 L124 106 L186 100 L248 101 L310 96 L372 97 L434 92 L496 93 L560 88"
                           fill="none" stroke="rgba(242,193,78,.7)" stroke-width="1.8" stroke-linejoin="round"/>
                   </svg>
@@ -924,7 +923,7 @@ verdict, and DESIGN.md.
                 <div class="ui-donut">
                   <svg viewBox="0 0 120 120" aria-hidden="true">
                     <circle cx="60" cy="60" r="46" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="14"/>
-                    <circle cx="60" cy="60" r="46" fill="none" stroke="#8E7CFF" stroke-width="14" stroke-linecap="round"
+                    <circle cx="60" cy="60" r="46" fill="none" stroke="#A6301F" stroke-width="14" stroke-linecap="round"
                             stroke-dasharray="252 289" transform="rotate(-90 60 60)"/>
                     <circle cx="60" cy="60" r="46" fill="none" stroke="var(--warn)" stroke-width="14" stroke-linecap="round"
                             stroke-dasharray="46 289" stroke-dashoffset="-256" transform="rotate(-90 60 60)"/>
@@ -994,11 +993,11 @@ verdict, and DESIGN.md.
           <span class="cs-art-label">Collections, month by month</span>
           <svg class="cs-chart" viewBox="0 0 320 150" preserveAspectRatio="none">
             <defs><linearGradient id="gCs" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#8E7CFF" stop-opacity=".4"/>
-              <stop offset="100%" stop-color="#8E7CFF" stop-opacity="0"/>
+              <stop offset="0%" stop-color="#A6301F" stop-opacity=".4"/>
+              <stop offset="100%" stop-color="#A6301F" stop-opacity="0"/>
             </linearGradient></defs>
             <path d="M0 118 L53 112 L106 104 L160 78 L213 54 L266 34 L320 14 L320 150 L0 150Z" fill="url(#gCs)"/>
-            <path d="M0 118 L53 112 L106 104 L160 78 L213 54 L266 34 L320 14" fill="none" stroke="#A79BFF" stroke-width="2.2" stroke-linejoin="round"/>
+            <path d="M0 118 L53 112 L106 104 L160 78 L213 54 L266 34 L320 14" fill="none" stroke="#12161C" stroke-width="2.2" stroke-linejoin="round"/>
             <path d="M0 126 L53 124 L106 127 L160 122 L213 125 L266 121 L320 123" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.6" stroke-dasharray="4 6"/>
           </svg>
           <span class="cs-art-bars"><i style="--h:22%"></i><i style="--h:31%"></i><i style="--h:38%"></i><i style="--h:58%"></i><i style="--h:74%"></i><i style="--h:88%"></i><i style="--h:100%"></i></span>
@@ -1101,7 +1100,7 @@ verdict, and DESIGN.md.
             <rect x="210" y="54" width="130" height="132" rx="10" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.18)"/>
             <path d="M78 92h94M78 112h68M78 132h84M78 152h52" stroke="rgba(142,124,255,.42)" stroke-width="3" stroke-linecap="round"/>
             <path d="M228 92h94M228 112h68M228 132h84M228 152h52" stroke="rgba(255,255,255,.22)" stroke-width="3" stroke-linecap="round"/>
-            <circle cx="200" cy="120" r="19" fill="#0B0C10" stroke="rgba(255,255,255,.4)" stroke-width="1.8"/>
+            <circle cx="200" cy="120" r="19" fill="#F6F3EE" stroke="rgba(18,22,28,.35)" stroke-width="1.8"/>
             <path d="M192 120h16M200 112v16" stroke="rgba(255,255,255,.4)" stroke-width="1.8" stroke-linecap="round"/>
           </svg>
         </span>
@@ -1128,8 +1127,8 @@ verdict, and DESIGN.md.
         <span class="cta-weave"></span>
         <span class="cta-sheen"></span>
       </div>
-      <div class="field field--violet cta-field-a" aria-hidden="true"></div>
-      <div class="field field--navy cta-field-b" aria-hidden="true"></div>
+      <div class="field field--seal cta-field-a" aria-hidden="true"></div>
+      <div class="field field--seal cta-field-b" aria-hidden="true"></div>
 
       <div class="cta-body">
         <p class="eyebrow eyebrow--center">Get started</p>
@@ -1155,14 +1154,11 @@ verdict, and DESIGN.md.
   <div class="shell">
     <div class="foot-top">
       <div class="foot-news">
-        <a class="wordmark foot-mark" href="#top" aria-label="LegalOS — home">
-          <svg class="wordmark-mark" viewBox="0 0 32 32" aria-hidden="true">
-            <path d="M16 4.5v23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            <path d="M5.5 10.5h21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            <path d="M5.5 10.5 2 18.4a3.5 3.5 0 0 0 7 0zM26.5 10.5 23 18.4a3.5 3.5 0 0 0 7 0z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-            <circle cx="16" cy="7" r="2.6" fill="var(--brass)"/>
-          </svg>
-          <span class="wordmark-text">Legal<span class="wordmark-os">OS</span></span>
+        <a class="wordmark wordmark--foot foot-mark" href="#top" aria-label="alsigil — home">
+          <svg viewBox="0 -723 3008.39 905" role="img" aria-label="alsigil">
+      <path d="M0,-337a210,210 0 1,0 420,0a210,210 0 1,0 -420,0ZM132.39,-337a77.61,77.61 0 1,0 155.22,0a77.61,77.61 0 1,0 -155.22,0Z" fill="#A6301F" fill-rule="evenodd"/>
+      <path d="M200 12Q178 12 150 6Q121 1 94 -14Q68 -29 51 -58Q34 -88 34 -136Q34 -190 58 -226Q82 -261 126 -282Q169 -302 230 -310Q290 -319 362 -319V-362Q362 -385 355 -403Q348 -421 330 -432Q311 -442 274 -442Q237 -442 216 -433Q195 -424 187 -411Q179 -398 179 -384V-370H61Q60 -375 60 -380Q60 -385 60 -392Q60 -437 87 -470Q114 -503 162 -520Q210 -538 273 -538Q345 -538 392 -518Q438 -498 461 -461Q484 -424 484 -371V-123Q484 -104 495 -96Q506 -88 519 -88H551V-4Q541 0 522 6Q503 11 475 11Q449 11 428 2Q408 -6 394 -22Q380 -38 374 -60H368Q351 -39 328 -22Q304 -6 272 3Q241 12 200 12ZM237 -88Q267 -88 290 -97Q314 -106 330 -122Q345 -138 354 -161Q362 -184 362 -211V-235Q307 -235 260 -228Q214 -221 186 -202Q159 -183 159 -148Q159 -130 168 -116Q176 -103 194 -96Q211 -88 237 -88Z M571 0V-723H693V0Z M978 12Q921 12 878 -0Q835 -13 806 -35Q777 -57 762 -86Q748 -116 748 -151Q748 -156 748 -160Q749 -164 749 -166H869Q869 -164 869 -162Q869 -160 869 -158Q870 -131 886 -114Q902 -98 928 -91Q954 -84 983 -84Q1009 -84 1032 -90Q1056 -95 1072 -108Q1087 -120 1087 -140Q1087 -166 1067 -180Q1047 -194 1014 -203Q982 -212 945 -222Q912 -231 879 -242Q846 -253 820 -270Q793 -287 776 -314Q760 -341 760 -381Q760 -420 777 -449Q794 -478 824 -498Q854 -517 895 -527Q936 -537 984 -537Q1031 -537 1070 -527Q1108 -517 1136 -498Q1165 -480 1180 -454Q1196 -427 1196 -395Q1196 -388 1196 -381Q1195 -374 1195 -373H1076V-380Q1076 -399 1064 -412Q1053 -426 1032 -434Q1010 -442 978 -442Q954 -442 936 -438Q918 -434 906 -427Q895 -420 889 -411Q883 -402 883 -391Q883 -372 898 -361Q913 -350 938 -342Q964 -334 994 -325Q1030 -315 1068 -304Q1106 -294 1138 -278Q1171 -262 1191 -233Q1211 -204 1211 -156Q1211 -110 1194 -78Q1176 -45 1144 -26Q1113 -6 1070 3Q1028 12 978 12Z M1264 -607V-723H1386V-607ZM1264 0V-526H1386V0Z M1553 182Q1518 182 1487 168Q1456 154 1437 126Q1418 99 1418 59Q1418 15 1444 -10Q1469 -36 1500 -49Q1477 -61 1462 -81Q1448 -101 1448 -129Q1448 -167 1476 -190Q1504 -212 1540 -219Q1503 -242 1484 -278Q1464 -314 1464 -360Q1464 -415 1490 -454Q1517 -494 1568 -516Q1619 -538 1691 -538Q1720 -538 1747 -534Q1774 -530 1796 -522Q1831 -543 1844 -570Q1857 -596 1858 -613H1977Q1977 -578 1964 -551Q1950 -524 1926 -506Q1902 -489 1868 -481Q1893 -459 1906 -428Q1919 -397 1919 -360Q1919 -305 1894 -265Q1868 -225 1818 -203Q1769 -181 1697 -181H1616Q1595 -181 1584 -172Q1572 -163 1572 -147Q1572 -134 1582 -124Q1593 -114 1612 -114H1842Q1901 -114 1940 -76Q1978 -37 1978 23Q1978 68 1954 104Q1931 140 1889 161Q1847 182 1791 182ZM1597 94H1790Q1809 94 1824 88Q1838 81 1846 69Q1855 57 1855 42Q1855 16 1838 3Q1822 -10 1798 -10H1597Q1573 -10 1557 4Q1541 19 1541 42Q1541 65 1556 80Q1572 94 1597 94ZM1692 -267Q1745 -267 1772 -292Q1798 -316 1798 -360Q1798 -404 1772 -428Q1745 -452 1692 -452Q1639 -452 1612 -428Q1586 -404 1586 -360Q1586 -331 1598 -310Q1609 -289 1632 -278Q1656 -267 1692 -267Z M2007 -607V-723H2129V-607ZM2007 0V-526H2129V0Z M2209 0V-723H2331V0Z" fill="#12161C" transform="translate(677.39,0)"/>
+    </svg>
         </a>
         <p class="foot-news-copy">One note a month on running a firm well: collections, client
           funds, and what the law actually changed. No product announcements.</p>
@@ -1229,7 +1225,7 @@ verdict, and DESIGN.md.
 
     <div class="foot-legal">
       <p class="foot-compliance">
-        LegalOS is practice-management and legal-research software. It does not provide legal
+        alsigil is practice-management and legal-research software. It does not provide legal
         advice, and its research output is a drafting aid for a qualified lawyer, not a
         substitute for one. Firm names, client matters, quotations, customer counts and
         volume figures on this page are illustrative samples. Certifications and integrations
@@ -1237,7 +1233,7 @@ verdict, and DESIGN.md.
         connector availability are confirmed under NDA during a demo.
       </p>
       <div class="foot-meta">
-        <span>© 2026 LegalOS. All rights reserved.</span>
+        <span>© 2026 alsigil. All rights reserved.</span>
         <span class="foot-locale"><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg>Cairo · English<i>/</i><a href="/ar" class="ar">العربية</a></span>
         <span class="foot-credit">
           Built with
@@ -1249,7 +1245,10 @@ verdict, and DESIGN.md.
     </div>
   </div>
 
-  <div class="foot-watermark" aria-hidden="true"><span>LegalOS</span></div>
+  <div class="foot-watermark" aria-hidden="true"><svg viewBox="0 -723 3008.39 905" aria-hidden="true">
+      <path class="wm-punch" d="M0,-337a210,210 0 1,0 420,0a210,210 0 1,0 -420,0ZM132.39,-337a77.61,77.61 0 1,0 155.22,0a77.61,77.61 0 1,0 -155.22,0Z" fill-rule="evenodd"/>
+      <path class="wm-word" d="M200 12Q178 12 150 6Q121 1 94 -14Q68 -29 51 -58Q34 -88 34 -136Q34 -190 58 -226Q82 -261 126 -282Q169 -302 230 -310Q290 -319 362 -319V-362Q362 -385 355 -403Q348 -421 330 -432Q311 -442 274 -442Q237 -442 216 -433Q195 -424 187 -411Q179 -398 179 -384V-370H61Q60 -375 60 -380Q60 -385 60 -392Q60 -437 87 -470Q114 -503 162 -520Q210 -538 273 -538Q345 -538 392 -518Q438 -498 461 -461Q484 -424 484 -371V-123Q484 -104 495 -96Q506 -88 519 -88H551V-4Q541 0 522 6Q503 11 475 11Q449 11 428 2Q408 -6 394 -22Q380 -38 374 -60H368Q351 -39 328 -22Q304 -6 272 3Q241 12 200 12ZM237 -88Q267 -88 290 -97Q314 -106 330 -122Q345 -138 354 -161Q362 -184 362 -211V-235Q307 -235 260 -228Q214 -221 186 -202Q159 -183 159 -148Q159 -130 168 -116Q176 -103 194 -96Q211 -88 237 -88Z M571 0V-723H693V0Z M978 12Q921 12 878 -0Q835 -13 806 -35Q777 -57 762 -86Q748 -116 748 -151Q748 -156 748 -160Q749 -164 749 -166H869Q869 -164 869 -162Q869 -160 869 -158Q870 -131 886 -114Q902 -98 928 -91Q954 -84 983 -84Q1009 -84 1032 -90Q1056 -95 1072 -108Q1087 -120 1087 -140Q1087 -166 1067 -180Q1047 -194 1014 -203Q982 -212 945 -222Q912 -231 879 -242Q846 -253 820 -270Q793 -287 776 -314Q760 -341 760 -381Q760 -420 777 -449Q794 -478 824 -498Q854 -517 895 -527Q936 -537 984 -537Q1031 -537 1070 -527Q1108 -517 1136 -498Q1165 -480 1180 -454Q1196 -427 1196 -395Q1196 -388 1196 -381Q1195 -374 1195 -373H1076V-380Q1076 -399 1064 -412Q1053 -426 1032 -434Q1010 -442 978 -442Q954 -442 936 -438Q918 -434 906 -427Q895 -420 889 -411Q883 -402 883 -391Q883 -372 898 -361Q913 -350 938 -342Q964 -334 994 -325Q1030 -315 1068 -304Q1106 -294 1138 -278Q1171 -262 1191 -233Q1211 -204 1211 -156Q1211 -110 1194 -78Q1176 -45 1144 -26Q1113 -6 1070 3Q1028 12 978 12Z M1264 -607V-723H1386V-607ZM1264 0V-526H1386V0Z M1553 182Q1518 182 1487 168Q1456 154 1437 126Q1418 99 1418 59Q1418 15 1444 -10Q1469 -36 1500 -49Q1477 -61 1462 -81Q1448 -101 1448 -129Q1448 -167 1476 -190Q1504 -212 1540 -219Q1503 -242 1484 -278Q1464 -314 1464 -360Q1464 -415 1490 -454Q1517 -494 1568 -516Q1619 -538 1691 -538Q1720 -538 1747 -534Q1774 -530 1796 -522Q1831 -543 1844 -570Q1857 -596 1858 -613H1977Q1977 -578 1964 -551Q1950 -524 1926 -506Q1902 -489 1868 -481Q1893 -459 1906 -428Q1919 -397 1919 -360Q1919 -305 1894 -265Q1868 -225 1818 -203Q1769 -181 1697 -181H1616Q1595 -181 1584 -172Q1572 -163 1572 -147Q1572 -134 1582 -124Q1593 -114 1612 -114H1842Q1901 -114 1940 -76Q1978 -37 1978 23Q1978 68 1954 104Q1931 140 1889 161Q1847 182 1791 182ZM1597 94H1790Q1809 94 1824 88Q1838 81 1846 69Q1855 57 1855 42Q1855 16 1838 3Q1822 -10 1798 -10H1597Q1573 -10 1557 4Q1541 19 1541 42Q1541 65 1556 80Q1572 94 1597 94ZM1692 -267Q1745 -267 1772 -292Q1798 -316 1798 -360Q1798 -404 1772 -428Q1745 -452 1692 -452Q1639 -452 1612 -428Q1586 -404 1586 -360Q1586 -331 1598 -310Q1609 -289 1632 -278Q1656 -267 1692 -267Z M2007 -607V-723H2129V-607ZM2007 0V-526H2129V0Z M2209 0V-723H2331V0Z" transform="translate(677.39,0)"/>
+    </svg></div>
 </footer>
 
 <!-- ===================================================================
@@ -1259,7 +1258,7 @@ verdict, and DESIGN.md.
   <div class="lightbox-scrim" data-lightbox-close></div>
   <div class="lightbox-inner" role="dialog" aria-modal="true" aria-labelledby="lb-title">
     <div class="lightbox-head">
-      <h2 class="lightbox-title" id="lb-title" data-tour-title>See LegalOS</h2>
+      <h2 class="lightbox-title" id="lb-title" data-tour-title>See alsigil</h2>
       <button class="lightbox-close" type="button" data-lightbox-close>
         <svg class="ico" aria-hidden="true"><use href="#i-close"/></svg><span class="sr-only">Close</span>
       </button>
