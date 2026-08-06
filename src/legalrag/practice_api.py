@@ -24,7 +24,7 @@ from psycopg.errors import ForeignKeyViolation, UniqueViolation
 from pydantic import BaseModel, Field
 
 from legalrag.clerk import get_current_membership, get_current_user_id
-from legalrag.db import get_connection
+from legalrag.db import db
 from legalrag.orgs import Membership
 from legalrag.practice import NotFoundError, activity, billing, cases, clients
 from legalrag.practice import communications as comms
@@ -36,12 +36,9 @@ from legalrag.practice import expenses, matters, portals, tasks, time_entries, t
 router = APIRouter(prefix="/api/orgs/{organization_id}", tags=["practice"])
 
 
-def db():
-    conn = get_connection()
-    try:
-        yield conn
-    finally:
-        conn.close()
+# Re-exported: `db` moved to legalrag.db so clerk.py can depend on the same
+# callable and share one pooled connection per request with the route bodies.
+__all__ = ["router", "db"]
 
 
 def found(value, what: str):

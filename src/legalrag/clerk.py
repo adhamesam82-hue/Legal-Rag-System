@@ -7,6 +7,7 @@ from __future__ import annotations
 from functools import lru_cache
 
 import httpx
+import psycopg
 from fastapi import Depends, HTTPException, Path, Request
 from fastapi_clerk_auth import ClerkConfig, ClerkHTTPBearer, HTTPAuthorizationCredentials
 
@@ -15,7 +16,7 @@ from legalrag.config import (
     get_clerk_secret_key,
     get_dev_auth_user,
 )
-from legalrag.db import get_connection
+from legalrag.db import db
 from legalrag.orgs import Membership, get_membership
 
 
@@ -26,7 +27,28 @@ def _clerk_guard() -> ClerkHTTPBearer:
     # on startup even for routes that need no auth at all -- every other
     # config getter in this codebase (get_database_url, get_model_spec) is
     # read lazily for the same reason.
-    return ClerkHTTPBearer(config=ClerkConfig(jwks_url=get_clerk_jwks_url()))
+    return ClerkHTTPBearer(
+        config=ClerkConfig(
+            jwks_url=get_clerk_jwks_url(),
+            # Cache the signing keys themselves, not just the JWK set.
+            #
+            # Off by default in fastapi-clerk-auth, which leaves only PyJWT's
+            # JWK-set cache and its 300-second lifespan: every five minutes the
+            # next request to arrive refetched Clerk's JWKS over HTTPS, and
+            # since ClerkHTTPBearer.__call__ verifies inline rather than in a
+            # threadpool, that fetch ran on the event loop and stalled every
+            # other request with it. A screen firing three requests at once
+            # only had to be unlucky in one of them to feel it.
+            #
+            # With this on, PyJWT keys an LRU cache by the token's `kid`, which
+            # has no expiry -- so the fetch happens once per signing key for
+            # the life of the process instead of twelve times an hour. Clerk
+            # rotates keys rarely and publishes the new `kid` in the tokens it
+            # signs, so a rotation is a cache miss that fetches once, not a
+            # class of request that starts failing.
+            jwks_cache_keys=True,
+        )
+    )
 
 
 async def _verify_clerk_session(
@@ -58,14 +80,19 @@ def get_current_user_id(
 def get_current_membership(
     organization_id: int = Path(...),
     clerk_user_id: str = Depends(get_current_user_id),
+    conn: psycopg.Connection = Depends(db),
 ) -> Membership:
     """The caller's membership in the organization named by the path.
 
     403s if they authenticated successfully but aren't a member of *this*
     organization -- a valid session is not the same as access to this org.
+
+    Takes the request's connection rather than opening one. FastAPI resolves
+    `db` once per request, so this check and the route body it guards share a
+    single pooled connection: authorising a request no longer costs a
+    connection handshake of its own.
     """
-    with get_connection() as conn:
-        membership = get_membership(conn, organization_id, clerk_user_id)
+    membership = get_membership(conn, organization_id, clerk_user_id)
     if membership is None:
         raise HTTPException(
             status_code=403, detail="Not a member of this organization"
