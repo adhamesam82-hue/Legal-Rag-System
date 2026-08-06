@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import logging
 from collections.abc import AsyncIterator, Iterator
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Literal
 
@@ -46,7 +46,7 @@ from legalrag.conversations import (
     rename_conversation,
     title_from_question,
 )
-from legalrag.db import close_pool, get_connection, get_pool
+from legalrag.db import close_pool, get_pool, request_connection
 from legalrag.email import send_invite_email
 from legalrag.explain import explain_article
 from legalrag.invites import (
@@ -76,6 +76,7 @@ from legalrag.orgs import (
 from legalrag.pipeline import ask, ask_stream, retrieve_for
 from legalrag.practice_api import router as practice_router
 from legalrag.retrieve import Candidate
+
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -144,13 +145,16 @@ if get_dev_auth_user():
 Jurisdiction = Literal["EG", "SA"]
 
 
-@contextmanager
-def db():
-    conn = get_connection()
-    try:
-        yield conn
-    finally:
-        conn.close()
+# The corpus, research and conversation routes below borrow from the same pool
+# as the practice API. They used to open a connection each: ~12ms against the
+# local Postgres and a TLS handshake against Neon, for queries that answer in
+# single digits. Still named `db` because twenty-one routes say `with db()`.
+#
+# Safe on write semantics: the pool commits on clean exit where this used to
+# close without committing, but every write reached from here (conversations.py)
+# already commits explicitly, so there is never an open transaction relying on
+# that rollback. Committing a read-only transaction is a no-op.
+db = request_connection
 
 
 def upstream_error(exc: Exception) -> tuple[int, str]:
