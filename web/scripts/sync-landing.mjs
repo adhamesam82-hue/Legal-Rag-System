@@ -23,9 +23,11 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const SOURCE = path.resolve(here, "..", "..", "marketing");
 const DEST = path.resolve(here, "..", "public", "landing");
 
-// Only what the browser needs. DESIGN.md, README.md and .impeccable/ are
-// authoring artefacts and have no business on a public origin.
-const INCLUDE = ["index.html", "assets"];
+// Only what the browser needs. DESIGN.md, README.md, i18n/, scripts/ and
+// .impeccable/ are authoring artefacts and have no business on a public
+// origin — `ar/` is output, so it ships; the dictionary that generates it
+// does not.
+const INCLUDE = ["index.html", "ar", "assets"];
 
 if (!fs.existsSync(SOURCE)) {
   console.log(`[sync-landing] ${SOURCE} not present; keeping the committed copy at public/landing.`);
@@ -49,12 +51,20 @@ for (const entry of INCLUDE) {
 //
 // This covers href/src plus content= (the OG image) and poster= (both video
 // posters); a bare href/src pass silently leaves those two behind.
-const html = path.join(DEST, "index.html");
-if (fs.existsSync(html)) {
-  const patched = fs
-    .readFileSync(html, "utf8")
-    .replace(/(\b(?:href|src|content|poster)=")assets\//g, '$1/landing/assets/');
-  fs.writeFileSync(html, patched);
+for (const [page, prefix] of [
+  ["index.html", "assets/"],
+  // The Arabic page sits one level down and reaches assets with ../, which
+  // resolves against "/ar" rather than "/landing/ar/" for exactly the same
+  // reason. Same fix, different literal.
+  [path.join("ar", "index.html"), "../assets/"],
+]) {
+  const file = path.join(DEST, page);
+  if (!fs.existsSync(file)) continue;
+  const pattern = new RegExp(
+    `(\\b(?:href|src|content|poster)=")${prefix.replace(/[.]/g, "\\$&")}`,
+    "g",
+  );
+  fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace(pattern, "$1/landing/assets/"));
 }
 
 // Paths inside the script resolve against the document URL ("/"), not the

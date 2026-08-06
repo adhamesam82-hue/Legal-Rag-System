@@ -77,8 +77,14 @@
   --warn: #8A5F0B;
   --risk: var(--seal);
 
-  --font-display: 'Newsreader', 'Iowan Old Style', Georgia, serif;
-  --font-text: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  /* The Arabic faces are inside the same two stacks rather than behind a
+     `[lang=ar]` override. Every @font-face here declares a unicode-range, so
+     the browser resolves per character: Latin in Newsreader/Archivo, Arabic in
+     Naskh/Tajawal, in the same paragraph if the paragraph mixes them — which
+     this page's product surfaces do constantly. Nothing has to know which
+     language it is in. */
+  --font-display: 'Newsreader', 'Noto Naskh Arabic', 'Iowan Old Style', Georgia, serif;
+  --font-text: 'Archivo', 'Tajawal', ui-sans-serif, system-ui, sans-serif;
   --font-ar-doc: 'Noto Naskh Arabic', 'Segoe UI', serif;
   --font-ar-ui: 'Tajawal', 'Noto Naskh Arabic', sans-serif;
 
@@ -447,3 +453,50 @@ ul, ol { list-style: none; padding: 0; }
     transition-duration: 0.001ms !important;
   }
 }
+
+/* --- Arabic ---------------------------------------------------------------
+   Naskh has a small x-height relative to its em and carries diacritics above
+   and below, so Latin's sizes and leading read cramped. This is the whole
+   adjustment for the Arabic page: no mirrored stylesheet, because the layout
+   is written in logical properties throughout and `dir="rtl"` on <html> flips
+   it on its own.
+   -------------------------------------------------------------------------- */
+[lang="ar"] {
+  line-height: 1.75;
+}
+[lang="ar"] .display {
+  line-height: 1.32;
+  /* Tight tracking is a Latin device; naskh is already connected. */
+  letter-spacing: 0;
+}
+[lang="ar"] .display--hero { font-size: clamp(2.2rem, 5.2vw, 4.3rem); }
+[lang="ar"] .display--section { font-size: clamp(1.8rem, 3.5vw, 2.9rem); line-height: 1.34; }
+[lang="ar"] .display--sub { font-size: clamp(1.35rem, 2.1vw, 1.8rem); line-height: 1.4; }
+[lang="ar"] .lede,
+[lang="ar"] .body-2 { line-height: 1.9; }
+[lang="ar"] .mission-statement { line-height: 1.6; letter-spacing: 0; }
+/* Uppercase and wide tracking do nothing for a script with no case and
+   everything to break its joins. */
+[lang="ar"] .eyebrow,
+[lang="ar"] .foot-h,
+[lang="ar"] .marquee-label,
+[lang="ar"] .ins-cat,
+[lang="ar"] .tm-plate-role,
+[lang="ar"] .stat-l,
+[lang="ar"] .sol-tag {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.8rem;
+}
+[lang="ar"] .ui-rail-label,
+[lang="ar"] .ui-card-h,
+[lang="ar"] .ui-report-h,
+[lang="ar"] .ui-meta i,
+[lang="ar"] .ui-vault i,
+[lang="ar"] .ui-led-h i {
+  text-transform: none;
+  letter-spacing: 0;
+}
+/* The mark stays Latin — the identity sheet has no Arabic wordmark — so the
+   one lockup on the page keeps its own direction inside an RTL document. */
+[lang="ar"] .wordmark { direction: ltr; }

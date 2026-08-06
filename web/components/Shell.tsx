@@ -47,7 +47,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useMediaQuery } from "@astryxdesign/core/hooks";
 import { useTranslator, type TranslatorFn } from "@astryxdesign/core/i18n";
-import { useThemeMode } from "@/app/providers";
+import { PrefetchedNavLink, useThemeMode } from "@/app/providers";
 import { useLocale } from "@/lib/i18n/provider";
 import { Alsigil, AlsigilPunch } from "@/components/brand/Alsigil";
 
@@ -389,6 +389,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 label={t(item.labelKey)}
                 href={item.href}
+                // Warms the whole route payload so a click does not pay for
+                // one; see PrefetchedNavLink for why the default prefetch cannot.
+                // Scoped to the sidebar rather than set on LinkProvider: these
+                // are a bounded, known set, where a table's row links are not.
+                as={PrefetchedNavLink}
                 isSelected={isSelected}
                 icon={<Icon icon={item.icon} size="sm" className={item.ai ? AI_ICON_CLASS : undefined} />}
               />

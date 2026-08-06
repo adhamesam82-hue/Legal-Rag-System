@@ -26,7 +26,12 @@ const nextConfig = {
   // page.tsx, which would make it break silently if one were ever added back.
   async rewrites() {
     return {
-      beforeFiles: [{ source: "/", destination: "/landing/index.html" }],
+      beforeFiles: [
+        { source: "/", destination: "/landing/index.html" },
+        // The Arabic page is a real URL with its own hreflang, not a toggle.
+        { source: "/ar", destination: "/landing/ar/index.html" },
+        { source: "/ar/", destination: "/landing/ar/index.html" },
+      ],
       afterFiles: [],
       fallback: [],
     };

@@ -20,7 +20,13 @@ import {
 } from "react";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useAuth } from "@clerk/nextjs";
-import { ApiError, api, type Membership, type OrgMember } from "@/lib/api";
+import {
+  ApiError,
+  api,
+  onApiInvalidate,
+  type Membership,
+  type OrgMember,
+} from "@/lib/api";
 import { USING_CLERK } from "@/lib/auth-mode";
 import { practiceApi, type PracticeApi, type Role } from "@/lib/practice";
 
@@ -286,15 +292,111 @@ export interface Resource<T> {
 }
 
 /**
+ * The last value each resource produced, kept past the unmount of the screen
+ * that produced it.
+ *
+ * Without this every navigation is a cold start: `data` begins null, so
+ * DataView renders the spinner, and the screen stays on it until its requests
+ * come back. Clicking Cases, then Clients, then Cases again showed
+ * "جارٍ تحميل القضايا…" all three times, for rows that were already in memory.
+ *
+ * api.ts's GET cache cannot fix that by itself. It spares the round trip, but
+ * the fetch still resolves in a microtask after the effect runs, and effects
+ * run after the browser has painted -- so the spinner frame happens either
+ * way. The value has to be read *synchronously* during the first render, which
+ * is what this map is for; the refetch then runs behind the rows on screen.
+ *
+ * What is painted can therefore be one revalidation stale, so any write clears
+ * the map (below) rather than let a screen show rows the user just changed.
+ */
+const SNAPSHOT_LIMIT = 64;
+const snapshots = new Map<string, unknown>();
+
+/**
+ * `undefined` means no snapshot; a stored value may legitimately be null.
+ *
+ * Deliberately does not touch the map. It is called during render, and a
+ * render React discards must leave nothing behind -- recency is maintained by
+ * writeSnapshot instead, which every adopted snapshot reaches anyway when its
+ * revalidation lands.
+ */
+function peekSnapshot(key: string): unknown {
+  return snapshots.has(key) ? snapshots.get(key) : undefined;
+}
+
+function writeSnapshot(key: string, value: unknown) {
+  // Reinserted, not overwritten, so eviction drops the least recently *written*
+  // entry rather than the oldest -- opening sixty matters must not evict the
+  // list screen the user keeps returning to.
+  snapshots.delete(key);
+  snapshots.set(key, value);
+  if (snapshots.size > SNAPSHOT_LIMIT) {
+    const oldest = snapshots.keys().next();
+    if (!oldest.done) snapshots.delete(oldest.value);
+  }
+}
+
+// Writes drop the GET cache; these have to go with it, or the next visit to a
+// screen the write touched paints its pre-write rows.
+onApiInvalidate(() => snapshots.clear());
+
+/**
+ * A fetcher, optionally carrying the source text of the call site it stands in
+ * for.
+ *
+ * Only wrappers set it. A wrapper built inside a hook has one source text for
+ * every caller of that hook, so keying on it directly would hand two unrelated
+ * screens the same snapshot -- see useOptionalResource.
+ */
+type Fetcher<T> = ((practice: PracticeApi) => Promise<T>) & {
+  snapshotSource?: string;
+};
+
+/**
+ * Identifies a resource across mounts: which firm, which call site, which
+ * arguments.
+ *
+ * The call site is identified by the fetcher's own source text, because
+ * callers write it inline and pass no key. Two call sites whose source *and*
+ * deps both match are fetching the same thing, so sharing one entry returns
+ * the right value rather than the wrong one. Deps belong in the key for the
+ * same reason the effect below depends on them: /cases/7 and /cases/9 are not
+ * the same resource. The organization does too -- a snapshot must never cross
+ * from one firm to another.
+ *
+ * Returns null when deps will not serialise, which turns snapshotting off for
+ * that caller instead of guessing at a key that might collide.
+ */
+function snapshotKey(
+  organizationId: number,
+  fetcher: Fetcher<unknown>,
+  deps: unknown[],
+): string | null {
+  let serialisedDeps: string;
+  try {
+    serialisedDeps = JSON.stringify(deps) ?? "";
+  } catch {
+    return null;
+  }
+  // NUL-separated: it cannot occur in function source or in JSON, so no
+  // combination of the three parts can spell another key.
+  return [organizationId, fetcher.snapshotSource ?? String(fetcher), serialisedDeps]
+    .join("\u0000");
+}
+
+/**
  * Runs `fetcher` once the organization is known, and again whenever `deps`
  * change. `fetcher` is intentionally not a dependency -- callers write it
  * inline, so a new function identity every render would loop forever.
+ *
+ * A screen that has been loaded before paints from the snapshot map above on
+ * its first render and revalidates behind what is already shown.
  */
 export function useResource<T>(
   fetcher: (practice: PracticeApi) => Promise<T>,
   deps: unknown[],
 ): Resource<T> {
-  const { practice, orgConfirmed, loading: orgLoading } = useOrg();
+  const { practice, organizationId, orgConfirmed, loading: orgLoading } = useOrg();
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -302,9 +404,47 @@ export function useResource<T>(
 
   const fetcherRef = useRef(fetcher);
   fetcherRef.current = fetcher;
-  // Whether this hook has ever produced a value, read inside the effect without
-  // making `data` a dependency of it.
+
+  const key =
+    organizationId === null
+      ? null
+      : snapshotKey(organizationId, fetcher, deps);
+
+  /**
+   * Adopt the snapshot for `key`, during render rather than in an effect.
+   *
+   * An effect would run after the paint this exists to prevent, so the spinner
+   * would still flash. Setting state during render is React's supported way to
+   * derive state from a changing input: it re-renders before committing, and
+   * the guard below makes it happen once per key. Held in state rather than a
+   * ref so a render React discards takes the bookkeeping with it.
+   *
+   * Not reachable on the very first render of a cold load -- `organizationId`
+   * arrives in an effect, so `key` is null until then -- which is why this is
+   * keyed on the value rather than done once on mount.
+   */
+  const [adoptedKey, setAdoptedKey] = useState<string | null>(null);
+  if (key !== null && key !== adoptedKey) {
+    setAdoptedKey(key);
+    const snapshot = peekSnapshot(key);
+    // A miss deliberately leaves `data` alone: when deps change under a loaded
+    // screen (typing in the matters search) the previous rows should stay up
+    // until the new ones arrive, which is what the fetch below assumes too.
+    if (snapshot !== undefined) {
+      setData(snapshot as T);
+      setLoading(false);
+      setError(null);
+    }
+  }
+
+  // Whether this hook has something on screen, read inside the effect without
+  // making `data` a dependency of it -- it would refire the fetch on its own
+  // result. Synced in an effect declared before that one, so it is already true
+  // by the time a snapshot-seeded commit reaches it.
   const hasDataRef = useRef(false);
+  useEffect(() => {
+    hasDataRef.current = data !== null;
+  }, [data]);
 
   useEffect(() => {
     if (!practice) {
@@ -324,6 +464,10 @@ export function useResource<T>(
     fetcherRef
       .current(practice)
       .then((result) => {
+        // Recorded before the cancellation check, and touching no React state,
+        // so a request that lands after the user has clicked away still
+        // benefits the visit that comes back to this screen.
+        if (key !== null) writeSnapshot(key, result);
         if (cancelled) return;
         hasDataRef.current = true;
         setData(result);
@@ -366,14 +510,15 @@ export function useOptionalResource<T>(
   fetcher: (practice: PracticeApi) => Promise<T>,
   deps: unknown[],
 ): Resource<T> {
-  return useResource<T>(
-    (practice) =>
-      fetcher(practice).catch((exc: unknown) => {
-        if (exc instanceof ApiError && exc.status === 404) {
-          return null as T;
-        }
-        throw exc;
-      }),
-    deps,
-  );
+  const wrapped: Fetcher<T> = (practice) =>
+    fetcher(practice).catch((exc: unknown) => {
+      if (exc instanceof ApiError && exc.status === 404) {
+        return null as T;
+      }
+      throw exc;
+    });
+  // Without this every caller of this hook keys on the wrapper's source above,
+  // which is the same text for all of them.
+  wrapped.snapshotSource = String(fetcher);
+  return useResource<T>(wrapped, deps);
 }

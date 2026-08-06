@@ -126,9 +126,22 @@ export function configureAuthToken(getter: TokenGetter) {
 const GET_CACHE_TTL_MS = 30_000;
 const getCache = new Map<string, { at: number; value: Promise<unknown> }>();
 
+/**
+ * Notified whenever the GET cache is dropped, so caches layered on top of it
+ * -- useResource's snapshots in lib/org.tsx -- go with it instead of painting
+ * rows a write just changed. A registry rather than a direct call because
+ * lib/org.tsx imports this module, not the other way round.
+ */
+const invalidationListeners = new Set<() => void>();
+
+export function onApiInvalidate(listener: () => void) {
+  invalidationListeners.add(listener);
+}
+
 /** Drops every cached GET. Exported for callers that mutate outside request(). */
 export function invalidateApiCache() {
   getCache.clear();
+  for (const listener of invalidationListeners) listener();
 }
 
 /** Exported so lib/practice.ts shares one auth-token and error-mapping path

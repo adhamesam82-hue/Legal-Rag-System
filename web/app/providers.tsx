@@ -12,6 +12,42 @@ import { OrgProvider } from "@/lib/org";
 import { LocaleProvider } from "@/lib/i18n/provider";
 import type { Locale } from "@/lib/i18n/locale";
 
+/**
+ * next/link that prefetches the whole route, not just part of it.
+ *
+ * Every screen here is a dynamic route: the root layout reads the locale cookie
+ * so the first `<html dir>` is already correct, and that opts the whole tree
+ * out of static rendering. Next's default prefetch for a dynamic route only
+ * reaches the nearest `loading.js` boundary, and there is none by design -- a
+ * route-level loading boundary would be a second spinner stacked on the one the
+ * data layer already owns. So the default cached nothing usable, and a click
+ * paid a round trip for the route payload before the new screen rendered at
+ * all. Measured at 150ms of latency, that round trip *was* what remained of a
+ * navigation once the data was already in hand: 212ms of it.
+ *
+ * `prefetch` brings a return navigation to ~67ms. The alternatives were
+ * measured and do not: `router.prefetch()` on pointer-enter leaves it at 214ms
+ * and `unstable_dynamicOnHover` at 198ms, both because a hover cannot download
+ * a route in the time a pointer rests on a menu item.
+ *
+ * The cost is 713KB of route chunks on top of a 434KB cold load, for screens
+ * the visitor may never open. Accepted because Next serves those chunks under
+ * immutable URLs: it is paid once per deploy, not once per session, against
+ * ~145ms saved on every click for as long as the app stays open. Should that
+ * balance ever change, the charting library is where to look first -- it was
+ * 467KB of the 713, reachable from five screens, and `next/dynamic` would keep
+ * it out of the prefetch.
+ *
+ * `to` is dropped: Astryx passes it alongside `href` for `to`-based routers
+ * (React Router, TanStack), and next/link would forward it to the DOM.
+ */
+export function PrefetchedNavLink({
+  to: _to,
+  ...props
+}: React.ComponentProps<typeof Link> & { to?: string }) {
+  return <Link {...props} prefetch />;
+}
+
 type ColorMode = "light" | "dark" | "system";
 
 const ThemeModeContext = createContext<{

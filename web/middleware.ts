@@ -18,6 +18,7 @@ const isPublicRoute = createRouteMatcher([
   // who has never signed in. Without these two the root rewrites straight to
   // /_not-found and the public face of the product is a 404.
   "/",
+  "/ar",
   "/landing(.*)",
 ]);
 

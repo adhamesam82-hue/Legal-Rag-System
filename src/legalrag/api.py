@@ -12,13 +12,14 @@ from __future__ import annotations
 
 import json
 import logging
-from collections.abc import Iterator
-from contextlib import contextmanager
+from collections.abc import AsyncIterator, Iterator
+from contextlib import asynccontextmanager, contextmanager
 from datetime import datetime
 from typing import Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import StreamingResponse
 from openai import OpenAIError
 from pydantic import BaseModel, Field
@@ -45,7 +46,7 @@ from legalrag.conversations import (
     rename_conversation,
     title_from_question,
 )
-from legalrag.db import get_connection
+from legalrag.db import close_pool, get_connection, get_pool
 from legalrag.email import send_invite_email
 from legalrag.explain import explain_article
 from legalrag.invites import (
@@ -76,7 +77,35 @@ from legalrag.pipeline import ask, ask_stream, retrieve_for
 from legalrag.practice_api import router as practice_router
 from legalrag.retrieve import Candidate
 
-app = FastAPI(title="LegalOS API", version="0.3.0")
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    """Opens the connection pool before the first request and closes it after
+    the last.
+
+    Warming it up front matters: the pool is otherwise built lazily, so the
+    first caller after a deploy pays the connection handshakes that every
+    other caller is spared. Closing it matters too -- left to the garbage
+    collector at interpreter shutdown, psycopg_pool cannot join its worker
+    threads and raises PythonFinalizationError into the logs on every restart.
+
+    Failure to reach Postgres here is deliberately not fatal: the API should
+    still start and report the fault per-request, rather than crash-loop and
+    take the health endpoint down with it.
+    """
+    try:
+        get_pool()
+    except Exception:
+        logging.getLogger("uvicorn.error").exception(
+            "Could not open the database connection pool at startup; "
+            "requests will retry and report the error individually."
+        )
+    try:
+        yield
+    finally:
+        close_pool()
+
+
+app = FastAPI(title="LegalOS API", version="0.3.0", lifespan=lifespan)
 
 # The frontend is always a separate origin from this API -- the Next.js dev
 # server locally, a deployed domain in production. Extra origins come from
@@ -88,6 +117,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# The list endpoints behind the practice screens return JSON in the tens to
+# hundreds of kilobytes, and Arabic text is three bytes per character in UTF-8,
+# so it compresses hard. On localhost this buys nothing; over a real
+# connection to a real firm it is most of the wait.
+#
+# Safe for the SSE answer stream: this Starlette excludes text/event-stream
+# from compression by default, so tokens are not held in a zlib buffer waiting
+# for a block to fill.
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 # Practice management (clients, matters, cases, documents, tasks, time,
 # billing) lives in its own module; the corpus and answering routes below are

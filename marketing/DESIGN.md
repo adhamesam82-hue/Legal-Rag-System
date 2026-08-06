@@ -426,6 +426,16 @@ firm names, nameplates, buttons, and **all ten product surfaces** — inside `.u
 face is Archivo, because the real app sets its figures in Archivo 600 and a marketing page's
 editorial serif has no business inside a screenshot of the product.
 
+**Both faces carry Arabic without a language switch.** The Arabic faces sit
+inside the same two stacks (`--font-display`, `--font-text`) rather than behind
+a `[lang="ar"]` override, and every `@font-face` declares a `unicode-range`, so
+the browser resolves per character: Latin in Newsreader/Archivo, Arabic in
+Naskh/Tajawal, in the same paragraph if the paragraph mixes them — which the
+product surfaces do constantly. The only thing `[lang="ar"]` adjusts is size and
+leading, because naskh at Latin's metrics reads cramped, plus the uppercase and
+tracked-out labels, which are Latin devices that do nothing for a script with no
+case and everything to break its joins.
+
 All five are self-hosted `woff2`, Latin **or** Arabic subset only, ~172 KB total. Archivo
 and Newsreader roman are `<link rel=preload>`ed; all faces are `font-display: swap`. Weight
 ranges: Archivo 400–700 variable, Newsreader 400 roman + 300 italic as two static files,

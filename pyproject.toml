@@ -23,6 +23,7 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     # Multipart form parsing for document uploads.
     "python-multipart>=0.0.9",
+    "psycopg-pool>=3.3.1",
 ]
 
 [dependency-groups]

@@ -1608,6 +1608,56 @@ body.is-locked { overflow: hidden; }
    <video> element — which carries the poster and has no source yet — becomes
    the visible layer.
    ========================================================================== */
+/* --- RTL ------------------------------------------------------------------
+   Almost nothing, because the page is written in logical properties: `dir=rtl`
+   on <html> flips the grids, the padding and the text on its own. What is left
+   is the handful of places that are positioned in physical space on purpose.
+   -------------------------------------------------------------------------- */
+
+/* The ambient loop is pinned to the open side of the hero, opposite the
+   headline column. Which side that is depends on the reading direction. */
+[dir="rtl"] .amb {
+  right: 30%;
+  left: 0;
+  mask-image: radial-gradient(66% 62% at 22% 52%, #000 8%, rgba(0,0,0,0.3) 54%, transparent 84%);
+  -webkit-mask-image: radial-gradient(66% 62% at 22% 52%, #000 8%, rgba(0,0,0,0.3) 54%, transparent 84%);
+}
+[dir="rtl"] .amb-rows { left: auto; right: 46%; }
+[dir="rtl"] .amb-rows span { transform-origin: right; }
+[dir="rtl"] .amb-bars { right: auto; left: 5%; }
+[dir="rtl"] .amb-doc { right: auto; left: 4%; }
+[dir="rtl"] .amb-cite { right: auto; left: 5%; }
+[dir="rtl"] .amb-time { right: auto; left: 2%; }
+
+/* The hero scrim's horizontal wash sits under the copy column. */
+[dir="rtl"] .hero-scrim {
+  background:
+    linear-gradient(180deg, rgba(246,243,238,0.94) 0%, rgba(246,243,238,0.42) 24%, rgba(246,243,238,0.40) 54%, rgba(246,243,238,0.88) 86%, var(--ground) 100%),
+    linear-gradient(270deg, rgba(246,243,238,0.95) 0%, rgba(246,243,238,0.82) 26%, rgba(246,243,238,0.32) 58%, rgba(246,243,238,0.08) 82%);
+}
+
+/* Fields are decoration and are positioned physically; mirroring them keeps
+   the composition rather than the coordinates. */
+[dir="rtl"] .hero-field-a { right: auto; left: -12%; }
+[dir="rtl"] .hero-field-b { left: auto; right: -14%; }
+[dir="rtl"] .mission-field { left: auto; right: -22%; }
+[dir="rtl"] .testimonial-field { left: auto; right: -14%; }
+[dir="rtl"] .cta-field-a { left: auto; right: 6%; }
+[dir="rtl"] .cta-field-b { right: auto; left: 2%; }
+
+/* A number, an invoice id or a case reference inside Arabic prose is a mixed
+   run, and the bidi algorithm resolves it against the paragraph unless it is
+   told not to: "4412 / 91 Q" comes out as "Q 91 / 4412". `plaintext` derives
+   each run's base direction from its own first strong character, which is the
+   rule for content whose script is not known ahead of time. The product app
+   solves this the same way, on its own text primitive. */
+[lang="ar"] .ui :is(b, i, em, u, span, p, code, kbd) {
+  unicode-bidi: plaintext;
+}
+
+/* The API sample and the code block are Latin by nature. */
+[lang="ar"] .code { direction: ltr; text-align: left; }
+
 /* A seal field is sized in viewport units, so on a phone the one blurred disc
    on the page covers the whole screen and stops reading as a flush under a
    section — Paper turns pink. Below the breakpoint the fields go quiet and the

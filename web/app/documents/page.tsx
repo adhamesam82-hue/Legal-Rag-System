@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Layout, LayoutContent, LayoutPanel } from "@astryxdesign/core/Layout";
 import { VStack, HStack } from "@astryxdesign/core/Stack";
 import { Heading, Text } from "@astryxdesign/core/Text";
@@ -83,15 +83,24 @@ export default function DocumentsPage() {
   const [error, setError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
+  // The search box filters server-side, so only the settled value reaches the
+  // fetch; see the same treatment on the clients screen. Typing a file name
+  // otherwise fired one round of two requests per keystroke.
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query.trim()), 250);
+    return () => clearTimeout(timer);
+  }, [query]);
+
   const resource = useResource(
     async (api) => {
       const [documents, matters] = await Promise.all([
-        api.documents.list({ q: query.trim() || undefined }),
+        api.documents.list({ q: debouncedQuery || undefined }),
         api.matters.list(),
       ]);
       return { documents, matters };
     },
-    [query],
+    [debouncedQuery],
   );
 
   const documents = resource.data?.documents ?? [];
