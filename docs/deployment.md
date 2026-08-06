@@ -65,14 +65,28 @@ only — `web/` is excluded via `.dockerignore`.
 - **Start command**: already the image's `CMD`; the host's `$PORT` is honoured
 - **Health check**: `GET /api/health`
 
+On Railway, `railway.json` at the repository root already declares all of that:
+the Dockerfile build, the health check, `python scripts/migrate.py` as a
+pre-deploy command so migrations run once per deploy rather than at container
+boot, and a single replica. Point a Railway service at this repo and it picks
+the file up — nothing to configure in the dashboard except the variables below
+and the volume.
+
+**The volume cannot be declared in `railway.json`.** Add it in the dashboard,
+mounted at `/data/documents`, before the first upload — see the warning below.
+
+`numReplicas` is 1 deliberately. Each instance holds its own pool of up to 20
+Postgres connections (`legalrag/db.py`), so replicas multiply that against
+Neon's ceiling; raise both together or not at all.
+
 ### Environment variables
 
 | Variable | Value | Why |
 | --- | --- | --- |
 | `DATABASE_URL` | Neon pooled connection string | Postgres |
-| `CLERK_JWKS_URL` | `https://<your-subdomain>.clerk.accounts.dev/.well-known/jwks.json` | Verifies session JWTs |
+| `CLERK_JWKS_URL` | production: `https://clerk.<your-domain>/.well-known/jwks.json` | Verifies session JWTs |
 | `CLERK_SECRET_KEY` | `sk_live_…` (or `sk_test_…` for a staging deploy) | Clerk Backend API |
-| `LEGALOS_CORS_ORIGINS` | `https://<your-app>.vercel.app` | Without this the browser blocks every API call |
+| `LEGALOS_CORS_ORIGINS` | the frontend's own origin, e.g. `https://alsigil.com` | Without this the browser blocks every API call |
 | `NVIDIA_API_KEY` | your key | Embeddings for legal research |
 | `OPENROUTER_API_KEY` | your key | Answering, if routed to OpenRouter |
 | `RESEND_API_KEY` | your key | Invitation emails |
@@ -81,6 +95,14 @@ only — `web/` is excluded via `.dockerignore`.
 **`LEGALOS_DEV_AUTH` must not be set.** It disables JWT verification and treats
 every request as one user. It is opt-in and off unless explicitly set — leave it
 that way.
+
+**A custom domain needs a Clerk *production* instance.** The `pk_test_`/`sk_test_`
+keys belong to a development instance, which is rate-limited and cannot
+authenticate a custom domain. A production instance issues `pk_live_`/`sk_live_`
+**and serves its JWKS from a different URL** — `https://clerk.<your-domain>/…`,
+not `…clerk.accounts.dev`. Swapping the keys while leaving the old
+`CLERK_JWKS_URL` in place makes every API call 403, which reads like a broken
+deploy rather than a misconfigured one.
 
 ### Two things that will bite you
 
