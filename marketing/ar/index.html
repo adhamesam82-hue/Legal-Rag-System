@@ -110,6 +110,11 @@ verdict, and DESIGN.md.
     </nav>
 
     <div class="nav-actions">
+      <!-- A link, not a toggle: the Arabic page is a real document at its own
+           URL (see scripts/build-ar.py). The label is set in the language it
+           leads to and marked `lang`, so a screen reader announces it in that
+           language rather than spelling Arabic out in English phonemes. -->
+      <a class="nav-locale" href="/" hreflang="en" lang="en"><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg><span class="nav-locale-label">English</span></a>
       <a class="nav-signin" href="/sign-in">تسجيل الدخول</a>
       <a class="btn btn--solid btn--sm" href="/demo">احجز عرضاً توضيحياً</a>
       <button class="nav-burger" type="button" data-menu-open aria-expanded="false" aria-controls="mobile-menu">
@@ -140,6 +145,7 @@ verdict, and DESIGN.md.
     <a href="#insights">رؤى</a>
     <a href="#company">الشركة</a>
     <a href="/sign-in">تسجيل الدخول</a>
+    <a class="mobile-locale" href="/" hreflang="en" lang="en">English</a>
   </nav>
   <a class="btn btn--solid btn--block btn--lg" href="/demo">احجز عرضاً توضيحياً</a>
 </div>
