@@ -71,6 +71,27 @@
 .nav-actions { display: flex; align-items: center; gap: 0.85rem; justify-self: end; }
 .nav-signin { font-size: 0.9rem; font-weight: 600; color: var(--ink-2); transition: color 0.3s var(--ease); }
 .nav-signin:hover { color: var(--ink); }
+
+/* The language switch is the one nav control aimed at someone who may not read
+   the rest of the bar, so it carries a border instead of sitting as plain text
+   beside `Sign in` — and unlike `Sign in` it keeps its place on mobile, where
+   it drops its label and rides on the globe alone. */
+.nav-locale {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.42rem 0.7rem;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-pill);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  white-space: nowrap;
+  transition: color 0.3s var(--ease), border-color 0.3s var(--ease), background 0.3s var(--ease);
+}
+.nav-locale:hover { color: var(--ink); border-color: var(--hairline-bright); background: rgba(18,22,28,0.04); }
+.nav-locale .ico { width: 15px; height: 15px; flex: none; }
 .nav-burger { display: none; padding: 0.45rem; color: var(--ink); }
 .nav-burger .ico { width: 24px; height: 24px; }
 
@@ -1526,6 +1547,30 @@ body.is-locked { overflow: hidden; }
 @media (max-width: 860px) {
   .nav-signin { display: none; }
   .nav-burger { display: inline-flex; }
+  /* The pill stays in the bar rather than retreating into the drawer like
+     `Sign in` — but the label drops to the accessible name only, so it fits a
+     360px screen beside the wordmark, the demo button and the burger. The
+     drawer carries the switch again, worded. (Below 360px even this is too
+     much; see the rule further down.) */
+  .nav-locale { padding: 0.5rem; }
+  .nav-locale .ico { width: 20px; height: 20px; }
+  .nav-locale-label {
+    position: absolute; width: 1px; height: 1px; padding: 0;
+    margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  /* A fourth item in the bar leaves no slack, and flex spends slack by
+     squeezing: without this the burger collapses to a 14px tap target and the
+     wordmark to a third of its width, worst on Arabic where the CTA is wider. */
+  .nav-locale, .nav-burger, .nav-actions .btn { flex: none; }
+  /* The mark is artwork with no intrinsic minimum, so a tight grid track
+     squashes it rather than refusing; hold it at its drawn width. */
+  .wordmark svg { min-width: 90px; }
+  .nav-inner { gap: 0.9rem; }
+  .nav-actions { gap: 0.5rem; }
+  /* The CTA gives up the width the switch takes. It is the only item here with
+     padding to spare, and Arabic — where the label is longest — is exactly the
+     case that has to fit. */
+  .nav-actions .btn { padding-inline: 0.85rem; }
   .hero-h1 { max-width: 100%; }
   .hero-stage { margin-bottom: clamp(-4rem, -6vw, -2rem); }
   .testimonial { grid-template-columns: 1fr; text-align: start; }
@@ -1599,6 +1644,14 @@ body.is-locked { overflow: hidden; }
 @media (max-width: 420px) {
   .int-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .tm-quote p { font-size: 1.12rem; }
+}
+
+/* Below 360px the bar cannot hold four controls without squeezing one of them
+   to nothing — Arabic first, since its CTA is the longest label on the page.
+   The switch is the one that steps out, because it is the only one repeated in
+   the drawer. Everything above this width keeps it one tap away. */
+@media (max-width: 359px) {
+  .nav-locale { display: none; }
 }
 
 /* ==========================================================================

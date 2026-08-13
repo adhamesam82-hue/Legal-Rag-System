@@ -160,7 +160,18 @@ def localise_document(html: str) -> str:
          '<link rel="preload" href="../assets/fonts/Newsreader-400-latin.woff2" as="font" type="font/woff2" crossorigin>',
          '<link rel="preload" href="../assets/fonts/Tajawal-400-arabic.woff2" as="font" type="font/woff2" crossorigin>\n'
          '<link rel="preload" href="../assets/fonts/NotoNaskhArabic-400-700-arabic.woff2" as="font" type="font/woff2" crossorigin>'),
-        # The switcher points back at the page you are not on.
+        # Every switcher points back at the page you are not on, and is written
+        # in the language it leads to. Whole-element swaps rather than dictionary
+        # entries: the label, the href, `lang` and the `ar` class all have to
+        # change together, and none of that survives a string-for-string
+        # translation. No `dir` on either: the switcher is a word, not a passage,
+        # so it takes the page's direction like every other item in the bar and
+        # `.ar`'s bidi isolation keeps it from disturbing its neighbours.
+        ('<a class="nav-locale" href="/ar" hreflang="ar" lang="ar"><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg><span class="nav-locale-label ar">العربية</span></a>',
+         '<a class="nav-locale" href="/" hreflang="en" lang="en"><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg><span class="nav-locale-label">English</span></a>'),
+        ('<a class="mobile-locale ar" href="/ar" hreflang="ar" lang="ar">العربية</a>',
+         '<a class="mobile-locale" href="/" hreflang="en" lang="en">English</a>'),
+        # The footer switcher points back at the page you are not on.
         ('<span class="foot-locale"><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg>القاهرة · العربية<i>/</i><a href="/ar" class="ar">العربية</a></span>',
          '<span class="foot-locale"><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg>القاهرة · العربية<i>/</i><a href="/" lang="en" dir="ltr">English</a></span>'),
     ]
