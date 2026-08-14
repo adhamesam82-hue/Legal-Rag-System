@@ -1,0 +1,11 @@
+[Unit]
+Description=alsigil disk space alert
+
+[Service]
+Type=oneshot
+EnvironmentFile=/opt/alsigil/.env
+WorkingDirectory=/opt/alsigil/deploy
+ExecStart=/usr/bin/docker compose -f /opt/alsigil/deploy/docker-compose.prod.yml run --rm api python scripts/disk_alert.py
+User=root
+# The script exits 1 when it alerts, which is informational, not a unit failure.
+SuccessExitStatus=0 1

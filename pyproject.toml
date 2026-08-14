@@ -24,6 +24,9 @@ dependencies = [
     # Multipart form parsing for document uploads.
     "python-multipart>=0.0.9",
     "psycopg-pool>=3.3.1",
+    # Error reporting. Uptime tells us that something broke; this tells us what,
+    # which on a single-operator deployment is most of the recovery time.
+    "sentry-sdk[fastapi]>=2.0",
 ]
 
 [dependency-groups]
