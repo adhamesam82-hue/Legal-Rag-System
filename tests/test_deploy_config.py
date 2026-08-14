@@ -44,9 +44,21 @@ def test_production_compose_does_not_publish_postgres():
 
 def test_production_compose_rotates_logs_on_every_service():
     """Unrotated json-file logs grow without limit and fill the 40 GB disk,
-    which takes Postgres down with it."""
-    compose = read("deploy/docker-compose.prod.yml")
-    assert compose.count("max-size") == 4, "expected log rotation on all 4 services"
+    which takes Postgres down with it.
+
+    Asserts the resolved structure rather than counting raw text: the file
+    defines the options once as a YAML anchor and references it per service,
+    so a text count would be testing the formatting rather than the effect.
+    """
+    import yaml
+
+    compose = yaml.safe_load(read("deploy/docker-compose.prod.yml"))
+    services = compose["services"]
+    assert set(services) == {"caddy", "web", "api", "postgres"}
+    for name, service in services.items():
+        options = (service.get("logging") or {}).get("options") or {}
+        assert options.get("max-size"), f"{name} has no log size limit"
+        assert options.get("max-file"), f"{name} has no log file limit"
 
 
 def test_production_compose_pins_image_tags_to_a_variable():

@@ -275,9 +275,21 @@ def test_production_compose_does_not_publish_postgres():
 
 def test_production_compose_rotates_logs_on_every_service():
     """Unrotated json-file logs grow without limit and fill the 40 GB disk,
-    which takes Postgres down with it."""
-    compose = read("deploy/docker-compose.prod.yml")
-    assert compose.count("max-size") == 4, "expected log rotation on all 4 services"
+    which takes Postgres down with it.
+
+    Asserts the resolved structure rather than counting raw text: the file
+    defines the options once as a YAML anchor and references it per service,
+    so a text count would be testing the formatting rather than the effect.
+    """
+    import yaml
+
+    compose = yaml.safe_load(read("deploy/docker-compose.prod.yml"))
+    services = compose["services"]
+    assert set(services) == {"caddy", "web", "api", "postgres"}
+    for name, service in services.items():
+        options = (service.get("logging") or {}).get("options") or {}
+        assert options.get("max-size"), f"{name} has no log size limit"
+        assert options.get("max-file"), f"{name} has no log file limit"
 
 
 def test_production_compose_pins_image_tags_to_a_variable():
@@ -439,7 +451,7 @@ docker run --rm -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2-alpin
 IMAGE_TAG=latest GITHUB_REPOSITORY_OWNER=placeholder docker compose -f deploy/docker-compose.prod.yml config >/dev/null && echo "COMPOSE OK"
 ```
 
-Expected: `Valid configuration` from Caddy, then `COMPOSE OK`. Compose will warn that `/opt/alsigil/.env` is missing on your laptop — that is expected; it exists only on the box.
+Expected: `caddy validate` runs anywhere and must pass. `docker compose config` cannot be run off the box: `env_file: /opt/alsigil/.env` is required, and it is absent on a laptop — that requirement is deliberate (a stack that silently started with no secrets could bring Postgres up on default credentials, so failing loudly here is correct production behaviour, not a bug to work around). Structural validation of the compose file off the box is covered by `tests/test_deploy_config.py` instead.
 
 - [ ] **Step 7: Commit**
 
