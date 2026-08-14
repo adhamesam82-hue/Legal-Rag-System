@@ -15,7 +15,7 @@
 - Domain is `alsigil.com`. Box is Hetzner **CX22** (2 vCPU, 4 GB, 40 GB), **Ubuntu 24.04**, **Falkenstein**.
 - **Single origin.** Caddy routes `/api/*` → `api:8000`, everything else → `web:3000`. No second subdomain, no second certificate.
 - **Postgres is never published to the host** in production. Compose network only.
-- Secrets live in `/opt/alsigil/.env`, owned `root:root`, mode `0600`, referenced by `env_file:`. Never in git, never baked into an image.
+- Secrets live in `/opt/alsigil/.env`, owned `root:deploy`, mode `0640`, referenced by `env_file:`. Group read is required, not slack: Compose resolves `env_file:` client-side as the `deploy` user, so `0600` makes every compose command fail. The internet-facing `web` container gets a second, narrower file, `/opt/alsigil/web.env` (same ownership and mode), holding only the Clerk variables it reads. Never in git, never baked into an image.
 - **Images are built in CI only.** Tagged `:<git-sha>` and `:latest`, pushed to GHCR. The box only ever runs `docker compose pull`.
 - **Migrations run as a discrete step before `up -d`**, and must be backward-compatible with the currently-deployed code. Add columns; never rename or drop in the same deploy.
 - Docker logging is `json-file` with `max-size: 10m`, `max-file: 3` on every service.
@@ -705,10 +705,11 @@ The one manual-ish task. Written as an idempotent script so the box is reproduci
 **Files:**
 - Create: `deploy/provision.sh`
 - Create: `deploy/env.example`
+- Create: `deploy/web.env.example`
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: a box with a `deploy` user in the `docker` group, ufw allowing only 22/80/443, Docker Engine + Compose plugin, `/opt/alsigil/` containing `.env` (0600, container secrets via `env_file:`) and `/opt/alsigil/deploy/` containing the compose files plus its own `.env` (0600, compose-interpolation variables — `GITHUB_REPOSITORY_OWNER` in particular). Tasks 5 and 6 SSH in as `deploy`.
+- Produces: a box with a `deploy` user in the `docker` and `sudo` groups, ufw allowing only 22/80/443, Docker Engine + Compose plugin, `/opt/alsigil/` containing `.env` (root:deploy 0640, API and database secrets via `env_file:`) and `web.env` (root:deploy 0640, only the Clerk variables Next.js reads), and `/opt/alsigil/deploy/` containing the compose files plus its own `.env` (deploy:deploy 0600, compose-interpolation variables — `GITHUB_REPOSITORY_OWNER` in particular). Tasks 5 and 6 SSH in as `deploy`.
 
 - [ ] **Step 1: Create the Hetzner server**
 
@@ -767,6 +768,12 @@ if ! id -u "$DEPLOY_USER" >/dev/null 2>&1; then
 	adduser --disabled-password --gecos "" "$DEPLOY_USER"
 fi
 usermod -aG docker "$DEPLOY_USER"
+# The deploy user administers the box: Tasks 4, 8, 9 and 10 all install systemd
+# units, edit /opt/alsigil/.env and run restore_check.sh through `sudo` over an
+# SSH session opened as this user. Without this the account can only talk to
+# Docker, and every one of those steps fails with "deploy is not in the
+# sudoers file".
+usermod -aG sudo "$DEPLOY_USER"
 install -d -m 0700 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "/home/$DEPLOY_USER/.ssh"
 if [ -f /root/.ssh/authorized_keys ]; then
 	install -m 0600 -o "$DEPLOY_USER" -g "$DEPLOY_USER" \
@@ -789,9 +796,23 @@ ufw --force enable
 
 echo "==> App directory"
 install -d -m 0755 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$APP_DIR"
+# root:deploy 0640, NOT root:root 0600. `env_file:` is resolved by the Compose
+# CLI on the *client* side, and every compose command on this box runs as
+# $DEPLOY_USER -- so without group read, `docker compose pull`, `run` and
+# `up -d` all abort with "permission denied" before a container is ever
+# created. Group read is the minimum that lets the deploy work; do not
+# "harden" this back to 0600.
 if [ ! -f "$APP_DIR/.env" ]; then
-	install -m 0600 -o root -g root /dev/null "$APP_DIR/.env"
+	install -m 0640 -o root -g "$DEPLOY_USER" /dev/null "$APP_DIR/.env"
 	echo "    created empty $APP_DIR/.env -- fill it before deploying"
+fi
+# Only the Clerk variables the internet-facing Next.js container actually
+# reads. Kept separate from $APP_DIR/.env so that a compromise of the web
+# container does not hand over the database password, the restic key and the
+# R2 credentials, none of which Next.js has any use for.
+if [ ! -f "$APP_DIR/web.env" ]; then
+	install -m 0640 -o root -g "$DEPLOY_USER" /dev/null "$APP_DIR/web.env"
+	echo "    created empty $APP_DIR/web.env -- fill it before deploying"
 fi
 
 # $APP_DIR/deploy/ holds the compose files (Task 6 scp's them here) plus a
@@ -803,8 +824,12 @@ fi
 # backup.sh's systemd timer -- none of which export it -- aborts loudly on
 # the required-variable message instead of pulling a malformed image ref.
 install -d -m 0755 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$APP_DIR/deploy"
+# Owned by $DEPLOY_USER, because the deploy workflow rewrites this file with a
+# plain `>` redirect over SSH as that user. A root-owned file here makes the
+# very first deploy fail on "permission denied" -- and it holds no secret, only
+# the GHCR owner name.
 if [ ! -f "$APP_DIR/deploy/.env" ]; then
-	install -m 0600 -o root -g root /dev/null "$APP_DIR/deploy/.env"
+	install -m 0600 -o "$DEPLOY_USER" -g "$DEPLOY_USER" /dev/null "$APP_DIR/deploy/.env"
 	echo "    created empty $APP_DIR/deploy/.env -- set GITHUB_REPOSITORY_OWNER before deploying"
 fi
 
@@ -814,9 +839,27 @@ echo "    ssh $DEPLOY_USER@<ip> docker ps"
 
 - [ ] **Step 4: Create `deploy/env.example`**
 
+There are two environment files on the box, and they are not interchangeable:
+
+| File | Read by | Contains |
+| --- | --- | --- |
+| `/opt/alsigil/.env` | `api` and `postgres` via `env_file:` | Database credentials, model provider keys, `CLERK_JWKS_URL`, Resend, restic/R2, Sentry |
+| `/opt/alsigil/web.env` | `web` via `env_file:` | Only `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` |
+
+The split exists because `web` is the container the internet talks to first and
+it has no use for `POSTGRES_PASSWORD`, `DATABASE_URL`, `RESTIC_PASSWORD` or the
+R2 keys. Handing it the whole secrets file means one Next.js RCE hands over the
+backups as well as the database.
+
+Both files are `root:deploy`, mode `0640` — see the note in `provision.sh` for
+why `0600` breaks every deploy.
+
 ```bash
-# Copy to /opt/alsigil/.env on the box, fill in, chmod 0600, chown root:root.
+# Copy to /opt/alsigil/.env on the box, fill in, chmod 0640, chown root:deploy.
 # Never commit the filled version.
+#
+# This file is for the `api` and `postgres` containers. The `web` container
+# reads /opt/alsigil/web.env instead -- see web.env.example.
 
 # --- Database (compose-internal; host is the service name) ---
 POSTGRES_USER=legalrag
@@ -828,10 +871,9 @@ DATABASE_URL=postgresql://legalrag:@postgres:5432/legalrag
 OPENROUTER_API_KEY=
 NVIDIA_API_KEY=
 
-# --- Identity ---
+# --- Identity (the API verifies Clerk JWTs; see src/legalrag/config.py:78) ---
 CLERK_JWKS_URL=
 CLERK_SECRET_KEY=
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
 
 # --- Email ---
 RESEND_API_KEY=
@@ -855,6 +897,26 @@ ALERT_EMAIL_TO=
 # CORS is unnecessary: Caddy serves the API and the app from one origin.
 ```
 
+Also create `deploy/web.env.example`:
+
+```bash
+# Copy to /opt/alsigil/web.env on the box, fill in, chmod 0640, chown
+# root:deploy. Never commit the filled version.
+#
+# This is the whole environment the internet-facing Next.js container gets.
+# Nothing else belongs here. In particular POSTGRES_PASSWORD, DATABASE_URL,
+# RESTIC_PASSWORD and the R2 credentials MUST NOT be added: `web` never opens a
+# database connection or touches a backup, so the only thing copying them here
+# would achieve is putting them one Next.js RCE away from an attacker.
+
+# --- Identity ---
+# The publishable key is also inlined into the client bundle at build time;
+# it is present here for the server-rendered pages and middleware.
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+# Read at runtime by clerkMiddleware in web/middleware.ts to verify sessions.
+CLERK_SECRET_KEY=
+```
+
 - [ ] **Step 5: Run the provisioning script**
 
 ```bash
@@ -872,26 +934,40 @@ ssh deploy@<box-ip> sudo ufw status
 ssh root@<box-ip> echo should-fail || echo "root login correctly refused"
 ```
 
-Expected: an empty container table; ufw `Status: active` listing only 22, 80, 443; and the root login refused.
+Expected: an empty container table; ufw `Status: active` listing only 22, 80, 443; and the root login refused. `sudo ufw status` also confirms `usermod -aG sudo` took effect — if it prints "deploy is not in the sudoers file", stop here, because Steps 7 and 8 and Tasks 8, 9 and 10 all depend on it.
 
-- [ ] **Step 7: Fill in the secrets file**
+- [ ] **Step 7: Fill in the two secrets files**
 
 ```bash
-scp deploy/env.example deploy@<box-ip>:/tmp/env.example
+scp deploy/env.example deploy/web.env.example deploy@<box-ip>:/tmp/
 ssh deploy@<box-ip>
 sudo cp /tmp/env.example /opt/alsigil/.env
-sudo nano /opt/alsigil/.env        # fill in every blank value
-sudo chown root:root /opt/alsigil/.env
-sudo chmod 0600 /opt/alsigil/.env
-rm /tmp/env.example
+sudo nano /opt/alsigil/.env            # fill in every blank value
+sudo cp /tmp/web.env.example /opt/alsigil/web.env
+sudo nano /opt/alsigil/web.env         # Clerk keys only -- nothing else
+# root:deploy 0640, NOT root:root 0600. Compose resolves `env_file:`
+# client-side, as the user running the command -- which is always `deploy` on
+# this box, from CI and by hand alike. With 0600 every `docker compose pull`,
+# `run` and `up -d` fails with "permission denied" before a container exists.
+# Group read is what makes the stack deployable at all; do not tighten it.
+sudo chown root:deploy /opt/alsigil/.env /opt/alsigil/web.env
+sudo chmod 0640 /opt/alsigil/.env /opt/alsigil/web.env
+rm /tmp/env.example /tmp/web.env.example
 ```
 
-Verify: `ssh deploy@<box-ip> sudo stat -c '%U:%G %a' /opt/alsigil/.env` → `root:root 600`.
+Verify both the ownership and that `deploy` can genuinely read them, which is the property that actually matters:
+
+```bash
+ssh deploy@<box-ip> "stat -c '%n %U:%G %a' /opt/alsigil/.env /opt/alsigil/web.env"
+ssh deploy@<box-ip> "head -c1 /opt/alsigil/.env >/dev/null && echo 'deploy can read the secrets file'"
+```
+
+Expected: `root:deploy 640` for both, and the readability line. `root:root 600` here means the first deploy will fail.
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add deploy/provision.sh deploy/env.example
+git add deploy/provision.sh deploy/env.example deploy/web.env.example
 git commit -m "Make the box reproducible instead of remembered"
 ```
 
