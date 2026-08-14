@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import httpx
 
-from scripts.smoke_check import check_api_health, check_frontend_serves
+from scripts.smoke_check import (
+    check_api_health,
+    check_frontend_serves,
+    resolver_pinning,
+)
 
 
 def client_returning(handler) -> httpx.Client:
@@ -69,3 +73,34 @@ def test_health_passes_on_the_real_corpus_stats_shape():
         )
 
     assert check_api_health(client_returning(handler), "https://x") is None
+
+
+def test_pinning_sends_the_deployed_hostname_to_the_given_address():
+    """Without this the check resolves alsigil.com normally, which before the
+    DNS cutover still answers from Vercel -- so a box that never came up would
+    smoke-green and the deploy would never roll back."""
+    seen = []
+
+    def fake_getaddrinfo(host, port, *args, **kwargs):
+        seen.append((host, port))
+        return []
+
+    resolve = resolver_pinning("alsigil.com", "203.0.113.7", fake_getaddrinfo)
+    resolve("alsigil.com", 443)
+
+    assert seen == [("203.0.113.7", 443)]
+
+
+def test_pinning_leaves_every_other_hostname_alone():
+    """Pinning must not become a blanket DNS override -- a redirect target or
+    any other host the check touches has to resolve normally."""
+    seen = []
+
+    def fake_getaddrinfo(host, port, *args, **kwargs):
+        seen.append((host, port))
+        return []
+
+    resolve = resolver_pinning("alsigil.com", "203.0.113.7", fake_getaddrinfo)
+    resolve("example.com", 443)
+
+    assert seen == [("example.com", 443)]

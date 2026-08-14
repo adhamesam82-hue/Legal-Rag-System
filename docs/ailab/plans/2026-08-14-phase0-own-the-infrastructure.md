@@ -489,7 +489,7 @@ The health gate the deploy workflow will run. `/api/health` is necessary but not
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: `scripts/smoke_check.py`, run as `uv run python scripts/smoke_check.py <base_url>`. Exits `0` on success, `1` with a reason on stderr on failure. Task 6 calls it as the health gate. Functions: `check_api_health(client, base_url) -> str | None` and `check_frontend_serves(client, base_url) -> str | None`, each returning `None` on success or a human-readable failure reason.
+- Produces: `scripts/smoke_check.py`, run as `uv run python scripts/smoke_check.py <base_url> [address-to-pin]`. Exits `0` on success, `1` with a reason on stderr on failure. Task 6 calls it as the health gate, always passing the box's address as the second argument. Functions: `check_api_health(client, base_url) -> str | None` and `check_frontend_serves(client, base_url) -> str | None`, each returning `None` on success or a human-readable failure reason; plus `resolver_pinning(hostname, address, getaddrinfo)` and `pin_host(base_url, address)`, which give the check curl's `--resolve` behaviour.
 
 **Note on scope:** the spec's risk table calls for asserting the frontend's API call succeeds. Task 1 Step 7 does that more reliably, at build time, by grepping the compiled bundle — a deterministic check on the exact artefact, rather than an inference from a rendered page. This task covers the runtime half: is the stack actually up and serving through Caddy.
 
@@ -569,7 +569,41 @@ def test_frontend_fails_on_server_error():
 
     reason = check_frontend_serves(client_returning(handler), "https://x")
     assert reason is not None and "500" in reason
+
+
+def test_pinning_sends_the_deployed_hostname_to_the_given_address():
+    """Without this the check resolves alsigil.com normally, which before the
+    DNS cutover still answers from Vercel -- so a box that never came up would
+    smoke-green and the deploy would never roll back."""
+    seen = []
+
+    def fake_getaddrinfo(host, port, *args, **kwargs):
+        seen.append((host, port))
+        return []
+
+    resolve = resolver_pinning("alsigil.com", "203.0.113.7", fake_getaddrinfo)
+    resolve("alsigil.com", 443)
+
+    assert seen == [("203.0.113.7", 443)]
+
+
+def test_pinning_leaves_every_other_hostname_alone():
+    """Pinning must not become a blanket DNS override -- a redirect target or
+    any other host the check touches has to resolve normally."""
+    seen = []
+
+    def fake_getaddrinfo(host, port, *args, **kwargs):
+        seen.append((host, port))
+        return []
+
+    resolve = resolver_pinning("alsigil.com", "203.0.113.7", fake_getaddrinfo)
+    resolve("example.com", 443)
+
+    assert seen == [("example.com", 443)]
 ```
+
+The import at the top of the file is
+`from scripts.smoke_check import check_api_health, check_frontend_serves, resolver_pinning`.
 
 - [ ] **Step 2: Run to verify it fails**
 
@@ -584,23 +618,58 @@ Create `scripts/smoke_check.py`:
 ```python
 """Post-deploy smoke check. Exits non-zero if the deployment is not usable.
 
-Run: uv run python scripts/smoke_check.py https://alsigil.com
+Run: uv run python scripts/smoke_check.py https://alsigil.com <box-ip>
 
 Deliberately checks more than "did the process start". /api/health touches the
 database and reports corpus counts, so a zero-article corpus -- the signature
 of a restore that moved the schema but not the rows -- fails here rather than
 being discovered by the first person to search.
+
+The optional second argument is curl's `--resolve`: it pins the URL's hostname
+to a specific address so the check reaches the box being deployed rather than
+whatever DNS currently answers for that name. Without it a deploy run before
+the DNS cutover would smoke-green against the old Vercel deployment -- a box
+that never came up at all would look healthy, and no rollback would fire. The
+URL is left untouched, so TLS SNI and certificate verification still happen
+against the real hostname.
 """
 from __future__ import annotations
 
+import socket
 import sys
 import time
+from urllib.parse import urlsplit
 
 import httpx
 
 TIMEOUT_SECONDS = 10
 RETRY_WINDOW_SECONDS = 30
 RETRY_INTERVAL_SECONDS = 2
+
+
+def resolver_pinning(hostname: str, address: str, getaddrinfo):
+    """A getaddrinfo replacement that sends `hostname` to `address`.
+
+    Everything else resolves normally. Substituting at the resolver rather than
+    in the URL is what keeps the Host header, the TLS SNI name and certificate
+    validation pointed at the real hostname -- rewriting the URL to the IP
+    would fail certificate verification and never reach the right vhost.
+    """
+
+    def resolve(host, port, *args, **kwargs):
+        return getaddrinfo(
+            address if host == hostname else host, port, *args, **kwargs
+        )
+
+    return resolve
+
+
+def pin_host(base_url: str, address: str) -> None:
+    """Pin the URL's hostname to `address` for the rest of this process."""
+    hostname = urlsplit(base_url).hostname
+    if not hostname:
+        raise ValueError(f"no hostname to pin in {base_url!r}")
+    socket.getaddrinfo = resolver_pinning(hostname, address, socket.getaddrinfo)
 
 
 def check_api_health(client: httpx.Client, base_url: str) -> str | None:
@@ -657,12 +726,17 @@ def run_checks(base_url: str) -> list[str]:
         ]
 
 
-def main() -> int:
-    if len(sys.argv) != 2:
-        print("usage: smoke_check.py <base_url>", file=sys.stderr)
+def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv if argv is None else argv
+    if len(argv) not in (2, 3):
+        print("usage: smoke_check.py <base_url> [address-to-pin]", file=sys.stderr)
         return 2
 
-    base_url = sys.argv[1].rstrip("/")
+    base_url = argv[1].rstrip("/")
+    if len(argv) == 3 and argv[2]:
+        pin_host(base_url, argv[2])
+        print(f"pinned {urlsplit(base_url).hostname} to {argv[2]}")
+
     deadline = time.monotonic() + RETRY_WINDOW_SECONDS
 
     # Containers take a few seconds to accept connections. Retrying inside the
@@ -687,7 +761,7 @@ if __name__ == "__main__":
 
 Run: `uv run pytest tests/test_smoke_check.py -v`
 
-Expected: 6 passed.
+Expected: 8 passed.
 
 - [ ] **Step 5: Commit**
 
@@ -1180,6 +1254,20 @@ jobs:
 
       - name: Sync the compose configuration
         run: |
+          # Keep whatever configuration is live right now, so the rollback step
+          # can put it back. The image tag is not the whole deployment: this
+          # step overwrites the Caddyfile and the compose file *before* the
+          # swap, so a commit that breaks the proxy config fails the smoke
+          # check and then rolls the image back behind the new broken proxy --
+          # reporting a successful rollback while the site stays down.
+          ssh deploy@${{ secrets.SSH_HOST }} bash -euo pipefail <<'EOF'
+            cd /opt/alsigil/deploy
+            for f in docker-compose.prod.yml Caddyfile; do
+              # Absent on a bootstrap deploy; there is nothing to roll back to
+              # then, and the "no rollback target" step reports that separately.
+              if [ -f "$f" ]; then cp -p "$f" "$f.rollback"; fi
+            done
+          EOF
           scp deploy/docker-compose.prod.yml deploy/Caddyfile \
             deploy@${{ secrets.SSH_HOST }}:/opt/alsigil/deploy/
           # /opt/alsigil/deploy/.env is the compose *interpolation* env file --
@@ -1214,7 +1302,13 @@ jobs:
 
       - name: Smoke check
         id: smoke
-        run: uv run --with httpx python scripts/smoke_check.py https://alsigil.com
+        # The second argument pins alsigil.com to the box we just deployed to.
+        # Without it this check would pass against whatever DNS answers for the
+        # name -- which before the Task 7 cutover is still Vercel, so a box that
+        # never came up would smoke-green and no rollback would fire.
+        run: |
+          uv run --with httpx python scripts/smoke_check.py \
+            https://alsigil.com "${{ secrets.SSH_HOST }}"
 
       - name: Report that no rollback target exists
         if: failure() && steps.previous.outputs.value == ''
@@ -1238,6 +1332,13 @@ jobs:
           echo "::error::Deploy failed. Rolling back to ${{ steps.previous.outputs.value }}."
           ssh deploy@${{ secrets.SSH_HOST }} bash -euo pipefail <<EOF
             cd /opt/alsigil/deploy
+            # Restore the configuration too, not just the tag. "Sync the compose
+            # configuration" already overwrote the Caddyfile and the compose
+            # file with this deploy's versions; bringing the old image up behind
+            # them would leave the site broken while the run claims it recovered.
+            for f in docker-compose.prod.yml Caddyfile; do
+              if [ -f "\$f.rollback" ]; then mv "\$f.rollback" "\$f"; fi
+            done
             export IMAGE_TAG='${{ steps.previous.outputs.value }}'
             export GITHUB_REPOSITORY_OWNER='${{ github.repository_owner }}'
             docker compose -f docker-compose.prod.yml up -d
@@ -2038,10 +2139,21 @@ Description=alsigil disk space alert
 
 [Service]
 Type=oneshot
-EnvironmentFile=/opt/alsigil/.env
 WorkingDirectory=/opt/alsigil/deploy
-ExecStart=/usr/bin/docker compose -f /opt/alsigil/deploy/docker-compose.prod.yml run --rm api python scripts/disk_alert.py
-User=root
+# `exec` against the already-running api container, not `run --rm`. Two reasons,
+# both of which made the `run --rm` form unable to work at all:
+#   1. GHCR is authenticated as the deploy user, so a pull triggered by `run`
+#      under any other account fails on credentials.
+#   2. `run` resolves the image through IMAGE_TAG, which is unset in a systemd
+#      environment and therefore falls back to :latest -- and after a rollback
+#      :latest is precisely the image that was rolled back for being broken.
+# `exec` uses the container that is actually serving traffic, and inherits its
+# environment from `env_file:` in the compose file, so no EnvironmentFile is
+# needed here (and one would only add a second, drifting copy of the secrets).
+ExecStart=/usr/bin/docker compose -f /opt/alsigil/deploy/docker-compose.prod.yml exec -T api python scripts/disk_alert.py
+# Must match the account GHCR and the compose files are owned by: root has no
+# registry credentials and cannot read /opt/alsigil/.env (root:deploy 0640).
+User=deploy
 # The script exits 1 when it alerts, which is informational, not a unit failure.
 # It exits 2 when the alert could not be delivered -- either the send failed
 # (e.g. Resend rejects the key) or ALERT_EMAIL_TO was never configured -- and
@@ -2065,6 +2177,8 @@ WantedBy=timers.target
 ```
 
 Note: the container sees its own filesystem, which shares the host's disk on this single-box setup, so `shutil.disk_usage("/")` reports the number that matters.
+
+Because the unit uses `exec`, the `api` container must already be running — install this after Task 6's first successful deploy, not before. That dependency is deliberate: if `api` is down, the disk alert failing loudly is more useful than it quietly starting a second copy of the application from a `:latest` image nobody chose.
 
 ```bash
 scp deploy/alsigil-diskalert.service deploy/alsigil-diskalert.timer deploy@<box-ip>:/tmp/

@@ -315,3 +315,59 @@ def test_sync_step_writes_the_compose_interpolation_env_file():
     assert "/opt/alsigil/deploy/.env" in script
     assert "GITHUB_REPOSITORY_OWNER=" in script
     assert "github.repository_owner" in script
+
+
+def test_rollback_restores_the_configuration_not_only_the_image_tag():
+    """The sync step scp's the new Caddyfile and compose file onto the box
+    *before* the swap. A commit that breaks the Caddyfile therefore fails the
+    smoke check and, if rollback only re-ran `up -d` with the old IMAGE_TAG,
+    would bring the old image up behind the new broken proxy config -- the run
+    would report a successful rollback while the site stayed down. So the sync
+    step must preserve the live configuration, and the rollback step must put
+    it back before restarting anything.
+    """
+    steps = _deploy_steps()
+
+    sync_script = next(
+        s for s in steps if s.get("name") == "Sync the compose configuration"
+    )["run"]
+    assert ".rollback" in sync_script, (
+        "the sync step must copy the live Caddyfile and compose file aside "
+        "before overwriting them, or there is nothing to roll back to"
+    )
+    for name in ("docker-compose.prod.yml", "Caddyfile"):
+        assert name in sync_script, f"{name} is not preserved before the swap"
+
+    rollback_script = next(
+        s for s in steps if "roll back" in s.get("name", "").lower()
+    )["run"]
+    assert ".rollback" in rollback_script, (
+        "the rollback step must restore the preserved configuration, not "
+        "only redeploy the previous image tag"
+    )
+    restore_index = rollback_script.index(".rollback")
+    up_index = rollback_script.index("up -d")
+    assert restore_index < up_index, (
+        "the configuration must be restored before the containers come back "
+        "up, otherwise the old image starts behind the broken config"
+    )
+    for name in ("docker-compose.prod.yml", "Caddyfile"):
+        assert name in rollback_script, f"{name} is not restored on rollback"
+
+
+def test_smoke_check_is_pinned_to_the_box_being_deployed():
+    """`smoke_check.py https://alsigil.com` on its own resolves the name
+    through DNS, which before the Task 7 cutover still points at Vercel. A box
+    that never came up would then smoke-green off the old host and no rollback
+    would fire. The check must be pinned to the deploy target's address.
+    """
+    steps = _deploy_steps()
+    smoke_step = next(s for s in steps if s.get("id") == "smoke")
+    script = smoke_step["run"]
+
+    assert "smoke_check.py" in script
+    argument_tail = script.split("smoke_check.py", 1)[1]
+    assert "secrets.SSH_HOST" in argument_tail, (
+        "the smoke check must be given the deploy target's address as its "
+        "second argument, so it cannot pass against whatever DNS answers"
+    )

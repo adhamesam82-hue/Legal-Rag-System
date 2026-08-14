@@ -59,6 +59,20 @@ jobs:
 
       - name: Sync the compose configuration
         run: |
+          # Keep whatever configuration is live right now, so the rollback step
+          # can put it back. The image tag is not the whole deployment: this
+          # step overwrites the Caddyfile and the compose file *before* the
+          # swap, so a commit that breaks the proxy config fails the smoke
+          # check and then rolls the image back behind the new broken proxy --
+          # reporting a successful rollback while the site stays down.
+          ssh deploy@${{ secrets.SSH_HOST }} bash -euo pipefail <<'EOF'
+            cd /opt/alsigil/deploy
+            for f in docker-compose.prod.yml Caddyfile; do
+              # Absent on a bootstrap deploy; there is nothing to roll back to
+              # then, and the "no rollback target" step reports that separately.
+              if [ -f "$f" ]; then cp -p "$f" "$f.rollback"; fi
+            done
+          EOF
           scp deploy/docker-compose.prod.yml deploy/Caddyfile \
             deploy@${{ secrets.SSH_HOST }}:/opt/alsigil/deploy/
           # /opt/alsigil/deploy/.env is the compose *interpolation* env file --
@@ -93,7 +107,13 @@ jobs:
 
       - name: Smoke check
         id: smoke
-        run: uv run --with httpx python scripts/smoke_check.py https://alsigil.com
+        # The second argument pins alsigil.com to the box we just deployed to.
+        # Without it this check would pass against whatever DNS answers for the
+        # name -- which before the Task 7 cutover is still Vercel, so a box that
+        # never came up would smoke-green and no rollback would fire.
+        run: |
+          uv run --with httpx python scripts/smoke_check.py \
+            https://alsigil.com "${{ secrets.SSH_HOST }}"
 
       - name: Report that no rollback target exists
         if: failure() && steps.previous.outputs.value == ''
@@ -117,6 +137,13 @@ jobs:
           echo "::error::Deploy failed. Rolling back to ${{ steps.previous.outputs.value }}."
           ssh deploy@${{ secrets.SSH_HOST }} bash -euo pipefail <<EOF
             cd /opt/alsigil/deploy
+            # Restore the configuration too, not just the tag. "Sync the compose
+            # configuration" already overwrote the Caddyfile and the compose
+            # file with this deploy's versions; bringing the old image up behind
+            # them would leave the site broken while the run claims it recovered.
+            for f in docker-compose.prod.yml Caddyfile; do
+              if [ -f "\$f.rollback" ]; then mv "\$f.rollback" "\$f"; fi
+            done
             export IMAGE_TAG='${{ steps.previous.outputs.value }}'
             export GITHUB_REPOSITORY_OWNER='${{ github.repository_owner }}'
             docker compose -f docker-compose.prod.yml up -d

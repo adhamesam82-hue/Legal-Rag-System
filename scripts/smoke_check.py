@@ -1,22 +1,57 @@
 """Post-deploy smoke check. Exits non-zero if the deployment is not usable.
 
-Run: uv run python scripts/smoke_check.py https://alsigil.com
+Run: uv run python scripts/smoke_check.py https://alsigil.com <box-ip>
 
 Deliberately checks more than "did the process start". /api/health touches the
 database and reports corpus counts, so a zero-article corpus -- the signature
 of a restore that moved the schema but not the rows -- fails here rather than
 being discovered by the first person to search.
+
+The optional second argument is curl's `--resolve`: it pins the URL's hostname
+to a specific address so the check reaches the box being deployed rather than
+whatever DNS currently answers for that name. Without it a deploy run before
+the DNS cutover would smoke-green against the old Vercel deployment -- a box
+that never came up at all would look healthy, and no rollback would fire. The
+URL is left untouched, so TLS SNI and certificate verification still happen
+against the real hostname.
 """
 from __future__ import annotations
 
+import socket
 import sys
 import time
+from urllib.parse import urlsplit
 
 import httpx
 
 TIMEOUT_SECONDS = 10
 RETRY_WINDOW_SECONDS = 30
 RETRY_INTERVAL_SECONDS = 2
+
+
+def resolver_pinning(hostname: str, address: str, getaddrinfo):
+    """A getaddrinfo replacement that sends `hostname` to `address`.
+
+    Everything else resolves normally. Substituting at the resolver rather than
+    in the URL is what keeps the Host header, the TLS SNI name and certificate
+    validation pointed at the real hostname -- rewriting the URL to the IP
+    would fail certificate verification and never reach the right vhost.
+    """
+
+    def resolve(host, port, *args, **kwargs):
+        return getaddrinfo(
+            address if host == hostname else host, port, *args, **kwargs
+        )
+
+    return resolve
+
+
+def pin_host(base_url: str, address: str) -> None:
+    """Pin the URL's hostname to `address` for the rest of this process."""
+    hostname = urlsplit(base_url).hostname
+    if not hostname:
+        raise ValueError(f"no hostname to pin in {base_url!r}")
+    socket.getaddrinfo = resolver_pinning(hostname, address, socket.getaddrinfo)
 
 
 def check_api_health(client: httpx.Client, base_url: str) -> str | None:
@@ -73,12 +108,17 @@ def run_checks(base_url: str) -> list[str]:
         ]
 
 
-def main() -> int:
-    if len(sys.argv) != 2:
-        print("usage: smoke_check.py <base_url>", file=sys.stderr)
+def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv if argv is None else argv
+    if len(argv) not in (2, 3):
+        print("usage: smoke_check.py <base_url> [address-to-pin]", file=sys.stderr)
         return 2
 
-    base_url = sys.argv[1].rstrip("/")
+    base_url = argv[1].rstrip("/")
+    if len(argv) == 3 and argv[2]:
+        pin_host(base_url, argv[2])
+        print(f"pinned {urlsplit(base_url).hostname} to {argv[2]}")
+
     deadline = time.monotonic() + RETRY_WINDOW_SECONDS
 
     # Containers take a few seconds to accept connections. Retrying inside the
