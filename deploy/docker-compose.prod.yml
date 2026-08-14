@@ -1,0 +1,75 @@
+# Production stack. The root docker-compose.yml is the local development stack
+# and is deliberately different: it publishes 5432, this must not.
+#
+# Images are never built here. CI builds and pushes them; this file pulls.
+# IMAGE_TAG is the git SHA, which is what makes rollback a one-liner.
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - web
+    logging: *logging
+
+  web:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/alsigil-web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file: /opt/alsigil/.env
+    expose:
+      - "3000"
+    logging: *logging
+
+  api:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/alsigil-api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file: /opt/alsigil/.env
+    environment:
+      LEGALOS_DOCUMENT_ROOT: /data/documents
+    expose:
+      - "8000"
+    volumes:
+      # Uploaded matter documents. Without this the files vanish on redeploy
+      # while the database rows keep pointing at them.
+      - documents:/data/documents
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging: *logging
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    env_file: /opt/alsigil/.env
+    # No `ports:` -- reachable only over the compose network.
+    expose:
+      - "5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-legalrag} -d ${POSTGRES_DB:-legalrag}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    logging: *logging
+
+volumes:
+  pgdata:
+  documents:
+  caddy_data:
+  caddy_config:

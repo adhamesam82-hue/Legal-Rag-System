@@ -1,0 +1,36 @@
+# One origin for both services. Every FastAPI route already lives under /api
+# and Next.js claims nothing there, so no path rewriting is needed -- and
+# because the browser never makes a cross-origin call, the CORS allowlist in
+# src/legalrag/config.py stops mattering in production.
+
+alsigil.com {
+	encode zstd gzip
+
+	handle /api/* {
+		# lb_try_duration makes Caddy hold and retry while the API container
+		# restarts during a deploy, instead of returning 502. Not zero-downtime
+		# -- it converts a visible error into one slow request.
+		reverse_proxy api:8000 {
+			lb_try_duration 15s
+			lb_try_interval 500ms
+			# Streaming answers (/api/ask/stream) must not be buffered.
+			flush_interval -1
+		}
+	}
+
+	handle {
+		reverse_proxy web:3000 {
+			lb_try_duration 15s
+			lb_try_interval 500ms
+		}
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}
+
+www.alsigil.com {
+	redir https://alsigil.com{uri} permanent
+}
