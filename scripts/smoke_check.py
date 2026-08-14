@@ -34,8 +34,13 @@ def check_api_health(client: httpx.Client, base_url: str) -> str | None:
         return f"health status is {payload.get('status')!r}"
 
     corpus = payload.get("corpus") or {}
-    if not any(count for count in corpus.values() if isinstance(count, int)):
-        return f"health reports an empty corpus: {corpus}"
+    article_count = sum(
+        stats.get("articles", 0)
+        for stats in corpus.values()
+        if isinstance(stats, dict)
+    )
+    if article_count == 0:
+        return f"health reports no articles: {corpus}"
 
     return None
 
