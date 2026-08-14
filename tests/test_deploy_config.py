@@ -37,9 +37,22 @@ def test_web_dockerignore_excludes_build_artefacts():
 
 def test_production_compose_does_not_publish_postgres():
     """The dev compose publishes 5432 on purpose. Production must not: the box
-    has a public IP, and a published port bypasses ufw's docker chain."""
-    compose = read("deploy/docker-compose.prod.yml")
-    assert "5432:5432" not in compose
+    has a public IP, and a published port bypasses ufw's docker chain.
+
+    Asserts the absence of the key rather than of the string "5432:5432",
+    which is what this test used to do and which let two equally fatal forms
+    straight through: `ports: ["5433:5432"]` publishes the database on another
+    host port, and `ports: ["5432"]` publishes it on a random high port. Both
+    are reachable from the internet.
+    """
+    import yaml
+
+    compose = yaml.safe_load(read("deploy/docker-compose.prod.yml"))
+    postgres = compose["services"]["postgres"]
+    assert "ports" not in postgres, (
+        f"postgres publishes ports to the host: {postgres.get('ports')!r} -- "
+        "in production it must be reachable only over the compose network"
+    )
 
 
 def test_production_compose_rotates_logs_on_every_service():
@@ -63,9 +76,17 @@ def test_production_compose_rotates_logs_on_every_service():
 
 def test_production_compose_pins_image_tags_to_a_variable():
     """Rollback is `IMAGE_TAG=<old-sha> docker compose up -d`, which only works
-    if the tag is a variable rather than hardcoded to latest."""
+    if the tag is a variable rather than hardcoded to latest.
+
+    Counted, not merely searched for: as a bare substring check this passed
+    when only one of the two images used the variable, so hardcoding the api
+    image would make rollback a silent no-op for the API while the web
+    container rolled back correctly -- the worst of both states.
+    """
     compose = read("deploy/docker-compose.prod.yml")
-    assert "${IMAGE_TAG:-latest}" in compose
+    assert compose.count("${IMAGE_TAG:-latest}") == 2, (
+        "expected the tag variable on both the web and api images"
+    )
 
 
 def test_production_compose_requires_the_image_owner_variable():
@@ -91,10 +112,41 @@ def test_caddyfile_routes_api_prefix_to_the_api_service():
     assert "reverse_proxy api:8000" in caddyfile
 
 
+def _caddyfile_directives() -> str:
+    """The Caddyfile with comment lines removed.
+
+    Necessary because the file documents `lb_try_duration` in a comment, so a
+    plain substring assertion over the raw text stays green after both real
+    directives are deleted -- the exact regression this test exists to catch.
+    """
+    return "\n".join(
+        line
+        for line in read("deploy/Caddyfile").splitlines()
+        if not line.strip().startswith("#")
+    )
+
+
 def test_caddyfile_holds_requests_across_a_container_restart():
     """Without this, every deploy shows visitors a 502 for 5-15 seconds while
-    the new API container boots."""
-    assert "lb_try_duration" in read("deploy/Caddyfile")
+    the new API container boots.
+
+    Checked per upstream: the API and the frontend are swapped by the same
+    `up -d`, so a retry window on only one of them still means a visible 502
+    for every page load, or for every API call, during the restart.
+    """
+    directives = _caddyfile_directives()
+    assert "lb_try_duration" in directives, (
+        "the retry window appears only in a comment, not in any "
+        "reverse_proxy block"
+    )
+
+    for upstream in ("api:8000", "web:3000"):
+        start = directives.index(f"reverse_proxy {upstream}")
+        block = directives[start : directives.index("}", start)]
+        assert "lb_try_duration" in block, (
+            f"the reverse_proxy block for {upstream} has no retry window, so "
+            "a deploy 502s that route while the container restarts"
+        )
 
 
 def _build_workflow_steps():
