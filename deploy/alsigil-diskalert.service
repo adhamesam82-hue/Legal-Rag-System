@@ -8,7 +8,8 @@ WorkingDirectory=/opt/alsigil/deploy
 ExecStart=/usr/bin/docker compose -f /opt/alsigil/deploy/docker-compose.prod.yml run --rm api python scripts/disk_alert.py
 User=root
 # The script exits 1 when it alerts, which is informational, not a unit failure.
-# It exits 2 when the alert could not be delivered (e.g. Resend rejects the
-# key) -- that is deliberately left outside this set, so systemd records it
-# as a real unit failure instead of a silent "healthy" run.
+# It exits 2 when the alert could not be delivered -- either the send failed
+# (e.g. Resend rejects the key) or ALERT_EMAIL_TO was never configured -- and
+# that is deliberately left outside this set, so systemd records it as a real
+# unit failure instead of a silent "healthy" run.
 SuccessExitStatus=0 1

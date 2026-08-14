@@ -25,6 +25,19 @@ def test_alert_names_the_number_and_the_usual_cause():
     assert "docker" in message.lower()
 
 
+def test_unset_recipient_returns_2_not_1(monkeypatch):
+    """An alert nobody receives is not a successful run: a box where
+    ALERT_EMAIL_TO was never configured must not report healthy to systemd
+    every night just because the script printed instead of crashing. Exit 2
+    keeps it out of the unit's SuccessExitStatus=0 1, same as a failed send.
+    """
+    monkeypatch.setattr("scripts.disk_alert.disk_usage", lambda path="/": (91.5, 3.4))
+    monkeypatch.delenv("ALERT_EMAIL_TO", raising=False)
+    monkeypatch.delenv("DISK_ALERT_THRESHOLD", raising=False)
+
+    assert main() == 2
+
+
 def test_delivery_failure_returns_2_not_1(monkeypatch):
     """A failed send must not exit inside SuccessExitStatus=0 1 -- see the
     service unit's comment. Exit 1 means "alerted"; a swallowed EmailError

@@ -52,8 +52,15 @@ def main() -> int:
     recipient = os.environ.get("ALERT_EMAIL_TO")
     if not recipient:
         print(message, file=sys.stderr)
-        print("ALERT_EMAIL_TO not set; printed instead of sent", file=sys.stderr)
-        return 1
+        # Exit 2, like a failed send: an alert nobody receives is not a
+        # successful run, and SuccessExitStatus=0 1 would otherwise record
+        # a permanently misconfigured box as healthy every night.
+        print(
+            "ALERT_EMAIL_TO is not set in /opt/alsigil/.env; the alert was "
+            "printed instead of sent",
+            file=sys.stderr,
+        )
+        return 2
 
     from legalrag.email import EmailError, send_plain_email
 

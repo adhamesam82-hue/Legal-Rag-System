@@ -1865,8 +1865,15 @@ def main() -> int:
     recipient = os.environ.get("ALERT_EMAIL_TO")
     if not recipient:
         print(message, file=sys.stderr)
-        print("ALERT_EMAIL_TO not set; printed instead of sent", file=sys.stderr)
-        return 1
+        # Exit 2, like a failed send: an alert nobody receives is not a
+        # successful run, and SuccessExitStatus=0 1 would otherwise record
+        # a permanently misconfigured box as healthy every night.
+        print(
+            "ALERT_EMAIL_TO is not set in /opt/alsigil/.env; the alert was "
+            "printed instead of sent",
+            file=sys.stderr,
+        )
+        return 2
 
     from legalrag.email import EmailError, send_plain_email
 
@@ -1901,6 +1908,12 @@ if a failed send also exited 1, the alert could stay broken indefinitely with
 nothing but an unread `journalctl` traceback to show for it, right up until the
 disk actually fills and there is no warning at all. So delivery failure gets
 its own exit code, 2, deliberately left outside that success set.
+
+The same reasoning applies to an unset `ALERT_EMAIL_TO`: a box where the
+recipient was never configured in `/opt/alsigil/.env` is not a working alert
+either, so that branch exits 2 too rather than 1 -- a one-time provisioning
+omission is at least as likely as a Resend outage, and just as silent under
+`SuccessExitStatus=0 1` if left at exit 1.
 
 - [ ] **Step 4: Add the generic sender to `src/legalrag/email.py`**
 
@@ -1954,9 +1967,10 @@ WorkingDirectory=/opt/alsigil/deploy
 ExecStart=/usr/bin/docker compose -f /opt/alsigil/deploy/docker-compose.prod.yml run --rm api python scripts/disk_alert.py
 User=root
 # The script exits 1 when it alerts, which is informational, not a unit failure.
-# It exits 2 when the alert could not be delivered (e.g. Resend rejects the
-# key) -- that is deliberately left outside this set, so systemd records it
-# as a real unit failure instead of a silent "healthy" run.
+# It exits 2 when the alert could not be delivered -- either the send failed
+# (e.g. Resend rejects the key) or ALERT_EMAIL_TO was never configured -- and
+# that is deliberately left outside this set, so systemd records it as a real
+# unit failure instead of a silent "healthy" run.
 SuccessExitStatus=0 1
 ```
 
