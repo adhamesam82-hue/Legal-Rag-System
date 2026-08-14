@@ -95,3 +95,57 @@ def test_caddyfile_holds_requests_across_a_container_restart():
     """Without this, every deploy shows visitors a 502 for 5-15 seconds while
     the new API container boots."""
     assert "lb_try_duration" in read("deploy/Caddyfile")
+
+
+def _build_workflow_steps():
+    import yaml
+
+    workflow = yaml.safe_load(read(".github/workflows/build.yml"))
+    return workflow["jobs"]["build"]["steps"]
+
+
+def test_build_workflow_passes_api_base_as_a_build_arg():
+    """NEXT_PUBLIC_API_BASE is inlined into the client bundle at build time, so
+    a runtime environment variable on the step (or container) has no effect.
+    If this ever regresses to `env:`, the API stays healthy and the frontend
+    silently ships pointed at nothing."""
+    steps = _build_workflow_steps()
+    web_build_step = next(
+        s for s in steps if s.get("name") == "Build and push the web image"
+    )
+    build_args = web_build_step.get("with", {}).get("build-args", "")
+    assert "NEXT_PUBLIC_API_BASE" in build_args, (
+        "NEXT_PUBLIC_API_BASE must be passed via build-args, not env"
+    )
+    assert "NEXT_PUBLIC_API_BASE" not in web_build_step.get("env", {})
+
+
+def test_build_workflow_fails_the_build_if_localhost_leaks_into_the_bundle():
+    """This grep is the only automated guard against a dropped or misrouted
+    NEXT_PUBLIC_API_BASE build arg reaching a pushed image. It must run after
+    the web image is built and pushed (there is nothing to grep before that),
+    and it must actually fail the job rather than just warn."""
+    steps = _build_workflow_steps()
+    web_build_index = next(
+        i
+        for i, s in enumerate(steps)
+        if s.get("name") == "Build and push the web image"
+    )
+    guard_step = next(
+        (
+            s
+            for s in steps
+            if "localhost:8000" in s.get("run", "")
+        ),
+        None,
+    )
+    assert guard_step is not None, (
+        "no step greps the built bundle for a leaked localhost API base"
+    )
+    guard_index = steps.index(guard_step)
+    assert guard_index > web_build_index, (
+        "the localhost guard must run after the web image is built and pushed"
+    )
+    assert "exit 1" in guard_step["run"], (
+        "the guard must fail the job, not just print a warning"
+    )
