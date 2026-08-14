@@ -55,13 +55,24 @@ def main() -> int:
         print("ALERT_EMAIL_TO not set; printed instead of sent", file=sys.stderr)
         return 1
 
-    from legalrag.email import send_plain_email
+    from legalrag.email import EmailError, send_plain_email
 
-    send_plain_email(
-        to_email=recipient,
-        subject=f"[alsigil] disk {used_percent:.0f}% full",
-        body=message,
-    )
+    try:
+        send_plain_email(
+            to_email=recipient,
+            subject=f"[alsigil] disk {used_percent:.0f}% full",
+            body=message,
+        )
+    except EmailError as exc:
+        # Exit 2, not 1: the unit's SuccessExitStatus=0 1 covers "alerted",
+        # so a delivery failure must land outside that set or systemd records
+        # a silent failure to warn as a healthy run.
+        print(
+            f"disk at {used_percent:.1f}% but the alert could not be sent: {exc}",
+            file=sys.stderr,
+        )
+        return 2
+
     print(f"alerted {recipient}: disk at {used_percent:.1f}%")
     return 1
 

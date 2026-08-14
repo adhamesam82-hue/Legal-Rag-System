@@ -1868,13 +1868,24 @@ def main() -> int:
         print("ALERT_EMAIL_TO not set; printed instead of sent", file=sys.stderr)
         return 1
 
-    from legalrag.email import send_plain_email
+    from legalrag.email import EmailError, send_plain_email
 
-    send_plain_email(
-        to_email=recipient,
-        subject=f"[alsigil] disk {used_percent:.0f}% full",
-        body=message,
-    )
+    try:
+        send_plain_email(
+            to_email=recipient,
+            subject=f"[alsigil] disk {used_percent:.0f}% full",
+            body=message,
+        )
+    except EmailError as exc:
+        # Exit 2, not 1: the unit's SuccessExitStatus=0 1 covers "alerted",
+        # so a delivery failure must land outside that set or systemd records
+        # a silent failure to warn as a healthy run.
+        print(
+            f"disk at {used_percent:.1f}% but the alert could not be sent: {exc}",
+            file=sys.stderr,
+        )
+        return 2
+
     print(f"alerted {recipient}: disk at {used_percent:.1f}%")
     return 1
 
@@ -1882,6 +1893,14 @@ def main() -> int:
 if __name__ == "__main__":
     raise SystemExit(main())
 ```
+
+Note: a delivery failure (`EmailError` from `send_plain_email` -- an expired
+Resend key, an outage, a rejected sender) must not exit 1. Exit 1 is what the
+service unit's `SuccessExitStatus=0 1` treats as a normal, already-alerted run;
+if a failed send also exited 1, the alert could stay broken indefinitely with
+nothing but an unread `journalctl` traceback to show for it, right up until the
+disk actually fills and there is no warning at all. So delivery failure gets
+its own exit code, 2, deliberately left outside that success set.
 
 - [ ] **Step 4: Add the generic sender to `src/legalrag/email.py`**
 
@@ -1935,6 +1954,9 @@ WorkingDirectory=/opt/alsigil/deploy
 ExecStart=/usr/bin/docker compose -f /opt/alsigil/deploy/docker-compose.prod.yml run --rm api python scripts/disk_alert.py
 User=root
 # The script exits 1 when it alerts, which is informational, not a unit failure.
+# It exits 2 when the alert could not be delivered (e.g. Resend rejects the
+# key) -- that is deliberately left outside this set, so systemd records it
+# as a real unit failure instead of a silent "healthy" run.
 SuccessExitStatus=0 1
 ```
 
