@@ -1,0 +1,102 @@
+# Pulls the images built by the Build workflow, migrates, swaps the containers,
+# and rolls back automatically if the result is not usable.
+#
+# Nothing is built here. The box's job is to pull a known-good image, which is
+# why a broken build never reaches it.
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ["Build images"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy (a git SHA). Use this to roll back."
+        required: true
+
+jobs:
+  deploy:
+    # A failed build must not deploy. workflow_run fires on failure too.
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Work out which tag to deploy
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up SSH
+        run: |
+          install -d -m 0700 ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Record the tag currently running, for rollback
+        id: previous
+        run: |
+          current=$(ssh deploy@${{ secrets.SSH_HOST }} \
+            "cat /opt/alsigil/deploy/.current_tag 2>/dev/null || echo latest")
+          echo "value=$current" >> "$GITHUB_OUTPUT"
+          echo "Currently deployed: $current"
+
+      - name: Sync the compose configuration
+        run: |
+          scp deploy/docker-compose.prod.yml deploy/Caddyfile \
+            deploy@${{ secrets.SSH_HOST }}:/opt/alsigil/deploy/
+          # /opt/alsigil/deploy/.env is the compose *interpolation* env file --
+          # separate from /opt/alsigil/.env, which is wired in via `env_file:`
+          # as container secrets. GITHUB_REPOSITORY_OWNER lives only here, and
+          # provision.sh only creates it empty, so every deploy re-writes it.
+          # That makes a redeploy self-healing if the file is ever lost or
+          # edited by hand -- the required-variable form in the compose file
+          # means a missing value fails loudly rather than pulling
+          # `ghcr.io//alsigil-api`, but this step means it should never be
+          # missing on a box that has deployed at least once.
+          ssh deploy@${{ secrets.SSH_HOST }} \
+            "echo 'GITHUB_REPOSITORY_OWNER=${{ github.repository_owner }}' > /opt/alsigil/deploy/.env"
+
+      - name: Pull, migrate, and swap
+        run: |
+          ssh deploy@${{ secrets.SSH_HOST }} bash -euo pipefail <<EOF
+            cd /opt/alsigil/deploy
+            export IMAGE_TAG='${{ steps.tag.outputs.value }}'
+            export GITHUB_REPOSITORY_OWNER='${{ github.repository_owner }}'
+            docker compose -f docker-compose.prod.yml pull
+            # A discrete step so a failed migration aborts the deploy instead
+            # of leaving a container crash-looping against a half-applied schema.
+            docker compose -f docker-compose.prod.yml run --rm api \
+              python scripts/migrate.py
+            docker compose -f docker-compose.prod.yml up -d
+            echo "\$IMAGE_TAG" > /opt/alsigil/deploy/.current_tag
+          EOF
+
+      - name: Set up Python for the smoke check
+        uses: astral-sh/setup-uv@v5
+
+      - name: Smoke check
+        id: smoke
+        run: uv run --with httpx python scripts/smoke_check.py https://alsigil.com
+
+      - name: Roll back to the previous tag
+        if: failure() && steps.smoke.outcome == 'failure'
+        run: |
+          echo "::error::Smoke check failed. Rolling back to ${{ steps.previous.outputs.value }}."
+          ssh deploy@${{ secrets.SSH_HOST }} bash -euo pipefail <<EOF
+            cd /opt/alsigil/deploy
+            export IMAGE_TAG='${{ steps.previous.outputs.value }}'
+            export GITHUB_REPOSITORY_OWNER='${{ github.repository_owner }}'
+            docker compose -f docker-compose.prod.yml up -d
+            echo "\$IMAGE_TAG" > /opt/alsigil/deploy/.current_tag
+          EOF
+          exit 1

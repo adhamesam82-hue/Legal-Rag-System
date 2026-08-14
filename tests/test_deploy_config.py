@@ -149,3 +149,111 @@ def test_build_workflow_fails_the_build_if_localhost_leaks_into_the_bundle():
     assert "exit 1" in guard_step["run"], (
         "the guard must fail the job, not just print a warning"
     )
+
+
+def _deploy_workflow():
+    import yaml
+
+    return yaml.safe_load(read(".github/workflows/deploy.yml"))
+
+
+def _deploy_steps():
+    return _deploy_workflow()["jobs"]["deploy"]["steps"]
+
+
+def test_deploy_job_does_not_run_on_a_failed_build():
+    """workflow_run fires on both success and failure. Without a job-level
+    gate keyed to the conclusion, a broken build would still reach the box --
+    the entire point of splitting build and deploy into separate workflows.
+    """
+    condition = _deploy_workflow()["jobs"]["deploy"]["if"]
+    assert "github.event.workflow_run.conclusion" in condition
+    assert "success" in condition
+    # workflow_dispatch (manual rollback) has no build conclusion to check,
+    # so it must be admitted independently rather than folded into the same
+    # equality check.
+    assert "workflow_dispatch" in condition
+
+
+def test_rollback_step_is_gated_on_the_health_check_and_uses_the_recorded_tag():
+    """The rollback must not run on a clean deploy, and it must redeploy
+    whatever tag was actually running before -- not a hardcoded value that
+    would drift the moment a second deploy happens.
+    """
+    steps = _deploy_steps()
+
+    record_step = next(
+        s for s in steps if s.get("id") == "previous"
+    )
+    assert "GITHUB_OUTPUT" in record_step["run"], (
+        "the previously-running tag must be captured as a step output "
+        "before any rollback could reference it"
+    )
+
+    rollback_step = next(
+        s for s in steps if "roll back" in s.get("name", "").lower()
+    )
+
+    condition = rollback_step.get("if", "")
+    assert condition, "rollback step must be conditional, not unconditional"
+    assert "smoke" in condition, (
+        "rollback must be tied to the smoke-check step's outcome"
+    )
+    assert "failure" in condition.lower()
+
+    rollback_script = rollback_step["run"]
+    assert f"steps.{record_step['id']}.outputs" in rollback_script, (
+        "rollback must redeploy the tag recorded before this deploy, "
+        "not a hardcoded tag"
+    )
+
+
+def test_migration_step_runs_before_and_separately_from_up_d():
+    """A failed migration must abort the deploy rather than leave a container
+    crash-looping against a half-applied schema. That requires the migration
+    command to run as its own step in the script (not folded into `up -d`),
+    positioned before it, under a shell that aborts on the first failure.
+    """
+    steps = _deploy_steps()
+    deploy_step = next(
+        s for s in steps if s.get("name") == "Pull, migrate, and swap"
+    )
+    script = deploy_step["run"]
+
+    assert "bash -euo pipefail" in script or "set -euo pipefail" in script, (
+        "the deploy script must abort on the first failing command, "
+        "otherwise a failed migration would not stop `up -d` from running"
+    )
+
+    migrate_index = script.index("migrate.py")
+    up_index = script.index("up -d")
+    assert migrate_index < up_index, (
+        "migrations must run before the containers are swapped in"
+    )
+
+    # They must be distinct commands, not the same docker compose invocation.
+    migrate_command_end = script.index("\n", migrate_index)
+    assert "up -d" not in script[migrate_index:migrate_command_end], (
+        "migrate and up -d must be separate docker compose invocations"
+    )
+
+
+def test_sync_step_writes_the_compose_interpolation_env_file():
+    """docker-compose.prod.yml now requires GITHUB_REPOSITORY_OWNER
+    (`${GITHUB_REPOSITORY_OWNER:?...}`). Compose only reads that from a
+    `.env` file next to the compose file for interpolation purposes -- a
+    completely different mechanism from `env_file:` (container secrets, read
+    from /opt/alsigil/.env). Without this step writing
+    /opt/alsigil/deploy/.env, the nightly backup timer and any manual
+    `docker compose` run on the box with a bare environment would resolve
+    the image to the invalid `ghcr.io//alsigil-api`.
+    """
+    steps = _deploy_steps()
+    sync_step = next(
+        s for s in steps if s.get("name") == "Sync the compose configuration"
+    )
+    script = sync_step["run"]
+
+    assert "/opt/alsigil/deploy/.env" in script
+    assert "GITHUB_REPOSITORY_OWNER=" in script
+    assert "github.repository_owner" in script
