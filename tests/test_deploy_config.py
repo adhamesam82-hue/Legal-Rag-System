@@ -7,6 +7,7 @@ internet without any error to signal it.
 """
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -213,6 +214,18 @@ def _deploy_steps():
     return _deploy_workflow()["jobs"]["deploy"]["steps"]
 
 
+def _step_text(step) -> str:
+    """A step's script together with the `env:` block feeding it.
+
+    Values that used to be templated inline now arrive through `env:`, which is
+    what stops a dispatch input from executing as shell. These assertions are
+    about which values a step uses, not about where the expression is written,
+    so they look at both halves.
+    """
+    env = step.get("env") or {}
+    return "\n".join([*(f"{k}={v}" for k, v in env.items()), step.get("run", "")])
+
+
 def test_deploy_job_does_not_run_on_a_failed_build():
     """workflow_run fires on both success and failure. Without a job-level
     gate keyed to the conclusion, a broken build would still reach the box --
@@ -255,8 +268,7 @@ def test_rollback_step_is_gated_on_the_health_check_and_uses_the_recorded_tag():
     )
     assert "failure" in condition.lower()
 
-    rollback_script = rollback_step["run"]
-    assert f"steps.{record_step['id']}.outputs" in rollback_script, (
+    assert f"steps.{record_step['id']}.outputs" in _step_text(rollback_step), (
         "rollback must redeploy the tag recorded before this deploy, "
         "not a hardcoded tag"
     )
@@ -362,7 +374,7 @@ def test_sync_step_writes_the_compose_interpolation_env_file():
     sync_step = next(
         s for s in steps if s.get("name") == "Sync the compose configuration"
     )
-    script = sync_step["run"]
+    script = _step_text(sync_step)
 
     assert "/opt/alsigil/deploy/.env" in script
     assert "GITHUB_REPOSITORY_OWNER=" in script
@@ -419,7 +431,85 @@ def test_smoke_check_is_pinned_to_the_box_being_deployed():
 
     assert "smoke_check.py" in script
     argument_tail = script.split("smoke_check.py", 1)[1]
-    assert "secrets.SSH_HOST" in argument_tail, (
+    assert "$SSH_HOST" in argument_tail, (
         "the smoke check must be given the deploy target's address as its "
         "second argument, so it cannot pass against whatever DNS answers"
     )
+    assert (smoke_step.get("env") or {}).get("SSH_HOST") == "${{ secrets.SSH_HOST }}", (
+        "the pinned address must be the box this workflow deploys to"
+    )
+
+
+def test_web_service_does_not_receive_the_main_secrets_file():
+    """`web` is the container the internet reaches first, and it reads exactly
+    two variables, both Clerk's. Pointing it at /opt/alsigil/.env would hand
+    Next.js POSTGRES_PASSWORD, DATABASE_URL, RESTIC_PASSWORD and the R2
+    credentials -- including the keys to the backups that are supposed to
+    survive a breach of this very machine. It gets its own narrower file.
+    """
+    import yaml
+
+    compose = yaml.safe_load(read("deploy/docker-compose.prod.yml"))
+    web_env_file = compose["services"]["web"].get("env_file")
+    referenced = [web_env_file] if isinstance(web_env_file, str) else (web_env_file or [])
+
+    assert referenced, "web must still receive its Clerk configuration"
+    for entry in referenced:
+        path = entry if isinstance(entry, str) else entry.get("path", "")
+        assert path != "/opt/alsigil/.env", (
+            "web must not be given the api's secrets file; it needs only the "
+            "Clerk variables, which live in /opt/alsigil/web.env"
+        )
+
+    # The api genuinely does need the full file -- this test must not be
+    # satisfiable by removing env_file from every service.
+    assert compose["services"]["api"]["env_file"] == "/opt/alsigil/.env"
+
+
+def test_postgres_healthcheck_expands_inside_the_container():
+    """`${POSTGRES_USER:-legalrag}` with a single $ is interpolated by Compose
+    on the client, from the *host* environment, where it is unset -- so the
+    check silently hardcodes `legalrag` no matter what /opt/alsigil/.env says,
+    and a renamed database user makes pg_isready report healthy while nothing
+    can actually connect. `$$` passes it through for the container's shell.
+    """
+    compose_text = read("deploy/docker-compose.prod.yml")
+    healthcheck_line = next(
+        line for line in compose_text.splitlines() if "pg_isready" in line
+    )
+    for variable in ("POSTGRES_USER", "POSTGRES_DB"):
+        assert f"$${{{variable}" in healthcheck_line, (
+            f"{variable} in the healthcheck must be escaped as $$ so the "
+            "container's shell expands it, not the Compose client"
+        )
+
+
+def test_caddyfile_sends_hsts():
+    """Without it, a visitor typing `alsigil.com` makes one plaintext request
+    before the redirect -- the request an attacker on the same network can
+    intercept. Privileged legal work is not done exclusively on trusted wifi.
+    """
+    directives = _caddyfile_directives()
+    assert "Strict-Transport-Security" in directives
+    assert "max-age=31536000" in directives
+    assert "includeSubDomains" in directives
+
+
+def test_no_attacker_controlled_value_is_templated_into_a_shell_script():
+    """`${{ inputs.image_tag }}` inside a `run:` block is not a variable
+    reference -- GitHub substitutes the raw text before bash ever sees it, so
+    a dispatch input containing a quote or `$(...)` executes, first on the
+    runner that holds SSH_PRIVATE_KEY and then on the box as `deploy`. The
+    value must arrive through `env:`, where the shell only ever sees a name.
+
+    `steps.*.outputs` and `github.event.*` carry the same taint one hop later:
+    the previous tag is read back from a file the dispatch input wrote.
+    """
+    tainted = ("inputs.", "steps.", "github.event.")
+    for step in _deploy_steps():
+        script = step.get("run", "")
+        for expression in re.findall(r"\$\{\{(.*?)\}\}", script):
+            assert not any(source in expression for source in tainted), (
+                f"step {step.get('name')!r} templates {expression.strip()!r} "
+                "directly into its shell script; pass it through env: instead"
+            )

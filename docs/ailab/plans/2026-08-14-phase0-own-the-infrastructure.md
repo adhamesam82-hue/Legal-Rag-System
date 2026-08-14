@@ -378,13 +378,68 @@ def test_caddyfile_holds_requests_across_a_container_restart():
             f"the reverse_proxy block for {upstream} has no retry window, so "
             "a deploy 502s that route while the container restarts"
         )
+
+
+def test_web_service_does_not_receive_the_main_secrets_file():
+    """`web` is the container the internet reaches first, and it reads exactly
+    two variables, both Clerk's. Pointing it at /opt/alsigil/.env would hand
+    Next.js POSTGRES_PASSWORD, DATABASE_URL, RESTIC_PASSWORD and the R2
+    credentials -- including the keys to the backups that are supposed to
+    survive a breach of this very machine. It gets its own narrower file.
+    """
+    import yaml
+
+    compose = yaml.safe_load(read("deploy/docker-compose.prod.yml"))
+    web_env_file = compose["services"]["web"].get("env_file")
+    referenced = [web_env_file] if isinstance(web_env_file, str) else (web_env_file or [])
+
+    assert referenced, "web must still receive its Clerk configuration"
+    for entry in referenced:
+        path = entry if isinstance(entry, str) else entry.get("path", "")
+        assert path != "/opt/alsigil/.env", (
+            "web must not be given the api's secrets file; it needs only the "
+            "Clerk variables, which live in /opt/alsigil/web.env"
+        )
+
+    # The api genuinely does need the full file -- this test must not be
+    # satisfiable by removing env_file from every service.
+    assert compose["services"]["api"]["env_file"] == "/opt/alsigil/.env"
+
+
+def test_postgres_healthcheck_expands_inside_the_container():
+    """`${POSTGRES_USER:-legalrag}` with a single $ is interpolated by Compose
+    on the client, from the *host* environment, where it is unset -- so the
+    check silently hardcodes `legalrag` no matter what /opt/alsigil/.env says,
+    and a renamed database user makes pg_isready report healthy while nothing
+    can actually connect. `$$` passes it through for the container's shell.
+    """
+    compose_text = read("deploy/docker-compose.prod.yml")
+    healthcheck_line = next(
+        line for line in compose_text.splitlines() if "pg_isready" in line
+    )
+    for variable in ("POSTGRES_USER", "POSTGRES_DB"):
+        assert f"$${{{variable}" in healthcheck_line, (
+            f"{variable} in the healthcheck must be escaped as $$ so the "
+            "container's shell expands it, not the Compose client"
+        )
+
+
+def test_caddyfile_sends_hsts():
+    """Without it, a visitor typing `alsigil.com` makes one plaintext request
+    before the redirect -- the request an attacker on the same network can
+    intercept. Privileged legal work is not done exclusively on trusted wifi.
+    """
+    directives = _caddyfile_directives()
+    assert "Strict-Transport-Security" in directives
+    assert "max-age=31536000" in directives
+    assert "includeSubDomains" in directives
 ```
 
 - [ ] **Step 2: Run to verify they fail**
 
-Run: `uv run pytest tests/test_deploy_config.py -v -k "production or caddyfile"`
+Run: `uv run pytest tests/test_deploy_config.py -v -k "production or caddyfile or web_service or postgres_healthcheck"`
 
-Expected: 6 FAIL with `FileNotFoundError`.
+Expected: 9 FAIL with `FileNotFoundError`.
 
 - [ ] **Step 3: Create `deploy/Caddyfile`**
 
@@ -396,6 +451,12 @@ Expected: 6 FAIL with `FileNotFoundError`.
 
 alsigil.com {
 	encode zstd gzip
+
+	# Once a browser has seen this header it refuses plaintext for a year, so a
+	# lawyer typing "alsigil.com" on hotel wifi never makes the http:// request
+	# that Caddy's redirect would otherwise have to answer -- and that request
+	# is the one an attacker on the same network can intercept.
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
 
 	handle /api/* {
 		# lb_try_duration makes Caddy hold and retry while the API container
@@ -462,7 +523,12 @@ services:
   web:
     image: ghcr.io/${GITHUB_REPOSITORY_OWNER:?set GITHUB_REPOSITORY_OWNER in /opt/alsigil/deploy/.env}/alsigil-web:${IMAGE_TAG:-latest}
     restart: unless-stopped
-    env_file: /opt/alsigil/.env
+    # A separate, much smaller file than the api's. `web` is the container the
+    # internet talks to first and it reads exactly two variables, both Clerk's;
+    # handing it /opt/alsigil/.env would put POSTGRES_PASSWORD, DATABASE_URL,
+    # RESTIC_PASSWORD and the R2 credentials one Next.js RCE away from an
+    # attacker -- including the keys to the backups meant to survive a breach.
+    env_file: /opt/alsigil/web.env
     expose:
       - "3000"
     logging: *logging
@@ -494,7 +560,13 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-legalrag} -d ${POSTGRES_DB:-legalrag}"]
+      # $$ escapes the interpolation, so Compose passes `${POSTGRES_USER:-...}`
+      # through literally for the container's own shell to expand. A single $
+      # is resolved on the client from the *host* environment, where these are
+      # unset -- silently pinning the check to `legalrag` regardless of what
+      # /opt/alsigil/.env actually says, so a renamed user reports healthy
+      # while nothing can connect.
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-legalrag} -d $${POSTGRES_DB:-legalrag}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -511,7 +583,7 @@ volumes:
 
 Run: `uv run pytest tests/test_deploy_config.py -v`
 
-Expected: 9 passed.
+Expected: 12 passed.
 
 - [ ] **Step 6: Validate both files parse**
 
@@ -1275,11 +1347,20 @@ jobs:
 
       - name: Work out which tag to deploy
         id: tag
+        # image_tag is attacker-influenced: anyone who can dispatch this
+        # workflow chooses it. Templating it straight into a `run:` block puts
+        # it inside a double-quoted shell string, where $(...) and backticks
+        # execute on the runner -- which holds SSH_PRIVATE_KEY. Passing it
+        # through env: means the shell only ever sees a variable reference.
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_TAG: ${{ inputs.image_tag }}
+          BUILT_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "value=${{ inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            printf 'value=%s\n' "$DISPATCH_TAG" >> "$GITHUB_OUTPUT"
           else
-            echo "value=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+            printf 'value=%s\n' "$BUILT_SHA" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set up SSH
@@ -1291,6 +1372,8 @@ jobs:
 
       - name: Record the tag currently running, for rollback
         id: previous
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
           # Must not fall back to "latest" when the file is absent. build.yml
           # tags every image :latest too, so on a bootstrap deploy "latest"
@@ -1299,12 +1382,15 @@ jobs:
           # is worse than doing nothing because it looks like it worked. An
           # empty value here is what makes the no-target case detectable and
           # lets the rollback step below fail closed instead.
-          current=$(ssh deploy@${{ secrets.SSH_HOST }} \
+          current=$(ssh "deploy@$SSH_HOST" \
             "cat /opt/alsigil/deploy/.current_tag 2>/dev/null || true")
-          echo "value=$current" >> "$GITHUB_OUTPUT"
+          printf 'value=%s\n' "$current" >> "$GITHUB_OUTPUT"
           echo "Currently deployed: ${current:-<none, first deploy to this box>}"
 
       - name: Sync the compose configuration
+        env:
+          OWNER: ${{ github.repository_owner }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
           # Keep whatever configuration is live right now, so the rollback step
           # can put it back. The image tag is not the whole deployment: this
@@ -1312,16 +1398,16 @@ jobs:
           # swap, so a commit that breaks the proxy config fails the smoke
           # check and then rolls the image back behind the new broken proxy --
           # reporting a successful rollback while the site stays down.
-          ssh deploy@${{ secrets.SSH_HOST }} bash -euo pipefail <<'EOF'
-            cd /opt/alsigil/deploy
-            for f in docker-compose.prod.yml Caddyfile; do
-              # Absent on a bootstrap deploy; there is nothing to roll back to
-              # then, and the "no rollback target" step reports that separately.
-              if [ -f "$f" ]; then cp -p "$f" "$f.rollback"; fi
-            done
+          ssh "deploy@$SSH_HOST" bash -euo pipefail <<'EOF'
+          cd /opt/alsigil/deploy
+          for f in docker-compose.prod.yml Caddyfile; do
+            # Absent on a bootstrap deploy; there is nothing to roll back to
+            # then, and the "no rollback target" step reports that separately.
+            if [ -f "$f" ]; then cp -p "$f" "$f.rollback"; fi
+          done
           EOF
           scp deploy/docker-compose.prod.yml deploy/Caddyfile \
-            deploy@${{ secrets.SSH_HOST }}:/opt/alsigil/deploy/
+            "deploy@$SSH_HOST:/opt/alsigil/deploy/"
           # /opt/alsigil/deploy/.env is the compose *interpolation* env file --
           # separate from /opt/alsigil/.env, which is wired in via `env_file:`
           # as container secrets. GITHUB_REPOSITORY_OWNER lives only here, and
@@ -1331,23 +1417,36 @@ jobs:
           # means a missing value fails loudly rather than pulling
           # `ghcr.io//alsigil-api`, but this step means it should never be
           # missing on a box that has deployed at least once.
-          ssh deploy@${{ secrets.SSH_HOST }} \
-            "echo 'GITHUB_REPOSITORY_OWNER=${{ github.repository_owner }}' > /opt/alsigil/deploy/.env"
+          printf 'GITHUB_REPOSITORY_OWNER=%s\n' "$OWNER" \
+            | ssh "deploy@$SSH_HOST" "cat > /opt/alsigil/deploy/.env"
 
       - name: Pull, migrate, and swap
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.value }}
+          OWNER: ${{ github.repository_owner }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        # The remote script is a *quoted* heredoc, so neither the runner's shell
+        # nor GitHub templating substitutes anything into it. The two values it
+        # needs are prepended as `printf %q` assignments, which the remote bash
+        # re-reads as literals -- a tag containing a quote is then data on the
+        # box, not a command running as deploy. IMAGE_TAG comes from a dispatch
+        # input, so it is attacker-chosen.
         run: |
-          ssh deploy@${{ secrets.SSH_HOST }} bash -euo pipefail <<EOF
-            cd /opt/alsigil/deploy
-            export IMAGE_TAG='${{ steps.tag.outputs.value }}'
-            export GITHUB_REPOSITORY_OWNER='${{ github.repository_owner }}'
-            docker compose -f docker-compose.prod.yml pull
-            # A discrete step so a failed migration aborts the deploy instead
-            # of leaving a container crash-looping against a half-applied schema.
-            docker compose -f docker-compose.prod.yml run --rm api \
-              python scripts/migrate.py
-            docker compose -f docker-compose.prod.yml up -d
-            echo "\$IMAGE_TAG" > /opt/alsigil/deploy/.current_tag
-          EOF
+          {
+            printf 'IMAGE_TAG=%q\n' "$IMAGE_TAG"
+            printf 'GITHUB_REPOSITORY_OWNER=%q\n' "$OWNER"
+            cat <<'REMOTE'
+          export IMAGE_TAG GITHUB_REPOSITORY_OWNER
+          cd /opt/alsigil/deploy
+          docker compose -f docker-compose.prod.yml pull
+          # A discrete step so a failed migration aborts the deploy instead
+          # of leaving a container crash-looping against a half-applied schema.
+          docker compose -f docker-compose.prod.yml run --rm api \
+            python scripts/migrate.py
+          docker compose -f docker-compose.prod.yml up -d
+          printf '%s\n' "$IMAGE_TAG" > /opt/alsigil/deploy/.current_tag
+          REMOTE
+          } | ssh "deploy@$SSH_HOST" bash -euo pipefail
 
       - name: Set up Python for the smoke check
         uses: astral-sh/setup-uv@v5
@@ -1358,9 +1457,11 @@ jobs:
         # Without it this check would pass against whatever DNS answers for the
         # name -- which before the Task 7 cutover is still Vercel, so a box that
         # never came up would smoke-green and no rollback would fire.
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
           uv run --with httpx python scripts/smoke_check.py \
-            https://alsigil.com "${{ secrets.SSH_HOST }}"
+            https://alsigil.com "$SSH_HOST"
 
       - name: Report that no rollback target exists
         if: failure() && steps.previous.outputs.value == ''
@@ -1380,22 +1481,32 @@ jobs:
         # never touch the running containers) is a harmless no-op -- it
         # re-applies the tag that was already running.
         if: failure() && steps.previous.outcome == 'success' && steps.previous.outputs.value != ''
+        # Same quoting discipline as the swap step. This tag is read back from
+        # .current_tag on the box, which the swap step wrote from a dispatch
+        # input -- so it carries the same taint one deploy later.
+        env:
+          IMAGE_TAG: ${{ steps.previous.outputs.value }}
+          OWNER: ${{ github.repository_owner }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
-          echo "::error::Deploy failed. Rolling back to ${{ steps.previous.outputs.value }}."
-          ssh deploy@${{ secrets.SSH_HOST }} bash -euo pipefail <<EOF
-            cd /opt/alsigil/deploy
-            # Restore the configuration too, not just the tag. "Sync the compose
-            # configuration" already overwrote the Caddyfile and the compose
-            # file with this deploy's versions; bringing the old image up behind
-            # them would leave the site broken while the run claims it recovered.
-            for f in docker-compose.prod.yml Caddyfile; do
-              if [ -f "\$f.rollback" ]; then mv "\$f.rollback" "\$f"; fi
-            done
-            export IMAGE_TAG='${{ steps.previous.outputs.value }}'
-            export GITHUB_REPOSITORY_OWNER='${{ github.repository_owner }}'
-            docker compose -f docker-compose.prod.yml up -d
-            echo "\$IMAGE_TAG" > /opt/alsigil/deploy/.current_tag
-          EOF
+          echo "::error::Deploy failed. Rolling back to $IMAGE_TAG."
+          {
+            printf 'IMAGE_TAG=%q\n' "$IMAGE_TAG"
+            printf 'GITHUB_REPOSITORY_OWNER=%q\n' "$OWNER"
+            cat <<'REMOTE'
+          export IMAGE_TAG GITHUB_REPOSITORY_OWNER
+          cd /opt/alsigil/deploy
+          # Restore the configuration too, not just the tag. "Sync the compose
+          # configuration" already overwrote the Caddyfile and the compose
+          # file with this deploy's versions; bringing the old image up behind
+          # them would leave the site broken while the run claims it recovered.
+          for f in docker-compose.prod.yml Caddyfile; do
+            if [ -f "$f.rollback" ]; then mv "$f.rollback" "$f"; fi
+          done
+          docker compose -f docker-compose.prod.yml up -d
+          printf '%s\n' "$IMAGE_TAG" > /opt/alsigil/deploy/.current_tag
+          REMOTE
+          } | ssh "deploy@$SSH_HOST" bash -euo pipefail
           exit 1
 ```
 

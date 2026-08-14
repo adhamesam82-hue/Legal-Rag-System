@@ -30,7 +30,12 @@ services:
   web:
     image: ghcr.io/${GITHUB_REPOSITORY_OWNER:?set GITHUB_REPOSITORY_OWNER in /opt/alsigil/deploy/.env}/alsigil-web:${IMAGE_TAG:-latest}
     restart: unless-stopped
-    env_file: /opt/alsigil/.env
+    # A separate, much smaller file than the api's. `web` is the container the
+    # internet talks to first and it reads exactly two variables, both Clerk's;
+    # handing it /opt/alsigil/.env would put POSTGRES_PASSWORD, DATABASE_URL,
+    # RESTIC_PASSWORD and the R2 credentials one Next.js RCE away from an
+    # attacker -- including the keys to the backups meant to survive a breach.
+    env_file: /opt/alsigil/web.env
     expose:
       - "3000"
     logging: *logging
@@ -62,7 +67,13 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-legalrag} -d ${POSTGRES_DB:-legalrag}"]
+      # $$ escapes the interpolation, so Compose passes `${POSTGRES_USER:-...}`
+      # through literally for the container's own shell to expand. A single $
+      # is resolved on the client from the *host* environment, where these are
+      # unset -- silently pinning the check to `legalrag` regardless of what
+      # /opt/alsigil/.env actually says, so a renamed user reports healthy
+      # while nothing can connect.
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-legalrag} -d $${POSTGRES_DB:-legalrag}"]
       interval: 5s
       timeout: 5s
       retries: 5
