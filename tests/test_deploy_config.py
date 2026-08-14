@@ -68,6 +68,23 @@ def test_production_compose_pins_image_tags_to_a_variable():
     assert "${IMAGE_TAG:-latest}" in compose
 
 
+def test_production_compose_requires_the_image_owner_variable():
+    """GITHUB_REPOSITORY_OWNER has no default, unlike IMAGE_TAG. Compose
+    interpolates unset variables as blank, so without the required-variable
+    (`:?`) form both image references would silently degrade to
+    `ghcr.io//alsigil-{web,api}:latest` -- not a valid image name -- instead
+    of failing loudly. That matters because CI always exports the variable,
+    but `deploy/backup.sh` runs `docker compose ... exec` nightly from a
+    systemd timer with a bare environment, and so does anyone running compose
+    by hand on the box (rollback, `restore_check.sh`, `docker compose logs`).
+    """
+    compose = read("deploy/docker-compose.prod.yml")
+    assert "${GITHUB_REPOSITORY_OWNER:?" in compose
+    assert compose.count("${GITHUB_REPOSITORY_OWNER:?") == 2, (
+        "expected the required-variable form on both the web and api images"
+    )
+
+
 def test_caddyfile_routes_api_prefix_to_the_api_service():
     caddyfile = read("deploy/Caddyfile")
     assert "handle /api/*" in caddyfile

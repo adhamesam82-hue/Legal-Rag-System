@@ -299,6 +299,23 @@ def test_production_compose_pins_image_tags_to_a_variable():
     assert "${IMAGE_TAG:-latest}" in compose
 
 
+def test_production_compose_requires_the_image_owner_variable():
+    """GITHUB_REPOSITORY_OWNER has no default, unlike IMAGE_TAG. Compose
+    interpolates unset variables as blank, so without the required-variable
+    (`:?`) form both image references would silently degrade to
+    `ghcr.io//alsigil-{web,api}:latest` -- not a valid image name -- instead
+    of failing loudly. That matters because CI always exports the variable,
+    but `deploy/backup.sh` runs `docker compose ... exec` nightly from a
+    systemd timer with a bare environment, and so does anyone running compose
+    by hand on the box (rollback, `restore_check.sh`, `docker compose logs`).
+    """
+    compose = read("deploy/docker-compose.prod.yml")
+    assert "${GITHUB_REPOSITORY_OWNER:?" in compose
+    assert compose.count("${GITHUB_REPOSITORY_OWNER:?") == 2, (
+        "expected the required-variable form on both the web and api images"
+    )
+
+
 def test_caddyfile_routes_api_prefix_to_the_api_service():
     caddyfile = read("deploy/Caddyfile")
     assert "handle /api/*" in caddyfile
@@ -315,7 +332,7 @@ def test_caddyfile_holds_requests_across_a_container_restart():
 
 Run: `uv run pytest tests/test_deploy_config.py -v -k "production or caddyfile"`
 
-Expected: 5 FAIL with `FileNotFoundError`.
+Expected: 6 FAIL with `FileNotFoundError`.
 
 - [ ] **Step 3: Create `deploy/Caddyfile`**
 
@@ -391,7 +408,7 @@ services:
     logging: *logging
 
   web:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/alsigil-web:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:?set GITHUB_REPOSITORY_OWNER in /opt/alsigil/deploy/.env}/alsigil-web:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: /opt/alsigil/.env
     expose:
@@ -399,7 +416,7 @@ services:
     logging: *logging
 
   api:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/alsigil-api:${IMAGE_TAG:-latest}
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:?set GITHUB_REPOSITORY_OWNER in /opt/alsigil/deploy/.env}/alsigil-api:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: /opt/alsigil/.env
     environment:
@@ -442,7 +459,7 @@ volumes:
 
 Run: `uv run pytest tests/test_deploy_config.py -v`
 
-Expected: 8 passed.
+Expected: 9 passed.
 
 - [ ] **Step 6: Validate both files parse**
 
@@ -663,7 +680,7 @@ The one manual-ish task. Written as an idempotent script so the box is reproduci
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: a box with a `deploy` user in the `docker` group, ufw allowing only 22/80/443, Docker Engine + Compose plugin, `/opt/alsigil/` containing `.env` (0600) and the compose files. Tasks 5 and 6 SSH in as `deploy`.
+- Produces: a box with a `deploy` user in the `docker` group, ufw allowing only 22/80/443, Docker Engine + Compose plugin, `/opt/alsigil/` containing `.env` (0600, container secrets via `env_file:`) and `/opt/alsigil/deploy/` containing the compose files plus its own `.env` (0600, compose-interpolation variables — `GITHUB_REPOSITORY_OWNER` in particular). Tasks 5 and 6 SSH in as `deploy`.
 
 - [ ] **Step 1: Create the Hetzner server**
 
@@ -747,6 +764,20 @@ install -d -m 0755 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$APP_DIR"
 if [ ! -f "$APP_DIR/.env" ]; then
 	install -m 0600 -o root -g root /dev/null "$APP_DIR/.env"
 	echo "    created empty $APP_DIR/.env -- fill it before deploying"
+fi
+
+# $APP_DIR/deploy/ holds the compose files (Task 6 scp's them here) plus a
+# SEPARATE .env used only for compose variable interpolation -- distinct from
+# $APP_DIR/.env, which is wired in via `env_file:` and becomes each
+# container's process environment. Do not confuse the two: only this one
+# affects image names. Without GITHUB_REPOSITORY_OWNER in it, `docker
+# compose` run by hand (rollback, restore_check.sh, a bare `logs`) or by
+# backup.sh's systemd timer -- none of which export it -- aborts loudly on
+# the required-variable message instead of pulling a malformed image ref.
+install -d -m 0755 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$APP_DIR/deploy"
+if [ ! -f "$APP_DIR/deploy/.env" ]; then
+	install -m 0600 -o root -g root /dev/null "$APP_DIR/deploy/.env"
+	echo "    created empty $APP_DIR/deploy/.env -- set GITHUB_REPOSITORY_OWNER before deploying"
 fi
 
 echo "==> Done. Verify from your laptop before closing this session:"
@@ -1040,6 +1071,17 @@ jobs:
         run: |
           scp deploy/docker-compose.prod.yml deploy/Caddyfile \
             deploy@${{ secrets.SSH_HOST }}:/opt/alsigil/deploy/
+          # /opt/alsigil/deploy/.env is the compose *interpolation* env file --
+          # separate from /opt/alsigil/.env, which is wired in via `env_file:`
+          # as container secrets. GITHUB_REPOSITORY_OWNER lives only here, and
+          # provision.sh only creates it empty, so every deploy re-writes it.
+          # That makes a redeploy self-healing if the file is ever lost or
+          # edited by hand -- the required-variable form in the compose file
+          # means a missing value fails loudly rather than pulling
+          # `ghcr.io//alsigil-api`, but this step means it should never be
+          # missing on a box that has deployed at least once.
+          ssh deploy@${{ secrets.SSH_HOST }} \
+            "echo 'GITHUB_REPOSITORY_OWNER=${{ github.repository_owner }}' > /opt/alsigil/deploy/.env"
 
       - name: Pull, migrate, and swap
         run: |
