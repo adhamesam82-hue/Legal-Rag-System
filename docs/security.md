@@ -2,6 +2,26 @@
 
 Last updated: 2026-08-14
 
+> ## Status: this describes an arrangement that is not yet in place
+>
+> This document describes our infrastructure as of the migration to a dedicated
+> Hetzner server. **That migration has not yet taken place.** Today the service
+> runs on Vercel, Railway and Neon, which are listed as current subprocessors in
+> the table below.
+>
+> Until the migration is complete, nothing in "Where your data is stored", "Who
+> can reach it" or "Backups" describes the arrangement your data is under right
+> now. In particular: the nightly encrypted backup to a second provider does not
+> exist yet, and no restore has been performed. The "Open questions" section
+> likewise describes the position after the migration, not today's.
+>
+> We would rather hand you a document that says this than one that reads well.
+> If you need the current position in writing before the migration, ask us and
+> we will put it in writing — do not treat this page as covering it.
+>
+> This note will be removed when the migration is complete and a restore has
+> actually been verified.
+
 ## Where your data is stored
 
 All application data — matters, clients, documents, time entries, and the legal
@@ -33,14 +53,21 @@ back intact.
 
 ## Subprocessors
 
-| Provider | Purpose | Location |
-| --- | --- | --- |
-| Hetzner Online GmbH | Application and database hosting | Germany (EU) |
-| Cloudflare, Inc. | Encrypted backup storage | Global |
-| Clerk, Inc. | Authentication and user accounts | United States |
-| Resend | Transactional email | United States |
-| NVIDIA Corporation | Text embeddings for legal search | United States |
-| OpenRouter, Inc. | Language model routing for generated answers | United States |
+| Provider | Purpose | Location | Status |
+| --- | --- | --- | --- |
+| Vercel Inc. | Frontend application hosting | United States | **Current** |
+| Railway Corp. | API hosting | United States | **Current** |
+| Neon Inc. | Database hosting | United States (data region as configured) | **Current** |
+| Hetzner Online GmbH | Application and database hosting | Germany (EU) | Takes effect on migration; replaces the three above |
+| Cloudflare, Inc. | Encrypted backup storage | Global | Takes effect on migration |
+| Clerk, Inc. | Authentication and user accounts | United States | **Current** |
+| Resend | Transactional email | United States | **Current** |
+| NVIDIA Corporation | Text embeddings for legal search | United States | **Current** |
+| OpenRouter, Inc. | Language model routing for generated answers | United States | **Current** |
+
+Vercel, Railway and Neon are the providers holding your data today. Hetzner and
+Cloudflare hold none of it yet. We will confirm the exact configured region of
+any current provider in writing on request.
 
 ## Open questions we would rather state than leave you to discover
 

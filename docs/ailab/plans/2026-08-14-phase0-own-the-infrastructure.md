@@ -2438,6 +2438,10 @@ git commit -m "Find out what broke, and that the disk is filling, before a user 
 
 **Constraint carried from the spec:** the document makes **no claim about model training or retention**, because the answer path runs on a free OpenRouter endpoint whose free tier generally requires prompt logging to be enabled. Claiming otherwise would be false. Egyptian data residency is named as an open question rather than answered.
 
+**A second, larger honesty constraint.** This document is written before Tasks 4, 7, 8, 9 and 12 have been executed, so on the day it is committed every factual claim in it — the Hetzner box, the SSH and firewall posture, the nightly encrypted backup, the tested restore — describes something that does not exist. Handed to a firm's IT contact in that state it is simply false. It therefore opens with a status note saying so plainly, and the subprocessor table lists Vercel, Railway and Neon as **current** with Hetzner and Cloudflare marked as taking effect on migration. Task 12 Step 6 removes the note, and only after the restore check has passed.
+
+The two deliberate omissions stay exactly as they are. Do not soften the residency answer, and do not add a retention claim, when removing the status note later.
+
 - [ ] **Step 1: Confirm the OpenRouter privacy setting before writing**
 
 Open the OpenRouter account's privacy settings and record whether prompt logging/training is enabled. Whatever the answer, the document stays silent on retention — but you need to know the true state before publishing anything nearby.
@@ -2448,6 +2452,26 @@ Open the OpenRouter account's privacy settings and record whether prompt logging
 # Security and data handling
 
 Last updated: 2026-08-14
+
+> ## Status: this describes an arrangement that is not yet in place
+>
+> This document describes our infrastructure as of the migration to a dedicated
+> Hetzner server. **That migration has not yet taken place.** Today the service
+> runs on Vercel, Railway and Neon, which are listed as current subprocessors in
+> the table below.
+>
+> Until the migration is complete, nothing in "Where your data is stored", "Who
+> can reach it" or "Backups" describes the arrangement your data is under right
+> now. In particular: the nightly encrypted backup to a second provider does not
+> exist yet, and no restore has been performed. The "Open questions" section
+> likewise describes the position after the migration, not today's.
+>
+> We would rather hand you a document that says this than one that reads well.
+> If you need the current position in writing before the migration, ask us and
+> we will put it in writing — do not treat this page as covering it.
+>
+> This note will be removed when the migration is complete and a restore has
+> actually been verified.
 
 ## Where your data is stored
 
@@ -2474,20 +2498,27 @@ application, so that losing access to one does not mean losing both.
 
 Retention: 7 daily, 4 weekly, and 6 monthly snapshots.
 
-Restores are tested, not assumed. We restore the most recent backup into an
-isolated environment and verify that the data and search functionality come back
-intact.
+Restores are tested, not assumed. A script restores the most recent backup into
+an isolated container and verifies that the data and search functionality come
+back intact.
 
 ## Subprocessors
 
-| Provider | Purpose | Location |
-| --- | --- | --- |
-| Hetzner Online GmbH | Application and database hosting | Germany (EU) |
-| Cloudflare, Inc. | Encrypted backup storage | Global |
-| Clerk, Inc. | Authentication and user accounts | United States |
-| Resend | Transactional email | United States |
-| NVIDIA Corporation | Text embeddings for legal search | United States |
-| OpenRouter, Inc. | Language model routing for generated answers | United States |
+| Provider | Purpose | Location | Status |
+| --- | --- | --- | --- |
+| Vercel Inc. | Frontend application hosting | United States | **Current** |
+| Railway Corp. | API hosting | United States | **Current** |
+| Neon Inc. | Database hosting | United States (data region as configured) | **Current** |
+| Hetzner Online GmbH | Application and database hosting | Germany (EU) | Takes effect on migration; replaces the three above |
+| Cloudflare, Inc. | Encrypted backup storage | Global | Takes effect on migration |
+| Clerk, Inc. | Authentication and user accounts | United States | **Current** |
+| Resend | Transactional email | United States | **Current** |
+| NVIDIA Corporation | Text embeddings for legal search | United States | **Current** |
+| OpenRouter, Inc. | Language model routing for generated answers | United States | **Current** |
+
+Vercel, Railway and Neon are the providers holding your data today. Hetzner and
+Cloudflare hold none of it yet. We will confirm the exact configured region of
+any current provider in writing on request.
 
 ## Open questions we would rather state than leave you to discover
 
@@ -2512,7 +2543,7 @@ Security questions: <your email>
 
 Translate the English document. Requirements carried from the rest of the product (see the `legalos-arabic-first` conventions): Arabic body text, **Western digits** for all numbers, ports, and dates. Keep the table structure identical to the English version so the two can be diffed against each other.
 
-The two open questions must appear in the Arabic version with the same force. A security document that is candid in English and reassuring in Arabic is worse than not publishing one.
+The two open questions must appear in the Arabic version with the same force, and so must the status note at the top — it is the single most consequential sentence in the document. A security document that is candid in English and reassuring in Arabic is worse than not publishing one, and this product's users read the Arabic.
 
 - [ ] **Step 4: Verify both render**
 
@@ -2650,7 +2681,34 @@ In this order, checking `https://alsigil.com/api/health` after each:
 2. **Railway** — delete the service, then the project.
 3. **Neon** — delete the project. You have the final dump from Step 2.
 
-- [ ] **Step 6: Verify nothing depended on them**
+- [ ] **Step 6: Remove the status note from the security one-pager**
+
+`docs/security.md` and `docs/security.ar.md` open with a blockquote stating that
+the migration has not yet happened and that the service still runs on Vercel,
+Railway and Neon. That note is now the only false thing in either document.
+
+Do this only once **both** of the following are true, because the note is what
+makes the rest of the document honest until they are:
+
+- Task 9's `restore_check.sh` has printed `RESTORE CHECK PASSED`, and
+- the three accounts in Step 5 are closed.
+
+Then, in both languages:
+
+1. Delete the status blockquote.
+2. Delete the Vercel, Railway and Neon rows from the subprocessor table, and the
+   sentence under it naming them as the providers holding the data today.
+3. Drop the `Status` column, and the "takes effect on migration" wording from
+   the Hetzner and Cloudflare rows — they are simply current at that point.
+4. Update `Last updated:` / `آخر تحديث:` in both files.
+
+Leave the two deliberate omissions untouched: still no claim about model
+retention or training, and Egyptian data residency still named as unresolved.
+Removing the status note is not an occasion to make the document reassuring.
+
+Verify: `grep -c "Vercel\|Railway\|Neon" docs/security.md docs/security.ar.md` returns `0` for both.
+
+- [ ] **Step 7: Verify nothing depended on them**
 
 ```bash
 uv run --with httpx python scripts/smoke_check.py https://alsigil.com
@@ -2661,15 +2719,15 @@ grep -rn "vercel\|railway\|neon" --include="*.py" --include="*.ts" --include="*.
 
 Expected: the smoke check passes, and the grep returns nothing outside `docs/`. Any hit is a live reference to hosting that no longer exists.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git add -A docs/deployment.md railway.json
+git add -A docs/deployment.md docs/security.md docs/security.ar.md railway.json
 git commit -m "Close the door on the hosting we no longer use"
 git push
 ```
 
-- [ ] **Step 8: Confirm every Phase 0 completion criterion**
+- [ ] **Step 9: Confirm every Phase 0 completion criterion**
 
 | Criterion | How to confirm |
 | --- | --- |
