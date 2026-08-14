@@ -45,10 +45,17 @@ jobs:
       - name: Record the tag currently running, for rollback
         id: previous
         run: |
+          # Must not fall back to "latest" when the file is absent. build.yml
+          # tags every image :latest too, so on a bootstrap deploy "latest"
+          # is the image that just failed -- falling back to it would redeploy
+          # the broken image while reporting that a rollback occurred, which
+          # is worse than doing nothing because it looks like it worked. An
+          # empty value here is what makes the no-target case detectable and
+          # lets the rollback step below fail closed instead.
           current=$(ssh deploy@${{ secrets.SSH_HOST }} \
-            "cat /opt/alsigil/deploy/.current_tag 2>/dev/null || echo latest")
+            "cat /opt/alsigil/deploy/.current_tag 2>/dev/null || true")
           echo "value=$current" >> "$GITHUB_OUTPUT"
-          echo "Currently deployed: $current"
+          echo "Currently deployed: ${current:-<none, first deploy to this box>}"
 
       - name: Sync the compose configuration
         run: |
@@ -88,10 +95,26 @@ jobs:
         id: smoke
         run: uv run --with httpx python scripts/smoke_check.py https://alsigil.com
 
-      - name: Roll back to the previous tag
-        if: failure() && steps.smoke.outcome == 'failure'
+      - name: Report that no rollback target exists
+        if: failure() && steps.previous.outputs.value == ''
         run: |
-          echo "::error::Smoke check failed. Rolling back to ${{ steps.previous.outputs.value }}."
+          echo "::error::Deploy failed and there is no previously deployed tag to roll back to."
+          echo "::error::This is the first deploy to this box. Investigate before retrying."
+          exit 1
+
+      - name: Roll back to the previous tag
+        # Keyed off steps.previous rather than steps.smoke: when "Pull,
+        # migrate, and swap" itself fails, every later step (including the
+        # smoke check) is skipped, so steps.smoke.outcome would be 'skipped'
+        # and this would never fire. steps.previous is the last step
+        # guaranteed to have run before anything was mutated, so failure()
+        # here covers both a failed swap and a failed smoke check. Rolling
+        # back after a failed `pull` or `migrate` (which use `run --rm` and
+        # never touch the running containers) is a harmless no-op -- it
+        # re-applies the tag that was already running.
+        if: failure() && steps.previous.outcome == 'success' && steps.previous.outputs.value != ''
+        run: |
+          echo "::error::Deploy failed. Rolling back to ${{ steps.previous.outputs.value }}."
           ssh deploy@${{ secrets.SSH_HOST }} bash -euo pipefail <<EOF
             cd /opt/alsigil/deploy
             export IMAGE_TAG='${{ steps.previous.outputs.value }}'

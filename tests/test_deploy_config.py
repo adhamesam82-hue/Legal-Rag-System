@@ -196,8 +196,10 @@ def test_rollback_step_is_gated_on_the_health_check_and_uses_the_recorded_tag():
 
     condition = rollback_step.get("if", "")
     assert condition, "rollback step must be conditional, not unconditional"
-    assert "smoke" in condition, (
-        "rollback must be tied to the smoke-check step's outcome"
+    assert f"steps.{record_step['id']}.outcome" in condition, (
+        "rollback must be tied to whether the previous-tag was recorded, "
+        "not the smoke-check outcome -- see "
+        "test_rollback_condition_is_not_keyed_off_the_smoke_step for why"
     )
     assert "failure" in condition.lower()
 
@@ -205,6 +207,62 @@ def test_rollback_step_is_gated_on_the_health_check_and_uses_the_recorded_tag():
     assert f"steps.{record_step['id']}.outputs" in rollback_script, (
         "rollback must redeploy the tag recorded before this deploy, "
         "not a hardcoded tag"
+    )
+
+
+def test_rollback_condition_is_not_keyed_off_the_smoke_step():
+    """When "Pull, migrate, and swap" itself fails (e.g. `up -d` fails
+    partway through), Actions skips every later step, including the smoke
+    check -- so steps.smoke.outcome is 'skipped', not 'failure'. A rollback
+    condition written as `steps.smoke.outcome == 'failure'` would then never
+    fire for exactly the case that leaves containers in a mixed old/new
+    state with no remediation. The condition must instead key off
+    steps.previous, the last step guaranteed to run before anything is
+    mutated.
+    """
+    steps = _deploy_steps()
+    rollback_step = next(
+        s for s in steps if "roll back" in s.get("name", "").lower()
+    )
+    condition = rollback_step.get("if", "")
+    assert "steps.smoke" not in condition, (
+        "the rollback condition must not depend on the smoke step's "
+        "outcome, because a failed swap skips the smoke step entirely"
+    )
+    assert "steps.previous.outcome" in condition
+
+
+def test_no_rollback_target_fails_closed_instead_of_defaulting_to_latest():
+    """build.yml tags every image :latest, so falling back to 'latest' when
+    /opt/alsigil/deploy/.current_tag is absent (a bootstrap deploy) would
+    redeploy the very image that just failed while reporting a rollback
+    occurred -- worse than doing nothing, because it looks like it worked.
+    The workflow must instead record an empty value and treat that as a
+    reason to stop loudly, not a reason to substitute a real-looking tag.
+    """
+    steps = _deploy_steps()
+    record_step = next(s for s in steps if s.get("id") == "previous")
+    assert "echo latest" not in record_step["run"], (
+        "the previous-tag lookup must not fall back to a real-looking "
+        "tag when no tag was ever recorded"
+    )
+
+    no_target_step = next(
+        (
+            s
+            for s in steps
+            if "steps.previous.outputs.value == ''" in s.get("if", "")
+            and "steps.previous.outcome" not in s.get("if", "")
+        ),
+        None,
+    )
+    assert no_target_step is not None, (
+        "a step must exist that fires when there is no recorded tag to "
+        "roll back to, so the first-deploy failure case is loud rather "
+        "than silently swallowed"
+    )
+    assert "exit 1" in no_target_step["run"], (
+        "the no-rollback-target report must fail the job, not just warn"
     )
 
 
