@@ -7,6 +7,11 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Emits .next/standalone: a self-contained server bundle with only the
+  // node_modules it actually imports. The Docker image copies that instead of
+  // the full dependency tree, which is the difference between a ~200 MB image
+  // and a ~1 GB one on a box with 40 GB of disk.
+  output: "standalone",
   // Pin the workspace root; an unrelated lockfile in the home directory would
   // otherwise be inferred as the root.
   turbopack: { root: here },

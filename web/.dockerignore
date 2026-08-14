@@ -1,0 +1,9 @@
+node_modules
+.next
+.env*.local
+*.tsbuildinfo
+shot*.mjs
+shots-all.mjs
+smoke.mjs
+final.mjs
+AGENTS.md
