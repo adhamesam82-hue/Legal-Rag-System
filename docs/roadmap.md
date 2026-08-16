@@ -28,7 +28,12 @@ are built once in the platform and consumed by every client.
 
 **Goal:** one box, one bill, one deploy command. Nothing user-visible changes.
 
-- Hetzner CX22 (resize to CPX31 under load), Ubuntu 24.04, Falkenstein
+- Hetzner **CAX21** (4 vCPU Arm, 8 GB), Ubuntu 24.04, Falkenstein.
+  Shared vCPU, not dedicated: this box waits on remote LLM APIs far more than
+  it computes, so CCX would buy idle cores. Arm rather than x86 because the
+  dev machine is an M1 — Docker builds are then native and identical in
+  production. Resize within the CAX line under load; note that moving between
+  architectures is a rebuild and restore, not a resize
 - Docker Compose: Caddy (auto-TLS) · pgvector/pg16 · FastAPI · Next.js standalone
 - Migrate off Vercel, Railway, Neon. **Keep Clerk** — see decisions below
 - LUKS on the data volume
@@ -253,7 +258,7 @@ the firm product arrive sooner.
 
 | Decision | Call | Why |
 |---|---|---|
-| Host | Hetzner, one box | Predictable IO; hourly billing; ISO 27001 |
+| Host | Hetzner, one box, CAX21 (Arm, shared vCPU) | Predictable IO; hourly billing; ISO 27001; arch parity with the M1 dev machine |
 | Auth | **Keep Clerk** | Owns orgs + invites; SOC 2 Type II inherited; rolling it yourself is the one bug class that becomes a breach |
 | Desktop | Flutter build target | Not a separate project |
 | Push | FCM everywhere | One vendor for web + both mobile apps |
@@ -296,7 +301,8 @@ Miro creates one sticky per line.
 
 ### Phase 0
 ```
-Provision Hetzner CX22 + Ubuntu 24.04
+Provision Hetzner CAX21 (Arm, shared) + Ubuntu 24.04
+Confirm all images are multi-arch on arm64
 Docker Compose: Caddy + pgvector + API + web
 LUKS encrypt data volume
 Migrate DB off Neon, verify corpus + embeddings
