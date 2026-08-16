@@ -38,3 +38,27 @@ def send_invite_email(to_email: str, organization_name: str, accept_url: str) ->
         raise EmailError(
             f"Resend returned {response.status_code}: {response.text[:300]}"
         )
+
+
+def send_plain_email(to_email: str, subject: str, body: str) -> None:
+    """A plain-text message. Used by operational alerts, which have no template.
+
+    Separate from send_invite_email rather than a generalisation of it: that
+    function's subject and HTML are part of the invitation flow's behaviour and
+    are asserted by tests/test_invites.py.
+    """
+    response = httpx.post(
+        RESEND_API_URL,
+        headers={"Authorization": f"Bearer {get_resend_api_key()}"},
+        json={
+            "from": FROM_ADDRESS,
+            "to": [to_email],
+            "subject": subject,
+            "text": body,
+        },
+        timeout=15.0,
+    )
+    if response.status_code >= 400:
+        raise EmailError(
+            f"Resend returned {response.status_code}: {response.text[:300]}"
+        )

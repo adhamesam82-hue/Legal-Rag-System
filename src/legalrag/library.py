@@ -24,7 +24,7 @@ class Instrument:
         return f"{self.number}/{self.year}"
 
 
-def corpus_stats(conn: psycopg.Connection) -> dict[str, int]:
+def corpus_stats(conn: psycopg.Connection) -> dict[str, dict[str, int]]:
     with conn.cursor() as cur:
         cur.execute(
             """

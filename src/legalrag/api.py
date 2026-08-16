@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -76,6 +77,21 @@ from legalrag.orgs import (
 from legalrag.pipeline import ask, ask_stream, retrieve_for
 from legalrag.practice_api import router as practice_router
 from legalrag.retrieve import Candidate
+
+# Error reporting, opt-in by configuration: without SENTRY_DSN this is inert,
+# which is what keeps local runs and tests from reporting anything.
+_sentry_dsn = os.environ.get("SENTRY_DSN")
+if _sentry_dsn:
+    import sentry_sdk
+
+    sentry_sdk.init(
+        dsn=_sentry_dsn,
+        # Errors only. Performance tracing on a 2 vCPU box costs more than the
+        # data is worth at this stage.
+        traces_sample_rate=0.0,
+        # Legal questions are privileged. Never ship request bodies.
+        send_default_pii=False,
+    )
 
 
 @asynccontextmanager

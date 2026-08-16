@@ -1,0 +1,26 @@
+[Unit]
+Description=alsigil disk space alert
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/alsigil/deploy
+# `exec` against the already-running api container, not `run --rm`. Two reasons,
+# both of which made the `run --rm` form unable to work at all:
+#   1. GHCR is authenticated as the deploy user, so a pull triggered by `run`
+#      under any other account fails on credentials.
+#   2. `run` resolves the image through IMAGE_TAG, which is unset in a systemd
+#      environment and therefore falls back to :latest -- and after a rollback
+#      :latest is precisely the image that was rolled back for being broken.
+# `exec` uses the container that is actually serving traffic, and inherits its
+# environment from `env_file:` in the compose file, so no EnvironmentFile is
+# needed here (and one would only add a second, drifting copy of the secrets).
+ExecStart=/usr/bin/docker compose -f /opt/alsigil/deploy/docker-compose.prod.yml exec -T api python scripts/disk_alert.py
+# Must match the account GHCR and the compose files are owned by: root has no
+# registry credentials and cannot read /opt/alsigil/.env (root:deploy 0640).
+User=deploy
+# The script exits 1 when it alerts, which is informational, not a unit failure.
+# It exits 2 when the alert could not be delivered -- either the send failed
+# (e.g. Resend rejects the key) or ALERT_EMAIL_TO was never configured -- and
+# that is deliberately left outside this set, so systemd records it as a real
+# unit failure instead of a silent "healthy" run.
+SuccessExitStatus=0 1

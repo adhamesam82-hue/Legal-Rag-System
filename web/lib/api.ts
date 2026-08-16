@@ -195,7 +195,9 @@ async function send<T>(path: string, init?: RequestInit): Promise<T> {
   } catch {
     throw new ApiError(
       0,
-      "Could not reach the API. Is it running on " + API_BASE + "?",
+      "Could not reach the API. Is it running on " +
+        (API_BASE || window.location.origin) +
+        "?",
     );
   }
 
