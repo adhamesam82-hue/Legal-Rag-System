@@ -291,7 +291,7 @@ export const ar: Catalog = {
   "@legalos.dashboard.heading": { defaultMessage: "لوحة التحكم" },
   "@legalos.dashboard.orgFallback": { defaultMessage: "مكتبك" },
   "@legalos.dashboard.loading": { defaultMessage: "جارٍ تحميل بيانات المكتب…" },
-  "@legalos.dashboard.kpi.activeMatters": { defaultMessage: "الملفات النشطة" },
+  "@legalos.dashboard.kpi.activeMatters": { defaultMessage: "القضايا النشطة" },
   "@legalos.dashboard.kpi.activeMattersDetail": {
     defaultMessage: "{count, plural, one {عميل نشط واحد} two {عميلان نشطان} few {# عملاء نشطون} other {# عميل نشط}}",
   },
@@ -316,7 +316,7 @@ export const ar: Catalog = {
   },
   "@legalos.dashboard.firmWide": { defaultMessage: "على مستوى المكتب" },
   "@legalos.dashboard.recentActivity.heading": { defaultMessage: "النشاط الأخير" },
-  "@legalos.dashboard.recentActivity.mattersLink": { defaultMessage: "الملفات" },
+  "@legalos.dashboard.recentActivity.mattersLink": { defaultMessage: "القضايا" },
   "@legalos.dashboard.recentActivity.empty": { defaultMessage: "لم يحدث أي نشاط بعد." },
   "@legalos.dashboard.collections.heading": { defaultMessage: "التحصيلات" },
   "@legalos.dashboard.collections.billingLink": { defaultMessage: "الفوترة" },

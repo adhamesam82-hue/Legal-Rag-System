@@ -210,7 +210,7 @@ export const ar: Catalog = {
 
   "@legalos.billingDetail.detailsHeading": { defaultMessage: "التفاصيل" },
   "@legalos.billingDetail.field.client": { defaultMessage: "العميل" },
-  "@legalos.billingDetail.field.matter": { defaultMessage: "الملف" },
+  "@legalos.billingDetail.field.matter": { defaultMessage: "القضية" },
   "@legalos.billingDetail.field.issued": { defaultMessage: "تاريخ الإصدار" },
   "@legalos.billingDetail.field.due": { defaultMessage: "تاريخ الاستحقاق" },
   "@legalos.billingDetail.field.paid": { defaultMessage: "تاريخ السداد" },
@@ -229,7 +229,7 @@ export const ar: Catalog = {
   "@legalos.accounting.banner.title": { defaultMessage: "أرقام تجريبية — لا يوجد نظام خلفي بعد" },
   "@legalos.accounting.banner.description": {
     defaultMessage:
-      "لا يوجد نموذج بيانات فعلي خلف هذا القسم بعد. كل رقم أدناه محتوى تجريبي وليس بيانات فعلية من سجلات مكتبك. أما العملاء والملفات والقضايا والمستندات والمهام وتتبع الوقت والفوترة فهي وظائف فعلية ومتصلة بالنظام.",
+      "لا يوجد نموذج بيانات فعلي خلف هذا القسم بعد. كل رقم أدناه محتوى تجريبي وليس بيانات فعلية من سجلات مكتبك. أما العملاء والقضايا والجلسات والمستندات والمهام وتتبع الوقت والفوترة فهي وظائف فعلية ومتصلة بالنظام.",
   },
 
   "@legalos.accounting.month.feb": { defaultMessage: "فبراير" },
@@ -305,7 +305,7 @@ export const ar: Catalog = {
   "@legalos.reports.banner.title": { defaultMessage: "أرقام تجريبية — لا يوجد نظام خلفي بعد" },
   "@legalos.reports.banner.description": {
     defaultMessage:
-      "لا يوجد نموذج بيانات فعلي خلف هذا القسم بعد. كل رقم أدناه محتوى تجريبي وليس بيانات فعلية من سجلات مكتبك. أما العملاء والملفات والقضايا والمستندات والمهام وتتبع الوقت والفوترة فهي وظائف فعلية ومتصلة بالنظام.",
+      "لا يوجد نموذج بيانات فعلي خلف هذا القسم بعد. كل رقم أدناه محتوى تجريبي وليس بيانات فعلية من سجلات مكتبك. أما العملاء والقضايا والجلسات والمستندات والمهام وتتبع الوقت والفوترة فهي وظائف فعلية ومتصلة بالنظام.",
   },
 
   "@legalos.reports.export.ariaLabel": { defaultMessage: "تصدير التقارير" },
@@ -320,7 +320,7 @@ export const ar: Catalog = {
 
   "@legalos.reports.stat.revenue.label": { defaultMessage: "الإيرادات (6 أشهر)" },
   "@legalos.reports.stat.collectionRate.label": { defaultMessage: "معدل التحصيل" },
-  "@legalos.reports.stat.mattersClosed.label": { defaultMessage: "الملفات المغلقة" },
+  "@legalos.reports.stat.mattersClosed.label": { defaultMessage: "القضايا المغلقة" },
   "@legalos.reports.stat.favourableOutcomes.label": { defaultMessage: "النتائج الإيجابية" },
 
   "@legalos.reports.billedCollected.heading": { defaultMessage: "المُفوتَر مقابل المُحصَّل" },
@@ -345,13 +345,13 @@ export const ar: Catalog = {
   "@legalos.reports.outcome.lost": { defaultMessage: "خسارة" },
   "@legalos.reports.outcome.countPercent": { defaultMessage: "{count} ({percent}%)" },
 
-  "@legalos.reports.completion.heading": { defaultMessage: "الملفات المفتوحة مقابل المغلقة" },
-  "@legalos.reports.completion.link": { defaultMessage: "جميع الملفات" },
+  "@legalos.reports.completion.heading": { defaultMessage: "القضايا المفتوحة مقابل المغلقة" },
+  "@legalos.reports.completion.link": { defaultMessage: "جميع القضايا" },
   "@legalos.reports.legend.opened": { defaultMessage: "مفتوحة" },
   "@legalos.reports.legend.closed": { defaultMessage: "مغلقة" },
   "@legalos.reports.completion.caption": {
     defaultMessage:
-      "تجاوز عدد الملفات الجديدة عدد الملفات المغلقة في 4 من آخر 6 أشهر — أي أن حجم العمل النشط في تزايد.",
+      "تجاوز عدد القضايا الجديدة عدد القضايا المغلقة في 4 من آخر 6 أشهر — أي أن حجم العمل النشط في تزايد.",
   },
 
   "@legalos.reports.person.ahmed": { defaultMessage: "أحمد السيد" },

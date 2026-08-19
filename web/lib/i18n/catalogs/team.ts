@@ -67,7 +67,7 @@ export const ar: Catalog = {
   "@legalos.messages.jumpTo.placeholder": {
     defaultMessage: "انتقل إلى قناة أو شخص...",
   },
-  "@legalos.messages.matterChannels": { defaultMessage: "قنوات الملفات" },
+  "@legalos.messages.matterChannels": { defaultMessage: "قنوات القضايا" },
   "@legalos.messages.directMessages": { defaultMessage: "الرسائل المباشرة" },
   "@legalos.messages.memberCount": {
     defaultMessage:
@@ -79,7 +79,7 @@ export const ar: Catalog = {
   "@legalos.messages.empty.title": { defaultMessage: "لا توجد رسائل بعد" },
   "@legalos.messages.empty.description": {
     defaultMessage:
-      "ابدأ المحادثة — الرسائل هنا مرئية فقط لمن يعملون على هذا الملف.",
+      "ابدأ المحادثة — الرسائل هنا مرئية فقط لمن يعملون على هذه القضية.",
   },
 
   // --- Automation -------------------------------------------------------

@@ -280,7 +280,7 @@ export const ar: Catalog = {
   "@legalos.settings.profile.discardChanges": { defaultMessage: "تجاهل التغييرات" },
   "@legalos.settings.profile.roleHeading": { defaultMessage: "الصلاحية والوصول" },
   "@legalos.settings.profile.ownerDescription": {
-    defaultMessage: "وصول كامل إلى كل الملفات، إضافة إلى فوترة المكتب وإدارة الفريق.",
+    defaultMessage: "وصول كامل إلى كل القضايا، إضافة إلى فوترة المكتب وإدارة الفريق.",
   },
   "@legalos.settings.profile.ownerNote": {
     defaultMessage:
@@ -295,11 +295,11 @@ export const ar: Catalog = {
   "@legalos.settings.profile.hearingLabel": { defaultMessage: "تذكير بالجلسات" },
   "@legalos.settings.profile.hearingDescription": {
     defaultMessage:
-      "نبّهني قبل يوم من أي جلسة في ملف أنا المسؤول عنه.",
+      "نبّهني قبل يوم من أي جلسة في قضية أنا المسؤول عنها.",
   },
   "@legalos.settings.profile.mentionLabel": { defaultMessage: "الإشارات في الرسائل" },
   "@legalos.settings.profile.mentionDescription": {
-    defaultMessage: "أبلغني عندما يشير زميل إليّ في قناة ملف.",
+    defaultMessage: "أبلغني عندما يشير زميل إليّ في قناة قضية.",
   },
   "@legalos.settings.profile.securityHeading": { defaultMessage: "الأمان" },
   "@legalos.settings.profile.password": { defaultMessage: "كلمة المرور" },

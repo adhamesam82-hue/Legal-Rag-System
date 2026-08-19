@@ -190,12 +190,12 @@ export const en: Catalog = {
 };
 
 export const ar: Catalog = {
-  "@legalos.matters.heading": { defaultMessage: "الملفات" },
+  "@legalos.matters.heading": { defaultMessage: "القضايا" },
   "@legalos.matters.count": {
     defaultMessage:
-      "{count, plural, zero {لا توجد ملفات} one {ملف واحد} two {ملفان} few {# ملفات} many {# ملفًا} other {# ملف}}",
+      "{count, plural, zero {لا توجد قضايا} one {قضية واحدة} two {قضيتان} few {# قضايا} many {# قضيةً} other {# قضية}}",
   },
-  "@legalos.matters.newMatter": { defaultMessage: "ملف جديد" },
+  "@legalos.matters.newMatter": { defaultMessage: "قضية جديدة" },
   "@legalos.matters.savingEllipsis": { defaultMessage: "جارٍ الحفظ…" },
 
   "@legalos.matters.status.active": { defaultMessage: "نشط" },
@@ -234,13 +234,13 @@ export const ar: Catalog = {
   "@legalos.matters.field.description": { defaultMessage: "الوصف" },
   "@legalos.matters.field.nextDeadline": { defaultMessage: "الموعد النهائي القادم" },
 
-  "@legalos.matters.list.search.label": { defaultMessage: "البحث في الملفات" },
+  "@legalos.matters.list.search.label": { defaultMessage: "البحث في القضايا" },
   "@legalos.matters.list.search.placeholder": {
-    defaultMessage: "ابحث باسم الملف أو العميل",
+    defaultMessage: "ابحث باسم القضية أو العميل",
   },
   "@legalos.matters.list.filter.allTypes": { defaultMessage: "جميع الأنواع" },
   "@legalos.matters.list.filter.allStatuses": { defaultMessage: "جميع الحالات" },
-  "@legalos.matters.list.table.matter": { defaultMessage: "الملف" },
+  "@legalos.matters.list.table.matter": { defaultMessage: "القضية" },
   "@legalos.matters.list.noDeadline": { defaultMessage: "لا يوجد موعد محدد" },
   "@legalos.matters.list.deadlineBadge": {
     defaultMessage:
@@ -251,26 +251,26 @@ export const ar: Catalog = {
       "{date} · متأخر {days, plural, one {يومًا واحدًا} two {يومين} few {# أيام} many {# يومًا} other {# يوم}}",
   },
   "@legalos.matters.list.emptyTitle": {
-    defaultMessage: "لا توجد ملفات مطابقة لعوامل التصفية",
+    defaultMessage: "لا توجد قضايا مطابقة لعوامل التصفية",
   },
   "@legalos.matters.list.emptyDescription": {
-    defaultMessage: "جرّب كلمة بحث مختلفة، أو افتح ملفًا جديدًا.",
+    defaultMessage: "جرّب كلمة بحث مختلفة، أو افتح قضيةً جديدةً.",
   },
   "@legalos.matters.list.clearFilters": { defaultMessage: "مسح عوامل التصفية" },
-  "@legalos.matters.list.loading": { defaultMessage: "جارٍ تحميل الملفات…" },
+  "@legalos.matters.list.loading": { defaultMessage: "جارٍ تحميل القضايا…" },
 
-  "@legalos.matters.dialog.nameLabel": { defaultMessage: "اسم الملف" },
+  "@legalos.matters.dialog.nameLabel": { defaultMessage: "اسم القضية" },
   "@legalos.matters.dialog.namePlaceholder": {
     defaultMessage: "نبيل ضد شركة النيل للتجارة",
   },
   "@legalos.matters.dialog.selectClient": { defaultMessage: "اختر عميلاً" },
   "@legalos.matters.dialog.clientsLoading": { defaultMessage: "جارٍ تحميل العملاء…" },
   "@legalos.matters.dialog.selectLawyer": { defaultMessage: "اختر محاميًا" },
-  "@legalos.matters.dialog.submit": { defaultMessage: "فتح الملف" },
+  "@legalos.matters.dialog.submit": { defaultMessage: "فتح القضية" },
   "@legalos.matters.dialog.cancel": { defaultMessage: "إلغاء" },
-  "@legalos.matters.dialog.error": { defaultMessage: "تعذّر فتح هذا الملف." },
+  "@legalos.matters.dialog.error": { defaultMessage: "تعذّر فتح هذه القضية." },
 
-  "@legalos.matters.detail.loading": { defaultMessage: "جارٍ تحميل الملف…" },
+  "@legalos.matters.detail.loading": { defaultMessage: "جارٍ تحميل القضية…" },
   "@legalos.matters.detail.subtitle": { defaultMessage: "{type} · فُتح في {date}" },
   "@legalos.matters.detail.metaNameDate": { defaultMessage: "{name} · {date}" },
   "@legalos.matters.detail.hoursValue": { defaultMessage: "{hours} ساعة" },
@@ -287,9 +287,9 @@ export const ar: Catalog = {
     defaultMessage: "لا يوجد وصف مسجل.",
   },
 
-  "@legalos.matters.detail.linkedCase.heading": { defaultMessage: "القضية المرتبطة" },
-  "@legalos.matters.detail.linkedCase.openCase": { defaultMessage: "فتح القضية" },
-  "@legalos.matters.detail.linkedCase.caseNumber": { defaultMessage: "رقم القضية" },
+  "@legalos.matters.detail.linkedCase.heading": { defaultMessage: "الجلسة المرتبطة" },
+  "@legalos.matters.detail.linkedCase.openCase": { defaultMessage: "فتح الجلسة" },
+  "@legalos.matters.detail.linkedCase.caseNumber": { defaultMessage: "رقم الجلسة" },
   "@legalos.matters.detail.linkedCase.court": { defaultMessage: "المحكمة" },
   "@legalos.matters.detail.linkedCase.opposingParty": { defaultMessage: "الطرف الخصم" },
 
@@ -312,7 +312,7 @@ export const ar: Catalog = {
   "@legalos.matters.detail.hearings.empty": { defaultMessage: "لا توجد جلسات مجدولة." },
   "@legalos.matters.detail.hearings.defaultPurpose": { defaultMessage: "جلسة" },
 
-  "@legalos.matters.detail.timeline.heading": { defaultMessage: "الجدول الزمني للملف" },
+  "@legalos.matters.detail.timeline.heading": { defaultMessage: "الجدول الزمني للقضية" },
   "@legalos.matters.detail.timeline.emptyTitle": { defaultMessage: "لا توجد معالم بعد" },
   "@legalos.matters.detail.timeline.emptyDescription": {
     defaultMessage: "تظهر هنا الإيداعات والمراسلات وأحداث الفوترة.",
@@ -329,7 +329,7 @@ export const ar: Catalog = {
   "@legalos.matters.detail.tasks.allTasks": { defaultMessage: "جميع المهام" },
   "@legalos.matters.detail.tasks.emptyTitle": { defaultMessage: "لا توجد مهام" },
   "@legalos.matters.detail.tasks.emptyDescription": {
-    defaultMessage: "أضف مهامًا من شاشة المهام وخصّصها لهذا الملف.",
+    defaultMessage: "أضف مهامًا من شاشة المهام وخصّصها لهذه القضية.",
   },
   "@legalos.matters.detail.tasks.dueDate": { defaultMessage: "{name} · الاستحقاق {date}" },
   "@legalos.matters.detail.tasks.overdue": { defaultMessage: "متأخرة" },
@@ -339,7 +339,7 @@ export const ar: Catalog = {
   "@legalos.matters.detail.time.heading": { defaultMessage: "سجلات الوقت" },
   "@legalos.matters.detail.time.link": { defaultMessage: "تتبع الوقت" },
   "@legalos.matters.detail.time.empty": {
-    defaultMessage: "لم يُسجَّل وقت لهذا الملف.",
+    defaultMessage: "لم يُسجَّل وقت لهذه القضية.",
   },
   "@legalos.matters.detail.time.defaultDescription": { defaultMessage: "خدمات قانونية" },
   "@legalos.matters.detail.time.invoiced": { defaultMessage: "مفوتَر" },
@@ -353,15 +353,15 @@ export const ar: Catalog = {
   "@legalos.matters.detail.notes.heading": { defaultMessage: "الملاحظات" },
   "@legalos.matters.detail.notes.addLabel": { defaultMessage: "إضافة ملاحظة" },
   "@legalos.matters.detail.notes.placeholder": {
-    defaultMessage: "ما الذي يجب أن يعرفه الفريق عن هذا الملف؟",
+    defaultMessage: "ما الذي يجب أن يعرفه الفريق عن هذه القضية؟",
   },
   "@legalos.matters.detail.notes.addButton": { defaultMessage: "إضافة ملاحظة" },
   "@legalos.matters.detail.notes.emptyTitle": { defaultMessage: "لا توجد ملاحظات بعد" },
   "@legalos.matters.detail.notes.emptyDescription": {
-    defaultMessage: "الملاحظات مرئية لجميع العاملين على هذا الملف.",
+    defaultMessage: "الملاحظات مرئية لجميع العاملين على هذه القضية.",
   },
 
   "@legalos.matters.detail.errors.note": { defaultMessage: "تعذّر حفظ هذه الملاحظة." },
-  "@legalos.matters.detail.errors.status": { defaultMessage: "تعذّر تحديث هذا الملف." },
+  "@legalos.matters.detail.errors.status": { defaultMessage: "تعذّر تحديث هذه القضية." },
   "@legalos.matters.detail.errors.task": { defaultMessage: "تعذّر تحديث هذه المهمة." },
 };

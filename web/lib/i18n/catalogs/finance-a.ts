@@ -224,7 +224,7 @@ export const ar: Catalog = {
   },
 
   "@legalos.timeTracking.table.date": { defaultMessage: "التاريخ" },
-  "@legalos.timeTracking.table.matter": { defaultMessage: "الملف" },
+  "@legalos.timeTracking.table.matter": { defaultMessage: "القضية" },
   "@legalos.timeTracking.table.description": { defaultMessage: "الوصف" },
   "@legalos.timeTracking.table.lawyer": { defaultMessage: "المحامي" },
   "@legalos.timeTracking.table.billable": { defaultMessage: "الفوترة" },
@@ -249,8 +249,8 @@ export const ar: Catalog = {
 
   "@legalos.timeTracking.timer.heading": { defaultMessage: "المؤقت" },
   "@legalos.timeTracking.timer.running": { defaultMessage: "قيد التشغيل" },
-  "@legalos.timeTracking.timer.matterLabel": { defaultMessage: "الملف" },
-  "@legalos.timeTracking.timer.matterPlaceholder": { defaultMessage: "اختر ملفاً" },
+  "@legalos.timeTracking.timer.matterLabel": { defaultMessage: "القضية" },
+  "@legalos.timeTracking.timer.matterPlaceholder": { defaultMessage: "اختر قضيةً" },
   "@legalos.timeTracking.timer.descriptionLabel": { defaultMessage: "الوصف" },
   "@legalos.timeTracking.timer.descriptionPlaceholder": {
     defaultMessage: "ما الذي تعمل عليه؟",
@@ -260,13 +260,13 @@ export const ar: Catalog = {
   "@legalos.timeTracking.timer.stopShort": { defaultMessage: "إيقاف" },
   "@legalos.timeTracking.timer.startShort": { defaultMessage: "بدء" },
   "@legalos.timeTracking.timer.pickMatterHint": {
-    defaultMessage: "اختر ملفاً لبدء المؤقت.",
+    defaultMessage: "اختر قضيةً لبدء المؤقت.",
   },
   "@legalos.timeTracking.timer.error": { defaultMessage: "تعذّر تسجيل هذا الوقت." },
 
   "@legalos.timeTracking.dialog.title": { defaultMessage: "إدخال وقت جديد" },
-  "@legalos.timeTracking.dialog.matterLabel": { defaultMessage: "الملف" },
-  "@legalos.timeTracking.dialog.matterPlaceholder": { defaultMessage: "اختر ملفاً" },
+  "@legalos.timeTracking.dialog.matterLabel": { defaultMessage: "القضية" },
+  "@legalos.timeTracking.dialog.matterPlaceholder": { defaultMessage: "اختر قضيةً" },
   "@legalos.timeTracking.dialog.dateLabel": { defaultMessage: "التاريخ" },
   "@legalos.timeTracking.dialog.hoursLabel": { defaultMessage: "الساعات" },
   "@legalos.timeTracking.dialog.rateLabel": { defaultMessage: "السعر" },
@@ -285,7 +285,7 @@ export const ar: Catalog = {
   // ---------------------------------------------------------------------
   "@legalos.billing.heading": { defaultMessage: "الفوترة" },
   "@legalos.billing.subheading": {
-    defaultMessage: "الفواتير الصادرة على الملفات والعملاء",
+    defaultMessage: "الفواتير الصادرة على القضايا والعملاء",
   },
   "@legalos.billing.invoiceUnbilled": { defaultMessage: "فوترة الوقت غير المفوتر" },
   "@legalos.billing.loading": { defaultMessage: "جارٍ تحميل الفوترة…" },
@@ -327,7 +327,7 @@ export const ar: Catalog = {
     defaultMessage: "هذه الفاتورة بإجمالي {total} دون تفصيل بالبنود.",
   },
   "@legalos.billing.table.client": { defaultMessage: "العميل" },
-  "@legalos.billing.table.matter": { defaultMessage: "الملف" },
+  "@legalos.billing.table.matter": { defaultMessage: "القضية" },
   "@legalos.billing.table.issued": { defaultMessage: "تاريخ الإصدار" },
   "@legalos.billing.table.due": { defaultMessage: "تاريخ الاستحقاق" },
   "@legalos.billing.table.status": { defaultMessage: "الحالة" },
@@ -344,7 +344,7 @@ export const ar: Catalog = {
   "@legalos.billing.invoices.heading": { defaultMessage: "الفواتير" },
   "@legalos.billing.invoices.emptyTitle": { defaultMessage: "لا توجد فواتير بعد" },
   "@legalos.billing.invoices.emptyDescription": {
-    defaultMessage: "سجّل وقتاً قابلاً للفوترة على أحد الملفات، ثم أصدر فاتورة به.",
+    defaultMessage: "سجّل وقتاً قابلاً للفوترة على إحدى القضايا، ثم أصدر فاتورة بها.",
   },
 
   "@legalos.billing.error.updateInvoice": { defaultMessage: "تعذّر تحديث هذه الفاتورة." },
@@ -352,14 +352,14 @@ export const ar: Catalog = {
   "@legalos.billing.dialog.title": { defaultMessage: "فوترة الوقت غير المفوتر" },
   "@legalos.billing.dialog.description": {
     defaultMessage:
-      "يُنشئ مسودة فاتورة تغطي كل ساعة قابلة للفوترة لم تُفوتر بعد على الملف. تُقفل هذه الساعات بعدها على تلك الفاتورة.",
+      "يُنشئ مسودة فاتورة تغطي كل ساعة قابلة للفوترة لم تُفوتر بعد على القضية. تُقفل هذه الساعات بعدها على تلك الفاتورة.",
   },
   "@legalos.billing.dialog.noneAvailable": {
-    defaultMessage: "لا يوجد حالياً أي ملف به وقت قابل للفوترة غير مفوتر.",
+    defaultMessage: "لا توجد حالياً أي قضية بها وقت قابل للفوترة غير مفوتر.",
   },
-  "@legalos.billing.dialog.matterLabel": { defaultMessage: "الملف" },
+  "@legalos.billing.dialog.matterLabel": { defaultMessage: "القضية" },
   "@legalos.billing.dialog.loadingPlaceholder": { defaultMessage: "جارٍ التحميل…" },
-  "@legalos.billing.dialog.matterPlaceholder": { defaultMessage: "اختر ملفاً للفوترة" },
+  "@legalos.billing.dialog.matterPlaceholder": { defaultMessage: "اختر قضيةً للفوترة" },
   "@legalos.billing.dialog.cancel": { defaultMessage: "إلغاء" },
   "@legalos.billing.dialog.drafting": { defaultMessage: "جارٍ الصياغة…" },
   "@legalos.billing.dialog.draftInvoice": { defaultMessage: "صياغة فاتورة" },

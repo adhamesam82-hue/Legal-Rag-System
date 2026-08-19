@@ -84,7 +84,7 @@ export const ar: Catalog = {
   "@legalos.enum.court": { defaultMessage: "المحكمة" },
   "@legalos.enum.owner": { defaultMessage: "مالك" },
   "@legalos.enum.lawyer": { defaultMessage: "محامٍ" },
-  "@legalos.enum.staff": { defaultMessage: "موظف" },
+  "@legalos.enum.staff": { defaultMessage: "سكرتير" },
   "@legalos.enum.milestone": { defaultMessage: "مرحلة" },
   "@legalos.enum.communication": { defaultMessage: "مراسلة" },
   "@legalos.enum.billing": { defaultMessage: "فوترة" },
