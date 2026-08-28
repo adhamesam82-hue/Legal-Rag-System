@@ -312,7 +312,7 @@ export const ar: Catalog = {
   "@legalos.dashboard.next30.calendarLink": { defaultMessage: "التقويم" },
   "@legalos.dashboard.next30.empty.title": { defaultMessage: "لا توجد مواعيد مجدولة" },
   "@legalos.dashboard.next30.empty.description": {
-    defaultMessage: "لا توجد جلسات أو مواعيد نهائية أو استحقاقات مهام خلال الثلاثين يوماً القادمة.",
+    defaultMessage: "لا توجد جلسات أو مواعيد أو استحقاقات مهام خلال الثلاثين يوماً القادمة.",
   },
   "@legalos.dashboard.firmWide": { defaultMessage: "على مستوى المكتب" },
   "@legalos.dashboard.recentActivity.heading": { defaultMessage: "النشاط الأخير" },

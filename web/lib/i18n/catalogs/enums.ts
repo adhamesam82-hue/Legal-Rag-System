@@ -64,7 +64,7 @@ export const ar: Catalog = {
   "@legalos.enum.contract_review": { defaultMessage: "مراجعة العقود" },
   "@legalos.enum.hourly": { defaultMessage: "بالساعة" },
   "@legalos.enum.fixed_fee": { defaultMessage: "أتعاب ثابتة" },
-  "@legalos.enum.retainer": { defaultMessage: "أتعاب دورية" },
+  "@legalos.enum.retainer": { defaultMessage: "أتعاب مقدَّمة" },
   "@legalos.enum.todo": { defaultMessage: "قيد الانتظار" },
   "@legalos.enum.in_progress": { defaultMessage: "قيد التنفيذ" },
   "@legalos.enum.done": { defaultMessage: "منجز" },
@@ -90,5 +90,5 @@ export const ar: Catalog = {
   "@legalos.enum.billing": { defaultMessage: "فوترة" },
   "@legalos.enum.hearing": { defaultMessage: "جلسة" },
   "@legalos.enum.task": { defaultMessage: "مهمة" },
-  "@legalos.enum.deadline": { defaultMessage: "موعد نهائي" },
+  "@legalos.enum.deadline": { defaultMessage: "ميعاد" },
 };

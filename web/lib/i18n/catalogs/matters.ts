@@ -221,7 +221,7 @@ export const ar: Catalog = {
 
   "@legalos.matters.billing.hourly": { defaultMessage: "بالساعة" },
   "@legalos.matters.billing.fixedFee": { defaultMessage: "أتعاب مقطوعة" },
-  "@legalos.matters.billing.retainer": { defaultMessage: "أتعاب دورية" },
+  "@legalos.matters.billing.retainer": { defaultMessage: "أتعاب مقدَّمة" },
 
   "@legalos.matters.docStatus.draft": { defaultMessage: "مسودة" },
   "@legalos.matters.docStatus.underReview": { defaultMessage: "قيد المراجعة" },

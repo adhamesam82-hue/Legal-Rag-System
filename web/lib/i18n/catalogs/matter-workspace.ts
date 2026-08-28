@@ -595,7 +595,7 @@ export const ar: Catalog = {
   },
   "@legalos.matterWorkspace.financial.overdue": { defaultMessage: "متأخر" },
   "@legalos.matterWorkspace.financial.clientFunds": {
-    defaultMessage: "أموال الموكّل (القضية)",
+    defaultMessage: "أمانات الموكّل (القضية)",
   },
   "@legalos.matterWorkspace.financial.clientFunds.hint": {
     defaultMessage: "محفوظة لحساب الموكّل",
@@ -782,7 +782,7 @@ export const ar: Catalog = {
     defaultMessage: "تظهر هنا جلسات هذه القضية ومواعيدها النهائية وتواريخ استحقاق مهامها.",
   },
   "@legalos.matterWorkspace.calendar.kind.hearing": { defaultMessage: "جلسة" },
-  "@legalos.matterWorkspace.calendar.kind.deadline": { defaultMessage: "موعد نهائي" },
+  "@legalos.matterWorkspace.calendar.kind.deadline": { defaultMessage: "ميعاد" },
   "@legalos.matterWorkspace.calendar.kind.task": { defaultMessage: "مهمة" },
   "@legalos.matterWorkspace.calendar.overdue": { defaultMessage: "متأخر" },
   "@legalos.matterWorkspace.calendar.today": { defaultMessage: "اليوم" },
@@ -883,13 +883,13 @@ export const ar: Catalog = {
   "@legalos.matterWorkspace.bills.issued": { defaultMessage: "صدرت في {date}" },
   "@legalos.matterWorkspace.bills.due": { defaultMessage: "تستحق في {date}" },
   "@legalos.matterWorkspace.bills.paid": { defaultMessage: "سُدِّدت في {date}" },
-  "@legalos.matterWorkspace.bills.payFromFunds": { defaultMessage: "السداد من أموال الموكّل" },
+  "@legalos.matterWorkspace.bills.payFromFunds": { defaultMessage: "السداد من أمانات الموكّل" },
   "@legalos.matterWorkspace.bills.paymentTerms": {
     defaultMessage: "مهلة السداد (أيام)",
   },
 
   // --- transactions ---------------------------------------------------------
-  "@legalos.matterWorkspace.transactions.heading": { defaultMessage: "أموال الموكّل" },
+  "@legalos.matterWorkspace.transactions.heading": { defaultMessage: "أمانات الموكّل" },
   "@legalos.matterWorkspace.transactions.balance": { defaultMessage: "الرصيد" },
   "@legalos.matterWorkspace.transactions.deposits": { defaultMessage: "المودَع" },
   "@legalos.matterWorkspace.transactions.disbursed": { defaultMessage: "المصروف" },
@@ -918,23 +918,23 @@ export const ar: Catalog = {
   "@legalos.matterWorkspace.transactions.form.invoice": { defaultMessage: "مقابل فاتورة" },
   "@legalos.matterWorkspace.transactions.form.account": { defaultMessage: "حساب الموكّلين" },
   "@legalos.matterWorkspace.transactions.noAccountTitle": {
-    defaultMessage: "لا يوجد حساب لأموال الموكّلين",
+    defaultMessage: "لا يوجد حساب لأمانات الموكّلين",
   },
   "@legalos.matterWorkspace.transactions.noAccountDescription": {
     defaultMessage:
-      "تُحفظ أموال الموكّلين منفصلة عن أموال المكتب. على المالك فتح الحساب قبل تسجيل أي مبالغ.",
+      "تُحفظ أمانات الموكّلين منفصلة عن أموال المكتب. على المالك فتح الحساب قبل تسجيل أي مبالغ.",
   },
   "@legalos.matterWorkspace.transactions.openAccount": {
-    defaultMessage: "فتح حساب لأموال الموكّلين",
+    defaultMessage: "فتح حساب لأمانات الموكّلين",
   },
   "@legalos.matterWorkspace.transactions.account.name": { defaultMessage: "اسم الحساب" },
   "@legalos.matterWorkspace.transactions.account.bank": { defaultMessage: "البنك" },
   "@legalos.matterWorkspace.transactions.account.number": { defaultMessage: "رقم الحساب" },
   "@legalos.matterWorkspace.transactions.ownerOnly": {
-    defaultMessage: "فتح حساب أموال الموكّلين متاح للمالك فقط.",
+    defaultMessage: "فتح حساب أمانات الموكّلين متاح للمالك فقط.",
   },
   "@legalos.matterWorkspace.transactions.staffOnly": {
-    defaultMessage: "تحريك أموال الموكّلين متاح للمالك أو الموظفين فقط.",
+    defaultMessage: "تحريك أمانات الموكّلين متاح للمالك أو الموظفين فقط.",
   },
 
   // --- shared actions and errors -------------------------------------------

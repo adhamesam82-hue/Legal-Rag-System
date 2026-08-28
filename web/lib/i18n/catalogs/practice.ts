@@ -157,7 +157,7 @@ export const ar: Catalog = {
   },
   "@legalos.cases.search.label": { defaultMessage: "البحث في الجلسات" },
   "@legalos.cases.search.placeholder": {
-    defaultMessage: "ابحث برقم الجلسة أو اسم القضية أو القاضي أو الخصم",
+    defaultMessage: "ابحث برقم الجلسة أو اسم القضية أو الدائرة أو الخصم",
   },
   "@legalos.cases.court.all": { defaultMessage: "جميع المحاكم" },
   "@legalos.cases.loading": { defaultMessage: "جارٍ تحميل الجلسات…" },
@@ -174,7 +174,7 @@ export const ar: Catalog = {
 
   "@legalos.cases.field.case": { defaultMessage: "الجلسة" },
   "@legalos.cases.field.court": { defaultMessage: "المحكمة" },
-  "@legalos.cases.field.judge": { defaultMessage: "القاضي" },
+  "@legalos.cases.field.judge": { defaultMessage: "الدائرة" },
   "@legalos.cases.field.opposingParty": { defaultMessage: "الخصم" },
   "@legalos.cases.field.opposingCounsel": { defaultMessage: "محامي الخصم" },
   "@legalos.cases.field.nextHearing": { defaultMessage: "الجلسة القادمة" },
@@ -198,7 +198,7 @@ export const ar: Catalog = {
   "@legalos.cases.detail.nextHearingHeading": { defaultMessage: "الجلسة القادمة" },
   "@legalos.cases.detail.nextHearingNone": { defaultMessage: "لا توجد جلسة محددة." },
   "@legalos.cases.detail.deadlinesHeading": { defaultMessage: "المواعيد النهائية" },
-  "@legalos.cases.detail.deadlinesEmptyTitle": { defaultMessage: "لا توجد مواعيد نهائية" },
+  "@legalos.cases.detail.deadlinesEmptyTitle": { defaultMessage: "لا توجد مواعيد" },
   "@legalos.cases.detail.deadlinesEmptyDescription": {
     defaultMessage: "لا يوجد أي التزام معلّق في هذه الجلسة.",
   },
@@ -228,7 +228,7 @@ export const ar: Catalog = {
   "@legalos.calendar.nothingUpcoming": { defaultMessage: "لا يوجد شيء قادم." },
   "@legalos.calendar.firmTask": { defaultMessage: "مهمة عامة للمكتب" },
   "@legalos.calendar.kind.hearing": { defaultMessage: "جلسة" },
-  "@legalos.calendar.kind.deadline": { defaultMessage: "موعد نهائي للقضية" },
+  "@legalos.calendar.kind.deadline": { defaultMessage: "ميعاد للقضية" },
   "@legalos.calendar.kind.task": { defaultMessage: "مهمة" },
   "@legalos.calendar.weekday.sun": { defaultMessage: "أحد" },
   "@legalos.calendar.weekday.mon": { defaultMessage: "إثنين" },
