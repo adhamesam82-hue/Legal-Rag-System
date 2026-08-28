@@ -66,6 +66,7 @@ from legalrag.library import (
 )
 from legalrag.orgs import (
     LastOwnerError,
+    set_matter_scope,
     Membership,
     add_membership,
     create_organization,
@@ -405,6 +406,9 @@ class OrgMemberOut(BaseModel):
 
     clerk_user_id: str
     role: str
+    # Whether this member sees the whole practice or only their own cases.
+    # On the roster because the roster is where an owner changes it.
+    matter_scope: str = "all"
     display_name: str | None = None
     title: str | None = None
 
@@ -889,6 +893,40 @@ def get_org_members(
         )
         for m in members
     ]
+
+
+class MatterScopeIn(BaseModel):
+    """'all' sees the whole practice; 'assigned' sees only their own cases."""
+
+    matter_scope: Literal["all", "assigned"]
+
+
+@app.put("/api/orgs/{organization_id}/members/{clerk_user_id}/matter-scope")
+def put_member_matter_scope(
+    organization_id: int,
+    clerk_user_id: str,
+    request: MatterScopeIn,
+    owner: Membership = Depends(require_owner),
+):
+    """Opens or closes what one member can see. Owner only.
+
+    Deciding who reads which client's file is the firm's call to make, not a
+    lawyer's own -- so this is the narrower gate, not get_current_membership.
+    """
+    with request_connection() as conn:
+        try:
+            membership = set_matter_scope(
+                conn, organization_id, clerk_user_id, request.matter_scope
+            )
+        except LookupError:
+            raise HTTPException(status_code=404, detail="Member not found")
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc))
+    return {
+        "clerk_user_id": membership.clerk_user_id,
+        "role": membership.role,
+        "matter_scope": membership.matter_scope,
+    }
 
 
 @app.delete("/api/orgs/{organization_id}/members/{clerk_user_id}", status_code=204)

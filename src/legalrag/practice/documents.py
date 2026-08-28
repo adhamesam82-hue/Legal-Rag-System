@@ -15,7 +15,9 @@ from pathlib import Path
 import psycopg
 
 from legalrag.config import get_document_root
+from legalrag.orgs import Membership
 from legalrag.practice import NotFoundError, fetch_all, fetch_one
+from legalrag.practice.scope import UNRESTRICTED, nullable_matter_visibility
 
 STATUSES = ("draft", "under_review", "signed", "filed", "final")
 
@@ -53,12 +55,16 @@ def list_documents(
     matter_id: int | None = None,
     status: str | None = None,
     query: str | None = None,
+    viewer: Membership | None = None,
 ) -> list[Document]:
+    visible, visible_params = (
+        nullable_matter_visibility("d.matter_id", viewer) if viewer else UNRESTRICTED
+    )
     sql = (
         f"SELECT {_COLUMNS} FROM documents d LEFT JOIN matters m ON m.id = d.matter_id "
-        "WHERE d.organization_id = %s"
+        f"WHERE d.organization_id = %s AND {visible}"
     )
-    params: list[object] = [organization_id]
+    params: list[object] = [organization_id, *visible_params]
     if matter_id is not None:
         sql += " AND d.matter_id = %s"
         params.append(matter_id)
@@ -73,14 +79,23 @@ def list_documents(
 
 
 def get_document(
-    conn: psycopg.Connection, organization_id: int, document_id: int
+    conn: psycopg.Connection,
+    organization_id: int,
+    document_id: int,
+    viewer: Membership | None = None,
 ) -> Document | None:
+    """One document, or None -- including when it is filed on a case the
+    viewer is not on. This is the id-guessing route the scope exists to close:
+    filtering the case list alone leaves every document reachable directly."""
+    visible, visible_params = (
+        nullable_matter_visibility("d.matter_id", viewer) if viewer else UNRESTRICTED
+    )
     return fetch_one(
         conn,
         Document,
         f"SELECT {_COLUMNS} FROM documents d LEFT JOIN matters m ON m.id = d.matter_id "
-        "WHERE d.organization_id = %s AND d.id = %s",
-        (organization_id, document_id),
+        f"WHERE d.organization_id = %s AND d.id = %s AND {visible}",
+        (organization_id, document_id, *visible_params),
     )
 
 

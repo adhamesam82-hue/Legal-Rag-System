@@ -36,6 +36,12 @@ class Membership:
     # membership created by accepting an invite has neither set yet.
     display_name: str | None = None
     title: str | None = None
+    # Whether this person sees every case in the firm, or only the ones
+    # matter_staff puts them on. Defaults to the open setting here so that a
+    # Membership built without it -- in a test, or by older code -- never
+    # accidentally hides rows; the database default is the closed one, which
+    # is where it matters. See legalrag.practice.scope.
+    matter_scope: str = "all"
 
 
 def create_organization(
@@ -74,7 +80,8 @@ def get_membership(
 ) -> Membership | None:
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT id, organization_id, clerk_user_id, role FROM memberships "
+            "SELECT id, organization_id, clerk_user_id, role, display_name, "
+            "title, matter_scope FROM memberships "
             "WHERE organization_id = %s AND clerk_user_id = %s",
             (organization_id, clerk_user_id),
         )
@@ -87,7 +94,8 @@ def list_org_members(
 ) -> list[Membership]:
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT id, organization_id, clerk_user_id, role, display_name, title "
+            "SELECT id, organization_id, clerk_user_id, role, display_name, title, "
+            "matter_scope "
             "FROM memberships WHERE organization_id = %s ORDER BY created_at",
             (organization_id,),
         )
@@ -181,3 +189,36 @@ def remove_membership(
             (organization_id, clerk_user_id),
         )
     conn.commit()
+
+
+SCOPES = ("all", "assigned")
+
+
+def set_matter_scope(
+    conn: psycopg.Connection, organization_id: int, clerk_user_id: str, scope: str
+) -> Membership:
+    """Opens or closes what one member can see.
+
+    An owner is not scopeable. Someone who can change everyone's access can
+    lift their own in one click, so a restricted owner is a false sense of
+    security rather than a control -- better to refuse it and say why.
+    """
+    if scope not in SCOPES:
+        raise ValueError(f"invalid matter scope {scope!r}")
+
+    membership = get_membership(conn, organization_id, clerk_user_id)
+    if membership is None:
+        raise LookupError(f"no membership for {clerk_user_id}")
+    if membership.role == "owner" and scope != "all":
+        raise ValueError("an owner always sees every case")
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "UPDATE memberships SET matter_scope = %s "
+            "WHERE organization_id = %s AND clerk_user_id = %s",
+            (scope, organization_id, clerk_user_id),
+        )
+    conn.commit()
+    updated = get_membership(conn, organization_id, clerk_user_id)
+    assert updated is not None
+    return updated

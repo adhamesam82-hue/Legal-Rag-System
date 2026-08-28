@@ -18,7 +18,9 @@ from decimal import Decimal
 
 import psycopg
 
+from legalrag.orgs import Membership
 from legalrag.practice import NotFoundError, fetch_all, fetch_one
+from legalrag.practice.scope import UNRESTRICTED, matter_visibility
 
 MATTER_TYPES = (
     "litigation", "corporate", "tax", "labour", "family_probate", "contract_review",
@@ -127,12 +129,16 @@ def list_matters(
     responsible_user: str | None = None,
     matter_type: str | None = None,
     query: str | None = None,
+    viewer: Membership | None = None,
 ) -> list[Matter]:
+    visible, visible_params = (
+        matter_visibility("m.id", viewer) if viewer else UNRESTRICTED
+    )
     sql = (
         f"SELECT {_COLUMNS} FROM matters m JOIN clients c ON c.id = m.client_id "
-        "WHERE m.organization_id = %s"
+        f"WHERE m.organization_id = %s AND {visible}"
     )
-    params: list[object] = [organization_id]
+    params: list[object] = [organization_id, *visible_params]
     if status:
         sql += " AND m.status = %s"
         params.append(status)
@@ -153,14 +159,26 @@ def list_matters(
 
 
 def get_matter(
-    conn: psycopg.Connection, organization_id: int, matter_id: int
+    conn: psycopg.Connection,
+    organization_id: int,
+    matter_id: int,
+    viewer: Membership | None = None,
 ) -> Matter | None:
+    """One matter, or None -- including when the viewer may not see it.
+
+    Not-visible is deliberately indistinguishable from not-found: telling a
+    scoped lawyer that case 7 exists but is not theirs leaks the fact that the
+    firm holds it, which for a conflicted matter is the leak that matters.
+    """
+    visible, visible_params = (
+        matter_visibility("m.id", viewer) if viewer else UNRESTRICTED
+    )
     matter = fetch_one(
         conn,
         Matter,
         f"SELECT {_COLUMNS} FROM matters m JOIN clients c ON c.id = m.client_id "
-        "WHERE m.organization_id = %s AND m.id = %s",
-        (organization_id, matter_id),
+        f"WHERE m.organization_id = %s AND m.id = %s AND {visible}",
+        (organization_id, matter_id, *visible_params),
     )
     if matter is None:
         return None

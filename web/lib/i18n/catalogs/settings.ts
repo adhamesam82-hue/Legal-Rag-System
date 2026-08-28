@@ -71,6 +71,10 @@ export const en: Catalog = {
   "@legalos.settings.users.changeRoleToStaff": {
     defaultMessage: "Change role to Staff",
   },
+  "@legalos.settings.users.scopeLabel": { defaultMessage: "Case access" },
+  "@legalos.settings.users.scopeAll": { defaultMessage: "All cases" },
+  "@legalos.settings.users.scopeAssigned": { defaultMessage: "Their cases only" },
+  "@legalos.settings.users.scopeFailed": { defaultMessage: "Could not change case access." },
   "@legalos.settings.users.inviteFailed": { defaultMessage: "Could not send the invitation." },
   "@legalos.settings.users.removeFailed": { defaultMessage: "Could not remove this member." },
   "@legalos.settings.users.removeFromFirm": { defaultMessage: "Remove from firm" },
@@ -239,6 +243,10 @@ export const ar: Catalog = {
   "@legalos.settings.users.changeRoleToStaff": {
     defaultMessage: "تغيير الصلاحية إلى موظف",
   },
+  "@legalos.settings.users.scopeLabel": { defaultMessage: "الوصول للقضايا" },
+  "@legalos.settings.users.scopeAll": { defaultMessage: "كل القضايا" },
+  "@legalos.settings.users.scopeAssigned": { defaultMessage: "قضاياه فقط" },
+  "@legalos.settings.users.scopeFailed": { defaultMessage: "تعذّر تغيير الوصول للقضايا." },
   "@legalos.settings.users.inviteFailed": { defaultMessage: "تعذّر إرسال الدعوة." },
   "@legalos.settings.users.removeFailed": { defaultMessage: "تعذّرت إزالة هذا العضو." },
   "@legalos.settings.users.removeFromFirm": { defaultMessage: "إزالة من المكتب" },

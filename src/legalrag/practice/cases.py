@@ -11,7 +11,9 @@ from datetime import date, datetime
 
 import psycopg
 
+from legalrag.orgs import Membership
 from legalrag.practice import NotFoundError, fetch_all, fetch_one
+from legalrag.practice.scope import UNRESTRICTED, matter_visibility
 
 SUBMITTED_BY = ("us", "opposing_party", "court")
 
@@ -412,6 +414,7 @@ def list_hearings(
     outcome: str | None = None,
     undecided: bool = False,
     query: str | None = None,
+    viewer: Membership | None = None,
 ) -> list[Hearing]:
     """Hearings, filterable per column and searchable across all of them.
 
@@ -423,13 +426,16 @@ def list_hearings(
     is the question asked most often, and it is the *absence* of an outcome
     rather than one of them.
     """
+    visible, visible_params = (
+        matter_visibility("h.matter_id", viewer) if viewer else UNRESTRICTED
+    )
     sql = (
         f"SELECT {_HEARING_COLUMNS} FROM hearings h "
         "JOIN matters m ON m.id = h.matter_id "
         "LEFT JOIN cases c ON c.matter_id = h.matter_id "
-        "WHERE h.organization_id = %s"
+        f"WHERE h.organization_id = %s AND {visible}"
     )
-    params: list[object] = [organization_id]
+    params: list[object] = [organization_id, *visible_params]
     if matter_id is not None:
         sql += " AND h.matter_id = %s"
         params.append(matter_id)
@@ -462,16 +468,22 @@ def list_hearings(
 
 
 def get_hearing(
-    conn: psycopg.Connection, organization_id: int, hearing_id: int
+    conn: psycopg.Connection,
+    organization_id: int,
+    hearing_id: int,
+    viewer: Membership | None = None,
 ) -> Hearing | None:
+    visible, visible_params = (
+        matter_visibility("h.matter_id", viewer) if viewer else UNRESTRICTED
+    )
     return fetch_one(
         conn,
         Hearing,
         f"SELECT {_HEARING_COLUMNS} FROM hearings h "
         "JOIN matters m ON m.id = h.matter_id "
         "LEFT JOIN cases c ON c.matter_id = h.matter_id "
-        "WHERE h.organization_id = %s AND h.id = %s",
-        (organization_id, hearing_id),
+        f"WHERE h.organization_id = %s AND h.id = %s AND {visible}",
+        (organization_id, hearing_id, *visible_params),
     )
 
 

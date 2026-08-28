@@ -564,6 +564,7 @@ def get_matters(
     return matters.list_matters(
         conn,
         organization_id,
+        viewer=membership,
         status=status,
         client_id=client_id,
         responsible_user=responsible_user,
@@ -607,7 +608,10 @@ def get_matter(
     membership: Membership = Depends(get_current_membership),
     conn=Depends(db),
 ):
-    return found(matters.get_matter(conn, organization_id, matter_id), "Matter")
+    return found(
+        matters.get_matter(conn, organization_id, matter_id, viewer=membership),
+        "Matter",
+    )
 
 
 @router.patch("/matters/{matter_id}")
@@ -868,6 +872,7 @@ def get_hearings(
     return cases.list_hearings(
         conn,
         organization_id,
+        viewer=membership,
         matter_id=matter_id,
         since=since,
         until=until,
@@ -886,7 +891,10 @@ def get_hearing(
     membership: Membership = Depends(get_current_membership),
     conn=Depends(db),
 ):
-    return found(cases.get_hearing(conn, organization_id, hearing_id), "Hearing")
+    return found(
+        cases.get_hearing(conn, organization_id, hearing_id, viewer=membership),
+        "Hearing",
+    )
 
 
 @router.patch("/hearings/{hearing_id}")
@@ -935,7 +943,7 @@ def get_documents(
     conn=Depends(db),
 ):
     return docs.list_documents(
-        conn, organization_id, matter_id=matter_id, status=status, query=q
+        conn, organization_id, viewer=membership, matter_id=matter_id, status=status, query=q
     )
 
 
@@ -1073,7 +1081,10 @@ def put_matter_power_of_attorney(
         )
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
-    return found(matters.get_matter(conn, organization_id, matter_id), "Matter")
+    return found(
+        matters.get_matter(conn, organization_id, matter_id, viewer=membership),
+        "Matter",
+    )
 
 
 @router.post("/documents", status_code=201)
@@ -1136,7 +1147,10 @@ def get_document(
     membership: Membership = Depends(get_current_membership),
     conn=Depends(db),
 ):
-    return found(docs.get_document(conn, organization_id, document_id), "Document")
+    return found(
+        docs.get_document(conn, organization_id, document_id, viewer=membership),
+        "Document",
+    )
 
 
 @router.get("/documents/{document_id}/content")
@@ -1146,7 +1160,10 @@ def get_document_content(
     membership: Membership = Depends(get_current_membership),
     conn=Depends(db),
 ):
-    document = found(docs.get_document(conn, organization_id, document_id), "Document")
+    document = found(
+        docs.get_document(conn, organization_id, document_id, viewer=membership),
+        "Document",
+    )
     try:
         content = docs.read_document_bytes(document)
     except NotFoundError as exc:

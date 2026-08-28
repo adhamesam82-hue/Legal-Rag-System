@@ -76,9 +76,13 @@ export interface InvitationPreview {
   status: "pending" | "accepted" | "expired" | "revoked";
 }
 
+export type MatterScope = "all" | "assigned";
+
 export interface OrgMember {
   clerk_user_id: string;
   role: "owner" | "lawyer" | "staff";
+  /** Whether they see the whole practice or only the cases they are on. */
+  matter_scope: MatterScope;
   /** Firm-side display identity, set on the membership rather than in Clerk. */
   display_name: string | null;
   title: string | null;
@@ -284,6 +288,16 @@ export const api = {
 
   listOrgMembers: (organizationId: number) =>
     request<OrgMember[]>(`/api/orgs/${organizationId}/members`),
+
+  setMatterScope: (
+    organizationId: number,
+    clerkUserId: string,
+    matterScope: MatterScope,
+  ) =>
+    request<{ clerk_user_id: string; role: string; matter_scope: MatterScope }>(
+      `/api/orgs/${organizationId}/members/${clerkUserId}/matter-scope`,
+      { method: "PUT", body: JSON.stringify({ matter_scope: matterScope }) },
+    ),
 
   removeMember: (organizationId: number, clerkUserId: string) =>
     request<void>(`/api/orgs/${organizationId}/members/${clerkUserId}`, {

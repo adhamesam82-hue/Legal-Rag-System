@@ -32,7 +32,7 @@ import { useTranslator } from "@astryxdesign/core/i18n";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 import { useOrg, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
-import { api, ApiError, type OrgMember } from "@/lib/api";
+import { api, ApiError, type MatterScope, type OrgMember } from "@/lib/api";
 
 type Role = "owner" | "lawyer" | "staff";
 
@@ -165,6 +165,31 @@ function MemberRow({
   const [error, setError] = useState<string | null>(null);
 
   const name = member.display_name ?? member.clerk_user_id;
+  const [scope, setScope] = useState<MatterScope>(member.matter_scope);
+  const [savingScope, setSavingScope] = useState(false);
+
+  async function changeScope(next: MatterScope) {
+    if (organizationId === null) return;
+    const previous = scope;
+    setScope(next);
+    setSavingScope(true);
+    setError(null);
+    try {
+      await api.setMatterScope(organizationId, member.clerk_user_id, next);
+    } catch (cause) {
+      // Put the control back where it was: leaving it showing a setting the
+      // server refused is how someone believes access is restricted when it
+      // is not.
+      setScope(previous);
+      setError(
+        cause instanceof ApiError
+          ? cause.message
+          : t("@legalos.settings.users.scopeFailed"),
+      );
+    } finally {
+      setSavingScope(false);
+    }
+  }
 
   async function remove() {
     if (organizationId === null) return;
@@ -194,6 +219,20 @@ function MemberRow({
         <HStack gap={3} vAlign="center">
           <InlineError message={error} onDismiss={() => setError(null)} />
           <Badge variant={ROLE_BADGE_VARIANT[member.role]} label={enumLabel(member.role)} />
+          {member.role !== "owner" && canRemove && (
+            <Selector
+              label={t("@legalos.settings.users.scopeLabel")}
+              isLabelHidden
+              value={scope}
+              onChange={(value) => changeScope(value as MatterScope)}
+              isDisabled={savingScope}
+              size="sm"
+              options={[
+                { value: "all", label: t("@legalos.settings.users.scopeAll") },
+                { value: "assigned", label: t("@legalos.settings.users.scopeAssigned") },
+              ]}
+            />
+          )}
           {canRemove ? (
             <Button
               label={t("@legalos.settings.users.removeFromFirm")}
