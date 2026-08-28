@@ -1,177 +1,275 @@
 "use client";
 
-import { useMemo, useState } from "react";
+/**
+ * The hearings diary.
+ *
+ * This route used to list litigation records under a heading that says
+ * الجلسات, which is not what a lawyer opens that tab for. What they want is
+ * the sittings: what is coming, what happened at the last one, and where an
+ * adjournment sent the case.
+ *
+ * Filtering happens on the SERVER, not on a page of rows already fetched.
+ * A practice with three years of sittings is thousands of them, and a filter
+ * that only narrows what happens to be loaded is a filter that lies.
+ *
+ * "Not ruled on yet" is its own control rather than a value in the outcome
+ * list, because it is the absence of an outcome and it is the question asked
+ * most often.
+ */
+
+import { useState } from "react";
 import { Layout, LayoutHeader, LayoutContent } from "@astryxdesign/core/Layout";
 import { VStack, HStack } from "@astryxdesign/core/Stack";
 import { Heading, Text } from "@astryxdesign/core/Text";
 import { Button } from "@astryxdesign/core/Button";
 import { Icon } from "@astryxdesign/core/Icon";
-import { StatusDot } from "@astryxdesign/core/StatusDot";
+import { Badge } from "@astryxdesign/core/Badge";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { Selector } from "@astryxdesign/core/Selector";
+import { DateInput } from "@astryxdesign/core/DateInput";
 import { Table, proportional, pixel } from "@astryxdesign/core/Table";
 import type { TableColumn } from "@astryxdesign/core/Table";
-import { Link } from "@astryxdesign/core/Link";
+import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
+import { LayoutFooter } from "@astryxdesign/core/Layout";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
-import { MagnifyingGlassIcon, ScaleIcon } from "@heroicons/react/24/outline";
+import type { ISODateString } from "@astryxdesign/core/Calendar";
+import { MagnifyingGlassIcon, PlusIcon, ScaleIcon } from "@heroicons/react/24/outline";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { useResource } from "@/lib/org";
-import { DataView } from "@/components/DataState";
-import { todayIso } from "@/lib/practice";
+import { useOrg, useResource } from "@/lib/org";
+import { DataView, InlineError } from "@/components/DataState";
+import { useEnumLabel } from "@/lib/i18n/enum-label";
 import { useFormat } from "@/lib/i18n/format";
+import { HEARING_OUTCOMES, todayIso, type Hearing, type HearingOutcome } from "@/lib/practice";
 
-interface CaseRow extends Record<string, unknown> {
+const ANY = "any";
+const UNDECIDED = "undecided";
+
+function outcomeVariant(outcome: string | null): "success" | "warning" | "neutral" | "blue" {
+  if (outcome === null) return "neutral";
+  if (outcome === "judgment") return "success";
+  if (outcome === "adjourned") return "warning";
+  if (outcome === "struck_out") return "neutral";
+  return "blue";
+}
+
+interface Row extends Record<string, unknown> {
   id: number;
-  caseNumber: string;
-  matterName: string;
+  date: string;
+  time: string;
+  matter: string;
   court: string;
-  judge: string;
-  opposingParty: string;
-  status: string;
-  nextHearingDate: string | null;
-  nextHearingTime: string | null;
+  circuit: string;
+  outcome: HearingOutcome | null;
+  note: string;
+  next: string | null;
 }
 
-function statusVariant(status: string): "success" | "warning" | "neutral" {
-  if (status.startsWith("Active")) return "success";
-  if (status.startsWith("On Hold")) return "warning";
-  return "neutral";
+function NewHearingDialog({
+  isOpen,
+  onOpenChange,
+  onCreated,
+}: {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreated: () => void;
+}) {
+  const t = useTranslator();
+  const { practice } = useOrg();
+  const [matterId, setMatterId] = useState<string | null>(null);
+  const [hearingDate, setHearingDate] = useState<ISODateString>(todayIso);
+  const [hearingTime, setHearingTime] = useState("");
+  const [court, setCourt] = useState("");
+  const [purpose, setPurpose] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const matters = useResource(
+    (api) => (isOpen ? api.matters.list({ status: "active" }) : Promise.resolve([])),
+    [isOpen],
+  );
+
+  async function submit() {
+    if (!practice || !matterId) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await practice.hearings.create({
+        matter_id: Number(matterId),
+        hearing_date: hearingDate,
+        hearing_time: hearingTime,
+        court,
+        purpose,
+      });
+      setCourt("");
+      setPurpose("");
+      setMatterId(null);
+      onOpenChange(false);
+      onCreated();
+    } catch (exc) {
+      setError(exc instanceof Error ? exc.message : t("@legalos.hearings.dialog.error"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog isOpen={isOpen} onOpenChange={onOpenChange} purpose="form" width={460}>
+      <Layout
+        header={
+          <DialogHeader
+            title={t("@legalos.hearings.newHearing")}
+            onOpenChange={onOpenChange}
+          />
+        }
+        content={
+          <LayoutContent>
+            <VStack gap={4}>
+              <InlineError message={error} onDismiss={() => setError(null)} />
+              <Selector
+                label={t("@legalos.hearings.field.matter")}
+                value={matterId}
+                onChange={setMatterId}
+                isRequired
+                hasClear
+                placeholder={
+                  matters.loading
+                    ? t("@legalos.hearings.dialog.loadingMatters")
+                    : t("@legalos.hearings.dialog.selectMatter")
+                }
+                options={(matters.data ?? []).map((m) => ({
+                  value: String(m.id),
+                  label: m.name,
+                }))}
+              />
+              <HStack gap={3}>
+                <DateInput
+                  label={t("@legalos.hearings.field.date")}
+                  value={hearingDate}
+                  onChange={(v) => setHearingDate(v ?? hearingDate)}
+                />
+                <TextInput
+                  label={t("@legalos.hearings.field.time")}
+                  value={hearingTime}
+                  onChange={setHearingTime}
+                  placeholder="10:00"
+                />
+              </HStack>
+              <TextInput
+                label={t("@legalos.hearings.field.court")}
+                value={court}
+                onChange={setCourt}
+              />
+              <TextInput
+                label={t("@legalos.hearings.field.purpose")}
+                value={purpose}
+                onChange={setPurpose}
+              />
+            </VStack>
+          </LayoutContent>
+        }
+        footer={
+          <LayoutFooter hasDivider>
+            <HStack gap={3} hAlign="end">
+              <Button
+                label={t("@legalos.hearings.dialog.cancel")}
+                variant="secondary"
+                onClick={() => onOpenChange(false)}
+              >
+                {t("@legalos.hearings.dialog.cancel")}
+              </Button>
+              <Button
+                label={t("@legalos.hearings.dialog.submit")}
+                variant="primary"
+                isDisabled={saving || !matterId}
+                onClick={submit}
+              >
+                {t("@legalos.hearings.dialog.submit")}
+              </Button>
+            </HStack>
+          </LayoutFooter>
+        }
+      />
+    </Dialog>
+  );
 }
 
-export default function CasesPage() {
+export default function HearingsPage() {
   const { formatDate } = useFormat();
   const t = useTranslator();
+  const enumLabel = useEnumLabel();
+
   const [query, setQuery] = useState("");
-  const [courtFilter, setCourtFilter] = useState<string>("all");
+  const [court, setCourt] = useState("");
+  const [circuit, setCircuit] = useState("");
+  const [outcome, setOutcome] = useState<string>(ANY);
+  const [since, setSince] = useState<ISODateString | undefined>(undefined);
+  const [until, setUntil] = useState<ISODateString | undefined>(undefined);
+  const [isNewOpen, setIsNewOpen] = useState(false);
 
-  // The case list endpoint returns summaries without child collections, so
-  // upcoming hearings come from the hearings endpoint and are joined by
-  // matter here rather than fetching each case in full.
-  const resource = useResource(
-    async (api) => {
-      const [cases, hearings] = await Promise.all([
-        api.cases.list(),
-        api.hearings.list({ since: todayIso() }),
-      ]);
-      return { cases, hearings };
-    },
-    [],
-  );
-
-  const allRows = useMemo<CaseRow[]>(() => {
-    if (!resource.data) return [];
-    const { cases, hearings } = resource.data;
-    return cases.map((record) => {
-      const next = hearings
-        .filter((h) => h.matter_id === record.matter_id)
-        .sort((a, b) => a.hearing_date.localeCompare(b.hearing_date))[0];
-      return {
-        id: record.id,
-        caseNumber: record.case_number,
-        matterName: record.matter_name,
-        court: record.court,
-        judge: record.judge,
-        opposingParty: record.opposing_party,
-        status: record.status,
-        nextHearingDate: next?.hearing_date ?? null,
-        nextHearingTime: next?.hearing_time ?? null,
-      };
-    });
-  }, [resource.data]);
-
-  const courts = useMemo(
-    () => Array.from(new Set(allRows.map((r) => r.court))),
-    [allRows],
-  );
-
-  const rows = useMemo(
-    () =>
-      allRows.filter((row) => {
-        if (courtFilter !== "all" && row.court !== courtFilter) return false;
-        const q = query.trim().toLowerCase();
-        if (!q) return true;
-        return (
-          row.caseNumber.toLowerCase().includes(q) ||
-          row.matterName.toLowerCase().includes(q) ||
-          row.opposingParty.toLowerCase().includes(q) ||
-          row.judge.toLowerCase().includes(q)
-        );
+  // Every filter is a dependency: the server does the narrowing, so a changed
+  // control means a new request rather than a re-filter of stale rows.
+  const hearings = useResource(
+    (api) =>
+      api.hearings.list({
+        q: query || undefined,
+        court: court || undefined,
+        judge: circuit || undefined,
+        outcome: outcome !== ANY && outcome !== UNDECIDED
+          ? (outcome as HearingOutcome)
+          : undefined,
+        undecided: outcome === UNDECIDED ? true : undefined,
+        since,
+        until,
       }),
-    [allRows, query, courtFilter],
+    [query, court, circuit, outcome, since, until],
   );
 
-  const columns: TableColumn<CaseRow>[] = [
+  const columns: TableColumn<Row>[] = [
     {
-      key: "caseNumber",
-      header: t("@legalos.cases.field.case"),
-      width: proportional(1.6),
+      key: "date",
+      header: t("@legalos.hearings.column.date"),
+      width: pixel(130),
       renderCell: (row) => (
-        <Link href={`/cases/${row.id}`}>
-          <VStack gap={0}>
-            <Text type="body" weight="semibold">
-              {row.caseNumber}
-            </Text>
-            <Text type="supporting" color="secondary">
-              {row.matterName}
-            </Text>
-          </VStack>
-        </Link>
-      ),
-    },
-    {
-      key: "court",
-      header: t("@legalos.cases.field.court"),
-      width: proportional(1.6),
-      renderCell: (row) => <Text type="body">{row.court}</Text>,
-    },
-    {
-      key: "judge",
-      header: t("@legalos.cases.field.judge"),
-      width: proportional(1.4),
-      renderCell: (row) => <Text type="body">{row.judge}</Text>,
-    },
-    {
-      key: "opposingParty",
-      header: t("@legalos.cases.field.opposingParty"),
-      width: proportional(1.8),
-      renderCell: (row) => (
-        <Text type="body" maxLines={2}>
-          {row.opposingParty}
+        <Text type="body" weight="semibold">
+          {row.date}
         </Text>
       ),
     },
+    { key: "matter", header: t("@legalos.hearings.column.matter"), width: proportional(2) },
+    { key: "court", header: t("@legalos.hearings.column.court"), width: proportional(2) },
+    { key: "circuit", header: t("@legalos.hearings.column.circuit"), width: proportional(1) },
     {
-      key: "nextHearingDate",
-      header: t("@legalos.cases.field.nextHearing"),
-      width: pixel(150),
-      renderCell: (row) =>
-        row.nextHearingDate ? (
-          <VStack gap={0}>
-            <Text type="body">{formatDate(row.nextHearingDate)}</Text>
-            <Text type="supporting" color="secondary">
-              {row.nextHearingTime}
-            </Text>
-          </VStack>
-        ) : (
-          <Text type="body" color="secondary">
-            {t("@legalos.cases.noHearingScheduled")}
-          </Text>
-        ),
-    },
-    {
-      key: "status",
-      header: t("@legalos.cases.field.status"),
+      key: "outcome",
+      header: t("@legalos.hearings.column.outcome"),
       width: pixel(170),
       renderCell: (row) => (
-        <HStack gap={1.5} vAlign="center">
-          <StatusDot variant={statusVariant(row.status)} label={row.status || "—"} />
-          <Text type="body" color="secondary">
-            {row.status || "—"}
-          </Text>
-        </HStack>
+        <VStack gap={1}>
+          <Badge
+            variant={outcomeVariant(row.outcome)}
+            label={row.outcome ? enumLabel(row.outcome) : enumLabel("undecided")}
+          />
+          {row.note ? (
+            <Text type="supporting" color="secondary">
+              {row.note}
+            </Text>
+          ) : null}
+        </VStack>
+      ),
+    },
+    {
+      key: "next",
+      header: t("@legalos.hearings.column.next"),
+      width: pixel(120),
+      renderCell: (row) => (
+        <Text type="body" color={row.next ? "primary" : "secondary"}>
+          {row.next ?? "—"}
+        </Text>
       ),
     },
   ];
+
+  const anyFilter =
+    Boolean(query || court || circuit || since || until) || outcome !== ANY;
 
   return (
     <Layout
@@ -179,73 +277,114 @@ export default function CasesPage() {
       header={
         <LayoutHeader hasDivider padding={0}>
           <VStack gap={4}>
-            <VStack gap={1}>
-              <Heading level={2}>{t("@legalos.cases.heading")}</Heading>
-              <Text type="body" color="secondary">
-                {t("@legalos.cases.subtitle", { count: allRows.length })}
-              </Text>
-            </VStack>
+            <HStack hAlign="between" vAlign="start">
+              <VStack gap={1}>
+                <Heading level={3}>{t("@legalos.hearings.heading")}</Heading>
+                <Text type="body" color="secondary">
+                  {t("@legalos.hearings.subtitle")}
+                </Text>
+              </VStack>
+              <Button
+                label={t("@legalos.hearings.newHearing")}
+                variant="primary"
+                icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
+                onClick={() => setIsNewOpen(true)}
+              >
+                {t("@legalos.hearings.newHearing")}
+              </Button>
+            </HStack>
+
             <HStack gap={3} wrap="wrap">
               <TextInput
-                label={t("@legalos.cases.search.label")}
+                label={t("@legalos.hearings.search.label")}
                 isLabelHidden
                 value={query}
                 onChange={setQuery}
-                placeholder={t("@legalos.cases.search.placeholder")}
+                placeholder={t("@legalos.hearings.search.placeholder")}
                 startIcon={MagnifyingGlassIcon}
-                width={360}
+              />
+              <TextInput
+                label={t("@legalos.hearings.column.court")}
+                value={court}
+                onChange={setCourt}
+                size="sm"
+              />
+              <TextInput
+                label={t("@legalos.hearings.column.circuit")}
+                value={circuit}
+                onChange={setCircuit}
+                size="sm"
               />
               <Selector
-                label={t("@legalos.cases.field.court")}
-                isLabelHidden
-                value={courtFilter}
-                onChange={(v) => setCourtFilter(v ?? "all")}
+                label={t("@legalos.hearings.column.outcome")}
+                value={outcome}
+                onChange={(v) => setOutcome(v ?? ANY)}
+                size="sm"
                 options={[
-                  { value: "all", label: t("@legalos.cases.court.all") },
-                  ...courts.map((c) => ({ value: c, label: c })),
+                  { value: ANY, label: t("@legalos.hearings.filter.anyOutcome") },
+                  { value: UNDECIDED, label: enumLabel("undecided") },
+                  ...HEARING_OUTCOMES.map((o) => ({ value: o, label: enumLabel(o) })),
                 ]}
-                width={220}
+              />
+              <DateInput
+                label={t("@legalos.hearings.filter.from")}
+                value={since}
+                onChange={setSince}
+                size="sm"
+              />
+              <DateInput
+                label={t("@legalos.hearings.filter.to")}
+                value={until}
+                onChange={setUntil}
+                size="sm"
               />
             </HStack>
           </VStack>
         </LayoutHeader>
       }
       content={
-        <LayoutContent padding={0}>
-          <DataView resource={resource} loadingLabel={t("@legalos.cases.loading")}>
-            {() =>
-              rows.length > 0 ? (
-                <Table<CaseRow> data={rows} columns={columns} idKey="id" hasHover />
-              ) : (
-                <EmptyState
-                  icon={<Icon icon={ScaleIcon} size="lg" color="secondary" />}
-                  title={
-                    allRows.length === 0
-                      ? t("@legalos.cases.empty.noneTitle")
-                      : t("@legalos.cases.empty.noMatchTitle")
-                  }
-                  description={
-                    allRows.length === 0
-                      ? t("@legalos.cases.empty.noneDescription")
-                      : t("@legalos.cases.empty.noMatchDescription")
-                  }
-                  actions={
-                    allRows.length > 0 ? (
-                      <Button
-                        label={t("@legalos.cases.clearFilters")}
-                        variant="secondary"
-                        onClick={() => {
-                          setQuery("");
-                          setCourtFilter("all");
-                        }}
-                      />
-                    ) : undefined
-                  }
-                />
-              )
-            }
+        <LayoutContent>
+          <DataView resource={hearings}>
+            {(rows: Hearing[]) => {
+              if (rows.length === 0) {
+                return (
+                  <EmptyState
+                    icon={<Icon icon={ScaleIcon} size="lg" color="secondary" />}
+                    title={
+                      anyFilter
+                        ? t("@legalos.hearings.empty.noMatchTitle")
+                        : t("@legalos.hearings.empty.noneTitle")
+                    }
+                    description={
+                      anyFilter
+                        ? t("@legalos.hearings.empty.noMatchDescription")
+                        : t("@legalos.hearings.empty.noneDescription")
+                    }
+                  />
+                );
+              }
+              const data: Row[] = rows.map((h) => ({
+                id: h.id,
+                date: formatDate(h.hearing_date) + (h.hearing_time ? ` · ${h.hearing_time}` : ""),
+                time: h.hearing_time,
+                matter: h.matter_name ?? "—",
+                court: h.court || "—",
+                circuit: h.judge || "—",
+                outcome: h.outcome,
+                note: h.outcome_note ?? "",
+                next: h.next_hearing_date ? formatDate(h.next_hearing_date) : null,
+              }));
+              return <Table<Row> data={data} columns={columns} idKey="id" hasHover />;
+            }}
           </DataView>
         </LayoutContent>
+      }
+      footer={
+        <NewHearingDialog
+          isOpen={isNewOpen}
+          onOpenChange={setIsNewOpen}
+          onCreated={hearings.reload}
+        />
       }
     />
   );

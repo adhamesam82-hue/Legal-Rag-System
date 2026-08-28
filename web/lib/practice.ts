@@ -145,14 +145,39 @@ export interface CourtDocument {
   doc_date: string;
 }
 
+export type HearingOutcome =
+  | "adjourned"
+  | "reserved"
+  | "judgment"
+  | "struck_out"
+  | "joined"
+  | "other";
+
+export const HEARING_OUTCOMES: HearingOutcome[] = [
+  "adjourned",
+  "reserved",
+  "judgment",
+  "struck_out",
+  "joined",
+  "other",
+];
+
 export interface Hearing {
   id: number;
   matter_id: number;
+  matter_name: string | null;
   hearing_date: string;
   hearing_time: string;
   court: string;
+  /** The دائرة, from the linked case; null when the matter has no case yet. */
+  judge: string | null;
   purpose: string;
-  outcome: string | null;
+  /** null while the sitting has not happened yet -- not an error state. */
+  outcome: HearingOutcome | null;
+  /** What the bench said, in the clerk's words. The code says adjourned; only
+   *  this says what it was adjourned for. */
+  outcome_note: string | null;
+  next_hearing_date: string | null;
 }
 
 export interface CaseRecord {
@@ -732,9 +757,23 @@ export function practiceApi(organizationId: number) {
     },
 
     hearings: {
-      list: (filters: { matter_id?: number; since?: string; until?: string } = {}) =>
-        request<Hearing[]>(`${base}/hearings${query(filters)}`),
+      list: (
+        filters: {
+          matter_id?: number;
+          since?: string;
+          until?: string;
+          court?: string;
+          judge?: string;
+          outcome?: HearingOutcome;
+          /** Not an outcome value: "not ruled on yet" is the absence of one. */
+          undecided?: boolean;
+          q?: string;
+        } = {},
+      ) => request<Hearing[]>(`${base}/hearings${query(filters)}`),
+      get: (id: number) => request<Hearing>(`${base}/hearings/${id}`),
       create: (body: Record<string, unknown>) => post<Hearing>("/hearings", body),
+      update: (id: number, body: Record<string, unknown>) =>
+        patch<Hearing>(`/hearings/${id}`, body),
     },
 
     documents: {
