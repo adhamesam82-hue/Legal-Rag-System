@@ -71,6 +71,8 @@ export const en: Catalog = {
   "@legalos.settings.users.changeRoleToStaff": {
     defaultMessage: "Change role to Staff",
   },
+  "@legalos.settings.users.inviteFailed": { defaultMessage: "Could not send the invitation." },
+  "@legalos.settings.users.removeFailed": { defaultMessage: "Could not remove this member." },
   "@legalos.settings.users.removeFromFirm": { defaultMessage: "Remove from firm" },
   "@legalos.settings.users.pendingInvitations": {
     defaultMessage: "Pending invitations",
@@ -118,6 +120,12 @@ export const en: Catalog = {
   "@legalos.settings.profile.phone": { defaultMessage: "Phone" },
   "@legalos.settings.profile.interfaceLanguage": { defaultMessage: "Interface language" },
   "@legalos.settings.profile.discardChanges": { defaultMessage: "Discard changes" },
+  "@legalos.settings.profile.titleLabel": { defaultMessage: "Job title" },
+  "@legalos.settings.profile.identityReadOnly": { defaultMessage: "Your name and title are set by the firm. Ask an owner to change them." },
+  "@legalos.settings.profile.languageHeading": { defaultMessage: "Language" },
+  "@legalos.settings.profile.roleDescription.owner": { defaultMessage: "Full access to every case, plus firm billing and team management." },
+  "@legalos.settings.profile.roleDescription.lawyer": { defaultMessage: "Works cases, records time, and files documents." },
+  "@legalos.settings.profile.roleDescription.staff": { defaultMessage: "Schedules hearings, files documents, and handles client funds." },
   "@legalos.settings.profile.roleHeading": { defaultMessage: "Role and access" },
   "@legalos.settings.profile.ownerDescription": {
     defaultMessage: "Full access to every matter, plus firm billing and team management.",
@@ -231,6 +239,8 @@ export const ar: Catalog = {
   "@legalos.settings.users.changeRoleToStaff": {
     defaultMessage: "تغيير الصلاحية إلى موظف",
   },
+  "@legalos.settings.users.inviteFailed": { defaultMessage: "تعذّر إرسال الدعوة." },
+  "@legalos.settings.users.removeFailed": { defaultMessage: "تعذّرت إزالة هذا العضو." },
   "@legalos.settings.users.removeFromFirm": { defaultMessage: "إزالة من المكتب" },
   "@legalos.settings.users.pendingInvitations": {
     defaultMessage: "الدعوات المعلَّقة",
@@ -278,6 +288,12 @@ export const ar: Catalog = {
   "@legalos.settings.profile.phone": { defaultMessage: "الهاتف" },
   "@legalos.settings.profile.interfaceLanguage": { defaultMessage: "لغة الواجهة" },
   "@legalos.settings.profile.discardChanges": { defaultMessage: "تجاهل التغييرات" },
+  "@legalos.settings.profile.titleLabel": { defaultMessage: "المسمى الوظيفي" },
+  "@legalos.settings.profile.identityReadOnly": { defaultMessage: "اسمك ومسماك يحددهما المكتب. اطلب من المالك تغييرهما." },
+  "@legalos.settings.profile.languageHeading": { defaultMessage: "اللغة" },
+  "@legalos.settings.profile.roleDescription.owner": { defaultMessage: "وصول كامل إلى كل القضايا، إضافة إلى فوترة المكتب وإدارة الفريق." },
+  "@legalos.settings.profile.roleDescription.lawyer": { defaultMessage: "يباشر القضايا ويسجّل الوقت ويودع المستندات." },
+  "@legalos.settings.profile.roleDescription.staff": { defaultMessage: "ينظّم الجلسات ويودع المستندات ويتابع أمانات الموكّلين." },
   "@legalos.settings.profile.roleHeading": { defaultMessage: "الصلاحية والوصول" },
   "@legalos.settings.profile.ownerDescription": {
     defaultMessage: "وصول كامل إلى كل القضايا، إضافة إلى فوترة المكتب وإدارة الفريق.",

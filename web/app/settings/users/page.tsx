@@ -1,5 +1,19 @@
 "use client";
 
+/**
+ * The firm's roster, from the firm's own database.
+ *
+ * This screen used to render four invented people and two invented
+ * invitations, with every control a no-op — while the endpoints behind all of
+ * it existed and were covered by tests. An owner opening it saw four strangers
+ * listed as their team.
+ *
+ * Changing someone's role is deliberately absent rather than disabled-looking:
+ * there is no endpoint for it (orgs.py exposes add and remove, not update), so
+ * offering the control at all would be the same lie in a smaller box. To move
+ * someone between roles today, remove them and invite them again.
+ */
+
 import { useState } from "react";
 import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
@@ -12,17 +26,13 @@ import { Avatar } from "@astryxdesign/core/Avatar";
 import { List, ListItem } from "@astryxdesign/core/List";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { Selector } from "@astryxdesign/core/Selector";
-import { DropdownMenu } from "@astryxdesign/core/DropdownMenu";
 import { Icon } from "@astryxdesign/core/Icon";
-import {
-  EllipsisHorizontalIcon,
-  EnvelopeIcon,
-  PlusIcon,
-  UserPlusIcon,
-} from "@heroicons/react/24/outline";
+import { EnvelopeIcon, PlusIcon, UserPlusIcon } from "@heroicons/react/24/outline";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
-import { useOrg } from "@/lib/org";
+import { useOrg, useResource } from "@/lib/org";
+import { DataView, InlineError } from "@/components/DataState";
+import { api, ApiError, type OrgMember } from "@/lib/api";
 
 type Role = "owner" | "lawyer" | "staff";
 
@@ -32,104 +42,44 @@ const ROLE_BADGE_VARIANT: Record<Role, "purple" | "blue" | "neutral"> = {
   staff: "neutral",
 };
 
-interface Member {
-  id: string;
-  name: string;
-  email: string;
-  role: Role;
-  isYou?: boolean;
-  /** Founding members have no join date; the rest carry a month key + year. */
-  joinedMonthKey?: string;
-  joinedYear?: number;
-}
-
-const MEMBERS: Member[] = [
-  {
-    id: "ahmed",
-    name: "أحمد السيد",
-    email: "ahmed@alsayedpartners.com",
-    role: "owner",
-    isYou: true,
-
-  },
-  {
-    id: "mona",
-    name: "منى فاروق",
-    email: "mona.farouk@alsayedpartners.com",
-    role: "lawyer",
-    joinedMonthKey: "@legalos.settings.month.mar",
-    joinedYear: 2026,
-  },
-  {
-    id: "youssef",
-    name: "يوسف عادل",
-    email: "youssef.adel@alsayedpartners.com",
-    role: "lawyer",
-    joinedMonthKey: "@legalos.settings.month.apr",
-    joinedYear: 2026,
-  },
-  {
-    id: "layla",
-    name: "ليلى حسن",
-    email: "layla.hassan@alsayedpartners.com",
-    role: "staff",
-    joinedMonthKey: "@legalos.settings.month.may",
-    joinedYear: 2026,
-  },
-];
-
-type InviteStatus = "pending" | "expired" | "revoked";
-
-interface Invitation {
-  id: string;
-  email: string;
-  role: Role;
-  status: InviteStatus;
-  sentDaysAgo: number;
-  expiresInDays?: number;
-  expiredDaysAgo?: number;
-}
-
-const INVITATIONS: Invitation[] = [
-  {
-    id: "inv-1",
-    email: "sara.ibrahim@example.com",
-    role: "lawyer",
-    status: "pending",
-    sentDaysAgo: 2,
-    expiresInDays: 5,
-  },
-  {
-    id: "inv-2",
-    email: "khaled.reda@example.com",
-    role: "staff",
-    status: "expired",
-    sentDaysAgo: 9,
-    expiredDaysAgo: 2,
-  },
-];
-
-const INVITE_STATUS_BADGE: Record<
-  InviteStatus,
-  { variant: "warning" | "neutral"; labelKey: string }
-> = {
-  pending: { variant: "warning", labelKey: "@legalos.settings.users.status.pending" },
-  expired: { variant: "neutral", labelKey: "@legalos.settings.users.status.expired" },
-  revoked: { variant: "neutral", labelKey: "@legalos.settings.users.status.revoked" },
-};
-
 function InviteMemberDialog({
   isOpen,
   onOpenChange,
+  organizationId,
+  onInvited,
 }: {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  organizationId: number | null;
+  onInvited: () => void;
 }) {
   const t = useTranslator();
   const enumLabel = useEnumLabel();
   const { organizationName } = useOrg();
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("lawyer");
+  const [role, setRole] = useState<"lawyer" | "staff">("lawyer");
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function send() {
+    if (organizationId === null || !email.trim()) return;
+    setSending(true);
+    setError(null);
+    try {
+      await api.createInvite(organizationId, email.trim(), role);
+      setEmail("");
+      onInvited();
+      onOpenChange(false);
+    } catch (cause) {
+      setError(
+        cause instanceof ApiError
+          ? cause.message
+          : t("@legalos.settings.users.inviteFailed"),
+      );
+    } finally {
+      setSending(false);
+    }
+  }
 
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange} purpose="form" width={440}>
@@ -146,6 +96,7 @@ function InviteMemberDialog({
         content={
           <LayoutContent>
             <VStack gap={4}>
+              <InlineError message={error} onDismiss={() => setError(null)} />
               <TextInput
                 label={t("@legalos.settings.invite.emailLabel")}
                 value={email}
@@ -158,7 +109,7 @@ function InviteMemberDialog({
               <Selector
                 label={t("@legalos.settings.invite.roleLabel")}
                 value={role}
-                onChange={setRole}
+                onChange={(value) => setRole(value as "lawyer" | "staff")}
                 options={[
                   { value: "lawyer", label: enumLabel("lawyer") },
                   { value: "staff", label: enumLabel("staff") },
@@ -181,11 +132,9 @@ function InviteMemberDialog({
               <Button
                 label={t("@legalos.settings.invite.send")}
                 variant="primary"
+                isDisabled={sending || !email.trim()}
                 icon={<Icon icon={UserPlusIcon} size="sm" color="inherit" />}
-                onClick={() => {
-                  setEmail("");
-                  onOpenChange(false);
-                }}
+                onClick={send}
               >
                 {t("@legalos.settings.invite.send")}
               </Button>
@@ -197,45 +146,94 @@ function InviteMemberDialog({
   );
 }
 
-function MemberActions({ member }: { member: Member }) {
+function MemberRow({
+  member,
+  isYou,
+  canRemove,
+  onRemoved,
+  organizationId,
+}: {
+  member: OrgMember;
+  isYou: boolean;
+  canRemove: boolean;
+  onRemoved: () => void;
+  organizationId: number | null;
+}) {
   const t = useTranslator();
   const enumLabel = useEnumLabel();
-  if (member.role === "owner") {
-    return (
-      <Text type="supporting" color="secondary">
-        {member.isYou ? t("@legalos.settings.users.you") : enumLabel("owner")}
-      </Text>
-    );
+  const [removing, setRemoving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const name = member.display_name ?? member.clerk_user_id;
+
+  async function remove() {
+    if (organizationId === null) return;
+    setRemoving(true);
+    setError(null);
+    try {
+      await api.removeMember(organizationId, member.clerk_user_id);
+      onRemoved();
+    } catch (cause) {
+      // The server refuses to remove the last owner; surface its reason rather
+      // than a generic failure, because that one is actionable.
+      setError(
+        cause instanceof ApiError
+          ? cause.message
+          : t("@legalos.settings.users.removeFailed"),
+      );
+      setRemoving(false);
+    }
   }
+
   return (
-    <DropdownMenu
-      button={{
-        label: `Manage ${member.name}`,
-        variant: "ghost",
-        isIconOnly: true,
-        icon: <Icon icon={EllipsisHorizontalIcon} size="sm" />,
-      }}
-      hasChevron={false}
-      items={[
-        {
-          type: "section",
-          items: [
-            { label: t("@legalos.settings.users.changeRoleToLawyer"), onClick: () => {} },
-            { label: t("@legalos.settings.users.changeRoleToStaff"), onClick: () => {} },
-          ],
-        },
-        { type: "divider" },
-        { label: t("@legalos.settings.users.removeFromFirm"), onClick: () => {} },
-      ]}
+    <ListItem
+      label={isYou ? t("@legalos.settings.users.nameWithYou", { name }) : name}
+      description={member.title ?? enumLabel(member.role)}
+      startContent={<Avatar name={name} size="md" tooltip={false} />}
+      endContent={
+        <HStack gap={3} vAlign="center">
+          <InlineError message={error} onDismiss={() => setError(null)} />
+          <Badge variant={ROLE_BADGE_VARIANT[member.role]} label={enumLabel(member.role)} />
+          {canRemove ? (
+            <Button
+              label={t("@legalos.settings.users.removeFromFirm")}
+              variant="ghost"
+              size="sm"
+              isDisabled={removing}
+              onClick={remove}
+            >
+              {t("@legalos.settings.users.removeFromFirm")}
+            </Button>
+          ) : (
+            <Text type="supporting" color="secondary">
+              {isYou ? t("@legalos.settings.users.you") : enumLabel(member.role)}
+            </Text>
+          )}
+        </HStack>
+      }
     />
   );
 }
 
 export default function UsersPermissionsPage() {
   const t = useTranslator();
-  const enumLabel = useEnumLabel();
-  const { organizationName } = useOrg();
+  const { organizationId, organizationName, role: myRole } = useOrg();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+
+  // Who "you" are, from the API rather than a Clerk hook: this has to be right
+  // in the local dev-auth mode too, where there is no Clerk session to ask.
+  const me = useResource((practice) => practice.me(), []);
+  const myUserId = me.data?.clerk_user_id ?? null;
+
+  const members = useResource(
+    () =>
+      organizationId === null
+        ? Promise.resolve([] as OrgMember[])
+        : api.listOrgMembers(organizationId),
+    [organizationId],
+  );
+
+  const isOwner = myRole === "owner";
 
   return (
     <VStack gap={6}>
@@ -246,104 +244,50 @@ export default function UsersPermissionsPage() {
             {t("@legalos.settings.users.subtitle", { firm: organizationName ?? "" })}
           </Text>
         </VStack>
-        <Button
-          label={t("@legalos.settings.users.inviteMember")}
-          variant="primary"
-          icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
-          onClick={() => setIsInviteOpen(true)}
-        >
-          {t("@legalos.settings.users.inviteMember")}
-        </Button>
+        {isOwner && (
+          <Button
+            label={t("@legalos.settings.users.inviteMember")}
+            variant="primary"
+            icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
+            onClick={() => setIsInviteOpen(true)}
+          >
+            {t("@legalos.settings.users.inviteMember")}
+          </Button>
+        )}
       </HStack>
 
-      <Card padding={0}>
-        <List hasDividers density="balanced">
-          {MEMBERS.map((member) => (
-            <ListItem
-              key={member.id}
-              label={
-                member.isYou
-                  ? t("@legalos.settings.users.nameWithYou", { name: member.name })
-                  : member.name
-              }
-              description={
-                /* joinedMonthKey/joinedYear were carried in this mock data but
-                 * never rendered; surfacing them here alongside the email is
-                 * what they were collected for. */
-                member.joinedMonthKey && member.joinedYear
-                  ? `${member.email} · ${t("@legalos.settings.users.joined", {
-                      month: t(member.joinedMonthKey),
-                      year: member.joinedYear,
-                    })}`
-                  : `${member.email} · ${t("@legalos.settings.users.foundingMember")}`
-              }
-              startContent={<Avatar name={member.name} size="md" tooltip={false} />}
-              endContent={
-                <HStack gap={3} vAlign="center">
-                  <Badge
-                    variant={ROLE_BADGE_VARIANT[member.role]}
-                    label={enumLabel(member.role)}
-                  />
-                  <MemberActions member={member} />
-                </HStack>
-              }
-            />
-          ))}
-        </List>
-      </Card>
+      <DataView resource={members}>
+        {(roster) => (
+          <Card padding={0}>
+            <List hasDividers density="balanced">
+              {roster.map((member) => (
+                <MemberRow
+                  key={member.clerk_user_id}
+                  member={member}
+                  isYou={member.clerk_user_id === myUserId}
+                  // Only an owner manages the roster, and nobody removes
+                  // themselves from here — leaving is not the same action as
+                  // being removed, and conflating them loses the last owner.
+                  canRemove={
+                    isOwner &&
+                    member.role !== "owner" &&
+                    member.clerk_user_id !== myUserId
+                  }
+                  organizationId={organizationId}
+                  onRemoved={members.reload}
+                />
+              ))}
+            </List>
+          </Card>
+        )}
+      </DataView>
 
-      <VStack gap={3}>
-        <VStack gap={1}>
-          <Text type="label" weight="semibold">
-            {t("@legalos.settings.users.pendingInvitations")}
-          </Text>
-          <Text type="supporting" color="secondary">
-            {t("@legalos.settings.users.invitationsHint")}
-          </Text>
-        </VStack>
-        <Card padding={0}>
-          <List hasDividers density="balanced">
-            {INVITATIONS.map((invite) => (
-              <ListItem
-                key={invite.id}
-                label={invite.email}
-                description={
-                  invite.status === "pending"
-                    ? t("@legalos.settings.users.invitePending", {
-                        sent: invite.sentDaysAgo,
-                        expires: invite.expiresInDays ?? 0,
-                      })
-                    : t("@legalos.settings.users.inviteExpired", {
-                        sent: invite.sentDaysAgo,
-                        expired: invite.expiredDaysAgo ?? 0,
-                      })
-                }
-                startContent={<Icon icon={EnvelopeIcon} size="sm" color="secondary" />}
-                endContent={
-                  <HStack gap={3} vAlign="center">
-                    <Badge variant="neutral" label={enumLabel(invite.role)} />
-                    <Badge
-                      variant={INVITE_STATUS_BADGE[invite.status].variant}
-                      label={t(INVITE_STATUS_BADGE[invite.status].labelKey)}
-                    />
-                    {invite.status !== "revoked" && (
-                      <Button
-                        label={t("@legalos.settings.users.resend")}
-                        variant="ghost"
-                        size="sm"
-                      >
-                        {t("@legalos.settings.users.resend")}
-                      </Button>
-                    )}
-                  </HStack>
-                }
-              />
-            ))}
-          </List>
-        </Card>
-      </VStack>
-
-      <InviteMemberDialog isOpen={isInviteOpen} onOpenChange={setIsInviteOpen} />
+      <InviteMemberDialog
+        isOpen={isInviteOpen}
+        onOpenChange={setIsInviteOpen}
+        organizationId={organizationId}
+        onInvited={members.reload}
+      />
     </VStack>
   );
 }
