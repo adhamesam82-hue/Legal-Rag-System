@@ -26,6 +26,8 @@ import { TabList, Tab } from "@astryxdesign/core/TabList";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { TextArea } from "@astryxdesign/core/TextArea";
 import { Selector } from "@astryxdesign/core/Selector";
+import { DateInput } from "@astryxdesign/core/DateInput";
+import type { ISODateString } from "@astryxdesign/core/Calendar";
 import { Link } from "@astryxdesign/core/Link";
 import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
@@ -694,11 +696,136 @@ function DocumentsTab({ data }: TabProps) {
   );
 }
 
+function NewMatterTaskDialog({
+  isOpen,
+  onOpenChange,
+  matterId,
+  onCreated,
+}: {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  matterId: number;
+  onCreated: () => void;
+}) {
+  const t = useTranslator();
+  const { practice, members } = useOrg();
+  const [title, setTitle] = useState("");
+  const [assignee, setAssignee] = useState<string | null>(null);
+  const [dueDate, setDueDate] = useState<ISODateString | undefined>(undefined);
+  const [priority, setPriority] = useState("medium");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit() {
+    if (!practice || !title.trim() || !assignee) return;
+    setSaving(true);
+    setError(null);
+    try {
+      // matter_id is fixed, not offered: the task is being created from
+      // inside a case, so asking which case it belongs to would be asking a
+      // question already answered.
+      await practice.tasks.create({
+        title: title.trim(),
+        assignee,
+        matter_id: matterId,
+        due_date: dueDate ?? null,
+        priority,
+      });
+      setTitle("");
+      setDueDate(undefined);
+      onOpenChange(false);
+      onCreated();
+    } catch (exc) {
+      setError(
+        exc instanceof Error ? exc.message : t("@legalos.matters.detail.errors.task"),
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog isOpen={isOpen} onOpenChange={onOpenChange} purpose="form" width={440}>
+      <Layout
+        header={
+          <DialogHeader
+            title={t("@legalos.matters.detail.tasks.newTask")}
+            onOpenChange={onOpenChange}
+          />
+        }
+        content={
+          <LayoutContent>
+            <VStack gap={4}>
+              <InlineError message={error} onDismiss={() => setError(null)} />
+              <TextInput
+                label={t("@legalos.matters.detail.tasks.titleLabel")}
+                value={title}
+                onChange={setTitle}
+                isRequired
+              />
+              <Selector
+                label={t("@legalos.matters.detail.tasks.assigneeLabel")}
+                value={assignee}
+                onChange={setAssignee}
+                isRequired
+                hasClear
+                options={members.map((m) => ({
+                  value: m.clerk_user_id,
+                  label: m.display_name ?? m.clerk_user_id,
+                }))}
+              />
+              <HStack gap={3}>
+                <DateInput
+                  label={t("@legalos.matters.detail.tasks.dueLabel")}
+                  value={dueDate}
+                  onChange={setDueDate}
+                />
+                <Selector
+                  label={t("@legalos.matters.detail.tasks.priorityLabel")}
+                  value={priority}
+                  onChange={(v) => setPriority(v ?? "medium")}
+                  options={[
+                    { value: "low", label: t("@legalos.enum.low") },
+                    { value: "medium", label: t("@legalos.enum.medium") },
+                    { value: "high", label: t("@legalos.enum.high") },
+                  ]}
+                />
+              </HStack>
+            </VStack>
+          </LayoutContent>
+        }
+        footer={
+          <LayoutFooter hasDivider>
+            <HStack gap={3} hAlign="end">
+              <Button
+                label={t("@legalos.matters.dialog.cancel")}
+                variant="secondary"
+                onClick={() => onOpenChange(false)}
+              >
+                {t("@legalos.matters.dialog.cancel")}
+              </Button>
+              <Button
+                label={t("@legalos.matters.detail.tasks.create")}
+                variant="primary"
+                isDisabled={saving || !title.trim() || !assignee}
+                onClick={submit}
+              >
+                {t("@legalos.matters.detail.tasks.create")}
+              </Button>
+            </HStack>
+          </LayoutFooter>
+        }
+      />
+    </Dialog>
+  );
+}
+
 function TasksTab({ data, reload, onError }: TabProps) {
   const { formatDate } = useFormat();
   const t = useTranslator();
   const memberName = useMemberName();
   const { practice } = useOrg();
+  const [isNewOpen, setIsNewOpen] = useState(false);
 
   async function toggleTask(taskId: number, done: boolean) {
     if (!practice) return;
@@ -717,8 +844,26 @@ function TasksTab({ data, reload, onError }: TabProps) {
   return (
     <Panel
       title={t("@legalos.matters.detail.tasks.heading")}
-      action={<Link href="/tasks">{t("@legalos.matters.detail.tasks.allTasks")}</Link>}
+      action={
+        <HStack gap={3} vAlign="center">
+          <Link href="/tasks">{t("@legalos.matters.detail.tasks.allTasks")}</Link>
+          <Button
+            label={t("@legalos.matters.detail.tasks.newTask")}
+            variant="secondary"
+            size="sm"
+            onClick={() => setIsNewOpen(true)}
+          >
+            {t("@legalos.matters.detail.tasks.newTask")}
+          </Button>
+        </HStack>
+      }
     >
+      <NewMatterTaskDialog
+        isOpen={isNewOpen}
+        onOpenChange={setIsNewOpen}
+        matterId={data.matter.id}
+        onCreated={reload}
+      />
       {data.tasks.length === 0 ? (
         <EmptyState
           icon={<Icon icon={CheckCircleIcon} size="lg" color="secondary" />}

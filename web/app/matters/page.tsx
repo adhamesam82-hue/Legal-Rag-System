@@ -13,6 +13,7 @@ import { TextInput } from "@astryxdesign/core/TextInput";
 import { TextArea } from "@astryxdesign/core/TextArea";
 import { DateInput } from "@astryxdesign/core/DateInput";
 import { Selector } from "@astryxdesign/core/Selector";
+import { MultiSelector } from "@astryxdesign/core/MultiSelector";
 import { Table, proportional, pixel } from "@astryxdesign/core/Table";
 import type { TableColumn } from "@astryxdesign/core/Table";
 import { Link } from "@astryxdesign/core/Link";
@@ -335,6 +336,11 @@ function NewMatterDialog({
   const [matterType, setMatterType] = useState<MatterType>("litigation");
   const [billingType, setBillingType] = useState("hourly");
   const [responsible, setResponsible] = useState<string | null>(null);
+  // Who else works this case. The responsible lawyer owns it; these are the
+  // people who may be assigned time, tasks and hearings on it. Sent as
+  // `staff`, which matters.create has accepted since the schema was written --
+  // the field simply had no control behind it until now.
+  const [staff, setStaff] = useState<string[]>([]);
   const [openedDate, setOpenedDate] = useState<ISODateString>(todayIso);
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
@@ -358,12 +364,17 @@ function NewMatterDialog({
         matter_type: matterType,
         billing_type: billingType,
         responsible_user: responsible,
+        // The responsible lawyer is always on the case team; leaving them out
+        // because nobody ticked their box would hide their own case from them
+        // once matter scoping lands.
+        staff: Array.from(new Set([responsible, ...staff])),
         opened_date: openedDate,
         description,
       });
       setName("");
       setDescription("");
       setClientId(null);
+      setStaff([]);
       onOpenChange(false);
       onCreated();
     } catch (exc) {
@@ -448,6 +459,23 @@ function NewMatterDialog({
                   onChange={(v) => setOpenedDate(v ?? openedDate)}
                 />
               </HStack>
+              <MultiSelector
+                label={t("@legalos.matters.field.staff")}
+                description={t("@legalos.matters.field.staffHint")}
+                value={staff}
+                onChange={setStaff}
+                triggerDisplay="badges"
+                hasSearch
+                searchPlaceholder={t("@legalos.matters.dialog.searchLawyer")}
+                placeholder={t("@legalos.matters.dialog.selectStaff")}
+                isOptional
+                options={members
+                  .filter((m) => m.clerk_user_id !== responsible)
+                  .map((m) => ({
+                    value: m.clerk_user_id,
+                    label: m.display_name ?? m.clerk_user_id,
+                  }))}
+              />
               <TextArea
                 label={t("@legalos.matters.field.description")}
                 value={description}
