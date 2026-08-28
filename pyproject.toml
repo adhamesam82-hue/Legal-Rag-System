@@ -27,6 +27,14 @@ dependencies = [
     # Error reporting. Uptime tells us that something broke; this tells us what,
     # which on a single-operator deployment is most of the recovery time.
     "sentry-sdk[fastapi]>=2.0",
+    # Invoice PDFs. Arabic needs all three: reportlab draws, arabic-reshaper
+    # joins the letterforms (Arabic is cursive, so codepoint order is not
+    # glyph order), and python-bidi lays them right to left. Drop either of
+    # the last two and the PDF comes out as disconnected letters running
+    # backwards -- worse than no PDF, because it reads as the firm's fault.
+    "reportlab>=4.2",
+    "arabic-reshaper>=3.0",
+    "python-bidi>=0.6",
 ]
 
 [dependency-groups]

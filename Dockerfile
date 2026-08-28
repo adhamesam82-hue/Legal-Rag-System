@@ -31,6 +31,10 @@ RUN uv sync --frozen --no-install-project --no-default-groups
 COPY src ./src
 COPY migrations ./migrations
 COPY scripts ./scripts
+# The face invoice PDFs are drawn with. Built once by scripts/build_pdf_font.py
+# and committed, because reportlab has no font fallback: without it every
+# numeral on an invoice is an empty box, and nothing raises.
+COPY assets ./assets
 RUN uv sync --frozen --no-default-groups
 
 ENV PATH="/app/.venv/bin:$PATH"

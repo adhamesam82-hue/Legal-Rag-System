@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 import psycopg
 
@@ -19,9 +19,31 @@ STATUSES = ("draft", "sent", "paid", "overdue")
 
 _COLUMNS = """
     i.id, i.organization_id, i.matter_id, m.name AS matter_name, i.client_id,
-    c.name AS client_name, i.number, i.amount, i.currency, i.status,
+    c.name AS client_name, c.tax_id AS client_tax_id, i.number, i.amount,
+    i.tax_rate, i.tax_amount, i.total_amount, i.currency, i.status,
     i.issued_date, i.due_date, i.paid_date, i.created_at
 """
+
+# Two places, half-up. An invoice is the one document where a rounding
+# difference becomes an argument with a client, so the rule is stated once
+# here and every total goes through it.
+CENTS = Decimal("0.01")
+
+
+def round_money(value: Decimal) -> Decimal:
+    return Decimal(value).quantize(CENTS, rounding=ROUND_HALF_UP)
+
+
+def compute_tax(subtotal: Decimal, tax_rate: Decimal) -> tuple[Decimal, Decimal]:
+    """Returns (tax_amount, total). Rounded once, at the end.
+
+    Taxing the rounded subtotal rather than each line keeps the printed
+    arithmetic addable: a client checking the page must be able to sum the
+    lines, apply the rate, and land on the total.
+    """
+    subtotal = round_money(subtotal)
+    tax_amount = round_money(subtotal * Decimal(tax_rate))
+    return tax_amount, round_money(subtotal + tax_amount)
 
 
 @dataclass
@@ -41,8 +63,17 @@ class Invoice:
     matter_name: str | None
     client_id: int
     client_name: str
+    # Required on an Egyptian invoice to a registered client. Stored on the
+    # client since 0006 and never reached the document until now.
+    client_tax_id: str | None
     number: str
+    # The sum of the lines, before tax. Unchanged in meaning.
     amount: Decimal
+    tax_rate: Decimal
+    tax_amount: Decimal
+    # What the client actually owes. Its own column so no reader has to work
+    # out which figure a given call site meant.
+    total_amount: Decimal
     currency: str
     status: str
     issued_date: date
@@ -144,12 +175,18 @@ def create_invoice(
     matter_id: int | None = None,
     number: str | None = None,
     amount: Decimal = Decimal(0),
+    tax_rate: Decimal = Decimal(0),
     currency: str = "EGP",
     status: str = "draft",
     lines: list[dict] | None = None,
 ) -> Invoice:
     if status not in STATUSES:
         raise ValueError(f"invalid status {status!r}")
+    tax_rate = Decimal(str(tax_rate))
+    if not (0 <= tax_rate <= 1):
+        # A rate is a fraction, not a percentage: 0.14, not 14. Caught here
+        # because the difference is a bill fourteen times too large.
+        raise ValueError(f"tax rate must be between 0 and 1, got {tax_rate}")
     with conn.cursor() as cur:
         cur.execute(
             "SELECT 1 FROM clients WHERE organization_id = %s AND id = %s",
@@ -160,11 +197,13 @@ def create_invoice(
         invoice_number = number or next_invoice_number(conn, organization_id)
         cur.execute(
             "INSERT INTO invoices (organization_id, matter_id, client_id, number, "
-            "amount, currency, status, issued_date, due_date) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            "amount, tax_rate, tax_amount, total_amount, currency, status, "
+            "issued_date, due_date) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (
                 organization_id, matter_id, client_id, invoice_number, amount,
-                currency, status, issued_date, due_date,
+                tax_rate, *compute_tax(amount, tax_rate), currency, status,
+                issued_date, due_date,
             ),
         )
         invoice_id = cur.fetchone()[0]
@@ -180,8 +219,13 @@ def create_invoice(
                 (invoice_id, line["description"], quantity, unit_amount, line_total),
             )
         if lines:
+            # The lines are the truth once there are any; recompute rather
+            # than trusting an `amount` the caller also passed.
+            tax_amount, grand_total = compute_tax(total, tax_rate)
             cur.execute(
-                "UPDATE invoices SET amount = %s WHERE id = %s", (total, invoice_id)
+                "UPDATE invoices SET amount = %s, tax_amount = %s, total_amount = %s "
+                "WHERE id = %s",
+                (round_money(total), tax_amount, grand_total, invoice_id),
             )
     conn.commit()
     invoice = get_invoice(conn, organization_id, invoice_id)
@@ -197,6 +241,7 @@ def generate_from_unbilled(
     issued_date: date | None = None,
     payment_terms_days: int = 30,
     include_expenses: bool = True,
+    tax_rate: Decimal = Decimal(0),
 ) -> Invoice:
     """Draft an invoice for every unbilled billable hour and expense on a matter.
 
@@ -248,11 +293,14 @@ def generate_from_unbilled(
         )
         cur.execute(
             "INSERT INTO invoices (organization_id, matter_id, client_id, number, "
-            "amount, currency, status, issued_date, due_date) "
-            "VALUES (%s, %s, %s, %s, %s, %s, 'draft', %s, %s) RETURNING id",
+            "amount, tax_rate, tax_amount, total_amount, currency, status, "
+            "issued_date, due_date) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'draft', %s, %s) "
+            "RETURNING id",
             (
-                organization_id, matter_id, client_id, number, total, currency,
-                issued, issued + timedelta(days=payment_terms_days),
+                organization_id, matter_id, client_id, number,
+                round_money(total), tax_rate, *compute_tax(total, tax_rate),
+                currency, issued, issued + timedelta(days=payment_terms_days),
             ),
         )
         invoice_id = cur.fetchone()[0]

@@ -34,7 +34,7 @@ from legalrag.practice import custom_fields as fields
 from legalrag.practice import documents as docs
 from legalrag.practice import expenses, matters, portals, tasks, time_entries, trust
 from legalrag.practice import powers_of_attorney as poa
-from legalrag.practice import uploads
+from legalrag.practice import invoice_pdf, uploads
 
 router = APIRouter(prefix="/api/orgs/{organization_id}", tags=["practice"])
 
@@ -274,6 +274,11 @@ class InvoiceIn(BaseModel):
     due_date: date
     matter_id: int | None = None
     number: str | None = None
+    # A fraction, not a percentage: Egyptian VAT is 0.14, not 14. Bounded here
+    # so the difference cannot reach the database as a bill fourteen times too
+    # large. Stored per invoice, because a reissued 2024 bill must show the
+    # rate that applied in 2024.
+    tax_rate: Decimal = Field(default=Decimal(0), ge=0, le=1)
     status: Literal["draft", "sent", "paid", "overdue"] = "draft"
     lines: list[InvoiceLineIn] = Field(default_factory=list)
 
@@ -287,6 +292,8 @@ class GenerateInvoiceIn(BaseModel):
     issued_date: date | None = None
     payment_terms_days: int = Field(default=30, ge=0, le=365)
     include_expenses: bool = True
+    # A fraction, not a percentage: Egyptian VAT is 0.14, not 14.
+    tax_rate: Decimal = Field(default=Decimal(0), ge=0, le=1)
 
 
 class DocumentPatch(BaseModel):
@@ -1473,6 +1480,100 @@ def get_invoice(
     conn=Depends(db),
 ):
     return found(billing.get_invoice(conn, organization_id, invoice_id), "Invoice")
+
+
+# Every visible word on the PDF, so the module that draws it holds no
+# language of its own. Arabic is the default because the firm and its clients
+# are; `lang=en` is there for a foreign client on the same matter.
+_PDF_LABELS = {
+    "ar": {
+        "invoice": "فاتورة رقم",
+        "issued": "تاريخ الإصدار",
+        "due": "تاريخ الاستحقاق",
+        "billedTo": "الفاتورة إلى",
+        "taxId": "البطاقة الضريبية",
+        "matter": "القضية",
+        "description": "البيان",
+        "quantity": "الكمية",
+        "unitPrice": "سعر الوحدة",
+        "amount": "الإجمالي",
+        "subtotal": "الإجمالي قبل الضريبة",
+        "tax": "ضريبة القيمة المضافة",
+        "total": "المستحق",
+        "footer": "شكرًا لثقتكم.",
+    },
+    "en": {
+        "invoice": "Invoice",
+        "issued": "Issued",
+        "due": "Due",
+        "billedTo": "Billed to",
+        "taxId": "Tax ID",
+        "matter": "Case",
+        "description": "Description",
+        "quantity": "Qty",
+        "unitPrice": "Unit price",
+        "amount": "Amount",
+        "subtotal": "Subtotal",
+        "tax": "VAT",
+        "total": "Total due",
+        "footer": "Thank you for your business.",
+    },
+}
+
+
+@router.get("/invoices/{invoice_id}/pdf")
+def get_invoice_pdf(
+    organization_id: int,
+    invoice_id: int,
+    lang: Literal["ar", "en"] = "ar",
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    """The invoice as a document the firm can send.
+
+    Until this existed the billing cycle ran hours -> invoice -> nothing: the
+    system could compute a bill and not deliver one.
+    """
+    invoice = found(billing.get_invoice(conn, organization_id, invoice_id), "Invoice")
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT name FROM organizations WHERE id = %s", (organization_id,)
+        )
+        row = cur.fetchone()
+    firm_name = row[0] if row else ""
+
+    document = invoice_pdf.InvoiceDocument(
+        firm_name=firm_name,
+        number=invoice.number,
+        issued_date=invoice.issued_date,
+        due_date=invoice.due_date,
+        client_name=invoice.client_name,
+        client_tax_id=invoice.client_tax_id,
+        matter_name=invoice.matter_name,
+        currency=invoice.currency,
+        lines=[
+            invoice_pdf.InvoiceLine(
+                description=line.description,
+                quantity=line.quantity,
+                unit_amount=line.unit_amount,
+                line_total=line.line_total,
+            )
+            for line in invoice.lines
+        ],
+        subtotal=invoice.amount,
+        tax_rate=invoice.tax_rate,
+        tax_amount=invoice.tax_amount,
+        total=invoice.total_amount,
+        status=invoice.status,
+    )
+    pdf = invoice_pdf.render(document, _PDF_LABELS[lang])
+
+    # A filename carrying the invoice number, so a folder of these is
+    # navigable. Same RFC 6266 pair as uploaded documents: the number can hold
+    # a slash or Arabic.
+    serve = uploads.serve_headers(f"{invoice.number}.pdf", "application/pdf")
+    return Response(content=pdf, media_type="application/pdf", headers=serve.headers)
 
 
 @router.patch("/invoices/{invoice_id}")
