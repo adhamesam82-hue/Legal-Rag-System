@@ -185,13 +185,32 @@ class CourtDocumentIn(BaseModel):
     doc_type: str = ""
 
 
+HearingOutcome = Literal[
+    "adjourned", "reserved", "judgment", "struck_out", "joined", "other"
+]
+
+
 class HearingIn(BaseModel):
     matter_id: int
     hearing_date: date
     hearing_time: str = ""
     court: str = ""
     purpose: str = ""
-    outcome: str | None = None
+    outcome: HearingOutcome | None = None
+    outcome_note: str | None = None
+    next_hearing_date: date | None = None
+
+
+class HearingUpdate(BaseModel):
+    """What a clerk records after the sitting."""
+
+    hearing_date: date | None = None
+    hearing_time: str | None = None
+    court: str | None = None
+    purpose: str | None = None
+    outcome: HearingOutcome | None = None
+    outcome_note: str | None = None
+    next_hearing_date: date | None = None
 
 
 class TaskIn(BaseModel):
@@ -818,12 +837,60 @@ def get_hearings(
     matter_id: int | None = None,
     since: date | None = None,
     until: date | None = None,
+    court: str | None = None,
+    judge: str | None = None,
+    outcome: HearingOutcome | None = None,
+    undecided: bool = False,
+    q: str | None = Query(default=None, max_length=200),
     membership: Membership = Depends(get_current_membership),
     conn=Depends(db),
 ):
+    """The hearings list, filtered per column or searched across all of them.
+
+    `undecided` is separate from `outcome` on purpose: "which sittings have not
+    been ruled on" is the commonest question and it is the absence of a value,
+    not one of them.
+    """
     return cases.list_hearings(
-        conn, organization_id, matter_id=matter_id, since=since, until=until
+        conn,
+        organization_id,
+        matter_id=matter_id,
+        since=since,
+        until=until,
+        court=court,
+        judge=judge,
+        outcome=outcome,
+        undecided=undecided,
+        query=q,
     )
+
+
+@router.get("/hearings/{hearing_id}")
+def get_hearing(
+    organization_id: int,
+    hearing_id: int,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    return found(cases.get_hearing(conn, organization_id, hearing_id), "Hearing")
+
+
+@router.patch("/hearings/{hearing_id}")
+def patch_hearing(
+    organization_id: int,
+    hearing_id: int,
+    body: HearingUpdate,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    try:
+        return cases.update_hearing(
+            conn, organization_id, hearing_id, **body.model_dump(exclude_unset=True)
+        )
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Hearing not found")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
 
 @router.post("/hearings", status_code=201)
@@ -837,6 +904,8 @@ def post_hearing(
         return cases.create_hearing(conn, organization_id, **body.model_dump())
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Matter not found")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
 
 # --- documents --------------------------------------------------------------

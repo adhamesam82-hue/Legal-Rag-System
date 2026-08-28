@@ -59,11 +59,22 @@ class CourtDocument:
 class Hearing:
     id: int
     matter_id: int
+    matter_name: str | None
     hearing_date: date
     hearing_time: str
     court: str
+    judge: str | None
     purpose: str
+    # One of HEARING_OUTCOMES, or None while the sitting has not happened yet.
     outcome: str | None
+    # What the bench actually said, in the clerk's words. Kept alongside the
+    # code rather than replaced by it: the code says a hearing was adjourned,
+    # the note says what it was adjourned for, and only the second one tells a
+    # lawyer what to prepare.
+    outcome_note: str | None
+    # Where an adjournment sends it -- the single most useful fact on the
+    # record, and there was nowhere to put it before.
+    next_hearing_date: date | None
 
 
 @dataclass
@@ -342,6 +353,26 @@ def add_court_document(
 
 
 # --- hearings (calendar side of a case) -------------------------------------
+#
+# Outcomes are the short list an Egyptian court actually produces, not free
+# prose. As TEXT none of it could be filtered, counted, or made to drive a
+# reminder -- and per-column filtering on the hearings screen is precisely
+# what it was blocking.
+HEARING_OUTCOMES = (
+    "adjourned",   # تأجيل
+    "reserved",    # حجز للحكم
+    "judgment",    # النطق بالحكم
+    "struck_out",  # شطب
+    "joined",      # ضم
+    "other",
+)
+
+# The judge/circuit lives on the case, not the hearing, so the join is LEFT:
+# a matter can hold hearings before its litigation record exists.
+_HEARING_COLUMNS = """
+    h.id, h.matter_id, m.name AS matter_name, h.hearing_date, h.hearing_time,
+    h.court, c.judge, h.purpose, h.outcome, h.outcome_note, h.next_hearing_date
+"""
 
 
 def list_hearings(
@@ -351,23 +382,72 @@ def list_hearings(
     matter_id: int | None = None,
     since: date | None = None,
     until: date | None = None,
+    court: str | None = None,
+    judge: str | None = None,
+    outcome: str | None = None,
+    undecided: bool = False,
+    query: str | None = None,
 ) -> list[Hearing]:
+    """Hearings, filterable per column and searchable across all of them.
+
+    `query` is the one search box, and it matches every text column at once:
+    a lawyer looking for a hearing types the court, or the case, or the
+    opposing party's name, and does not first decide which field that is.
+
+    `undecided` is deliberately not a value of `outcome`. "Not ruled on yet"
+    is the question asked most often, and it is the *absence* of an outcome
+    rather than one of them.
+    """
     sql = (
-        "SELECT id, matter_id, hearing_date, hearing_time, court, purpose, outcome "
-        "FROM hearings WHERE organization_id = %s"
+        f"SELECT {_HEARING_COLUMNS} FROM hearings h "
+        "JOIN matters m ON m.id = h.matter_id "
+        "LEFT JOIN cases c ON c.matter_id = h.matter_id "
+        "WHERE h.organization_id = %s"
     )
     params: list[object] = [organization_id]
     if matter_id is not None:
-        sql += " AND matter_id = %s"
+        sql += " AND h.matter_id = %s"
         params.append(matter_id)
     if since:
-        sql += " AND hearing_date >= %s"
+        sql += " AND h.hearing_date >= %s"
         params.append(since)
     if until:
-        sql += " AND hearing_date <= %s"
+        sql += " AND h.hearing_date <= %s"
         params.append(until)
-    sql += " ORDER BY hearing_date, hearing_time"
+    if court:
+        sql += " AND h.court ILIKE %s"
+        params.append(f"%{court}%")
+    if judge:
+        sql += " AND c.judge ILIKE %s"
+        params.append(f"%{judge}%")
+    if outcome:
+        sql += " AND h.outcome = %s"
+        params.append(outcome)
+    if undecided:
+        sql += " AND h.outcome IS NULL"
+    if query:
+        sql += (
+            " AND (h.court ILIKE %s OR h.purpose ILIKE %s OR h.outcome_note ILIKE %s"
+            " OR m.name ILIKE %s OR c.judge ILIKE %s OR c.case_number ILIKE %s"
+            " OR c.case_category ILIKE %s)"
+        )
+        params.extend([f"%{query}%"] * 7)
+    sql += " ORDER BY h.hearing_date DESC, h.hearing_time, h.id"
     return fetch_all(conn, Hearing, sql, tuple(params))
+
+
+def get_hearing(
+    conn: psycopg.Connection, organization_id: int, hearing_id: int
+) -> Hearing | None:
+    return fetch_one(
+        conn,
+        Hearing,
+        f"SELECT {_HEARING_COLUMNS} FROM hearings h "
+        "JOIN matters m ON m.id = h.matter_id "
+        "LEFT JOIN cases c ON c.matter_id = h.matter_id "
+        "WHERE h.organization_id = %s AND h.id = %s",
+        (organization_id, hearing_id),
+    )
 
 
 def create_hearing(
@@ -380,7 +460,16 @@ def create_hearing(
     court: str = "",
     purpose: str = "",
     outcome: str | None = None,
+    outcome_note: str | None = None,
+    next_hearing_date: date | None = None,
 ) -> Hearing:
+    if outcome is not None and outcome not in HEARING_OUTCOMES:
+        raise ValueError(f"invalid hearing outcome {outcome!r}")
+    # An adjournment pointing backwards is a typo every time, and it is the one
+    # shape of this record that leaves a lawyer worse off than a paper diary.
+    if next_hearing_date is not None and next_hearing_date < hearing_date:
+        raise ValueError("the next hearing cannot precede this one")
+
     with conn.cursor() as cur:
         cur.execute(
             "SELECT 1 FROM matters WHERE organization_id = %s AND id = %s",
@@ -390,15 +479,47 @@ def create_hearing(
             raise NotFoundError(f"matter {matter_id}")
         cur.execute(
             "INSERT INTO hearings (organization_id, matter_id, hearing_date, "
-            "hearing_time, court, purpose, outcome) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            "hearing_time, court, purpose, outcome, outcome_note, next_hearing_date) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (
                 organization_id, matter_id, hearing_date, hearing_time, court,
-                purpose, outcome,
+                purpose, outcome, outcome_note, next_hearing_date,
             ),
         )
         hearing_id = cur.fetchone()[0]
     conn.commit()
-    return Hearing(
-        hearing_id, matter_id, hearing_date, hearing_time, court, purpose, outcome
-    )
+    created = get_hearing(conn, organization_id, hearing_id)
+    assert created is not None
+    return created
+
+
+_HEARING_UPDATABLE = {
+    "hearing_date", "hearing_time", "court", "purpose", "outcome",
+    "outcome_note", "next_hearing_date",
+}
+
+
+def update_hearing(
+    conn: psycopg.Connection, organization_id: int, hearing_id: int, **changes
+) -> Hearing:
+    """Records what the sitting produced -- the write a clerk makes afterwards."""
+    fields = {
+        k: v for k, v in changes.items() if k in _HEARING_UPDATABLE and v is not None
+    }
+    if "outcome" in fields and fields["outcome"] not in HEARING_OUTCOMES:
+        raise ValueError(f"invalid hearing outcome {fields['outcome']!r}")
+    if fields:
+        assignments = ", ".join(f"{name} = %s" for name in fields)
+        with conn.cursor() as cur:
+            cur.execute(
+                f"UPDATE hearings SET {assignments} "
+                "WHERE organization_id = %s AND id = %s",
+                (*fields.values(), organization_id, hearing_id),
+            )
+            if cur.rowcount == 0:
+                raise NotFoundError(f"hearing {hearing_id}")
+        conn.commit()
+    updated = get_hearing(conn, organization_id, hearing_id)
+    if updated is None:
+        raise NotFoundError(f"hearing {hearing_id}")
+    return updated
