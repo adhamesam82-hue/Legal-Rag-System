@@ -1,0 +1,17 @@
+[Unit]
+Description=alsigil date reminders
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/alsigil/deploy
+# `exec` against the running api container rather than `run --rm`, for the same
+# two reasons spelled out in alsigil-diskalert.service: GHCR credentials belong
+# to the deploy user, and `run` would resolve :latest, which after a rollback is
+# the image that was rolled back.
+ExecStart=/usr/bin/docker compose -f /opt/alsigil/deploy/docker-compose.prod.yml exec -T api python scripts/send_reminders.py
+User=deploy
+# 1 means the sweep ran but somebody has no email address on file. That is
+# worth seeing in the log and is not a unit failure. 2 -- a send that failed,
+# or an unreachable database -- is left outside this set on purpose: it means
+# a lawyer is not being told about a hearing, and systemd should say so.
+SuccessExitStatus=0 1

@@ -1,0 +1,13 @@
+[Unit]
+Description=Send alsigil date reminders every morning
+
+[Timer]
+# 06:00 Africa/Cairo. Early enough that a "today" reminder lands before a
+# lawyer leaves for court, and the box runs on Cairo time so this needs no
+# conversion. Deliberately an hour before the disk check, so a slow sweep
+# never delays the thing that watches the disk.
+OnCalendar=*-*-* 06:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

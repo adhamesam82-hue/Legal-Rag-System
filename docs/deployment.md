@@ -95,6 +95,38 @@ Neon's ceiling; raise both together or not at all.
 | `LEGALOS_RATE_LIMIT_PAID` | optional | Requests/min per caller to LLM routes; defaults to 30 |
 | `LEGALOS_RATE_LIMIT_NORMAL` | optional | Requests/min per caller elsewhere; defaults to 300 |
 
+### Date reminders
+
+`deploy/alsigil-reminders.timer` sweeps once a morning at 06:00 Cairo and
+mails everyone on a matter about hearings, procedural dates and tasks falling
+3 days out, 1 day out, and that day. Install it alongside the disk alert:
+
+```sh
+sudo cp deploy/alsigil-reminders.* /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now alsigil-reminders.timer
+```
+
+Reminders go to `memberships.email`, which is backfilled from accepted
+invitations by migration 0013. Anyone without one is REPORTED by the sweep
+rather than skipped -- exit code 1, visible in `journalctl -u
+alsigil-reminders` -- because a lawyer who silently never receives reminders
+is the exact failure this exists to prevent. Set the missing addresses.
+
+Exit codes: 0 all sent; 1 swept fine but somebody has no address on file;
+2 a send failed or the database was unreachable, which is a real unit failure.
+
+Safe to run by hand at any time -- each reminder is recorded per recipient,
+subject and offset, and a unique index makes a repeat run a no-op:
+
+```sh
+docker compose -f deploy/docker-compose.prod.yml exec -T api   python scripts/send_reminders.py --dry-run
+```
+
+Day-based, not hour-based: `hearings.hearing_time` is free text ("10:00",
+"الجلسة الأولى", empty), so there is nothing to compute an hours-before offset
+against. That needs the column promoted to a real time first.
+
 ### Request ceilings and uploads
 
 Every route that reaches a paid model -- `/api/ask`, `/api/ask/stream`,
