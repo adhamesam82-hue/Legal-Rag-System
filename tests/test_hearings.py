@@ -276,3 +276,56 @@ class TestTenantIsolation:
             f"/api/orgs/{other}/hearings", params={"q": "القاهرة"}
         ).json()
         assert rows == []
+
+
+class TestCaseRecordShape:
+    """T-013: the three facts a citation carries, each in its own column."""
+
+    def make_case(self, client, org, matter, **overrides):
+        body = {
+            "matter_id": matter,
+            "court": "محكمة شمال القاهرة الابتدائية",
+            "case_number": "1345",
+            "judicial_year": 2026,
+            "case_category": "مدني كلي",
+            "filed_date": "2026-01-20",
+        }
+        body.update(overrides)
+        return client.post(f"/api/orgs/{org}/cases", json=body)
+
+    def test_records_number_year_and_category_separately(self, client, org, matter):
+        response = self.make_case(client, org, matter)
+        assert response.status_code == 201, response.text
+        body = response.json()
+        assert body["case_number"] == "1345"
+        assert body["judicial_year"] == 2026
+        assert body["case_category"] == "مدني كلي"
+
+    def test_defaults_to_first_instance(self, client, org, matter):
+        assert self.make_case(client, org, matter).json()["litigation_degree"] == (
+            "first_instance"
+        )
+
+    @pytest.mark.parametrize("degree", ["first_instance", "appeal", "cassation"])
+    def test_accepts_every_degree(self, client, org, matter, degree):
+        body = self.make_case(client, org, matter, litigation_degree=degree).json()
+        assert body["litigation_degree"] == degree
+
+    def test_refuses_an_invented_degree(self, client, org, matter):
+        response = self.make_case(client, org, matter, litigation_degree="نقض ثانٍ")
+        assert response.status_code == 422
+
+    def test_refuses_an_implausible_year(self, client, org, matter):
+        assert self.make_case(client, org, matter, judicial_year=12).status_code == 422
+
+    def test_the_year_may_be_unknown(self, client, org, matter):
+        """A case whose year nobody recorded is better blank than guessed."""
+        body = self.make_case(client, org, matter, judicial_year=None).json()
+        assert body["judicial_year"] is None
+
+    def test_the_degree_can_be_changed_on_appeal(self, client, org, matter):
+        case_id = self.make_case(client, org, matter).json()["id"]
+        response = client.patch(
+            f"/api/orgs/{org}/cases/{case_id}", json={"litigation_degree": "appeal"}
+        )
+        assert response.json()["litigation_degree"] == "appeal"

@@ -15,9 +15,12 @@ from legalrag.practice import NotFoundError, fetch_all, fetch_one
 
 SUBMITTED_BY = ("us", "opposing_party", "court")
 
+DEGREES = ("first_instance", "appeal", "cassation")
+
 _COLUMNS = """
     c.id, c.organization_id, c.matter_id, m.name AS matter_name, c.court,
-    c.judge, c.case_number, c.status, c.opposing_party, c.opposing_counsel,
+    c.judge, c.case_number, c.judicial_year, c.case_category,
+    c.litigation_degree, c.status, c.opposing_party, c.opposing_counsel,
     c.filed_date, c.ai_summary, c.created_at
 """
 
@@ -84,8 +87,17 @@ class Case:
     matter_id: int
     matter_name: str
     court: str
+    # Courts of first instance and appeal sit as circuits of three, so this is
+    # usually the دائرة rather than one named judge.
     judge: str
+    # The number alone. "رقم 1234 لسنة 2025 مدني كلي" is three facts, and
+    # holding them in one string made "this year's cases" unaskable.
     case_number: str
+    # NOT the filing year: a case filed in December 2024 can be registered in
+    # the 2025 judicial year, so it is recorded rather than derived.
+    judicial_year: int | None
+    case_category: str
+    litigation_degree: str
     status: str
     opposing_party: str
     opposing_counsel: str | None
@@ -184,12 +196,22 @@ def create_case(
     court: str,
     case_number: str,
     filed_date: date,
+    judicial_year: int | None = None,
+    case_category: str = "",
+    litigation_degree: str = "first_instance",
     judge: str = "",
     status: str = "",
     opposing_party: str = "",
     opposing_counsel: str | None = None,
     ai_summary: str | None = None,
 ) -> Case:
+    if litigation_degree not in DEGREES:
+        raise ValueError(f"invalid litigation degree {litigation_degree!r}")
+    # Checked here rather than left to the column type, so a typo comes back
+    # naming the field instead of as a database error.
+    if judicial_year is not None and not (1900 <= judicial_year <= 2100):
+        raise ValueError(f"implausible judicial year {judicial_year!r}")
+
     with conn.cursor() as cur:
         cur.execute(
             "SELECT 1 FROM matters WHERE organization_id = %s AND id = %s",
@@ -199,11 +221,13 @@ def create_case(
             raise NotFoundError(f"matter {matter_id}")
         cur.execute(
             "INSERT INTO cases (organization_id, matter_id, court, judge, "
-            "case_number, status, opposing_party, opposing_counsel, filed_date, "
-            "ai_summary) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
+            "case_number, judicial_year, case_category, litigation_degree, "
+            "status, opposing_party, opposing_counsel, filed_date, ai_summary) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) "
             "RETURNING id",
             (
-                organization_id, matter_id, court, judge, case_number, status,
+                organization_id, matter_id, court, judge, case_number,
+                judicial_year, case_category, litigation_degree, status,
                 opposing_party, opposing_counsel, filed_date, ai_summary,
             ),
         )
@@ -215,8 +239,9 @@ def create_case(
 
 
 _UPDATABLE = {
-    "court", "judge", "case_number", "status", "opposing_party",
-    "opposing_counsel", "filed_date", "ai_summary",
+    "court", "judge", "case_number", "judicial_year", "case_category",
+    "litigation_degree", "status", "opposing_party", "opposing_counsel",
+    "filed_date", "ai_summary",
 }
 
 

@@ -138,10 +138,19 @@ class MatterTimelineIn(BaseModel):
     detail: str | None = None
 
 
+LitigationDegree = Literal["first_instance", "appeal", "cassation"]
+
+
 class CaseIn(BaseModel):
     matter_id: int
     court: str = Field(min_length=1)
+    # The number on its own. The judicial year and the court category are
+    # separate fields now -- see migration 0010 for why one string could not
+    # hold all three.
     case_number: str = Field(min_length=1)
+    judicial_year: int | None = Field(default=None, ge=1900, le=2100)
+    case_category: str = ""
+    litigation_degree: LitigationDegree = "first_instance"
     filed_date: date
     judge: str = ""
     status: str = ""
@@ -154,6 +163,9 @@ class CasePatch(BaseModel):
     court: str | None = None
     judge: str | None = None
     case_number: str | None = None
+    judicial_year: int | None = Field(default=None, ge=1900, le=2100)
+    case_category: str | None = None
+    litigation_degree: LitigationDegree | None = None
     status: str | None = None
     opposing_party: str | None = None
     opposing_counsel: str | None = None
@@ -709,6 +721,8 @@ def post_case(
         return cases.create_case(conn, organization_id, **body.model_dump())
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Matter not found")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
     except UniqueViolation:
         conn.rollback()
         raise HTTPException(
