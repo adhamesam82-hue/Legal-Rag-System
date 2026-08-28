@@ -75,6 +75,7 @@ from legalrag.orgs import (
     remove_membership,
 )
 from legalrag.pipeline import ask, ask_stream, retrieve_for
+from legalrag.ratelimit import RateLimitMiddleware
 from legalrag.practice_api import router as practice_router
 from legalrag.retrieve import Candidate
 
@@ -127,6 +128,11 @@ app = FastAPI(title="LegalOS API", version="0.3.0", lifespan=lifespan)
 # The frontend is always a separate origin from this API -- the Next.js dev
 # server locally, a deployed domain in production. Extra origins come from
 # LEGALOS_CORS_ORIGINS (comma-separated) so a deploy does not need a code change.
+# Outermost of the three, so a flood is turned away before it costs a JWT
+# verification or a gzip pass. Raw ASGI -- see legalrag.ratelimit for why it
+# must not be BaseHTTPMiddleware while /api/ask/stream exists.
+app.add_middleware(RateLimitMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_cors_origins(),
@@ -431,7 +437,10 @@ def health():
 
 
 @app.post("/api/ask", response_model=AskResponse)
-def post_ask(request: AskRequest):
+def post_ask(
+    request: AskRequest,
+    subject: str = Depends(get_current_subject),
+):
     try:
         with db() as conn:
             answer = ask(
@@ -462,9 +471,11 @@ def post_ask_stream(
 ):
     """Ask, streaming the answer as it clears enforcement, and save the turn.
 
-    Authenticated, unlike /api/ask: the turn is written to a user's history, so
-    there has to be a user. That also keeps the expensive endpoint off the open
-    internet, which /api/ask still is.
+    Needs a *named* caller, not just any authenticated one: the turn is written
+    to a subject's history, so there has to be a subject to write it under.
+    Every route that reaches a paid model is authenticated now -- /api/ask,
+    /api/search and the explain route included -- so this one is no longer the
+    exception that keeps the spend off the open internet.
 
     Event sequence: `articles` (the retrieved sources and the ids to write
     back to), then zero or more `delta`, then exactly one of `done` or `error`.
@@ -571,7 +582,10 @@ def _ask_event_stream(
 
 
 @app.post("/api/search", response_model=SearchResponse)
-def post_search(request: SearchRequest):
+def post_search(
+    request: SearchRequest,
+    subject: str = Depends(get_current_subject),
+):
     # Search degrades to lexical-only rather than failing when a provider is
     # unavailable, so it stays usable with a dry API key.
     with db() as conn:
@@ -654,7 +668,11 @@ def get_article_detail(article_id: int):
 
 
 @app.post("/api/articles/{article_id}/explain")
-def post_explain(article_id: int, request: ExplainRequest):
+def post_explain(
+    article_id: int,
+    request: ExplainRequest,
+    subject: str = Depends(get_current_subject),
+):
     with db() as conn:
         article = get_article(conn, article_id)
     if article is None:

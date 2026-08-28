@@ -24,6 +24,7 @@ from psycopg.errors import ForeignKeyViolation, UniqueViolation
 from pydantic import BaseModel, Field
 
 from legalrag.clerk import get_current_membership, get_current_user_id
+from legalrag.config import get_max_upload_bytes
 from legalrag.db import db
 from legalrag.orgs import Membership
 from legalrag.practice import NotFoundError, activity, billing, cases, clients
@@ -32,6 +33,7 @@ from legalrag.practice import conflicts
 from legalrag.practice import custom_fields as fields
 from legalrag.practice import documents as docs
 from legalrag.practice import expenses, matters, portals, tasks, time_entries, trust
+from legalrag.practice import uploads
 
 router = APIRouter(prefix="/api/orgs/{organization_id}", tags=["practice"])
 
@@ -863,19 +865,33 @@ async def post_document(
     membership: Membership = Depends(get_current_membership),
     conn=Depends(db),
 ):
-    """Uploads a document. Multipart, so the file rides in the request body."""
-    content = await file.read()
+    """Uploads a document. Multipart, so the file rides in the request body.
+
+    The size ceiling and the stored content type are both decided by
+    legalrag.practice.uploads, not by what the client sent: an unbounded read
+    is a way to kill the process, and a client-supplied content type is a way
+    to get HTML served back from this origin.
+    """
+    limit = get_max_upload_bytes()
+    try:
+        content = await uploads.read_capped(file, limit)
+    except uploads.UploadTooLarge:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File is larger than the {limit // (1024 * 1024)}MB limit",
+        )
+    filename = file.filename or "untitled"
     try:
         document = docs.create_document(
             conn,
             organization_id,
-            name=file.filename or "untitled",
+            name=filename,
             uploaded_by=membership.clerk_user_id,
             matter_id=matter_id,
-            doc_type=doc_type or (file.filename or "").rsplit(".", 1)[-1].upper(),
+            doc_type=doc_type or uploads.doc_type_for(filename),
             status=status,
             content=content,
-            content_type=file.content_type or "application/octet-stream",
+            content_type=uploads.content_type_for(filename),
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Matter not found")
@@ -914,12 +930,14 @@ def get_document_content(
         content = docs.read_document_bytes(document)
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
+    # Never echo the stored type back blindly: only types known to be inert in
+    # a browser are shown in place, everything else is a download. See
+    # legalrag.practice.uploads.serve_headers.
+    serve = uploads.serve_headers(document.name, document.content_type)
     return Response(
         content=content,
-        media_type=document.content_type,
-        headers={
-            "Content-Disposition": f'inline; filename="{document.name}"',
-        },
+        media_type=serve.media_type,
+        headers=serve.headers,
     )
 
 

@@ -91,6 +91,25 @@ Neon's ceiling; raise both together or not at all.
 | `OPENROUTER_API_KEY` | your key | Answering, if routed to OpenRouter |
 | `RESEND_API_KEY` | your key | Invitation emails |
 | `LEGALOS_DOCUMENT_ROOT` | `/data/documents` | Already set in the image |
+| `LEGALOS_MAX_UPLOAD_BYTES` | optional | Upload ceiling; defaults to 25MB |
+| `LEGALOS_RATE_LIMIT_PAID` | optional | Requests/min per caller to LLM routes; defaults to 30 |
+| `LEGALOS_RATE_LIMIT_NORMAL` | optional | Requests/min per caller elsewhere; defaults to 300 |
+
+### Request ceilings and uploads
+
+Every route that reaches a paid model -- `/api/ask`, `/api/ask/stream`,
+`/api/search`, `/api/articles/{id}/explain` -- requires a session. There is no
+anonymous path to an LLM call, and the deploy check below asserts it.
+
+On top of that, `src/legalrag/ratelimit.py` caps requests per caller per
+minute, in two tiers. The counters are in-process, which is correct while
+`numReplicas` is 1; a second replica would give each its own share of the
+ceiling. Move them to Redis when the worker lands.
+
+Uploads are capped (25MB by default) and read in chunks, and a document is
+served back with `Content-Disposition: attachment` and `nosniff` unless its
+type is one a browser renders inertly. An uploaded `.html` is stored and
+returned as an opaque download, never as a page on this origin.
 
 **`LEGALOS_DEV_AUTH` must not be set.** It disables JWT verification and treats
 every request as one user. It is opt-in and off unless explicitly set — leave it
@@ -189,6 +208,10 @@ curl https://<your-api-host>/api/health
 
 # Auth is enforced — this must be 403, never 200.
 curl -o /dev/null -w '%{http_code}\n' https://<your-api-host>/api/orgs/me
+
+# No anonymous path to a paid model -- this must be 401, never 200.
+curl -o /dev/null -w '%{http_code}\n' -X POST -H 'content-type: application/json' \
+  -d '{"question":"x","jurisdiction":"EG"}' https://<your-api-host>/api/ask
 ```
 
 Then open the Vercel URL: signed out, it should redirect to `/sign-in`. If a

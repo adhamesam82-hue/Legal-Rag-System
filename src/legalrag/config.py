@@ -19,6 +19,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Sized for a scanned court bundle, not a video.
+DEFAULT_MAX_UPLOAD_BYTES = 25 * 1024 * 1024
+
 PROVIDERS = {
     "openrouter": {
         "base_url": "https://openrouter.ai/api/v1",
@@ -157,6 +160,27 @@ def get_document_root() -> Path:
     root = Path(os.environ.get("LEGALOS_DOCUMENT_ROOT", "data/documents"))
     root.mkdir(parents=True, exist_ok=True)
     return root
+
+
+def get_max_upload_bytes() -> int:
+    """Ceiling on a single uploaded document.
+
+    Read here rather than hard-coded in the route so a firm that files large
+    scanned bundles can raise it without a code change. The default is sized
+    for a scanned court file, not a video.
+    """
+    raw = os.environ.get("LEGALOS_MAX_UPLOAD_BYTES")
+    if not raw:
+        return DEFAULT_MAX_UPLOAD_BYTES
+    try:
+        value = int(raw)
+    except ValueError:
+        raise RuntimeError(
+            f"LEGALOS_MAX_UPLOAD_BYTES must be an integer, got {raw!r}"
+        ) from None
+    if value <= 0:
+        raise RuntimeError("LEGALOS_MAX_UPLOAD_BYTES must be positive")
+    return value
 
 
 def get_model_spec(stage: str) -> ModelSpec:

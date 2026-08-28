@@ -12,6 +12,12 @@ alsigil.com {
 	# is the one an attacker on the same network can intercept.
 	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
 
+	# Rate limiting is NOT here. It is not in Caddy's standard build -- it needs
+	# the caddy-ratelimit plugin and a custom xcaddy image -- and what that buys
+	# is a per-IP ceiling. Since T-001 every paid route is authenticated, so the
+	# ceiling belongs on the caller instead: one office NAT is many lawyers, and
+	# one abusive account is one subject however many addresses it dials from.
+	# See src/legalrag/ratelimit.py.
 	handle /api/* {
 		# lb_try_duration makes Caddy hold and retry while the API container
 		# restarts during a deploy, instead of returning 502. Not zero-downtime
