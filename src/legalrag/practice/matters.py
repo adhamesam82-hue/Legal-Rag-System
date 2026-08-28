@@ -23,7 +23,19 @@ from legalrag.practice import NotFoundError, fetch_all, fetch_one
 from legalrag.practice.scope import UNRESTRICTED, matter_visibility
 
 MATTER_TYPES = (
-    "litigation", "corporate", "tax", "labour", "family_probate", "contract_review",
+    "litigation",
+    "corporate",
+    "tax",
+    "labour",
+    "family_probate",
+    "contract_review",
+    # Added with migration 0010: an Egyptian practice has these and the list
+    # did not. Must stay in step with the CHECK constraint there -- a value
+    # this tuple rejects never reaches the database to be checked.
+    "criminal",
+    "administrative",
+    "execution",
+    "arbitration",
 )
 MATTER_STATUSES = ("active", "on_hold", "closed")
 BILLING_TYPES = ("hourly", "fixed_fee", "retainer")

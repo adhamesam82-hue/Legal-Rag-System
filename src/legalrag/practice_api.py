@@ -19,7 +19,17 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, UploadFile
+import json
+
+from fastapi import (
+    APIRouter,
+    Depends,
+    Form,
+    HTTPException,
+    Query,
+    Response,
+    UploadFile,
+)
 from psycopg.errors import ForeignKeyViolation, UniqueViolation
 from pydantic import BaseModel, Field
 
@@ -34,7 +44,7 @@ from legalrag.practice import custom_fields as fields
 from legalrag.practice import documents as docs
 from legalrag.practice import expenses, matters, portals, tasks, time_entries, trust
 from legalrag.practice import powers_of_attorney as poa
-from legalrag.practice import invoice_pdf, uploads
+from legalrag.practice import csv_import, invoice_pdf, uploads
 
 router = APIRouter(prefix="/api/orgs/{organization_id}", tags=["practice"])
 
@@ -1519,6 +1529,138 @@ _PDF_LABELS = {
         "footer": "Thank you for your business.",
     },
 }
+
+
+# --- importing an existing book of business ---------------------------------
+#
+# Two steps on purpose. A spreadsheet out of a decade-old system is never
+# clean, and finding that out on row 140 with 139 already written is worse
+# than not importing at all -- so the caller sees exactly what would happen
+# before anything does.
+
+
+def _preview_body(preview) -> dict:
+    return {
+        "columns": preview.columns,
+        "total_rows": preview.total_rows,
+        "ready_count": len(preview.ready),
+        "ready_sample": preview.ready[:20],
+        "problems": [
+            {"row": p.row, "reason": p.reason} for p in preview.problems
+        ],
+    }
+
+
+@router.post("/imports/clients/preview")
+async def post_preview_client_import(
+    organization_id: int,
+    file: UploadFile,
+    mapping: str = Form(...),
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    """What this file would create. Writes nothing."""
+    raw = await uploads.read_capped(file, get_max_upload_bytes())
+    try:
+        column_map = json.loads(mapping)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=422, detail="mapping must be JSON")
+    try:
+        preview = csv_import.preview_clients(raw, column_map)
+    except csv_import.ImportError_ as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return _preview_body(preview)
+
+
+@router.post("/imports/clients", status_code=201)
+async def post_client_import(
+    organization_id: int,
+    file: UploadFile,
+    mapping: str = Form(...),
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    """Writes the rows that pass, and names the ones that do not.
+
+    Partial and loud: refusing the file until it is perfect makes the firm edit
+    a spreadsheet against error messages, and importing silently while dropping
+    what does not fit is how a client goes missing unnoticed.
+    """
+    raw = await uploads.read_capped(file, get_max_upload_bytes())
+    try:
+        column_map = json.loads(mapping)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=422, detail="mapping must be JSON")
+    try:
+        preview = csv_import.preview_clients(raw, column_map)
+        created = csv_import.import_clients(conn, organization_id, preview)
+    except csv_import.ImportError_ as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    except UniqueViolation:
+        conn.rollback()
+        raise HTTPException(
+            status_code=409, detail="A client in this file already exists"
+        )
+    return {
+        "created": len(created),
+        "skipped": len(preview.problems),
+        "problems": [{"row": p.row, "reason": p.reason} for p in preview.problems],
+    }
+
+
+@router.post("/imports/matters/preview")
+async def post_preview_matter_import(
+    organization_id: int,
+    file: UploadFile,
+    mapping: str = Form(...),
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    raw = await uploads.read_capped(file, get_max_upload_bytes())
+    try:
+        column_map = json.loads(mapping)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=422, detail="mapping must be JSON")
+    try:
+        preview = csv_import.preview_matters(
+            conn, organization_id, raw, column_map, membership.clerk_user_id
+        )
+    except csv_import.ImportError_ as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return _preview_body(preview)
+
+
+@router.post("/imports/matters", status_code=201)
+async def post_matter_import(
+    organization_id: int,
+    file: UploadFile,
+    mapping: str = Form(...),
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    """Cases, against clients that must already exist.
+
+    Clients import first by design: a case with no client is not a case, and
+    inventing one from a spreadsheet name would quietly duplicate clients the
+    firm already has.
+    """
+    raw = await uploads.read_capped(file, get_max_upload_bytes())
+    try:
+        column_map = json.loads(mapping)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=422, detail="mapping must be JSON")
+    try:
+        preview = csv_import.preview_matters(
+            conn, organization_id, raw, column_map, membership.clerk_user_id
+        )
+        created = csv_import.import_matters(conn, organization_id, preview)
+    except csv_import.ImportError_ as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return {
+        "created": len(created),
+        "skipped": len(preview.problems),
+        "problems": [{"row": p.row, "reason": p.reason} for p in preview.problems],
+    }
 
 
 @router.get("/invoices/{invoice_id}/pdf")
