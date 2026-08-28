@@ -209,7 +209,7 @@ export const ar: Catalog = {
   },
 
   "@legalos.billingDetail.detailsHeading": { defaultMessage: "التفاصيل" },
-  "@legalos.billingDetail.field.client": { defaultMessage: "العميل" },
+  "@legalos.billingDetail.field.client": { defaultMessage: "الموكّل" },
   "@legalos.billingDetail.field.matter": { defaultMessage: "الملف" },
   "@legalos.billingDetail.field.issued": { defaultMessage: "تاريخ الإصدار" },
   "@legalos.billingDetail.field.due": { defaultMessage: "تاريخ الاستحقاق" },
@@ -229,7 +229,7 @@ export const ar: Catalog = {
   "@legalos.accounting.banner.title": { defaultMessage: "أرقام تجريبية — لا يوجد نظام خلفي بعد" },
   "@legalos.accounting.banner.description": {
     defaultMessage:
-      "لا يوجد نموذج بيانات فعلي خلف هذا القسم بعد. كل رقم أدناه محتوى تجريبي وليس بيانات فعلية من سجلات مكتبك. أما العملاء والملفات والقضايا والمستندات والمهام وتتبع الوقت والفوترة فهي وظائف فعلية ومتصلة بالنظام.",
+      "لا يوجد نموذج بيانات فعلي خلف هذا القسم بعد. كل رقم أدناه محتوى تجريبي وليس بيانات فعلية من سجلات مكتبك. أما الموكّلين والملفات والقضايا والمستندات والمهام وتتبع الوقت والفوترة فهي وظائف فعلية ومتصلة بالنظام.",
   },
 
   "@legalos.accounting.month.feb": { defaultMessage: "فبراير" },
@@ -271,7 +271,7 @@ export const ar: Catalog = {
   "@legalos.accounting.expense.courtFees": { defaultMessage: "الرسوم القضائية ورسوم القيد" },
   "@legalos.accounting.expense.software": { defaultMessage: "البرمجيات والاشتراكات" },
   "@legalos.accounting.expense.insurance": { defaultMessage: "التأمين المهني" },
-  "@legalos.accounting.expense.travel": { defaultMessage: "السفر واجتماعات العملاء" },
+  "@legalos.accounting.expense.travel": { defaultMessage: "السفر واجتماعات الموكّلين" },
   "@legalos.accounting.expense.utilities": { defaultMessage: "المرافق ومصروفات أخرى" },
 
   "@legalos.accounting.payouts.heading": { defaultMessage: "مستحقات الشركاء" },
@@ -305,7 +305,7 @@ export const ar: Catalog = {
   "@legalos.reports.banner.title": { defaultMessage: "أرقام تجريبية — لا يوجد نظام خلفي بعد" },
   "@legalos.reports.banner.description": {
     defaultMessage:
-      "لا يوجد نموذج بيانات فعلي خلف هذا القسم بعد. كل رقم أدناه محتوى تجريبي وليس بيانات فعلية من سجلات مكتبك. أما العملاء والملفات والقضايا والمستندات والمهام وتتبع الوقت والفوترة فهي وظائف فعلية ومتصلة بالنظام.",
+      "لا يوجد نموذج بيانات فعلي خلف هذا القسم بعد. كل رقم أدناه محتوى تجريبي وليس بيانات فعلية من سجلات مكتبك. أما الموكّلين والملفات والقضايا والمستندات والمهام وتتبع الوقت والفوترة فهي وظائف فعلية ومتصلة بالنظام.",
   },
 
   "@legalos.reports.export.ariaLabel": { defaultMessage: "تصدير التقارير" },

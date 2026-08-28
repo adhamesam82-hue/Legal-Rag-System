@@ -571,7 +571,7 @@ export const ar: Catalog = {
   "@legalos.matterWorkspace.tab.communications": { defaultMessage: "المراسلات" },
   "@legalos.matterWorkspace.tab.bills": { defaultMessage: "الفواتير" },
   "@legalos.matterWorkspace.tab.transactions": { defaultMessage: "الحركات المالية" },
-  "@legalos.matterWorkspace.tab.connect": { defaultMessage: "بوابة العميل" },
+  "@legalos.matterWorkspace.tab.connect": { defaultMessage: "بوابة الموكّل" },
 
   // --- financial strip ------------------------------------------------------
   "@legalos.matterWorkspace.financial.heading": {
@@ -595,10 +595,10 @@ export const ar: Catalog = {
   },
   "@legalos.matterWorkspace.financial.overdue": { defaultMessage: "متأخر" },
   "@legalos.matterWorkspace.financial.clientFunds": {
-    defaultMessage: "أموال العميل (الملف)",
+    defaultMessage: "أموال الموكّل (الملف)",
   },
   "@legalos.matterWorkspace.financial.clientFunds.hint": {
-    defaultMessage: "محفوظة لحساب العميل",
+    defaultMessage: "محفوظة لحساب الموكّل",
   },
   "@legalos.matterWorkspace.financial.quickBill": { defaultMessage: "فاتورة سريعة" },
   "@legalos.matterWorkspace.financial.viewBills": { defaultMessage: "عرض الفواتير" },
@@ -620,7 +620,7 @@ export const ar: Catalog = {
 
   // --- contacts panel -------------------------------------------------------
   "@legalos.matterWorkspace.contacts.heading": { defaultMessage: "جهات الاتصال" },
-  "@legalos.matterWorkspace.contacts.clients": { defaultMessage: "العميل ({count})" },
+  "@legalos.matterWorkspace.contacts.clients": { defaultMessage: "الموكّل ({count})" },
   "@legalos.matterWorkspace.contacts.related": {
     defaultMessage: "جهات اتصال ذات صلة ({count})",
   },
@@ -651,7 +651,7 @@ export const ar: Catalog = {
   "@legalos.matterWorkspace.contacts.form.email": { defaultMessage: "البريد الإلكتروني" },
   "@legalos.matterWorkspace.contacts.form.phone": { defaultMessage: "الهاتف" },
   "@legalos.matterWorkspace.contacts.form.noneOnFile": {
-    defaultMessage: "لا توجد جهات اتصال مسجَّلة لهذا العميل بعد.",
+    defaultMessage: "لا توجد جهات اتصال مسجَّلة لهذا الموكّل بعد.",
   },
 
   // --- conflict checks ------------------------------------------------------
@@ -668,7 +668,7 @@ export const ar: Catalog = {
     defaultMessage: "اسم واحد في كل سطر",
   },
   "@legalos.matterWorkspace.conflicts.terms.hint": {
-    defaultMessage: "يبحث في عملاء المكتب وأطراف الملفات والخصوم ومحاميهم.",
+    defaultMessage: "يبحث في موكّلين المكتب وأطراف الملفات والخصوم ومحاميهم.",
   },
   "@legalos.matterWorkspace.conflicts.result.clear": { defaultMessage: "لا تعارض" },
   "@legalos.matterWorkspace.conflicts.result.potential_conflict": {
@@ -689,7 +689,7 @@ export const ar: Catalog = {
   "@legalos.matterWorkspace.conflicts.decideHint": {
     defaultMessage: "البحث يرصد تطابق الأسماء؛ وتقدير أثرها على قبول الملف قرارك أنت.",
   },
-  "@legalos.matterWorkspace.conflicts.hitKind.client": { defaultMessage: "عميل قائم" },
+  "@legalos.matterWorkspace.conflicts.hitKind.client": { defaultMessage: "موكّل قائم" },
   "@legalos.matterWorkspace.conflicts.hitKind.matter_party": {
     defaultMessage: "طرف في ملف",
   },
@@ -793,7 +793,7 @@ export const ar: Catalog = {
   // --- communications -------------------------------------------------------
   "@legalos.matterWorkspace.comms.sub.logs": { defaultMessage: "السجلات" },
   "@legalos.matterWorkspace.comms.sub.messages": { defaultMessage: "رسائل آمنة" },
-  "@legalos.matterWorkspace.comms.sub.portals": { defaultMessage: "بوابات العملاء" },
+  "@legalos.matterWorkspace.comms.sub.portals": { defaultMessage: "بوابات الموكّلين" },
 
   "@legalos.matterWorkspace.comms.logs.new": { defaultMessage: "تسجيل مراسلة" },
   "@legalos.matterWorkspace.comms.logs.emptyTitle": {
@@ -801,7 +801,7 @@ export const ar: Catalog = {
   },
   "@legalos.matterWorkspace.comms.logs.emptyDescription": {
     defaultMessage:
-      "سجِّل المكالمات والرسائل والاجتماعات على هذا الملف ليبقى ما أُبلغ به العميل موثَّقًا.",
+      "سجِّل المكالمات والرسائل والاجتماعات على هذا الملف ليبقى ما أُبلغ به الموكّل موثَّقًا.",
   },
   "@legalos.matterWorkspace.comms.logs.search": { defaultMessage: "بحث في الموضوع أو النص" },
   "@legalos.matterWorkspace.comms.logs.duration": {
@@ -825,7 +825,7 @@ export const ar: Catalog = {
   "@legalos.matterWorkspace.comms.messages.new": { defaultMessage: "رسالة جديدة" },
   "@legalos.matterWorkspace.comms.messages.emptyTitle": { defaultMessage: "لا توجد رسائل آمنة" },
   "@legalos.matterWorkspace.comms.messages.emptyDescription": {
-    defaultMessage: "ابدأ محادثة لتبادل الرسائل مع العميل داخل المنصة بدلًا من البريد.",
+    defaultMessage: "ابدأ محادثة لتبادل الرسائل مع الموكّل داخل المنصة بدلًا من البريد.",
   },
   "@legalos.matterWorkspace.comms.messages.subject": { defaultMessage: "الموضوع" },
   "@legalos.matterWorkspace.comms.messages.firstMessage": { defaultMessage: "الرسالة" },
@@ -841,7 +841,7 @@ export const ar: Catalog = {
   "@legalos.matterWorkspace.comms.messages.count": {
     defaultMessage: "{count, plural, one {رسالة} other {# رسائل}}",
   },
-  "@legalos.matterWorkspace.comms.messages.client": { defaultMessage: "العميل" },
+  "@legalos.matterWorkspace.comms.messages.client": { defaultMessage: "الموكّل" },
   "@legalos.matterWorkspace.comms.messages.sendTo": { defaultMessage: "الإرسال إلى" },
   "@legalos.matterWorkspace.comms.messages.noPortal": {
     defaultMessage: "محادثة داخلية (بدون بوابة)",
@@ -852,7 +852,7 @@ export const ar: Catalog = {
     defaultMessage: "لم يُمنح وصول للبوابة",
   },
   "@legalos.matterWorkspace.comms.portals.emptyDescription": {
-    defaultMessage: "امنح جهة اتصال محدَّدة لدى العميل وصولًا لمستندات هذا الملف وفواتيره ورسائله.",
+    defaultMessage: "امنح جهة اتصال محدَّدة لدى الموكّل وصولًا لمستندات هذا الملف وفواتيره ورسائله.",
   },
   "@legalos.matterWorkspace.comms.portals.status.invited": { defaultMessage: "مدعو" },
   "@legalos.matterWorkspace.comms.portals.status.active": { defaultMessage: "نشط" },
@@ -871,7 +871,7 @@ export const ar: Catalog = {
     defaultMessage: "لم يسجّل الدخول بعد",
   },
   "@legalos.matterWorkspace.comms.portals.noContacts": {
-    defaultMessage: "أضف جهة اتصال لهذا العميل قبل منح الوصول للبوابة.",
+    defaultMessage: "أضف جهة اتصال لهذا الموكّل قبل منح الوصول للبوابة.",
   },
 
   // --- bills ----------------------------------------------------------------
@@ -883,23 +883,23 @@ export const ar: Catalog = {
   "@legalos.matterWorkspace.bills.issued": { defaultMessage: "صدرت في {date}" },
   "@legalos.matterWorkspace.bills.due": { defaultMessage: "تستحق في {date}" },
   "@legalos.matterWorkspace.bills.paid": { defaultMessage: "سُدِّدت في {date}" },
-  "@legalos.matterWorkspace.bills.payFromFunds": { defaultMessage: "السداد من أموال العميل" },
+  "@legalos.matterWorkspace.bills.payFromFunds": { defaultMessage: "السداد من أموال الموكّل" },
   "@legalos.matterWorkspace.bills.paymentTerms": {
     defaultMessage: "مهلة السداد (أيام)",
   },
 
   // --- transactions ---------------------------------------------------------
-  "@legalos.matterWorkspace.transactions.heading": { defaultMessage: "أموال العميل" },
+  "@legalos.matterWorkspace.transactions.heading": { defaultMessage: "أموال الموكّل" },
   "@legalos.matterWorkspace.transactions.balance": { defaultMessage: "الرصيد" },
   "@legalos.matterWorkspace.transactions.deposits": { defaultMessage: "المودَع" },
   "@legalos.matterWorkspace.transactions.disbursed": { defaultMessage: "المصروف" },
   "@legalos.matterWorkspace.transactions.record": { defaultMessage: "تسجيل حركة" },
   "@legalos.matterWorkspace.transactions.emptyTitle": {
-    defaultMessage: "لا توجد أموال محفوظة للعميل",
+    defaultMessage: "لا توجد أموال محفوظة للموكّل",
   },
   "@legalos.matterWorkspace.transactions.emptyDescription": {
     defaultMessage:
-      "تُسجَّل هنا الدفعات المقدَّمة وغيرها من الأموال المحفوظة لحساب العميل ويُخصم منها مقابل الفواتير.",
+      "تُسجَّل هنا الدفعات المقدَّمة وغيرها من الأموال المحفوظة لحساب الموكّل ويُخصم منها مقابل الفواتير.",
   },
   "@legalos.matterWorkspace.transactions.kind.deposit": { defaultMessage: "إيداع" },
   "@legalos.matterWorkspace.transactions.kind.withdrawal": { defaultMessage: "سحب" },
@@ -916,25 +916,25 @@ export const ar: Catalog = {
     defaultMessage: "رقم الشيك أو التحويل",
   },
   "@legalos.matterWorkspace.transactions.form.invoice": { defaultMessage: "مقابل فاتورة" },
-  "@legalos.matterWorkspace.transactions.form.account": { defaultMessage: "حساب العملاء" },
+  "@legalos.matterWorkspace.transactions.form.account": { defaultMessage: "حساب الموكّلين" },
   "@legalos.matterWorkspace.transactions.noAccountTitle": {
-    defaultMessage: "لا يوجد حساب لأموال العملاء",
+    defaultMessage: "لا يوجد حساب لأموال الموكّلين",
   },
   "@legalos.matterWorkspace.transactions.noAccountDescription": {
     defaultMessage:
-      "تُحفظ أموال العملاء منفصلة عن أموال المكتب. على المالك فتح الحساب قبل تسجيل أي مبالغ.",
+      "تُحفظ أموال الموكّلين منفصلة عن أموال المكتب. على المالك فتح الحساب قبل تسجيل أي مبالغ.",
   },
   "@legalos.matterWorkspace.transactions.openAccount": {
-    defaultMessage: "فتح حساب لأموال العملاء",
+    defaultMessage: "فتح حساب لأموال الموكّلين",
   },
   "@legalos.matterWorkspace.transactions.account.name": { defaultMessage: "اسم الحساب" },
   "@legalos.matterWorkspace.transactions.account.bank": { defaultMessage: "البنك" },
   "@legalos.matterWorkspace.transactions.account.number": { defaultMessage: "رقم الحساب" },
   "@legalos.matterWorkspace.transactions.ownerOnly": {
-    defaultMessage: "فتح حساب أموال العملاء متاح للمالك فقط.",
+    defaultMessage: "فتح حساب أموال الموكّلين متاح للمالك فقط.",
   },
   "@legalos.matterWorkspace.transactions.staffOnly": {
-    defaultMessage: "تحريك أموال العملاء متاح للمالك أو الموظفين فقط.",
+    defaultMessage: "تحريك أموال الموكّلين متاح للمالك أو الموظفين فقط.",
   },
 
   // --- shared actions and errors -------------------------------------------

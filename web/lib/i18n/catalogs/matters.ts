@@ -227,7 +227,7 @@ export const ar: Catalog = {
   "@legalos.matters.field.status": { defaultMessage: "الحالة" },
   "@legalos.matters.field.type": { defaultMessage: "النوع" },
   "@legalos.matters.field.responsible": { defaultMessage: "المسؤول" },
-  "@legalos.matters.field.client": { defaultMessage: "العميل" },
+  "@legalos.matters.field.client": { defaultMessage: "الموكّل" },
   "@legalos.matters.field.billing": { defaultMessage: "الفوترة" },
   "@legalos.matters.field.opened": { defaultMessage: "تاريخ الفتح" },
   "@legalos.matters.field.closed": { defaultMessage: "تاريخ الإغلاق" },
@@ -236,7 +236,7 @@ export const ar: Catalog = {
 
   "@legalos.matters.list.search.label": { defaultMessage: "البحث في الملفات" },
   "@legalos.matters.list.search.placeholder": {
-    defaultMessage: "ابحث باسم الملف أو العميل",
+    defaultMessage: "ابحث باسم الملف أو الموكّل",
   },
   "@legalos.matters.list.filter.allTypes": { defaultMessage: "جميع الأنواع" },
   "@legalos.matters.list.filter.allStatuses": { defaultMessage: "جميع الحالات" },
@@ -263,8 +263,8 @@ export const ar: Catalog = {
   "@legalos.matters.dialog.namePlaceholder": {
     defaultMessage: "نبيل ضد شركة النيل للتجارة",
   },
-  "@legalos.matters.dialog.selectClient": { defaultMessage: "اختر عميلاً" },
-  "@legalos.matters.dialog.clientsLoading": { defaultMessage: "جارٍ تحميل العملاء…" },
+  "@legalos.matters.dialog.selectClient": { defaultMessage: "اختر موكّلاً" },
+  "@legalos.matters.dialog.clientsLoading": { defaultMessage: "جارٍ تحميل الموكّلين…" },
   "@legalos.matters.dialog.selectLawyer": { defaultMessage: "اختر محاميًا" },
   "@legalos.matters.dialog.submit": { defaultMessage: "فتح الملف" },
   "@legalos.matters.dialog.cancel": { defaultMessage: "إلغاء" },

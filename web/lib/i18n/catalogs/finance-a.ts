@@ -285,7 +285,7 @@ export const ar: Catalog = {
   // ---------------------------------------------------------------------
   "@legalos.billing.heading": { defaultMessage: "الفوترة" },
   "@legalos.billing.subheading": {
-    defaultMessage: "الفواتير الصادرة على الملفات والعملاء",
+    defaultMessage: "الفواتير الصادرة على الملفات والموكّلين",
   },
   "@legalos.billing.invoiceUnbilled": { defaultMessage: "فوترة الوقت غير المفوتر" },
   "@legalos.billing.loading": { defaultMessage: "جارٍ تحميل الفوترة…" },
@@ -326,7 +326,7 @@ export const ar: Catalog = {
   "@legalos.billing.detail.noLineItemsDescription": {
     defaultMessage: "هذه الفاتورة بإجمالي {total} دون تفصيل بالبنود.",
   },
-  "@legalos.billing.table.client": { defaultMessage: "العميل" },
+  "@legalos.billing.table.client": { defaultMessage: "الموكّل" },
   "@legalos.billing.table.matter": { defaultMessage: "الملف" },
   "@legalos.billing.table.issued": { defaultMessage: "تاريخ الإصدار" },
   "@legalos.billing.table.due": { defaultMessage: "تاريخ الاستحقاق" },

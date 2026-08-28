@@ -97,11 +97,11 @@ export const en: Catalog = {
 };
 
 export const ar: Catalog = {
-  "@legalos.crm.heading": { defaultMessage: "مسار العملاء المحتملين" },
-  "@legalos.crm.viewExistingClients": { defaultMessage: "عرض العملاء الحاليين" },
-  "@legalos.crm.newLead": { defaultMessage: "عميل محتمل جديد" },
+  "@legalos.crm.heading": { defaultMessage: "مسار الموكّلين المحتملين" },
+  "@legalos.crm.viewExistingClients": { defaultMessage: "عرض الموكّلين الحاليين" },
+  "@legalos.crm.newLead": { defaultMessage: "موكّل محتمل جديد" },
 
-  "@legalos.crm.kpi.openLeads": { defaultMessage: "العملاء المحتملون النشطون" },
+  "@legalos.crm.kpi.openLeads": { defaultMessage: "الموكّلون المحتملون النشطون" },
   "@legalos.crm.kpi.openLeadsDetail": {
     defaultMessage:
       "{count, plural, zero {لا مراحل نشطة} one {عبر مرحلة نشطة واحدة} two {عبر مرحلتين نشطتين} few {عبر # مراحل نشطة} many {عبر # مرحلة نشطة} other {عبر # مرحلة نشطة}}",
@@ -111,12 +111,12 @@ export const ar: Catalog = {
   "@legalos.crm.kpi.wonThisMonth": { defaultMessage: "المحسوم هذا الشهر" },
   "@legalos.crm.kpi.wonDetail": {
     defaultMessage:
-      "{count, plural, zero {لم يتحوّل أي عميل} one {تحوّل عميل واحد} two {تحوّل عميلان} few {تحوّل # عملاء} many {تحوّل # عميلاً} other {تحوّل # عميل}}",
+      "{count, plural, zero {لم يتحوّل أي موكّل} one {تحوّل موكّل واحد} two {تحوّل موكّلان} few {تحوّل # موكّلين} many {تحوّل # موكّلاً} other {تحوّل # موكّل}}",
   },
   "@legalos.crm.kpi.conflictsFlagged": { defaultMessage: "تعارضات مصالح مرصودة" },
   "@legalos.crm.kpi.conflictsDetail": { defaultMessage: "بانتظار مراجعة الشريك" },
 
-  "@legalos.crm.stage.new": { defaultMessage: "عميل محتمل جديد" },
+  "@legalos.crm.stage.new": { defaultMessage: "موكّل محتمل جديد" },
   "@legalos.crm.stage.contacted": { defaultMessage: "تم التواصل" },
   "@legalos.crm.stage.consultation": { defaultMessage: "استشارة مجدولة" },
   "@legalos.crm.stage.proposal": { defaultMessage: "أُرسل العرض" },
@@ -125,30 +125,30 @@ export const ar: Catalog = {
 
   "@legalos.crm.stageTotal": { defaultMessage: "{value} في هذه المرحلة" },
   "@legalos.crm.conflictFlagged": { defaultMessage: "تعارض مصالح" },
-  "@legalos.crm.detail.notFoundTitle": { defaultMessage: "العميل المحتمل غير موجود" },
+  "@legalos.crm.detail.notFoundTitle": { defaultMessage: "الموكّل المحتمل غير موجود" },
   "@legalos.crm.detail.notFoundDescription": {
-    defaultMessage: "ربما حُذف هذا العميل المحتمل أو أن الرابط لم يعد صالحاً.",
+    defaultMessage: "ربما حُذف هذا الموكّل المحتمل أو أن الرابط لم يعد صالحاً.",
   },
   "@legalos.crm.detail.backToPipeline": { defaultMessage: "العودة إلى المسار" },
-  "@legalos.crm.detail.allLeads": { defaultMessage: "كل العملاء المحتملين" },
+  "@legalos.crm.detail.allLeads": { defaultMessage: "كل الموكّلين المحتملين" },
   "@legalos.crm.detail.logInteraction": { defaultMessage: "تسجيل تواصل" },
-  "@legalos.crm.detail.convertToClient": { defaultMessage: "تحويل إلى عميل" },
+  "@legalos.crm.detail.convertToClient": { defaultMessage: "تحويل إلى موكّل" },
   "@legalos.crm.detail.timeline": { defaultMessage: "التسلسل الزمني" },
   "@legalos.crm.detail.messagesHeading": {
     defaultMessage: "رسائل البريد الإلكتروني وواتساب",
   },
   "@legalos.crm.detail.messagesEmptyTitle": { defaultMessage: "لا توجد رسائل مسجَّلة" },
   "@legalos.crm.detail.messagesEmptyDescription": {
-    defaultMessage: "ستظهر هنا رسائل البريد وواتساب المسجَّلة لهذا العميل المحتمل.",
+    defaultMessage: "ستظهر هنا رسائل البريد وواتساب المسجَّلة لهذا الموكّل المحتمل.",
   },
   "@legalos.crm.detail.notes": { defaultMessage: "ملاحظات" },
   "@legalos.crm.detail.addNoteLabel": { defaultMessage: "إضافة ملاحظة" },
   "@legalos.crm.detail.addNotePlaceholder": {
-    defaultMessage: "أضف ملاحظة عن هذا العميل المحتمل…",
+    defaultMessage: "أضف ملاحظة عن هذا الموكّل المحتمل…",
   },
   "@legalos.crm.detail.addNote": { defaultMessage: "إضافة الملاحظة" },
-  "@legalos.crm.detail.leadDetails": { defaultMessage: "بيانات العميل المحتمل" },
-  "@legalos.crm.detail.field.source": { defaultMessage: "مصدر العميل" },
+  "@legalos.crm.detail.leadDetails": { defaultMessage: "بيانات الموكّل المحتمل" },
+  "@legalos.crm.detail.field.source": { defaultMessage: "مصدر الموكّل" },
   "@legalos.crm.detail.field.estimatedValue": { defaultMessage: "القيمة التقديرية" },
   "@legalos.crm.detail.field.assignedTo": { defaultMessage: "مسند إلى" },
   "@legalos.crm.detail.field.created": { defaultMessage: "تاريخ الإنشاء" },
@@ -175,9 +175,9 @@ export const ar: Catalog = {
   "@legalos.crm.conflict.flagged": {
     defaultMessage: "تعارض مصالح محتمل — يتطلب مراجعة",
   },
-  "@legalos.crm.empty.title": { defaultMessage: "لا يوجد عملاء محتملون" },
+  "@legalos.crm.empty.title": { defaultMessage: "لا يوجد موكّلين محتملون" },
   "@legalos.crm.empty.description": {
-    defaultMessage: "سيظهر هنا العملاء المحتملون المنقولون إلى هذه المرحلة.",
+    defaultMessage: "سيظهر هنا الموكّلون المحتملون المنقولون إلى هذه المرحلة.",
   },
 
   "@legalos.crm.timeline.call": { defaultMessage: "مكالمة" },

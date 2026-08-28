@@ -101,19 +101,19 @@ export const en: Catalog = {
 };
 
 export const ar: Catalog = {
-  "@legalos.clients.heading": { defaultMessage: "العملاء" },
+  "@legalos.clients.heading": { defaultMessage: "الموكّلين" },
   "@legalos.clients.subtitle.atFirm": {
     defaultMessage:
-      "{count, plural, zero {لا عملاء لدى {firm}} one {عميل واحد لدى {firm}} two {عميلان لدى {firm}} few {# عملاء لدى {firm}} many {# عميلاً لدى {firm}} other {# عميل لدى {firm}}}",
+      "{count, plural, zero {لا موكّلين لدى {firm}} one {موكّل واحد لدى {firm}} two {موكّلان لدى {firm}} few {# موكّلين لدى {firm}} many {# موكّلاً لدى {firm}} other {# موكّل لدى {firm}}}",
   },
   "@legalos.clients.subtitle.plain": {
     defaultMessage:
-      "{count, plural, zero {لا عملاء} one {عميل واحد} two {عميلان} few {# عملاء} many {# عميلاً} other {# عميل}}",
+      "{count, plural, zero {لا موكّلين} one {موكّل واحد} two {موكّلان} few {# موكّلين} many {# موكّلاً} other {# موكّل}}",
   },
-  "@legalos.clients.newClient": { defaultMessage: "عميل جديد" },
-  "@legalos.clients.loading": { defaultMessage: "جارٍ تحميل العملاء…" },
+  "@legalos.clients.newClient": { defaultMessage: "موكّل جديد" },
+  "@legalos.clients.loading": { defaultMessage: "جارٍ تحميل الموكّلين…" },
 
-  "@legalos.clients.search.label": { defaultMessage: "البحث في العملاء" },
+  "@legalos.clients.search.label": { defaultMessage: "البحث في الموكّلين" },
   "@legalos.clients.search.placeholder": {
     defaultMessage: "ابحث بالاسم أو النشاط",
   },
@@ -121,7 +121,7 @@ export const ar: Catalog = {
   "@legalos.clients.filter.allStatuses": { defaultMessage: "جميع الحالات" },
   "@legalos.clients.clearFilters": { defaultMessage: "مسح عوامل التصفية" },
 
-  "@legalos.clients.table.client": { defaultMessage: "العميل" },
+  "@legalos.clients.table.client": { defaultMessage: "الموكّل" },
   "@legalos.clients.table.type": { defaultMessage: "النوع" },
   "@legalos.clients.table.primaryContact": { defaultMessage: "جهة الاتصال الرئيسية" },
   "@legalos.clients.table.activeMatters": { defaultMessage: "الملفات النشطة" },
@@ -129,19 +129,19 @@ export const ar: Catalog = {
   "@legalos.clients.table.lastActivity": { defaultMessage: "آخر نشاط" },
   "@legalos.clients.table.status": { defaultMessage: "الحالة" },
 
-  "@legalos.clients.empty.noneTitle": { defaultMessage: "لا يوجد عملاء بعد" },
+  "@legalos.clients.empty.noneTitle": { defaultMessage: "لا يوجد موكّلين بعد" },
   "@legalos.clients.empty.noneDescription": {
-    defaultMessage: "أضف أول عميل لتبدأ في فتح الملفات باسمه.",
+    defaultMessage: "أضف أول موكّل لتبدأ في فتح الملفات باسمه.",
   },
   "@legalos.clients.empty.noMatchTitle": {
-    defaultMessage: "لا يوجد عملاء مطابقون لعوامل التصفية",
+    defaultMessage: "لا يوجد موكّلين مطابقون لعوامل التصفية",
   },
   "@legalos.clients.empty.noMatchDescription": {
     defaultMessage: "جرّب مصطلح بحث آخر أو امسح تصفية النوع والحالة.",
   },
 
-  "@legalos.clients.dialog.title": { defaultMessage: "عميل جديد" },
-  "@legalos.clients.dialog.nameLabel": { defaultMessage: "اسم العميل" },
+  "@legalos.clients.dialog.title": { defaultMessage: "موكّل جديد" },
+  "@legalos.clients.dialog.nameLabel": { defaultMessage: "اسم الموكّل" },
   "@legalos.clients.dialog.typeLabel": { defaultMessage: "النوع" },
   "@legalos.clients.dialog.industryLabel": { defaultMessage: "النشاط" },
   "@legalos.clients.dialog.industryPlaceholder": {
@@ -153,13 +153,13 @@ export const ar: Catalog = {
   "@legalos.clients.dialog.notesLabel": { defaultMessage: "ملاحظات" },
   "@legalos.clients.dialog.cancel": { defaultMessage: "إلغاء" },
   "@legalos.clients.dialog.saving": { defaultMessage: "جارٍ الحفظ…" },
-  "@legalos.clients.dialog.create": { defaultMessage: "إنشاء العميل" },
-  "@legalos.clients.dialog.error": { defaultMessage: "تعذّر حفظ بيانات هذا العميل." },
+  "@legalos.clients.dialog.create": { defaultMessage: "إنشاء الموكّل" },
+  "@legalos.clients.dialog.error": { defaultMessage: "تعذّر حفظ بيانات هذا الموكّل." },
 
-  "@legalos.clients.detail.loading": { defaultMessage: "جارٍ تحميل بيانات العميل…" },
-  "@legalos.clients.detail.backLink": { defaultMessage: "العملاء" },
+  "@legalos.clients.detail.loading": { defaultMessage: "جارٍ تحميل بيانات الموكّل…" },
+  "@legalos.clients.detail.backLink": { defaultMessage: "الموكّلين" },
   "@legalos.clients.detail.clientSince": {
-    defaultMessage: " · عميل منذ {date}",
+    defaultMessage: " · موكّل منذ {date}",
   },
   "@legalos.clients.detail.stat.activeMatters": { defaultMessage: "الملفات النشطة" },
   "@legalos.clients.detail.stat.totalMatters": { defaultMessage: "إجمالي الملفات" },
@@ -168,16 +168,16 @@ export const ar: Catalog = {
   "@legalos.clients.detail.matters.heading": { defaultMessage: "الملفات" },
   "@legalos.clients.detail.matters.emptyTitle": { defaultMessage: "لا توجد ملفات بعد" },
   "@legalos.clients.detail.matters.emptyDescription": {
-    defaultMessage: "افتح ملفاً باسم هذا العميل لبدء العمل.",
+    defaultMessage: "افتح ملفاً باسم هذا الموكّل لبدء العمل.",
   },
   "@legalos.clients.detail.invoices.heading": { defaultMessage: "الفواتير" },
   "@legalos.clients.detail.invoices.billingLink": { defaultMessage: "الفوترة" },
   "@legalos.clients.detail.invoices.empty": {
-    defaultMessage: "لم تُصدر أي فواتير لهذا العميل بعد.",
+    defaultMessage: "لم تُصدر أي فواتير لهذا الموكّل بعد.",
   },
   "@legalos.clients.detail.activity.heading": { defaultMessage: "النشاط" },
   "@legalos.clients.detail.activity.empty": {
-    defaultMessage: "لم يُسجَّل أي نشاط لهذا العميل بعد.",
+    defaultMessage: "لم يُسجَّل أي نشاط لهذا الموكّل بعد.",
   },
   "@legalos.clients.detail.details.heading": { defaultMessage: "التفاصيل" },
   "@legalos.clients.detail.contacts.heading": { defaultMessage: "جهات الاتصال" },

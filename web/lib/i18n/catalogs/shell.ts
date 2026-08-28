@@ -74,7 +74,7 @@ export const ar: Catalog = {
   "@legalos.shell.firm.cairoLegal": { defaultMessage: "مجموعة القاهرة القانونية" },
 
   "@legalos.shell.nav.section.overview": { defaultMessage: "نظرة عامة" },
-  "@legalos.shell.nav.section.clients": { defaultMessage: "العملاء" },
+  "@legalos.shell.nav.section.clients": { defaultMessage: "الموكّلين" },
   "@legalos.shell.nav.section.practice": { defaultMessage: "الممارسة القانونية" },
   "@legalos.shell.nav.section.content": { defaultMessage: "المحتوى" },
   "@legalos.shell.nav.section.ai": { defaultMessage: "الذكاء الاصطناعي" },
@@ -82,8 +82,8 @@ export const ar: Catalog = {
   "@legalos.shell.nav.section.team": { defaultMessage: "الفريق" },
 
   "@legalos.shell.nav.dashboard": { defaultMessage: "لوحة التحكم" },
-  "@legalos.shell.nav.crm": { defaultMessage: "إدارة علاقات العملاء" },
-  "@legalos.shell.nav.clients": { defaultMessage: "العملاء" },
+  "@legalos.shell.nav.crm": { defaultMessage: "إدارة علاقات الموكّلين" },
+  "@legalos.shell.nav.clients": { defaultMessage: "الموكّلين" },
   "@legalos.shell.nav.matters": { defaultMessage: "الملفات" },
   "@legalos.shell.nav.cases": { defaultMessage: "القضايا" },
   "@legalos.shell.nav.calendar": { defaultMessage: "التقويم" },
@@ -110,7 +110,7 @@ export const ar: Catalog = {
   "@legalos.shell.search.ariaLabel": { defaultMessage: "البحث في LegalOS وسؤال الذكاء الاصطناعي" },
   "@legalos.shell.search.button": { defaultMessage: "بحث أو اسأل الذكاء الاصطناعي" },
   "@legalos.shell.search.emptyBootstrap": {
-    defaultMessage: "ابحث في الملفات والعملاء والمستندات — أو اسأل الذكاء الاصطناعي سؤالاً قانونياً",
+    defaultMessage: "ابحث في الملفات والموكّلين والمستندات — أو اسأل الذكاء الاصطناعي سؤالاً قانونياً",
   },
 
   "@legalos.shell.notifications.button": { defaultMessage: "الإشعارات" },

@@ -114,7 +114,7 @@ export const ar: Catalog = {
     defaultMessage: "سياسات المكتب وإجراءات العمل",
   },
   "@legalos.knowledgeBase.category.clientCommunication": {
-    defaultMessage: "نماذج مراسلات العملاء",
+    defaultMessage: "نماذج مراسلات الموكّلين",
   },
 
   "@legalos.knowledgeBase.detail.notFoundTitle": { defaultMessage: "العنصر غير موجود" },

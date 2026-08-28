@@ -293,7 +293,7 @@ export const ar: Catalog = {
   "@legalos.dashboard.loading": { defaultMessage: "جارٍ تحميل بيانات المكتب…" },
   "@legalos.dashboard.kpi.activeMatters": { defaultMessage: "الملفات النشطة" },
   "@legalos.dashboard.kpi.activeMattersDetail": {
-    defaultMessage: "{count, plural, one {عميل نشط واحد} two {عميلان نشطان} few {# عملاء نشطون} other {# عميل نشط}}",
+    defaultMessage: "{count, plural, one {موكّل نشط واحد} two {موكّلان نشطان} few {# موكّلين نشطون} other {# موكّل نشط}}",
   },
   "@legalos.dashboard.kpi.openTasks": { defaultMessage: "المهام المفتوحة" },
   "@legalos.dashboard.kpi.overdueDetail": {
