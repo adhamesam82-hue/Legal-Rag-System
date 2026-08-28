@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { isPathEnabled } from "@/lib/features";
 
 // clerkMiddleware() throws without a publishable key, which would turn every
 // route into a 500 before Clerk is configured. Falling through keeps the app
@@ -22,13 +24,26 @@ const isPublicRoute = createRouteMatcher([
   "/landing(.*)",
 ]);
 
+// A gated screen must not be reachable by typing its URL. Hiding it from the
+// nav is a presentation choice; this is the one that actually holds -- and it
+// runs before auth, so a signed-out visitor to a hidden route gets the same
+// 404 as a signed-in one rather than a sign-in page that leads nowhere.
+// See lib/features.ts.
+function notFoundIfDisabled(request: NextRequest) {
+  return isPathEnabled(request.nextUrl.pathname)
+    ? null
+    : NextResponse.rewrite(new URL("/_not-found", request.url));
+}
+
 export default hasClerk
   ? clerkMiddleware(async (auth, request) => {
+      const gated = notFoundIfDisabled(request);
+      if (gated) return gated;
       if (!isPublicRoute(request)) {
         await auth.protect();
       }
     })
-  : () => NextResponse.next();
+  : (request: NextRequest) => notFoundIfDisabled(request) ?? NextResponse.next();
 
 export const config = {
   matcher: [

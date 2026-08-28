@@ -49,6 +49,7 @@ import { useMediaQuery } from "@astryxdesign/core/hooks";
 import { useTranslator, type TranslatorFn } from "@astryxdesign/core/i18n";
 import { PrefetchedNavLink, useThemeMode } from "@/app/providers";
 import { useLocale } from "@/lib/i18n/provider";
+import { isPathEnabled } from "@/lib/features";
 import { Alsigil, AlsigilPunch } from "@/components/brand/Alsigil";
 
 // stylex.create() isn't compiled by this app's build (see globals.css); AI
@@ -67,7 +68,7 @@ type NavItem = {
   alsoMatch?: string[];
 };
 
-const NAV_SECTIONS: { titleKey: string; items: NavItem[] }[] = [
+const ALL_NAV_SECTIONS: { titleKey: string; items: NavItem[] }[] = [
   {
     titleKey: "@legalos.shell.nav.section.overview",
     items: [{ href: "/dashboard", labelKey: "@legalos.shell.nav.dashboard", icon: Squares2X2Icon }],
@@ -133,6 +134,16 @@ const NAV_SECTIONS: { titleKey: string; items: NavItem[] }[] = [
     ],
   },
 ];
+
+// Hidden screens leave the nav here and the router in middleware.ts; see
+// lib/features.ts for what is off and why. Filtered once at module scope --
+// the enabled set is fixed at build time, so per-render work would buy
+// nothing. A section whose every item is gated off disappears with them
+// rather than leaving an empty heading.
+const NAV_SECTIONS = ALL_NAV_SECTIONS.map((section) => ({
+  ...section,
+  items: section.items.filter((item) => isPathEnabled(item.href)),
+})).filter((section) => section.items.length > 0);
 
 const FIRMS = [
   { id: "al-sayed", nameKey: "@legalos.shell.firm.alSayed" },
