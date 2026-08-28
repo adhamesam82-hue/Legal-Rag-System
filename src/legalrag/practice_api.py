@@ -33,6 +33,7 @@ from legalrag.practice import conflicts
 from legalrag.practice import custom_fields as fields
 from legalrag.practice import documents as docs
 from legalrag.practice import expenses, matters, portals, tasks, time_entries, trust
+from legalrag.practice import powers_of_attorney as poa
 from legalrag.practice import uploads
 
 router = APIRouter(prefix="/api/orgs/{organization_id}", tags=["practice"])
@@ -853,6 +854,143 @@ def get_documents(
     return docs.list_documents(
         conn, organization_id, matter_id=matter_id, status=status, query=q
     )
+
+
+class PowerOfAttorneyIn(BaseModel):
+    client_id: int
+    poa_number: str = Field(min_length=1, max_length=100)
+    poa_type: Literal["general", "special", "litigation"]
+    issued_on: date
+    notary_office: str = ""
+    expires_on: date | None = None
+    scan_document_id: int | None = None
+    notes: str = ""
+
+
+class PowerOfAttorneyUpdate(BaseModel):
+    poa_number: str | None = Field(default=None, min_length=1, max_length=100)
+    poa_type: Literal["general", "special", "litigation"] | None = None
+    issued_on: date | None = None
+    notary_office: str | None = None
+    expires_on: date | None = None
+    scan_document_id: int | None = None
+    notes: str | None = None
+
+
+class MatterPoaIn(BaseModel):
+    """null clears the link, which is a legitimate thing to want."""
+
+    power_of_attorney_id: int | None = None
+
+
+@router.get("/powers-of-attorney")
+def get_powers_of_attorney(
+    organization_id: int,
+    client_id: int | None = None,
+    include_expired: bool = True,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    return poa.list_powers_of_attorney(
+        conn, organization_id, client_id=client_id, include_expired=include_expired
+    )
+
+
+@router.get("/powers-of-attorney/expiring")
+def get_expiring_powers_of_attorney(
+    organization_id: int,
+    within_days: int = Query(default=30, ge=1, le=365),
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    return poa.expiring_soon(conn, organization_id, within_days=within_days)
+
+
+@router.get("/powers-of-attorney/{poa_id}")
+def get_power_of_attorney(
+    organization_id: int,
+    poa_id: int,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    return found(
+        poa.get_power_of_attorney(conn, organization_id, poa_id), "Power of attorney"
+    )
+
+
+@router.post("/powers-of-attorney", status_code=201)
+def post_power_of_attorney(
+    organization_id: int,
+    body: PowerOfAttorneyIn,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    try:
+        return poa.create_power_of_attorney(conn, organization_id, **body.model_dump())
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Client not found")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    except UniqueViolation:
+        conn.rollback()
+        raise HTTPException(
+            status_code=409, detail="A power of attorney with that number already exists"
+        )
+
+
+@router.patch("/powers-of-attorney/{poa_id}")
+def patch_power_of_attorney(
+    organization_id: int,
+    poa_id: int,
+    body: PowerOfAttorneyUpdate,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    try:
+        return poa.update_power_of_attorney(
+            conn, organization_id, poa_id, **body.model_dump(exclude_unset=True)
+        )
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Power of attorney not found")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+
+@router.delete("/powers-of-attorney/{poa_id}", status_code=204)
+def delete_power_of_attorney(
+    organization_id: int,
+    poa_id: int,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    # Recording who a firm may act for is the owner's call, and unlike most
+    # rows here a stale one is a compliance problem rather than clutter.
+    if membership.role != "owner":
+        raise HTTPException(
+            status_code=403, detail="Only an owner can remove a power of attorney"
+        )
+    try:
+        poa.delete_power_of_attorney(conn, organization_id, poa_id)
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Power of attorney not found")
+    return Response(status_code=204)
+
+
+@router.put("/matters/{matter_id}/power-of-attorney")
+def put_matter_power_of_attorney(
+    organization_id: int,
+    matter_id: int,
+    body: MatterPoaIn,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    try:
+        poa.attach_to_matter(
+            conn, organization_id, matter_id, body.power_of_attorney_id
+        )
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return found(matters.get_matter(conn, organization_id, matter_id), "Matter")
 
 
 @router.post("/documents", status_code=201)

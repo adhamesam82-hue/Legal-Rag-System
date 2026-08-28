@@ -84,13 +84,35 @@ ALTER TABLE cases
   ADD COLUMN litigation_degree TEXT NOT NULL DEFAULT 'first_instance'
     CHECK (litigation_degree IN ('first_instance', 'appeal', 'cassation'));
 
--- Pull a four-digit year out of the existing free text where one is there.
--- Anything else stays NULL: a case whose year we cannot read is one a human
--- has to look at, and inventing it would be worse than leaving it blank.
+-- Split the old free text on the shape Egyptian citations actually take:
+--
+--     1345 لسنة 2026 — اقتصادية القاهرة
+--     ^number         ^category
+--          ^year
+--
+-- Reading the year positionally does NOT work: a four-digit case number comes
+-- first, so the first \d{4} in that string is 1345, not 2026. The year is the
+-- one that follows لسنة, so that is what is matched. Verified against the
+-- seeded cases, where three of four carry a four-digit number.
 UPDATE cases
-   SET judicial_year = CAST(substring(case_number FROM '\d{4}') AS INT)
- WHERE substring(case_number FROM '\d{4}') IS NOT NULL
-   AND CAST(substring(case_number FROM '\d{4}') AS INT) BETWEEN 1900 AND 2100;
+   SET judicial_year = CAST(substring(case_number FROM 'لسنة[[:space:]]*([0-9]{4})') AS INT)
+ WHERE substring(case_number FROM 'لسنة[[:space:]]*([0-9]{4})') IS NOT NULL
+   AND CAST(substring(case_number FROM 'لسنة[[:space:]]*([0-9]{4})') AS INT)
+       BETWEEN 1900 AND 2100;
+
+-- The court/category tail, after the dash. Left empty when there is no dash.
+UPDATE cases
+   SET case_category = btrim(substring(case_number FROM '[—-][[:space:]]*(.+)$'))
+ WHERE substring(case_number FROM '[—-][[:space:]]*(.+)$') IS NOT NULL;
+
+-- Finally the number itself: the leading digits, once the year and the
+-- category have been taken out of it. Only rewritten where the year was
+-- successfully read, so a row we could not parse keeps its original text
+-- intact rather than being trimmed to something misleading.
+UPDATE cases
+   SET case_number = btrim(substring(case_number FROM '^[[:space:]]*([0-9]+)'))
+ WHERE judicial_year IS NOT NULL
+   AND substring(case_number FROM '^[[:space:]]*([0-9]+)') IS NOT NULL;
 
 CREATE INDEX ON cases (organization_id, judicial_year);
 CREATE INDEX ON cases (organization_id, litigation_degree);

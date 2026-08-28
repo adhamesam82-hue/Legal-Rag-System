@@ -30,7 +30,8 @@ _COLUMNS = """
     m.id, m.organization_id, m.number_seq, m.matter_number, m.client_id,
     c.name AS client_name, m.name, m.matter_type, m.status, m.responsible_user,
     m.opened_date, m.closed_date, m.description, m.billing_type,
-    m.budget_amount, m.budget_is_estimate, m.tags, m.created_at
+    m.budget_amount, m.budget_is_estimate, m.tags, m.power_of_attorney_id,
+    m.created_at
 """
 
 
@@ -59,6 +60,8 @@ class Matter:
     budget_amount: Decimal | None
     budget_is_estimate: bool
     tags: list[str]
+    # The توكيل this matter is being run under, when one is on file.
+    power_of_attorney_id: int | None
     created_at: datetime
     staff: list[str] = field(default_factory=list)
     case_id: int | None = None
