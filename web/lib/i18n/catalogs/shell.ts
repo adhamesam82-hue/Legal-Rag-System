@@ -84,8 +84,8 @@ export const ar: Catalog = {
   "@legalos.shell.nav.dashboard": { defaultMessage: "لوحة التحكم" },
   "@legalos.shell.nav.crm": { defaultMessage: "إدارة علاقات الموكّلين" },
   "@legalos.shell.nav.clients": { defaultMessage: "الموكّلين" },
-  "@legalos.shell.nav.matters": { defaultMessage: "الملفات" },
-  "@legalos.shell.nav.cases": { defaultMessage: "القضايا" },
+  "@legalos.shell.nav.matters": { defaultMessage: "القضايا" },
+  "@legalos.shell.nav.cases": { defaultMessage: "الجلسات" },
   "@legalos.shell.nav.calendar": { defaultMessage: "التقويم" },
   "@legalos.shell.nav.tasks": { defaultMessage: "المهام" },
   "@legalos.shell.nav.documents": { defaultMessage: "المستندات" },
@@ -110,7 +110,7 @@ export const ar: Catalog = {
   "@legalos.shell.search.ariaLabel": { defaultMessage: "البحث في LegalOS وسؤال الذكاء الاصطناعي" },
   "@legalos.shell.search.button": { defaultMessage: "بحث أو اسأل الذكاء الاصطناعي" },
   "@legalos.shell.search.emptyBootstrap": {
-    defaultMessage: "ابحث في الملفات والموكّلين والمستندات — أو اسأل الذكاء الاصطناعي سؤالاً قانونياً",
+    defaultMessage: "ابحث في القضايا والموكّلين والمستندات — أو اسأل الذكاء الاصطناعي سؤالاً قانونياً",
   },
 
   "@legalos.shell.notifications.button": { defaultMessage: "الإشعارات" },

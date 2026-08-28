@@ -88,7 +88,7 @@ export const ar: Catalog = {
       "{count, plural, zero {لا نتائج} one {نتيجة واحدة} two {نتيجتان} few {# نتائج} many {# نتيجة} other {# نتيجة}}",
   },
   "@legalos.knowledgeBase.relatedPrecedents": {
-    defaultMessage: "سوابق ذات صلة بالملف الذي تعمل عليه",
+    defaultMessage: "سوابق ذات صلة بالقضية التي تعمل عليها",
   },
   "@legalos.knowledgeBase.empty.title": { defaultMessage: "لا توجد نتائج" },
   "@legalos.knowledgeBase.empty.description": {
@@ -131,16 +131,16 @@ export const ar: Catalog = {
   },
   "@legalos.knowledgeBase.detail.aiForMatter": {
     defaultMessage:
-      "مُقترح للملفات المشابهة لـ {matter} استناداً إلى تشابه الوقائع وبنية البنود.",
+      "مُقترح للقضايا المشابهة لـ {matter} استناداً إلى تشابه الوقائع وبنية البنود.",
   },
   "@legalos.knowledgeBase.detail.aiGeneric": {
-    defaultMessage: "مُقترح استناداً إلى الملفات والمستندات التي يعمل عليها فريقك حالياً.",
+    defaultMessage: "مُقترح استناداً إلى القضايا والمستندات التي يعمل عليها فريقك حالياً.",
   },
   "@legalos.knowledgeBase.detail.askAi": {
     defaultMessage: "اسأل المساعد الذكي عن هذا",
   },
-  "@legalos.knowledgeBase.detail.relatedMatter": { defaultMessage: "الملف ذو الصلة" },
-  "@legalos.knowledgeBase.detail.viewMatter": { defaultMessage: "عرض الملف" },
+  "@legalos.knowledgeBase.detail.relatedMatter": { defaultMessage: "القضية ذات الصلة" },
+  "@legalos.knowledgeBase.detail.viewMatter": { defaultMessage: "عرض القضية" },
   "@legalos.knowledgeBase.detail.relatedItems": { defaultMessage: "عناصر ذات صلة" },
   "@legalos.knowledgeBase.detail.detailsHeading": { defaultMessage: "التفاصيل" },
   "@legalos.knowledgeBase.detail.author": { defaultMessage: "المُعِدّ" },

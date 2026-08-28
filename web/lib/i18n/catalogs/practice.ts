@@ -150,29 +150,29 @@ export const en: Catalog = {
 
 export const ar: Catalog = {
   // --- Cases (list) ---------------------------------------------------------
-  "@legalos.cases.heading": { defaultMessage: "القضايا" },
+  "@legalos.cases.heading": { defaultMessage: "الجلسات" },
   "@legalos.cases.subtitle": {
     defaultMessage:
-      "{count, plural, zero {لا توجد قضايا تقاضٍ على الملف} one {قضية تقاضٍ واحدة على الملف} two {قضيتا تقاضٍ على الملف} few {# قضايا تقاضٍ على الملف} many {# قضية تقاضٍ على الملف} other {# قضية تقاضٍ على الملف}}",
+      "{count, plural, zero {لا توجد جلسات على القضية} one {جلسة واحدة على القضية} two {جلستان على القضية} few {# جلسات على القضية} many {# جلسةً على القضية} other {# جلسة على القضية}}",
   },
-  "@legalos.cases.search.label": { defaultMessage: "البحث في القضايا" },
+  "@legalos.cases.search.label": { defaultMessage: "البحث في الجلسات" },
   "@legalos.cases.search.placeholder": {
-    defaultMessage: "ابحث برقم القضية أو اسم الملف أو القاضي أو الخصم",
+    defaultMessage: "ابحث برقم الجلسة أو اسم القضية أو القاضي أو الخصم",
   },
   "@legalos.cases.court.all": { defaultMessage: "جميع المحاكم" },
-  "@legalos.cases.loading": { defaultMessage: "جارٍ تحميل القضايا…" },
-  "@legalos.cases.empty.noneTitle": { defaultMessage: "لا توجد قضايا على الملف" },
+  "@legalos.cases.loading": { defaultMessage: "جارٍ تحميل الجلسات…" },
+  "@legalos.cases.empty.noneTitle": { defaultMessage: "لا توجد جلسات على القضية" },
   "@legalos.cases.empty.noneDescription": {
-    defaultMessage: "تُضاف القضية إلى الملف عند دخوله مرحلة التقاضي.",
+    defaultMessage: "تُضاف الجلسة إلى القضية عند دخولها مرحلة التقاضي.",
   },
-  "@legalos.cases.empty.noMatchTitle": { defaultMessage: "لا توجد قضايا مطابقة لعوامل التصفية" },
+  "@legalos.cases.empty.noMatchTitle": { defaultMessage: "لا توجد جلسات مطابقة لعوامل التصفية" },
   "@legalos.cases.empty.noMatchDescription": {
     defaultMessage: "جرّب كلمة بحث مختلفة أو امسح عامل تصفية المحكمة.",
   },
   "@legalos.cases.clearFilters": { defaultMessage: "مسح عوامل التصفية" },
   "@legalos.cases.noHearingScheduled": { defaultMessage: "لا توجد جلسة محددة" },
 
-  "@legalos.cases.field.case": { defaultMessage: "القضية" },
+  "@legalos.cases.field.case": { defaultMessage: "الجلسة" },
   "@legalos.cases.field.court": { defaultMessage: "المحكمة" },
   "@legalos.cases.field.judge": { defaultMessage: "القاضي" },
   "@legalos.cases.field.opposingParty": { defaultMessage: "الخصم" },
@@ -182,9 +182,9 @@ export const ar: Catalog = {
   "@legalos.cases.field.filed": { defaultMessage: "تاريخ القيد" },
 
   // --- Case detail -----------------------------------------------------------
-  "@legalos.cases.detail.loading": { defaultMessage: "جارٍ تحميل القضية…" },
-  "@legalos.cases.detail.backLink": { defaultMessage: "القضايا" },
-  "@legalos.cases.detail.summaryHeading": { defaultMessage: "ملخص القضية" },
+  "@legalos.cases.detail.loading": { defaultMessage: "جارٍ تحميل الجلسة…" },
+  "@legalos.cases.detail.backLink": { defaultMessage: "الجلسات" },
+  "@legalos.cases.detail.summaryHeading": { defaultMessage: "ملخص الجلسة" },
   "@legalos.cases.detail.summaryDisclaimer": {
     defaultMessage: "نقطة انطلاق للمراجعة، وليست رأياً قانونياً نهائياً.",
   },
@@ -194,13 +194,13 @@ export const ar: Catalog = {
   "@legalos.cases.detail.evidenceEmpty": { defaultMessage: "لم يتم تقديم أي أدلة بعد." },
   "@legalos.cases.detail.courtDocumentsHeading": { defaultMessage: "المستندات القضائية" },
   "@legalos.cases.detail.courtDocumentsEmpty": { defaultMessage: "لا توجد مستندات قضائية مسجّلة." },
-  "@legalos.cases.detail.detailsHeading": { defaultMessage: "تفاصيل القضية" },
+  "@legalos.cases.detail.detailsHeading": { defaultMessage: "تفاصيل الجلسة" },
   "@legalos.cases.detail.nextHearingHeading": { defaultMessage: "الجلسة القادمة" },
   "@legalos.cases.detail.nextHearingNone": { defaultMessage: "لا توجد جلسة محددة." },
   "@legalos.cases.detail.deadlinesHeading": { defaultMessage: "المواعيد النهائية" },
   "@legalos.cases.detail.deadlinesEmptyTitle": { defaultMessage: "لا توجد مواعيد نهائية" },
   "@legalos.cases.detail.deadlinesEmptyDescription": {
-    defaultMessage: "لا يوجد أي التزام معلّق في هذه القضية.",
+    defaultMessage: "لا يوجد أي التزام معلّق في هذه الجلسة.",
   },
   "@legalos.cases.detail.deadlineDone": { defaultMessage: "منجز" },
   "@legalos.cases.detail.daysSuffix": {
@@ -239,8 +239,8 @@ export const ar: Catalog = {
   "@legalos.calendar.weekday.sat": { defaultMessage: "سبت" },
 
   "@legalos.calendar.dialog.title": { defaultMessage: "جدولة جلسة" },
-  "@legalos.calendar.dialog.matterLabel": { defaultMessage: "الملف" },
-  "@legalos.calendar.dialog.matterPlaceholder": { defaultMessage: "اختر ملفاً" },
+  "@legalos.calendar.dialog.matterLabel": { defaultMessage: "القضية" },
+  "@legalos.calendar.dialog.matterPlaceholder": { defaultMessage: "اختر قضيةً" },
   "@legalos.calendar.dialog.dateLabel": { defaultMessage: "التاريخ" },
   "@legalos.calendar.dialog.timeLabel": { defaultMessage: "الوقت" },
   "@legalos.calendar.dialog.courtLabel": { defaultMessage: "المحكمة" },
@@ -282,8 +282,8 @@ export const ar: Catalog = {
   "@legalos.tasks.dialog.title": { defaultMessage: "إضافة مهمة" },
   "@legalos.tasks.dialog.taskLabel": { defaultMessage: "المهمة" },
   "@legalos.tasks.dialog.taskPlaceholder": { defaultMessage: "إعداد مذكرة الاستئناف" },
-  "@legalos.tasks.dialog.matterLabel": { defaultMessage: "الملف" },
-  "@legalos.tasks.dialog.matterPlaceholder": { defaultMessage: "غير مرتبطة بملف" },
+  "@legalos.tasks.dialog.matterLabel": { defaultMessage: "القضية" },
+  "@legalos.tasks.dialog.matterPlaceholder": { defaultMessage: "غير مرتبطة بقضية" },
   "@legalos.tasks.dialog.assigneeLabel": { defaultMessage: "المكلّف" },
   "@legalos.tasks.dialog.priorityLabel": { defaultMessage: "الأولوية" },
   "@legalos.tasks.priority.low": { defaultMessage: "منخفضة" },

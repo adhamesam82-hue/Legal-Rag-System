@@ -556,7 +556,7 @@ export const en: Catalog = {
 
 export const ar: Catalog = {
   // --- header and tabs ------------------------------------------------------
-  "@legalos.matterWorkspace.action.edit": { defaultMessage: "تعديل الملف" },
+  "@legalos.matterWorkspace.action.edit": { defaultMessage: "تعديل القضية" },
   "@legalos.matterWorkspace.action.duplicate": { defaultMessage: "نسخ" },
   "@legalos.matterWorkspace.action.share": { defaultMessage: "مشاركة" },
   "@legalos.matterWorkspace.action.more": { defaultMessage: "إجراءات أخرى" },
@@ -564,7 +564,7 @@ export const ar: Catalog = {
     defaultMessage: "{name} (نسخة)",
   },
 
-  "@legalos.matterWorkspace.tab.dashboard": { defaultMessage: "لوحة الملف" },
+  "@legalos.matterWorkspace.tab.dashboard": { defaultMessage: "لوحة القضية" },
   "@legalos.matterWorkspace.tab.customFields": { defaultMessage: "حقول مخصصة" },
   "@legalos.matterWorkspace.tab.activities": { defaultMessage: "الأنشطة" },
   "@legalos.matterWorkspace.tab.calendar": { defaultMessage: "التقويم" },
@@ -595,7 +595,7 @@ export const ar: Catalog = {
   },
   "@legalos.matterWorkspace.financial.overdue": { defaultMessage: "متأخر" },
   "@legalos.matterWorkspace.financial.clientFunds": {
-    defaultMessage: "أموال الموكّل (الملف)",
+    defaultMessage: "أموال الموكّل (القضية)",
   },
   "@legalos.matterWorkspace.financial.clientFunds.hint": {
     defaultMessage: "محفوظة لحساب الموكّل",
@@ -606,12 +606,12 @@ export const ar: Catalog = {
   "@legalos.matterWorkspace.financial.addTime": { defaultMessage: "إضافة وقت" },
   "@legalos.matterWorkspace.financial.addExpense": { defaultMessage: "إضافة مصروف" },
   "@legalos.matterWorkspace.financial.nothingToBill": {
-    defaultMessage: "لا يوجد ما يمكن فوترته على هذا الملف بعد.",
+    defaultMessage: "لا يوجد ما يمكن فوترته على هذه القضية بعد.",
   },
 
   // --- details --------------------------------------------------------------
   "@legalos.matterWorkspace.details.heading": { defaultMessage: "التفاصيل" },
-  "@legalos.matterWorkspace.details.matterNumber": { defaultMessage: "رقم الملف" },
+  "@legalos.matterWorkspace.details.matterNumber": { defaultMessage: "رقم القضية" },
   "@legalos.matterWorkspace.details.tags": { defaultMessage: "الوسوم" },
   "@legalos.matterWorkspace.details.noTags": { defaultMessage: "لا يوجد" },
   "@legalos.matterWorkspace.details.noDescription": {
@@ -633,10 +633,10 @@ export const ar: Catalog = {
   "@legalos.matterWorkspace.contacts.add": { defaultMessage: "إضافة جهة اتصال" },
   "@legalos.matterWorkspace.contacts.remove": { defaultMessage: "إزالة" },
   "@legalos.matterWorkspace.contacts.empty": {
-    defaultMessage: "لا توجد أطراف أخرى مسجَّلة على هذا الملف.",
+    defaultMessage: "لا توجد أطراف أخرى مسجَّلة على هذه القضية.",
   },
   "@legalos.matterWorkspace.contacts.form.heading": {
-    defaultMessage: "إضافة جهة اتصال إلى هذا الملف",
+    defaultMessage: "إضافة جهة اتصال إلى هذه القضية",
   },
   "@legalos.matterWorkspace.contacts.form.existing": {
     defaultMessage: "جهة اتصال مسجَّلة",
@@ -659,7 +659,7 @@ export const ar: Catalog = {
   "@legalos.matterWorkspace.conflicts.run": { defaultMessage: "تشغيل فحص التعارض" },
   "@legalos.matterWorkspace.conflicts.link": { defaultMessage: "ربط فحص" },
   "@legalos.matterWorkspace.conflicts.empty": {
-    defaultMessage: "لا توجد فحوص تعارض مرتبطة بهذا الملف.",
+    defaultMessage: "لا توجد فحوص تعارض مرتبطة بهذه القضية.",
   },
   "@legalos.matterWorkspace.conflicts.terms.label": {
     defaultMessage: "الأسماء المطلوب البحث عنها",
@@ -668,7 +668,7 @@ export const ar: Catalog = {
     defaultMessage: "اسم واحد في كل سطر",
   },
   "@legalos.matterWorkspace.conflicts.terms.hint": {
-    defaultMessage: "يبحث في موكّلين المكتب وأطراف الملفات والخصوم ومحاميهم.",
+    defaultMessage: "يبحث في موكّلين المكتب وأطراف القضايا والخصوم ومحاميهم.",
   },
   "@legalos.matterWorkspace.conflicts.result.clear": { defaultMessage: "لا تعارض" },
   "@legalos.matterWorkspace.conflicts.result.potential_conflict": {
@@ -687,11 +687,11 @@ export const ar: Catalog = {
   },
   "@legalos.matterWorkspace.conflicts.decide": { defaultMessage: "تسجيل القرار" },
   "@legalos.matterWorkspace.conflicts.decideHint": {
-    defaultMessage: "البحث يرصد تطابق الأسماء؛ وتقدير أثرها على قبول الملف قرارك أنت.",
+    defaultMessage: "البحث يرصد تطابق الأسماء؛ وتقدير أثرها على قبول القضية قرارك أنت.",
   },
   "@legalos.matterWorkspace.conflicts.hitKind.client": { defaultMessage: "موكّل قائم" },
   "@legalos.matterWorkspace.conflicts.hitKind.matter_party": {
-    defaultMessage: "طرف في ملف",
+    defaultMessage: "طرف في قضية",
   },
   "@legalos.matterWorkspace.conflicts.hitKind.opposing_party": {
     defaultMessage: "الطرف الخصم",
@@ -707,7 +707,7 @@ export const ar: Catalog = {
     defaultMessage: "لا توجد حقول مخصصة",
   },
   "@legalos.matterWorkspace.customFields.emptyDescription": {
-    defaultMessage: "عرِّف ما يتابعه المكتب مما لا تغطيه بيانات الملف القياسية.",
+    defaultMessage: "عرِّف ما يتابعه المكتب مما لا تغطيه بيانات القضية القياسية.",
   },
   "@legalos.matterWorkspace.customFields.define.heading": {
     defaultMessage: "تعريف حقل مخصص",
@@ -725,7 +725,7 @@ export const ar: Catalog = {
   "@legalos.matterWorkspace.customFields.define.required": { defaultMessage: "إلزامي" },
   "@legalos.matterWorkspace.customFields.define.appliesTo": { defaultMessage: "ينطبق على" },
   "@legalos.matterWorkspace.customFields.define.allTypes": {
-    defaultMessage: "كل أنواع الملفات",
+    defaultMessage: "كل أنواع القضايا",
   },
   "@legalos.matterWorkspace.customFields.type.text": { defaultMessage: "نص" },
   "@legalos.matterWorkspace.customFields.type.number": { defaultMessage: "رقم" },
@@ -745,7 +745,7 @@ export const ar: Catalog = {
   "@legalos.matterWorkspace.activities.filter.expenses": { defaultMessage: "المصروفات" },
   "@legalos.matterWorkspace.activities.emptyTitle": { defaultMessage: "لا توجد أنشطة مسجَّلة" },
   "@legalos.matterWorkspace.activities.emptyDescription": {
-    defaultMessage: "سجِّل هنا الوقت والمصروفات مع سير العمل على الملف.",
+    defaultMessage: "سجِّل هنا الوقت والمصروفات مع سير العمل على القضية.",
   },
   "@legalos.matterWorkspace.activities.billed": { defaultMessage: "مفوتَر" },
   "@legalos.matterWorkspace.activities.nonBillable": {
@@ -779,7 +779,7 @@ export const ar: Catalog = {
   "@legalos.matterWorkspace.calendar.past": { defaultMessage: "السابق" },
   "@legalos.matterWorkspace.calendar.emptyTitle": { defaultMessage: "لا يوجد شيء مجدول" },
   "@legalos.matterWorkspace.calendar.emptyDescription": {
-    defaultMessage: "تظهر هنا جلسات هذا الملف ومواعيده النهائية وتواريخ استحقاق مهامه.",
+    defaultMessage: "تظهر هنا جلسات هذه القضية ومواعيدها النهائية وتواريخ استحقاق مهامها.",
   },
   "@legalos.matterWorkspace.calendar.kind.hearing": { defaultMessage: "جلسة" },
   "@legalos.matterWorkspace.calendar.kind.deadline": { defaultMessage: "موعد نهائي" },
@@ -801,7 +801,7 @@ export const ar: Catalog = {
   },
   "@legalos.matterWorkspace.comms.logs.emptyDescription": {
     defaultMessage:
-      "سجِّل المكالمات والرسائل والاجتماعات على هذا الملف ليبقى ما أُبلغ به الموكّل موثَّقًا.",
+      "سجِّل المكالمات والرسائل والاجتماعات على هذه القضية ليبقى ما أُبلغ به الموكّل موثَّقًا.",
   },
   "@legalos.matterWorkspace.comms.logs.search": { defaultMessage: "بحث في الموضوع أو النص" },
   "@legalos.matterWorkspace.comms.logs.duration": {
@@ -852,7 +852,7 @@ export const ar: Catalog = {
     defaultMessage: "لم يُمنح وصول للبوابة",
   },
   "@legalos.matterWorkspace.comms.portals.emptyDescription": {
-    defaultMessage: "امنح جهة اتصال محدَّدة لدى الموكّل وصولًا لمستندات هذا الملف وفواتيره ورسائله.",
+    defaultMessage: "امنح جهة اتصال محدَّدة لدى الموكّل وصولًا لمستندات هذه القضية وفواتيرها ورسائلها.",
   },
   "@legalos.matterWorkspace.comms.portals.status.invited": { defaultMessage: "مدعو" },
   "@legalos.matterWorkspace.comms.portals.status.active": { defaultMessage: "نشط" },
@@ -959,5 +959,5 @@ export const ar: Catalog = {
     defaultMessage: "تعذّر تشغيل فحص التعارض.",
   },
   "@legalos.matterWorkspace.errors.bill": { defaultMessage: "تعذّر إنشاء هذه الفاتورة." },
-  "@legalos.matterWorkspace.errors.duplicate": { defaultMessage: "تعذّر نسخ هذا الملف." },
+  "@legalos.matterWorkspace.errors.duplicate": { defaultMessage: "تعذّر نسخ هذه القضية." },
 };

@@ -124,14 +124,14 @@ export const ar: Catalog = {
   "@legalos.clients.table.client": { defaultMessage: "الموكّل" },
   "@legalos.clients.table.type": { defaultMessage: "النوع" },
   "@legalos.clients.table.primaryContact": { defaultMessage: "جهة الاتصال الرئيسية" },
-  "@legalos.clients.table.activeMatters": { defaultMessage: "الملفات النشطة" },
+  "@legalos.clients.table.activeMatters": { defaultMessage: "القضايا النشطة" },
   "@legalos.clients.table.noneActive": { defaultMessage: "لا يوجد" },
   "@legalos.clients.table.lastActivity": { defaultMessage: "آخر نشاط" },
   "@legalos.clients.table.status": { defaultMessage: "الحالة" },
 
   "@legalos.clients.empty.noneTitle": { defaultMessage: "لا يوجد موكّلين بعد" },
   "@legalos.clients.empty.noneDescription": {
-    defaultMessage: "أضف أول موكّل لتبدأ في فتح الملفات باسمه.",
+    defaultMessage: "أضف أول موكّل لتبدأ في فتح القضايا باسمه.",
   },
   "@legalos.clients.empty.noMatchTitle": {
     defaultMessage: "لا يوجد موكّلين مطابقون لعوامل التصفية",
@@ -161,14 +161,14 @@ export const ar: Catalog = {
   "@legalos.clients.detail.clientSince": {
     defaultMessage: " · موكّل منذ {date}",
   },
-  "@legalos.clients.detail.stat.activeMatters": { defaultMessage: "الملفات النشطة" },
-  "@legalos.clients.detail.stat.totalMatters": { defaultMessage: "إجمالي الملفات" },
+  "@legalos.clients.detail.stat.activeMatters": { defaultMessage: "القضايا النشطة" },
+  "@legalos.clients.detail.stat.totalMatters": { defaultMessage: "إجمالي القضايا" },
   "@legalos.clients.detail.stat.outstanding": { defaultMessage: "المستحقات" },
 
-  "@legalos.clients.detail.matters.heading": { defaultMessage: "الملفات" },
-  "@legalos.clients.detail.matters.emptyTitle": { defaultMessage: "لا توجد ملفات بعد" },
+  "@legalos.clients.detail.matters.heading": { defaultMessage: "القضايا" },
+  "@legalos.clients.detail.matters.emptyTitle": { defaultMessage: "لا توجد قضايا بعد" },
   "@legalos.clients.detail.matters.emptyDescription": {
-    defaultMessage: "افتح ملفاً باسم هذا الموكّل لبدء العمل.",
+    defaultMessage: "افتح قضيةً باسم هذا الموكّل لبدء العمل.",
   },
   "@legalos.clients.detail.invoices.heading": { defaultMessage: "الفواتير" },
   "@legalos.clients.detail.invoices.billingLink": { defaultMessage: "الفوترة" },
