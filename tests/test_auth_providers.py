@@ -138,6 +138,21 @@ class TestSubjectNamespacing:
         assert response.status_code == 200
 
 
+@pytest.fixture(autouse=True)
+def _clerk_configured(monkeypatch):
+    """Give the Clerk guard the one value it needs to be constructible.
+
+    Without CLERK_JWKS_URL the guard raises at construction, so a request with
+    no credentials comes back 500 instead of 401 and these boundary tests fail
+    for a reason that has nothing to do with the boundary. Nothing is fetched:
+    a request carrying no Authorization header is rejected before any key
+    lookup, which is exactly the path being asserted.
+    """
+    monkeypatch.setenv(
+        "CLERK_JWKS_URL", "https://clerk.test.invalid/.well-known/jwks.json"
+    )
+
+
 class TestProviderBoundary:
     """A consumer account must not reach firm data.
 

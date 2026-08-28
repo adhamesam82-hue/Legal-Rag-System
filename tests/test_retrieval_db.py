@@ -1,6 +1,14 @@
 """Retrieval tests that need the corpus but no network.
 
-Skipped when the database is unreachable, so the unit suite still runs anywhere.
+Skipped when the database is unreachable OR when it holds no statutes, so the
+rest of the suite still runs anywhere -- on a fresh clone, in CI, and on a
+machine whose Docker volume never had the corpus loaded into it.
+
+The second condition is not the same as the first and used to be missing: a
+database that is up but empty made every one of these fail on `assert []`,
+which reads as a broken retriever rather than an absent corpus. These measure
+ranking over ingested law; with no law ingested they are inapplicable, not
+failing.
 """
 from __future__ import annotations
 
@@ -23,6 +31,17 @@ def conn():
         connection = get_connection()
     except Exception as exc:  # noqa: BLE001 - any connection failure means skip
         pytest.skip(f"database unavailable: {exc}")
+
+    with connection.cursor() as cur:
+        cur.execute("SELECT count(*) FROM articles")
+        articles = cur.fetchone()[0]
+    if articles == 0:
+        connection.close()
+        pytest.skip(
+            "corpus not loaded: these measure ranking over ingested statutes. "
+            "See docs/deployment.md for restoring it from a dump."
+        )
+
     yield connection
     connection.close()
 

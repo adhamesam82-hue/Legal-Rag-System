@@ -1,0 +1,98 @@
+name: tests
+
+# The suite had 454 tests and nothing ran them. build.yml builds images and
+# deploy.yml ships them; neither executes a single assertion, so a change that
+# broke tenant isolation would have reached the box and told nobody.
+#
+# Runs on every push and every pull request, against a real Postgres with
+# pgvector -- the same image docker-compose uses locally. Most of what these
+# tests protect (matter scoping, invoice arithmetic, the citation gate) is only
+# meaningful against a database, so a mocked one would pass while the product
+# leaked.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+concurrency:
+  # A second push to the same branch makes the first run irrelevant.
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: legalrag
+          POSTGRES_PASSWORD: legalrag
+          POSTGRES_DB: legalrag
+        ports:
+          - 5432:5432
+        # Without this the first migration races the server's own startup and
+        # fails on a connection that was never going to be ready yet.
+        options: >-
+          --health-cmd "pg_isready -U legalrag -d legalrag"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://legalrag:legalrag@localhost:5432/legalrag
+      # The Clerk guard needs a URL to be constructible. Nothing is fetched:
+      # every test either presents no credentials, or fakes the dependency.
+      CLERK_JWKS_URL: https://clerk.test.invalid/.well-known/jwks.json
+      # Must stay unset. It disables JWT verification entirely, and a suite
+      # running with it on would assert nothing about authentication.
+      LEGALOS_DEV_AUTH: ""
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        # Not --no-default-groups: the suite needs the dev group, unlike the
+        # deployed image.
+        run: uv sync --frozen
+
+      - name: Apply migrations
+        run: uv run python scripts/migrate.py
+
+      - name: Run the suite
+        # evals/ is excluded: it measures retrieval quality against an ingested
+        # corpus, which CI has no copy of. Those are a judgement about the
+        # product, not a gate on a commit.
+        run: uv run pytest tests/ -q
+
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: npm ci
+
+      # There are no web tests yet -- the roadmap says so plainly. Until there
+      # are, the type checker is the only thing standing between a rename and a
+      # screen that crashes on open, so it is a gate rather than a suggestion.
+      - name: Type-check the frontend
+        run: npx tsc --noEmit
