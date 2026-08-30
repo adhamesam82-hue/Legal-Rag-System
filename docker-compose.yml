@@ -6,7 +6,11 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-legalrag}
       POSTGRES_DB: ${POSTGRES_DB:-legalrag}
     ports:
-      - "5432:5432"
+      # Overridable because a machine with its own Postgres already has 5432
+      # taken, and the collision is silent: the container starts, the client
+      # connects to the wrong server, and the failure looks like a missing
+      # table. Set POSTGRES_PORT alongside DATABASE_URL when that happens.
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
