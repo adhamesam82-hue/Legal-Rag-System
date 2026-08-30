@@ -56,6 +56,7 @@ from legalrag.invites import (
     create_invitation,
     get_invitation_by_token,
 )
+from legalrag import currency
 from legalrag.library import (
     article_neighbours,
     corpus_stats,
@@ -376,6 +377,11 @@ class ArticleDetail(BaseModel):
     instrument: InstrumentOut | None
     previous_id: int | None
     next_id: int | None
+    # When this text was fetched, and whether a later law replaced the one it
+    # belongs to. Not optional: the whole point is that a reader cannot be
+    # allowed to mistake a superseded article for a current one, and a field
+    # present only on the bad cases is one a client forgets to render.
+    currency: dict
 
 
 class ExplainRequest(BaseModel):
@@ -638,7 +644,13 @@ def get_instrument_detail(
         if instrument is None:
             raise HTTPException(status_code=404, detail="Instrument not found")
         articles = list_articles(conn, instrument_id, offset=offset, limit=limit)
+        # How old this text is, and whether a later law replaced it. Always
+        # present, never conditional -- a field that appears only when there
+        # is a problem is one the frontend forgets to render, and this one
+        # must be impossible to forget. See legalrag.currency.
+        how_current = currency.as_dict(currency.for_instrument(conn, instrument_id))
     return {
+        "currency": how_current,
         "instrument": InstrumentOut(
             **{**vars(instrument), "reference": instrument.reference}
         ),
@@ -661,6 +673,7 @@ def get_article_detail(article_id: int):
             )
             instrument_id = cur.fetchone()[0]
         instrument = get_instrument(conn, instrument_id)
+        how_current = currency.as_dict(currency.for_article(conn, article_id))
 
     out = ArticleOut.of(article)
     out.instrument_id = instrument_id
@@ -673,6 +686,7 @@ def get_article_detail(article_id: int):
         else None,
         previous_id=neighbours["previous"],
         next_id=neighbours["next"],
+        currency=how_current,
     )
 
 
