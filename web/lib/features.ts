@@ -56,19 +56,24 @@ const SHIPPED: ReadonlySet<Feature> = new Set<Feature>([]);
  * route — that is server-side work, and it is done (see legalrag.ratelimit and
  * the auth dependencies added in batch 0). Do not assume the nav is a control.
  *
- * `library` is the statute corpus browser, and it is off by a *safety* default
- * rather than by instruction, pending a decision. The corpus is a snapshot
- * taken 29 July 2026 with no amendment tracking: `is_repealed` is read in
- * twelve places and written in none. It currently holds both Labour Law
- * 12/2003 and the Labour Law 14/2025 that replaced it, with no relationship
- * recorded and both marked live. A lawyer browsing to the superseded one sees
- * nothing to tell them so.
+ * `library` is the statute corpus browser, and it was off by a *safety*
+ * default rather than by instruction: the corpus is a snapshot with no
+ * amendment tracking, and it holds Labour Law 12/2003 next to the 14/2025
+ * that replaced it, unrelated and both live. A lawyer browsing to the
+ * superseded one saw nothing to tell them so -- a risk identical whether an
+ * LLM reads the article or a person does, which is why hiding the AI screens
+ * alone would have kept the hazard and lost only the wrapper.
  *
- * That risk is the same whether an LLM reads the article or a person does, so
- * hiding the AI screens while leaving the library visible would keep the
- * hazard and lose only the wrapper. Turn it back on with
- * NEXT_PUBLIC_LEGALOS_FEATURES=library once the corpus either tracks
- * supersession or says its own age on screen.
+ * That condition is now met. Migration 0015 records supersession between
+ * instruments, and every article and instrument response carries a `currency`
+ * field: when the law was fetched, and whether a later one replaced it. The
+ * text says how old it is instead of implying it is current.
+ *
+ * So the flag is a PRODUCT decision now rather than a safety one. Turn the
+ * browser on with NEXT_PUBLIC_LEGALOS_FEATURES=library once the screens render
+ * that warning -- the API supplies it; a page that fetches `currency` and
+ * ignores it would be worse than one that never had it, because the caveat
+ * would look handled.
  */
 
 function parseEnabled(raw: string | undefined): ReadonlySet<Feature> | "all" {
