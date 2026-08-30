@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from legalrag.practice_routes._shared import *  # noqa: F401,F403
 from legalrag.practice_routes._shared import router
+from legalrag.practice import agenda as agenda_layer
 
 
 # --- activity and dashboard -------------------------------------------------
@@ -46,3 +47,130 @@ def get_me(
         "display_name": membership.display_name,
         "title": membership.title,
     }
+
+
+# --- one lawyer's day -------------------------------------------------------
+#
+# Distinct from /dashboard, which answers "how is the firm doing". This answers
+# "what is mine and what is now", which is the only question worth asking on a
+# phone in a corridor. It is the screen the mobile app opens to.
+
+
+@router.get("/my-day")
+def get_my_day(
+    organization_id: int,
+    horizon_days: int = Query(default=7, ge=1, le=90),
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    """Hearings, procedural dates and tasks belonging to the caller.
+
+    Overdue items are returned in full and separately: a deadline missed last
+    week is the most important thing on the screen, and a horizon that starts
+    today would drop it.
+
+    Matter scoping applies here like everywhere else -- an agenda would be a
+    silly place to reopen the hole T-019 closed.
+    """
+    return agenda_layer.my_day(
+        conn, organization_id, membership, horizon_days=horizon_days
+    )
+
+
+# --- push devices -----------------------------------------------------------
+#
+# The reminder sweep already decides who to tell and when; this is the second
+# channel's address book. It exists before the app does because it is the part
+# the app cannot build for itself.
+
+
+class DeviceTokenIn(BaseModel):
+    token: str = Field(min_length=8, max_length=512)
+    platform: Literal["ios", "android", "web"]
+    device_label: str = Field(default="", max_length=120)
+
+
+@router.put("/devices")
+def put_device_token(
+    organization_id: int,
+    body: DeviceTokenIn,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    """Registers this device for push, or re-registers it.
+
+    Idempotent by token, and re-registration REASSIGNS rather than duplicates:
+    the same handset can change hands inside a firm, and a stale owner would
+    put one lawyer's hearing on another's lock screen.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO device_tokens (organization_id, subject, token, platform, "
+            "device_label) VALUES (%s, %s, %s, %s, %s) "
+            "ON CONFLICT (token) DO UPDATE SET "
+            "  organization_id = EXCLUDED.organization_id, "
+            "  subject = EXCLUDED.subject, "
+            "  platform = EXCLUDED.platform, "
+            "  device_label = EXCLUDED.device_label, "
+            "  last_seen_at = now() "
+            "RETURNING id, platform, device_label, last_seen_at",
+            (
+                organization_id, membership.clerk_user_id, body.token,
+                body.platform, body.device_label,
+            ),
+        )
+        row = cur.fetchone()
+    conn.commit()
+    return {
+        "id": row[0],
+        "platform": row[1],
+        "device_label": row[2],
+        "last_seen_at": row[3],
+    }
+
+
+@router.get("/devices")
+def get_device_tokens(
+    organization_id: int,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    """The caller's own devices. Never anyone else's.
+
+    The token itself is not returned -- it is a push credential, and a "your
+    devices" list has no use for it.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT id, platform, device_label, registered_at, last_seen_at "
+            "  FROM device_tokens WHERE organization_id = %s AND subject = %s "
+            " ORDER BY last_seen_at DESC",
+            (organization_id, membership.clerk_user_id),
+        )
+        return [
+            {
+                "id": r[0], "platform": r[1], "device_label": r[2],
+                "registered_at": r[3], "last_seen_at": r[4],
+            }
+            for r in cur.fetchall()
+        ]
+
+
+@router.delete("/devices/{device_id}", status_code=204)
+def delete_device_token(
+    organization_id: int,
+    device_id: int,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    """Signing out a device. Scoped to the caller's own, by subject."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "DELETE FROM device_tokens "
+            " WHERE organization_id = %s AND subject = %s AND id = %s",
+            (organization_id, membership.clerk_user_id, device_id),
+        )
+        if cur.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Device not found")
+    conn.commit()
+    return Response(status_code=204)
