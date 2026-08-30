@@ -24,7 +24,7 @@ STATUSES = ("draft", "under_review", "signed", "filed", "final")
 _COLUMNS = """
     d.id, d.organization_id, d.matter_id, m.name AS matter_name, d.name,
     d.doc_type, d.status, d.size_bytes, d.content_type, d.storage_key,
-    d.uploaded_by, d.uploaded_at
+    d.uploaded_by, d.uploaded_at, d.visible_to_client
 """
 
 
@@ -42,6 +42,10 @@ class Document:
     storage_key: str | None
     uploaded_by: str
     uploaded_at: datetime
+    # Whether the client on this matter may see it through their portal.
+    # Read here as well as written by the portal route, because a firm that
+    # cannot see which documents it has shared cannot tell that it shared one.
+    visible_to_client: bool = False
 
     @property
     def has_file(self) -> bool:

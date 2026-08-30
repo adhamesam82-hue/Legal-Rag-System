@@ -141,6 +141,21 @@ def invite(
     return portal
 
 
+def revoke(
+    conn: psycopg.Connection, organization_id: int, portal_id: int
+) -> ClientPortal:
+    """Shuts a client out. The firm's primary control over portal access.
+
+    A thin name over `update_portal(status="revoked")` rather than its own
+    UPDATE: the rule that revoking destroys the secret has to hold for the
+    firm's PATCH too, so it lives in one place and this is the door onto it.
+
+    Re-inviting the same contact reopens the grant (see invite), which is the
+    intended way back.
+    """
+    return update_portal(conn, organization_id, portal_id, status="revoked")
+
+
 _PORTAL_UPDATABLE = {"can_view_documents", "can_view_bills", "can_message"}
 
 
@@ -167,6 +182,14 @@ def update_portal(
         expressions.append(
             "revoked_at = now()" if status == "revoked" else "revoked_at = NULL"
         )
+        if status == "revoked":
+            # Revoking destroys the secret, it does not merely mark the row: a
+            # grant whose link still resolves is not revoked. Here rather than
+            # only in revoke() because this is the path the firm's UI takes,
+            # and a hash left behind is a link that re-activating would
+            # silently reopen weeks later.
+            expressions.append("access_token_hash = NULL")
+            expressions.append("token_expires_at = NULL")
         if status == "active":
             expressions.append("activated_at = coalesce(activated_at, now())")
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from legalrag.practice_routes._shared import *  # noqa: F401,F403
 from legalrag.practice_routes._shared import router
+from legalrag.practice import client_access
 
 
 # --- client portal and secure messages --------------------------------------
@@ -129,3 +130,89 @@ def post_thread_read(
 ):
     portals.mark_thread_read(conn, organization_id, thread_id)
     return Response(status_code=204)
+
+
+@router.post("/portals/{portal_id}/link", status_code=201)
+def post_portal_link(
+    organization_id: int,
+    portal_id: int,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    """Issues the link the client signs in with. Returns it ONCE.
+
+    Only the hash is stored, so this response is the only time the secret
+    exists in readable form -- mail it now or issue another. Re-issuing
+    invalidates the previous link, which is how "the client forwarded the
+    email to their brother-in-law" gets undone.
+    """
+    try:
+        token = client_access.issue_token(conn, organization_id, portal_id)
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Portal not found")
+    return {
+        "token": token,
+        "expires_in_days": client_access.TOKEN_LIFETIME.days,
+        "note": "Shown once. Only a hash is stored.",
+    }
+
+
+class DocumentVisibilityIn(BaseModel):
+    visible_to_client: bool
+
+
+@router.put("/documents/{document_id}/client-visibility")
+def put_document_client_visibility(
+    organization_id: int,
+    document_id: int,
+    body: DocumentVisibilityIn,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    """Whether the client may see this one document.
+
+    Per document, because can_view_documents on the grant is all-or-nothing
+    and no firm can use that: the client should see the filed pleading and not
+    the internal note weighing their chances. Defaults to hidden, so a
+    document becomes visible because somebody decided it should.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            "UPDATE documents SET visible_to_client = %s "
+            "WHERE organization_id = %s AND id = %s",
+            (body.visible_to_client, organization_id, document_id),
+        )
+        if cur.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Document not found")
+    # One commit for both: the entry has to land with the change it describes,
+    # or the firm's log shows a sharing that may not have happened.
+    activity.record(
+        conn,
+        organization_id,
+        actor=membership.clerk_user_id,
+        action=(
+            "shared a document with the client"
+            if body.visible_to_client
+            else "hid a document from the client"
+        ),
+    )
+    conn.commit()
+    return {"document_id": document_id, "visible_to_client": body.visible_to_client}
+
+
+@router.delete("/portals/{portal_id}/link", status_code=200)
+def delete_portal_link(
+    organization_id: int,
+    portal_id: int,
+    membership: Membership = Depends(get_current_membership),
+    conn=Depends(db),
+):
+    """Revokes the client's access, immediately.
+
+    The grant row survives so the firm can see it existed and reopen it by
+    re-inviting; the secret does not.
+    """
+    try:
+        return portals.revoke(conn, organization_id, portal_id)
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Portal not found")

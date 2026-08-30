@@ -77,6 +77,7 @@ from legalrag.orgs import (
 )
 from legalrag.pipeline import ask, ask_stream, retrieve_for
 from legalrag.ratelimit import RateLimitMiddleware
+from legalrag.portal_api import router as portal_router
 from legalrag.practice_api import router as practice_router
 from legalrag.retrieve import Candidate
 
@@ -156,6 +157,10 @@ app.add_middleware(GZipMiddleware, minimum_size=1024)
 # billing) lives in its own module; the corpus and answering routes below are
 # a separate concern that happens to share an app.
 app.include_router(practice_router)
+# The client-facing surface. Mounted separately and depending on none of the
+# firm dependencies -- a client is not a member, and the guarantee that they
+# cannot reach firm data is that these routes have no path that could.
+app.include_router(portal_router)
 
 if get_dev_auth_user():
     # Loud on purpose: this disables JWT verification for every route.
