@@ -158,6 +158,79 @@ colliding rather than about ceremony.
   for merging. Merge fast-forward.
 - The tests must be green. They run on every push and every PR.
 
+**The branch model, concretely**
+
+One long-lived branch: `main`. There is deliberately no `develop` and no
+`staging` branch. Staging is an **environment**, not a branch — it runs whatever
+image was built from `main`. A second long-lived branch would mean the two
+diverge, that "what is on staging" is a branch state rather than a specific
+artefact, and that promoting to production rebuilds the code instead of moving
+the tested image.
+
+Everything else is short-lived and named after the ticket it closes:
+
+```
+feature/T-023-pending-invites     a new capability
+fix/T-031-invite-email            a defect
+chore/rotate-clerk-keys           maintenance, no ticket
+```
+
+Short means **one to three days**. A branch that lives a week has stopped being
+a change and become a fork; `fix/qa-sweep-2026-08-31` is currently five commits
+and two days old, which is the outer edge.
+
+The full lifecycle of one change:
+
+```sh
+git switch main && git pull                      # always start from main
+git switch -c feature/T-023-pending-invites
+# ... work, commit ...
+git push -u origin feature/T-023-pending-invites
+gh pr create --draft                             # draft while it is for discussion
+# ... review, more commits, tests green ...
+git pull --rebase origin main                    # replay onto current main
+gh pr ready && gh pr merge --rebase              # fast-forward; no merge commits
+```
+
+Merging to `main` is what triggers everything else:
+
+```
+merge to main
+   │
+   ├─► build.yml     tests, then images tagged with the merge commit SHA
+   │
+   ├─► staging       deployed automatically. Both of us look at it here.
+   │
+   └─► production    promoted BY HAND, with that same SHA, when we agree
+```
+
+After a promotion, tag the commit so git itself records what production is
+running — `.current_tag` on the box says the same thing, but only to whoever can
+SSH in:
+
+```sh
+git tag -a prod-2026-09-01 -m "promoted after staging soak" <sha>
+git push origin prod-2026-09-01
+```
+
+Rolling back is promoting the previous tag. Nothing is reverted in git for an
+operational rollback; the fix comes as a normal branch afterwards.
+
+A hotfix takes the same path — branch, PR, tests, merge, staging, promote — just
+faster. It does not skip staging: the ten minutes staging costs are the ten
+minutes that catch a hotfix which breaks something else.
+
+**Two collisions to watch for, both specific to this repository**
+
+1. **Migration numbers.** `migrations/` is numbered sequentially, and two
+   branches that each add `0021_*.sql` will merge cleanly and then fail on the
+   box, because the numbers are the ordering. Announce the number you are taking
+   when you open the PR, and renumber during the rebase if someone got there
+   first. The gap at `0019` in the current tree is what this looks like after
+   the fact.
+2. **Ticket state files.** `.claude/` and `tickets/` are edited by the ticket
+   tooling on both machines and conflict noisily. Rebase before touching them.
+
 **Staging belongs to `main`, not to a person**
 
 This is the rule that keeps two people out of each other's way: staging always
