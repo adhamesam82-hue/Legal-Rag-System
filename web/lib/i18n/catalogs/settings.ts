@@ -103,6 +103,18 @@ export const en: Catalog = {
     defaultMessage: "New members can only be invited as Lawyer or Staff.",
   },
   "@legalos.settings.invite.send": { defaultMessage: "Send invite" },
+  // Shown when the invitation was created but no mail went out -- an
+  // unconfigured mail provider, or a send that failed. The invitation is
+  // valid either way, so the owner is given the link rather than an error.
+  "@legalos.settings.invite.notEmailedTitle": {
+    defaultMessage: "Invitation created, but no email was sent",
+  },
+  "@legalos.settings.invite.notEmailedBody": {
+    defaultMessage: "Send this link to {email} yourself. It expires in 7 days.",
+  },
+  "@legalos.settings.invite.copyLink": { defaultMessage: "Copy link" },
+  "@legalos.settings.invite.copied": { defaultMessage: "Copied" },
+  "@legalos.settings.invite.done": { defaultMessage: "Done" },
 
   "@legalos.settings.profile.backToSettings": { defaultMessage: "Settings" },
   "@legalos.settings.profile.heading": { defaultMessage: "Your profile" },
@@ -272,9 +284,18 @@ export const ar: Catalog = {
   "@legalos.settings.invite.emailLabel": { defaultMessage: "البريد الإلكتروني" },
   "@legalos.settings.invite.roleLabel": { defaultMessage: "الصلاحية" },
   "@legalos.settings.invite.roleHint": {
-    defaultMessage: "لا يمكن دعوة الأعضاء الجدد إلا بصلاحية محامٍ أو موظف.",
+    defaultMessage: "لا يمكن دعوة الأعضاء الجدد إلا بصلاحية محامٍ أو سكرتير.",
   },
   "@legalos.settings.invite.send": { defaultMessage: "إرسال الدعوة" },
+  "@legalos.settings.invite.notEmailedTitle": {
+    defaultMessage: "أُنشئت الدعوة، لكن لم يُرسَل بريد",
+  },
+  "@legalos.settings.invite.notEmailedBody": {
+    defaultMessage: "أرسل هذا الرابط إلى {email} بنفسك. تنتهي صلاحيته بعد 7 أيام.",
+  },
+  "@legalos.settings.invite.copyLink": { defaultMessage: "نسخ الرابط" },
+  "@legalos.settings.invite.copied": { defaultMessage: "تم النسخ" },
+  "@legalos.settings.invite.done": { defaultMessage: "تم" },
 
   "@legalos.settings.profile.backToSettings": { defaultMessage: "الإعدادات" },
   "@legalos.settings.profile.heading": { defaultMessage: "ملفك الشخصي" },

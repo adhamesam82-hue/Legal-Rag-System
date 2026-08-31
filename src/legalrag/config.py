@@ -114,6 +114,32 @@ def get_resend_api_key() -> str:
     return key
 
 
+def email_is_configured() -> bool:
+    """Whether outbound email can be sent at all.
+
+    Asked BEFORE attempting a send, so a caller can degrade deliberately
+    instead of catching an exception it cannot tell apart from a network
+    failure. A firm running without a Resend key is a supported state -- most
+    self-hosted installs start that way -- and inviting a colleague must still
+    work there, by handing the owner a link to pass on themselves.
+    """
+    return bool(os.environ.get("RESEND_API_KEY"))
+
+
+def get_app_base_url() -> str:
+    """Where the web app is reachable, for links inside outbound email.
+
+    Defaults to the local dev origin rather than raising: an invitation whose
+    link points at localhost is obviously wrong to whoever reads it and is
+    fixed by setting one variable, whereas refusing to create the invitation
+    breaks the flow entirely for anyone running this on their own machine.
+
+    Trailing slashes are stripped so callers can join with a leading-slash
+    path without producing a double slash.
+    """
+    return os.environ.get("APP_BASE_URL", "http://localhost:3000").rstrip("/")
+
+
 LOCAL_CORS_ORIGINS = ("http://localhost:3000", "http://127.0.0.1:3000")
 
 

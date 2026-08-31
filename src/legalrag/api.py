@@ -13,6 +13,8 @@ from __future__ import annotations
 import json
 import logging
 import os
+
+import httpx
 from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -33,7 +35,12 @@ from legalrag.clerk import (
     get_user_primary_email,
     require_owner,
 )
-from legalrag.config import get_cors_origins, get_dev_auth_user
+from legalrag.config import (
+    email_is_configured,
+    get_app_base_url,
+    get_cors_origins,
+    get_dev_auth_user,
+)
 from legalrag.conversations import (
     Conversation,
     Message,
@@ -48,12 +55,13 @@ from legalrag.conversations import (
     title_from_question,
 )
 from legalrag.db import close_pool, get_pool, request_connection
-from legalrag.email import send_invite_email
+from legalrag.email import EmailError, send_invite_email
 from legalrag.explain import explain_article
 from legalrag.invites import (
     InvitationError,
     accept_invitation,
     create_invitation,
+    effective_status,
     get_invitation_by_token,
 )
 from legalrag import currency
@@ -434,6 +442,12 @@ class InvitationOut(BaseModel):
     email: str
     role: str
     organization_name: str
+    # Returned so the caller can always fall back to passing the link on by
+    # hand -- and so it can say WHICH happened. An invitation that reports
+    # success while no mail was sent is the failure worth avoiding here: the
+    # owner waits for a colleague who was never told.
+    accept_url: str
+    email_sent: bool
 
 
 class InvitationPreview(BaseModel):
@@ -835,15 +849,39 @@ def post_create_invite(
         invite = create_invitation(
             conn, organization_id, request.email, request.role, owner.clerk_user_id
         )
-    accept_url = f"https://app.legalrag.example/invite/{invite.token}"
-    send_invite_email(
-        to_email=invite.email, organization_name=org_name, accept_url=accept_url
-    )
+    accept_url = f"{get_app_base_url()}/invite/{invite.token}"
+
+    # The invitation is already committed above, and it is the durable half of
+    # this operation: the token works whether or not a mail goes out. So a mail
+    # failure must not 500 the request, which would tell the owner nothing was
+    # created while a usable invitation sits in the table.
+    #
+    # Not a blanket except: an unconfigured mailer is a known, supported state
+    # and is asked about first, while a send that fails for any other reason is
+    # reported as itself rather than being flattened into "no email configured".
+    email_sent = False
+    if email_is_configured():
+        try:
+            send_invite_email(
+                to_email=invite.email,
+                organization_name=org_name,
+                accept_url=accept_url,
+            )
+            email_sent = True
+        except (EmailError, httpx.HTTPError) as exc:
+            logging.getLogger("uvicorn.error").warning(
+                "invitation %s created but its email failed to send: %s",
+                invite.token[:8],
+                exc,
+            )
+
     return InvitationOut(
         token=invite.token,
         email=invite.email,
         role=invite.role,
         organization_name=org_name,
+        accept_url=accept_url,
+        email_sent=email_sent,
     )
 
 
@@ -860,7 +898,11 @@ def get_invite_preview(token: str):
             )
             org_name = cur.fetchone()[0]
     return InvitationPreview(
-        organization_name=org_name, role=invitation.role, status=invitation.status
+        organization_name=org_name,
+        role=invitation.role,
+        # Not invitation.status: that column lags expiry until somebody tries
+        # to accept, so reading it raw offers an Accept button on a dead link.
+        status=effective_status(invitation),
     )
 
 

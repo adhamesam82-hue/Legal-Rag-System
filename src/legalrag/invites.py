@@ -89,6 +89,31 @@ def get_invitation_by_token(
         )
 
 
+def effective_status(invitation: Invitation) -> str:
+    """The status a reader should be shown, expiry included.
+
+    The `status` column is only advanced when somebody tries to ACCEPT an
+    invitation -- nothing sweeps the table -- so a pending row whose window has
+    closed still reads 'pending' long after it stopped being usable. A preview
+    that repeats the column verbatim therefore offers an Accept button on a
+    dead invitation, and the recipient only learns otherwise by pressing it.
+
+    Terminal states are returned untouched, matching accept_invitation's own
+    ordering: 'accepted' and 'revoked' are permanent, and must not be
+    reclassified as 'expired' merely because time has since passed.
+
+    Deliberately pure. The obvious alternative -- writing 'expired' back here
+    -- would make a GET mutate the row, which is both a surprise on a public
+    unauthenticated endpoint and a way for anyone holding an old token to
+    write to the table.
+    """
+    if invitation.status != "pending":
+        return invitation.status
+    if invitation.expires_at < datetime.now(timezone.utc):
+        return "expired"
+    return invitation.status
+
+
 def accept_invitation(
     conn: psycopg.Connection,
     token: str,

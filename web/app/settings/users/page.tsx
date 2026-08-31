@@ -22,6 +22,7 @@ import { Heading, Text } from "@astryxdesign/core/Text";
 import { Card } from "@astryxdesign/core/Card";
 import { Button } from "@astryxdesign/core/Button";
 import { Badge } from "@astryxdesign/core/Badge";
+import { Banner } from "@astryxdesign/core/Banner";
 import { Avatar } from "@astryxdesign/core/Avatar";
 import { List, ListItem } from "@astryxdesign/core/List";
 import { TextInput } from "@astryxdesign/core/TextInput";
@@ -60,16 +61,32 @@ function InviteMemberDialog({
   const [role, setRole] = useState<"lawyer" | "staff">("lawyer");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Set when the invitation was created but no mail went out. The dialog then
+  // stays open showing the link, because closing it would lose the only copy
+  // of the one thing the owner now has to deliver by hand.
+  const [manualLink, setManualLink] = useState<{ url: string; email: string } | null>(
+    null,
+  );
+  const [copied, setCopied] = useState(false);
 
   async function send() {
     if (organizationId === null || !email.trim()) return;
     setSending(true);
     setError(null);
     try {
-      await api.createInvite(organizationId, email.trim(), role);
+      const recipient = email.trim();
+      const invitation = await api.createInvite(organizationId, recipient, role);
       setEmail("");
       onInvited();
-      onOpenChange(false);
+      // Only a sent invitation closes the dialog on its own. When the mail
+      // did not go, saying nothing would leave the owner waiting on a
+      // colleague who was never told.
+      if (invitation.email_sent) {
+        onOpenChange(false);
+      } else {
+        setManualLink({ url: invitation.accept_url, email: recipient });
+        setCopied(false);
+      }
     } catch (cause) {
       setError(
         cause instanceof ApiError
@@ -95,6 +112,35 @@ function InviteMemberDialog({
         }
         content={
           <LayoutContent>
+            {manualLink ? (
+              <VStack gap={4}>
+                <Banner
+                  status="warning"
+                  title={t("@legalos.settings.invite.notEmailedTitle")}
+                  description={t("@legalos.settings.invite.notEmailedBody", {
+                    email: manualLink.email,
+                  })}
+                />
+                <div
+                  style={{
+                    // The link is long and has no spaces, so it must be told
+                    // to wrap or it pushes the dialog wider than the viewport.
+                    wordBreak: "break-all",
+                    fontFamily: "monospace",
+                    fontSize: 13,
+                    padding: 10,
+                    borderRadius: 6,
+                    background: "var(--color-background-neutral-subtle, #f4f4f5)",
+                  }}
+                  // LTR: a URL laid out right-to-left inside an Arabic dialog
+                  // renders its segments in an order that cannot be copied by
+                  // eye, which is exactly what this element is for.
+                  dir="ltr"
+                >
+                  {manualLink.url}
+                </div>
+              </VStack>
+            ) : (
             <VStack gap={4}>
               <InlineError message={error} onDismiss={() => setError(null)} />
               <TextInput
@@ -117,27 +163,67 @@ function InviteMemberDialog({
                 description={t("@legalos.settings.invite.roleHint")}
               />
             </VStack>
+            )}
           </LayoutContent>
         }
         footer={
           <LayoutFooter>
             <HStack gap={2} hAlign="end">
-              <Button
-                label={t("@legalos.settings.action.cancel")}
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              >
-                {t("@legalos.settings.action.cancel")}
-              </Button>
-              <Button
-                label={t("@legalos.settings.invite.send")}
-                variant="primary"
-                isDisabled={sending || !email.trim()}
-                icon={<Icon icon={UserPlusIcon} size="sm" color="inherit" />}
-                onClick={send}
-              >
-                {t("@legalos.settings.invite.send")}
-              </Button>
+              {manualLink ? (
+                <>
+                  <Button
+                    label={
+                      copied
+                        ? t("@legalos.settings.invite.copied")
+                        : t("@legalos.settings.invite.copyLink")
+                    }
+                    variant="secondary"
+                    onClick={() => {
+                      // Not available over plain http on a non-localhost
+                      // origin, and it rejects rather than throwing -- the
+                      // link stays on screen to be selected by hand either
+                      // way, so a failure just leaves the label unchanged.
+                      navigator.clipboard
+                        ?.writeText(manualLink.url)
+                        .then(() => setCopied(true))
+                        .catch(() => {});
+                    }}
+                  >
+                    {copied
+                      ? t("@legalos.settings.invite.copied")
+                      : t("@legalos.settings.invite.copyLink")}
+                  </Button>
+                  <Button
+                    label={t("@legalos.settings.invite.done")}
+                    variant="primary"
+                    onClick={() => {
+                      setManualLink(null);
+                      onOpenChange(false);
+                    }}
+                  >
+                    {t("@legalos.settings.invite.done")}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    label={t("@legalos.settings.action.cancel")}
+                    variant="secondary"
+                    onClick={() => onOpenChange(false)}
+                  >
+                    {t("@legalos.settings.action.cancel")}
+                  </Button>
+                  <Button
+                    label={t("@legalos.settings.invite.send")}
+                    variant="primary"
+                    isDisabled={sending || !email.trim()}
+                    icon={<Icon icon={UserPlusIcon} size="sm" color="inherit" />}
+                    onClick={send}
+                  >
+                    {t("@legalos.settings.invite.send")}
+                  </Button>
+                </>
+              )}
             </HStack>
           </LayoutFooter>
         }

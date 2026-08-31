@@ -68,6 +68,15 @@ export interface Invitation {
   email: string;
   role: "lawyer" | "staff";
   organization_name: string;
+  /** The link to open to accept. Always usable, whether or not mail went out. */
+  accept_url: string;
+  /**
+   * False when the firm has no mail provider configured, or the send failed.
+   * The invitation itself is still valid -- the owner passes accept_url on
+   * themselves. The UI has to say which happened, or an owner waits forever
+   * for a colleague who was never told.
+   */
+  email_sent: boolean;
 }
 
 export interface InvitationPreview {
