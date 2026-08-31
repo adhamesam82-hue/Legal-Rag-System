@@ -14,6 +14,8 @@ set -euo pipefail
 
 DEPLOY_USER=deploy
 APP_DIR=/opt/alsigil
+STAGING_DIR=/opt/alsigil-staging
+EDGE_NETWORK=alsigil-edge
 
 echo "==> Packages"
 export DEBIAN_FRONTEND=noninteractive
@@ -176,6 +178,36 @@ install -d -m 0755 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$APP_DIR/deploy"
 if [ ! -f "$APP_DIR/deploy/.env" ]; then
 	install -m 0600 -o "$DEPLOY_USER" -g "$DEPLOY_USER" /dev/null "$APP_DIR/deploy/.env"
 	echo "    created empty $APP_DIR/deploy/.env -- set GITHUB_REPOSITORY_OWNER before deploying"
+fi
+
+echo "==> Shared edge network"
+# Lives outside both compose projects because both join it: production's Caddy
+# and the staging stack. If it belonged to either project, `docker compose down`
+# on that side would take the other's routing down with it.
+if ! docker network inspect "$EDGE_NETWORK" >/dev/null 2>&1; then
+	docker network create "$EDGE_NETWORK" >/dev/null
+	echo "    created $EDGE_NETWORK"
+fi
+
+echo "==> Staging directory"
+# The development track's secrets, kept in a separate tree from production's so
+# that no single mistake -- a wrong path in a script, a stray editor buffer --
+# can point a staging container at production's database. Same ownership and
+# mode as production's, for the same reason: Compose resolves env_file: as the
+# invoking user.
+install -d -m 0755 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$STAGING_DIR"
+if [ ! -f "$STAGING_DIR/.env" ]; then
+	install -m 0640 -o root -g "$DEPLOY_USER" /dev/null "$STAGING_DIR/.env"
+	echo "    created empty $STAGING_DIR/.env -- fill it before deploying staging"
+fi
+if [ ! -f "$STAGING_DIR/web.env" ]; then
+	install -m 0640 -o root -g "$DEPLOY_USER" /dev/null "$STAGING_DIR/web.env"
+	echo "    created empty $STAGING_DIR/web.env -- fill it before deploying staging"
+fi
+install -d -m 0755 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$STAGING_DIR/deploy"
+if [ ! -f "$STAGING_DIR/deploy/.env" ]; then
+	install -m 0600 -o "$DEPLOY_USER" -g "$DEPLOY_USER" /dev/null "$STAGING_DIR/deploy/.env"
+	echo "    created empty $STAGING_DIR/deploy/.env -- set GITHUB_REPOSITORY_OWNER before deploying staging"
 fi
 
 echo "==> Done. Verify from your laptop before closing this session:"

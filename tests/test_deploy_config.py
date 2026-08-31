@@ -500,6 +500,139 @@ def test_env_example_covers_what_the_containers_are_given():
         assert f"{variable}=" in template, f"env.example does not mention {variable}"
 
 
+def _staging_compose():
+    import yaml
+
+    return yaml.safe_load(read("deploy/docker-compose.staging.yml"))
+
+
+def test_staging_is_a_separate_compose_project_from_production():
+    """Production's project name comes from its directory (`deploy`) and its
+    volumes are namespaced under it. Two projects sharing a name would share
+    volumes -- staging would open production's database and its documents.
+    """
+    compose = _staging_compose()
+    assert compose.get("name") == "alsigil-staging", (
+        "the staging stack must carry an explicit project name; without one "
+        "it inherits the directory name and collides with production"
+    )
+
+
+def test_staging_has_its_own_database_and_secrets():
+    """The whole point of the second track. A staging container pointed at
+    /opt/alsigil/.env would run development code against client data.
+    """
+    compose = _staging_compose()
+
+    for service in ("api", "postgres"):
+        env_file = compose["services"][service].get("env_file")
+        assert env_file == "/opt/alsigil-staging/.env", (
+            f"staging {service} reads {env_file!r}; it must read staging's own "
+            "secrets file, never production's"
+        )
+    assert compose["services"]["web"]["env_file"] == "/opt/alsigil-staging/web.env"
+
+    # Its own volumes, not production's under another name.
+    assert set(compose["volumes"]) == {"pgdata", "documents"}
+
+
+def test_staging_database_is_not_on_the_shared_network():
+    """The edge network exists so Caddy can reach staging's web and api. A
+    database on it would be reachable from every container in both projects,
+    which is a larger blast radius than the feature needs.
+    """
+    compose = _staging_compose()
+    postgres = compose["services"]["postgres"]
+    assert "edge" not in (postgres.get("networks") or {}), (
+        "staging's database must stay inside its own project network"
+    )
+    assert "ports" not in postgres, "staging's database must not be published"
+
+
+def test_staging_upstreams_are_addressable_by_the_names_caddy_uses():
+    """Compose names containers `<project>-<service>-<n>`, which the Caddyfile
+    cannot know. The network aliases are the contract between the two files:
+    drop them and staging 502s with no error anywhere else.
+    """
+    compose = _staging_compose()
+    caddyfile = read("deploy/Caddyfile")
+
+    for service, alias, port in (("api", "api-staging", 8000), ("web", "web-staging", 3000)):
+        aliases = compose["services"][service]["networks"]["edge"]["aliases"]
+        assert alias in aliases, f"staging {service} has no {alias} alias"
+        assert f"reverse_proxy {alias}:{port}" in caddyfile, (
+            f"the Caddyfile does not route to {alias}:{port}"
+        )
+
+
+def test_production_caddy_keeps_its_own_network_while_joining_the_shared_one():
+    """Naming any network on a service replaces the implicit default. A Caddy
+    listed only on `edge` would lose the production api and web -- taking the
+    live site down to add a staging one.
+    """
+    import yaml
+
+    compose = yaml.safe_load(read("deploy/docker-compose.prod.yml"))
+    networks = compose["services"]["caddy"].get("networks") or []
+    assert "default" in networks and "edge" in networks, (
+        f"caddy is on {networks!r}; it needs both its project network and the "
+        "shared one"
+    )
+    assert compose["networks"]["edge"]["external"] is True, (
+        "the shared network must be external, so `compose down` on either "
+        "project cannot delete the other's routing"
+    )
+
+
+def test_staging_hostname_is_password_protected_and_unindexed():
+    """staging runs a Clerk development instance, and may run with
+    LEGALOS_DEV_AUTH, which treats every caller as one signed-in user. The
+    password is the only thing between that hostname and an open system, and
+    it has to cover /api/* too -- an attacker after the data would never load
+    the frontend.
+    """
+    caddyfile = read("deploy/Caddyfile")
+
+    start = caddyfile.index("staging.alsigil.com {")
+    block = caddyfile[start:]
+    end = block.index("\n}")
+    block = block[:end]
+
+    assert "basic_auth" in block, "the staging site has no password"
+    assert "X-Robots-Tag" in block and "noindex" in block, (
+        "staging would be indexed alongside production"
+    )
+
+    # The password must guard the whole site, not sit inside one handle block.
+    auth_index = block.index("basic_auth")
+    assert auth_index < block.index("handle /api/*"), (
+        "basic_auth must apply site-wide, before any route is handled"
+    )
+
+    # And it must not have leaked into the production site block.
+    production = caddyfile[: caddyfile.index("www.alsigil.com {")]
+    assert "basic_auth" not in production, (
+        "production is behind a password; that is not staging's guard, it is "
+        "an outage"
+    )
+
+
+def test_provision_creates_the_staging_tree_and_the_shared_network():
+    """Staging secrets live in their own tree so that no single wrong path can
+    point a development container at production's database.
+    """
+    script = _provision_script()
+    assert "STAGING_DIR=/opt/alsigil-staging" in script
+    assert 'docker network create "$EDGE_NETWORK"' in script
+    assert 'if ! docker network inspect "$EDGE_NETWORK"' in script, (
+        "re-running provision.sh must not fail on an existing network"
+    )
+    for target in ("$STAGING_DIR/.env", "$STAGING_DIR/web.env"):
+        assert f'if [ ! -f "{target}" ]; then' in script, (
+            f"{target} is created without an existence guard"
+        )
+
+
 def _backup_script() -> str:
     return read("deploy/backup.sh")
 
