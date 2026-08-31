@@ -140,6 +140,23 @@ def get_app_base_url() -> str:
     return os.environ.get("APP_BASE_URL", "http://localhost:3000").rstrip("/")
 
 
+def get_firebase_service_account() -> str | None:
+    """The service account used to PUSH notifications, or None.
+
+    Distinct from FIREBASE_PROJECT_ID, which only verifies incoming consumer
+    ID tokens and needs no secret. Sending requires a private key, so the two
+    are separate variables and an install can have either without the other.
+
+    Accepts a path to the downloaded JSON key, or the JSON itself -- the
+    second is what container platforms make easy, and requiring a file on disk
+    is the reason credentials end up baked into images.
+
+    None rather than raising: an install with no mobile app has nothing to
+    push to, and must not fail to start over a credential it does not need.
+    """
+    return os.environ.get("FIREBASE_SERVICE_ACCOUNT") or None
+
+
 LOCAL_CORS_ORIGINS = ("http://localhost:3000", "http://127.0.0.1:3000")
 
 

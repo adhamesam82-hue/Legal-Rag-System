@@ -267,3 +267,82 @@ class TestSubjectLine:
         assert reminder_subject("hearing", 1, "x").startswith("جلسة")
         assert reminder_subject("deadline", 1, "x").startswith("ميعاد")
         assert reminder_subject("task", 1, "x").startswith("مهمة")
+
+
+class TestTheTwoChannelsAreIndependent:
+    """0013 left `channel` out of notification_sends' unique key. That was
+    right with one channel and a silent bug with two: the morning email writes
+    the row, and the push for the same hearing then looks like a duplicate --
+    so the lawyer gets the mail, never gets the notification, and nothing
+    reports a failure. Migration 0017 widened the key; these hold it there.
+    """
+
+    def _one(self, client, conn, firm):
+        add_hearing(client, firm, TODAY)
+        return reminders.collect(conn, TODAY)[0]
+
+    def test_recording_the_email_does_not_mark_the_push(self, client, conn, firm):
+        reminder = self._one(client, conn, firm)
+        reminders.record_sent(conn, reminder, "email")
+        assert reminders.already_sent(conn, reminder, "email") is True
+        assert reminders.already_sent(conn, reminder, "push") is False
+
+    def test_both_channels_can_be_recorded_for_one_reminder(
+        self, client, conn, firm
+    ):
+        reminder = self._one(client, conn, firm)
+        assert reminders.record_sent(conn, reminder, "email") is True
+        assert reminders.record_sent(conn, reminder, "push") is True
+
+    def test_a_channel_is_still_recorded_only_once(self, client, conn, firm):
+        """The idempotence that made the sweep safe to rerun is unchanged."""
+        reminder = self._one(client, conn, firm)
+        assert reminders.record_sent(conn, reminder, "push") is True
+        assert reminders.record_sent(conn, reminder, "push") is False
+
+    def test_a_firm_that_adds_push_later_still_gets_notified(
+        self, client, conn, firm
+    ):
+        """The point of recording separately: turning the channel on must not
+        skip every date whose email already went out."""
+        reminder = self._one(client, conn, firm)
+        reminders.record_sent(conn, reminder, "email")
+        assert reminders.already_sent(conn, reminder, "push") is False
+
+    def test_an_unknown_channel_is_refused_by_the_database(
+        self, client, conn, firm
+    ):
+        """A typo'd channel would not collide with the correctly-spelled row,
+        so every sweep would re-send on it for ever."""
+        import psycopg
+
+        reminder = self._one(client, conn, firm)
+        with pytest.raises(psycopg.errors.CheckViolation):
+            reminders.record_sent(conn, reminder, "smoke-signal")
+        conn.rollback()
+
+
+class TestFindingSomeonesHandsets:
+    def test_only_this_persons_devices_in_this_firm(self, client, conn, firm):
+        for subject, token in ((OWNER, "owners-phone"), ("someone_else", "theirs")):
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO device_tokens (organization_id, subject, token, "
+                    "platform) VALUES (%s, %s, %s, 'ios')",
+                    (firm["org"], subject, token),
+                )
+        conn.commit()
+        found = reminders.devices_for(conn, firm["org"], OWNER)
+        assert [token for _, token in found] == ["owners-phone"]
+
+    def test_a_dead_handset_is_forgotten(self, client, conn, firm):
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO device_tokens (organization_id, subject, token, "
+                "platform) VALUES (%s, %s, 'wiped-phone', 'android') RETURNING id",
+                (firm["org"], OWNER),
+            )
+            device_id = cur.fetchone()[0]
+        conn.commit()
+        reminders.forget_device(conn, device_id)
+        assert reminders.devices_for(conn, firm["org"], OWNER) == []

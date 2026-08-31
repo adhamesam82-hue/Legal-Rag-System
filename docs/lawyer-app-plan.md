@@ -81,15 +81,23 @@ these first.
 
 ### 1. Push dispatch
 
-`device_tokens` stores where to push. Nothing sends. This was left out
-deliberately rather than stubbed: a sender that silently drops every
-notification is worse than none, because the firm believes it is on.
+**Done.** `legalrag/push.py` sends through FCM's v1 API, and the sweep now
+runs both channels.
 
-Sending needs an FCM service account, which is a credential this repository
-does not and should not contain. Once it exists, the work is one function
-beside `email.send_reminder_email` and one extra channel in the sweep — the
-sweep already decides *who* and *when*, and records sends idempotently per
-channel.
+One claim in the earlier draft of this section was wrong and is worth
+recording: it said the sweep "records sends idempotently per channel". It did
+not. Migration 0013 created `notification_sends` with a `channel` column but
+left it out of the UNIQUE key, so the morning email would write the row and
+the push for the same hearing would collide with it — the lawyer gets the
+mail, never gets the notification, and nothing reports a failure. Migration
+0017 widened the key. The column had been there from the start; adding the
+second channel is what turned the omission into a defect.
+
+Still required to actually deliver: an FCM service account, set as
+`FIREBASE_SERVICE_ACCOUNT` (a path to the JSON key, or the JSON itself). It is
+a credential this repository does not and should not contain. Absent it, the
+sweep skips the channel deliberately rather than reporting a failure per
+reminder — `push_is_configured()` is asked once per run.
 
 ### 2. The app itself
 

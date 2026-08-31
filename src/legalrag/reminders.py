@@ -204,22 +204,34 @@ def collect(conn: psycopg.Connection, today: date) -> list[Reminder]:
     )
 
 
-def already_sent(conn: psycopg.Connection, reminder: Reminder) -> bool:
+def already_sent(
+    conn: psycopg.Connection, reminder: Reminder, channel: str = "email"
+) -> bool:
+    """Whether this reminder went out ON THIS CHANNEL.
+
+    Per channel, not per reminder. 0013 left `channel` out of the unique key,
+    which was right with one channel and a silent bug with two: the morning
+    email would write the row and the push for the same hearing would look
+    like a duplicate, so the lawyer got the mail, never got the notification,
+    and nothing reported a failure. Migration 0017 widened the key.
+    """
     with conn.cursor() as cur:
         cur.execute(
             "SELECT 1 FROM notification_sends "
             "WHERE recipient = %s AND subject_kind = %s AND subject_id = %s "
-            "  AND offset_days = %s AND subject_date = %s",
+            "  AND offset_days = %s AND subject_date = %s AND channel = %s",
             (
                 reminder.recipient, reminder.kind, reminder.subject_id,
-                reminder.offset_days, reminder.subject_date,
+                reminder.offset_days, reminder.subject_date, channel,
             ),
         )
         return cur.fetchone() is not None
 
 
-def record_sent(conn: psycopg.Connection, reminder: Reminder) -> bool:
-    """Marks it delivered. False when another run got there first.
+def record_sent(
+    conn: psycopg.Connection, reminder: Reminder, channel: str = "email"
+) -> bool:
+    """Marks it delivered on this channel. False when another run got there first.
 
     ON CONFLICT DO NOTHING rather than a prior check, so two sweeps racing --
     a manual run beside the timer -- cannot both decide it is unsent.
@@ -227,16 +239,49 @@ def record_sent(conn: psycopg.Connection, reminder: Reminder) -> bool:
     with conn.cursor() as cur:
         cur.execute(
             "INSERT INTO notification_sends (organization_id, recipient, "
-            "subject_kind, subject_id, offset_days, subject_date) "
-            "VALUES (%s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING RETURNING id",
+            "subject_kind, subject_id, offset_days, subject_date, channel) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s) "
+            "ON CONFLICT DO NOTHING RETURNING id",
             (
                 reminder.organization_id, reminder.recipient, reminder.kind,
                 reminder.subject_id, reminder.offset_days, reminder.subject_date,
+                channel,
             ),
         )
         written = cur.fetchone() is not None
     conn.commit()
     return written
+
+
+def devices_for(
+    conn: psycopg.Connection, organization_id: int, recipient: str
+) -> list[tuple[int, str]]:
+    """(id, token) for every handset this person has registered in this firm.
+
+    Scoped by organization as well as subject: the same person in two firms
+    registers separately, and a reminder about one firm's hearing has no
+    business reaching a device signed in to the other.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT id, token FROM device_tokens "
+            " WHERE organization_id = %s AND subject = %s "
+            " ORDER BY last_seen_at DESC",
+            (organization_id, recipient),
+        )
+        return [(row[0], row[1]) for row in cur.fetchall()]
+
+
+def forget_device(conn: psycopg.Connection, device_id: int) -> None:
+    """Drops a handset FCM says no longer exists.
+
+    Not a delivery failure: an app removed or a phone wiped is the normal end
+    of a token's life. Left in place it would be retried every morning for
+    ever and would keep the sweep's exit code non-zero on a working unit.
+    """
+    with conn.cursor() as cur:
+        cur.execute("DELETE FROM device_tokens WHERE id = %s", (device_id,))
+    conn.commit()
 
 
 def members_without_email(conn: psycopg.Connection) -> list[tuple[int, str]]:
