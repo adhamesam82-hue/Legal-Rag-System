@@ -89,6 +89,37 @@ def get_invitation_by_token(
         )
 
 
+def list_invitations(
+    conn: psycopg.Connection, organization_id: int
+) -> list[Invitation]:
+    """Every invitation this firm has issued, newest first.
+
+    Without this an owner who sends an invitation has nowhere to see it: the
+    dialog closes, the recipient is not a member until they accept, and the
+    roster is the only list on the screen. "Did I already invite them?" was
+    unanswerable from inside the product.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT id, organization_id, email, role, token, status, expires_at "
+            "FROM invitations WHERE organization_id = %s "
+            "ORDER BY created_at DESC",
+            (organization_id,),
+        )
+        return [
+            Invitation(
+                id=row[0],
+                organization_id=row[1],
+                email=row[2],
+                role=row[3],
+                token=row[4],
+                status=row[5],
+                expires_at=row[6],
+            )
+            for row in cur.fetchall()
+        ]
+
+
 def effective_status(invitation: Invitation) -> str:
     """The status a reader should be shown, expiry included.
 
@@ -161,10 +192,15 @@ def accept_invitation(
     # UPDATE -- the rare case this CAS exists to catch.
     with conn.cursor() as cur:
         cur.execute(
-            "UPDATE invitations SET status = 'accepted', accepted_at = now() "
+            # accepted_by closes the question "which invitation created this
+            # membership", which nothing recorded before -- so a backfill of
+            # member addresses had to join on the organization alone and could
+            # write one person's address onto everybody in the firm.
+            "UPDATE invitations SET status = 'accepted', accepted_at = now(), "
+            "accepted_by = %s "
             "WHERE id = %s AND status = 'pending' "
             "RETURNING id, organization_id, email, role, token, status, expires_at",
-            (invitation.id,),
+            (accepting_clerk_user_id, invitation.id),
         )
         row = cur.fetchone()
     if row is None:
@@ -192,7 +228,16 @@ def accept_invitation(
     # no membership ever created.
     try:
         add_membership(
-            conn, accepted.organization_id, accepting_clerk_user_id, accepted.role
+            conn,
+            accepted.organization_id,
+            accepting_clerk_user_id,
+            accepted.role,
+            # The address the invitation was sent to, which is the address
+            # this account proved it owns a moment ago. Leaving it off made
+            # every invited member undeliverable to the reminder sweep -- and
+            # 0013's backfill only ever covered the rows that existed when it
+            # ran, so every acceptance since re-created the same gap.
+            email=accepted.email,
         )
     except Exception as exc:
         conn.rollback()

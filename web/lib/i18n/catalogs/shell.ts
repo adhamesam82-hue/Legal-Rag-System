@@ -43,23 +43,25 @@ export const en: Catalog = {
   "@legalos.shell.themeToggle.toLight": { defaultMessage: "Switch to light mode" },
   "@legalos.shell.themeToggle.toDark": { defaultMessage: "Switch to dark mode" },
 
-  "@legalos.shell.search.ariaLabel": { defaultMessage: "Search LegalOS and ask AI" },
-  "@legalos.shell.search.button": { defaultMessage: "Search or ask AI" },
+  // No "ask AI" any more: the palette searches the firm's own records, and
+  // the assistant is off for this release. A button that offers something it
+  // cannot do costs more than a shorter label.
+  "@legalos.shell.search.ariaLabel": { defaultMessage: "Search LegalOS" },
+  "@legalos.shell.search.button": { defaultMessage: "Search" },
   "@legalos.shell.search.emptyBootstrap": {
-    defaultMessage: "Search matters, clients, documents — or ask AI a legal question",
+    defaultMessage: "Search matters, clients and documents",
   },
-
-  "@legalos.shell.notifications.button": { defaultMessage: "Notifications" },
-  "@legalos.shell.notifications.today": { defaultMessage: "Today" },
-  "@legalos.shell.notifications.hearingReminder": {
-    defaultMessage: "Hearing reminder — نبيل ضد شركة النيل للتجارة, 2:00 PM",
+  "@legalos.shell.search.placeholder": {
+    defaultMessage: "Search matters, clients, documents…",
   },
-  "@legalos.shell.notifications.inviteAccepted": {
-    defaultMessage: "منى فاروق accepted your invite",
-  },
-  "@legalos.shell.notifications.contractReviewFinished": {
-    defaultMessage: "Contract review finished: NDA — شركة دلتا للأغذية",
-  },
+  "@legalos.shell.search.empty": { defaultMessage: "Nothing matched" },
+  "@legalos.shell.search.group.navigation": { defaultMessage: "Go to" },
+  "@legalos.shell.search.group.clients": { defaultMessage: "Clients" },
+  "@legalos.shell.search.group.matters": { defaultMessage: "Matters" },
+  "@legalos.shell.search.group.documents": { defaultMessage: "Documents" },
+  "@legalos.shell.search.hint.navigate": { defaultMessage: "Move" },
+  "@legalos.shell.search.hint.select": { defaultMessage: "Open" },
+  "@legalos.shell.search.hint.close": { defaultMessage: "Close" },
 
   "@legalos.shell.account.menuAriaLabel": { defaultMessage: "أحمد السيد account menu" },
   "@legalos.shell.account.profile": { defaultMessage: "Profile" },
@@ -107,23 +109,22 @@ export const ar: Catalog = {
   "@legalos.shell.themeToggle.toLight": { defaultMessage: "التبديل إلى الوضع الفاتح" },
   "@legalos.shell.themeToggle.toDark": { defaultMessage: "التبديل إلى الوضع الداكن" },
 
-  "@legalos.shell.search.ariaLabel": { defaultMessage: "البحث في LegalOS وسؤال الذكاء الاصطناعي" },
-  "@legalos.shell.search.button": { defaultMessage: "بحث أو اسأل الذكاء الاصطناعي" },
+  "@legalos.shell.search.ariaLabel": { defaultMessage: "البحث في LegalOS" },
+  "@legalos.shell.search.button": { defaultMessage: "بحث" },
   "@legalos.shell.search.emptyBootstrap": {
-    defaultMessage: "ابحث في القضايا والموكّلين والمستندات — أو اسأل الذكاء الاصطناعي سؤالاً قانونياً",
+    defaultMessage: "ابحث في القضايا والموكّلين والمستندات",
   },
-
-  "@legalos.shell.notifications.button": { defaultMessage: "الإشعارات" },
-  "@legalos.shell.notifications.today": { defaultMessage: "اليوم" },
-  "@legalos.shell.notifications.hearingReminder": {
-    defaultMessage: "تذكير بجلسة — نبيل ضد شركة النيل للتجارة، الساعة 2:00 ظهراً",
+  "@legalos.shell.search.placeholder": {
+    defaultMessage: "ابحث في القضايا والموكّلين والمستندات…",
   },
-  "@legalos.shell.notifications.inviteAccepted": {
-    defaultMessage: "قبلت منى فاروق دعوتك",
-  },
-  "@legalos.shell.notifications.contractReviewFinished": {
-    defaultMessage: "اكتملت مراجعة العقد: اتفاقية عدم إفشاء — شركة دلتا للأغذية",
-  },
+  "@legalos.shell.search.empty": { defaultMessage: "لا يوجد ما يطابق البحث" },
+  "@legalos.shell.search.group.navigation": { defaultMessage: "الانتقال إلى" },
+  "@legalos.shell.search.group.clients": { defaultMessage: "الموكّلون" },
+  "@legalos.shell.search.group.matters": { defaultMessage: "القضايا" },
+  "@legalos.shell.search.group.documents": { defaultMessage: "المستندات" },
+  "@legalos.shell.search.hint.navigate": { defaultMessage: "تنقّل" },
+  "@legalos.shell.search.hint.select": { defaultMessage: "فتح" },
+  "@legalos.shell.search.hint.close": { defaultMessage: "إغلاق" },
 
   "@legalos.shell.account.menuAriaLabel": { defaultMessage: "قائمة حساب أحمد السيد" },
   "@legalos.shell.account.profile": { defaultMessage: "الملف الشخصي" },

@@ -21,7 +21,7 @@ import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
 import { PlusIcon, MagnifyingGlassIcon, BriefcaseIcon } from "@heroicons/react/24/outline";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { useOrg, useMemberName, useResource } from "@/lib/org";
+import { memberLabel, useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import {
   daysUntil,
@@ -163,7 +163,13 @@ export default function MattersPage() {
     {
       key: "deadlineLabel",
       header: t("@legalos.matters.field.nextDeadline"),
-      width: proportional(1.6),
+      // Fixed rather than proportional, and wide enough for the longest
+      // Arabic form of the countdown ("متأخر ٣١ أغسطس · منذ ١٤ يومًا"). As a
+      // 1.6 share this column shrank under the two proportional ones beside
+      // it, and both the badge and the column header truncated mid-word --
+      // "أغسطس" losing its first letter, "يومًا" down to "ي", the header
+      // reading "الموعد النهائي ا…".
+      width: pixel(230),
       renderCell: (row) => {
         if (!row.deadlineDate) {
           return (
@@ -450,7 +456,7 @@ function NewMatterDialog({
                   placeholder={t("@legalos.matters.dialog.selectLawyer")}
                   options={members.map((m) => ({
                     value: m.clerk_user_id,
-                    label: m.display_name ?? m.clerk_user_id,
+                    label: memberLabel(m),
                   }))}
                 />
                 <DateInput
@@ -473,7 +479,7 @@ function NewMatterDialog({
                   .filter((m) => m.clerk_user_id !== responsible)
                   .map((m) => ({
                     value: m.clerk_user_id,
-                    label: m.display_name ?? m.clerk_user_id,
+                    label: memberLabel(m),
                   }))}
               />
               <TextArea

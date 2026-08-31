@@ -14,6 +14,7 @@ export const en: Catalog = {
     defaultMessage: "{count, plural, one {# client} other {# clients}}",
   },
   "@legalos.clients.newClient": { defaultMessage: "New client" },
+  "@legalos.clients.created": { defaultMessage: "{name} was added." },
   "@legalos.clients.loading": { defaultMessage: "Loading clients…" },
 
   "@legalos.clients.search.label": { defaultMessage: "Search clients" },
@@ -111,6 +112,7 @@ export const ar: Catalog = {
       "{count, plural, zero {لا موكّلين} one {موكّل واحد} two {موكّلان} few {# موكّلين} many {# موكّلاً} other {# موكّل}}",
   },
   "@legalos.clients.newClient": { defaultMessage: "موكّل جديد" },
+  "@legalos.clients.created": { defaultMessage: "أُضيف {name}." },
   "@legalos.clients.loading": { defaultMessage: "جارٍ تحميل الموكّلين…" },
 
   "@legalos.clients.search.label": { defaultMessage: "البحث في الموكّلين" },

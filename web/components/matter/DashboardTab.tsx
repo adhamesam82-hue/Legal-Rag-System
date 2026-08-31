@@ -33,6 +33,7 @@ import {
   CheckCircleIcon,
   ScaleIcon,
   ShieldCheckIcon,
+  TrashIcon,
 } from "@heroicons/react/24/outline";
 import { useMemberName, useOrg } from "@/lib/org";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
@@ -515,6 +516,11 @@ function ContactRow({
       label={contact.name}
       description={contact.relationship || contact.email || undefined}
       startContent={<Avatar name={contact.name} size="sm" tooltip={false} />}
+      // Icon buttons, not text ones. Two full-width Arabic labels
+      // ("تعيينه مستلمًا للفاتورة" and "إزالة") took the whole row at around
+      // 1000px and squeezed the name column to nothing, so the list showed an
+      // avatar and two buttons with no indication of whose contact it was.
+      // The labels survive as the accessible name and the tooltip.
       endContent={
         <HStack gap={2} vAlign="center">
           {contact.is_bill_recipient ? (
@@ -527,6 +533,8 @@ function ContactRow({
               label={t("@legalos.matterWorkspace.contacts.makeBillRecipient")}
               variant="ghost"
               size="sm"
+              isIconOnly
+              icon={<Icon icon={BanknotesIcon} size="sm" color="inherit" />}
               isDisabled={!practiceReady}
               onClick={() =>
                 write(
@@ -543,6 +551,8 @@ function ContactRow({
             label={t("@legalos.matterWorkspace.contacts.remove")}
             variant="ghost"
             size="sm"
+            isIconOnly
+            icon={<Icon icon={TrashIcon} size="sm" color="inherit" />}
             isDisabled={!practiceReady}
             onClick={() =>
               write(

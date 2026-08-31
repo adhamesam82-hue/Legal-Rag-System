@@ -20,7 +20,7 @@ import { DateInput } from "@astryxdesign/core/DateInput";
 import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
 import { SegmentedControl, SegmentedControlItem } from "@astryxdesign/core/SegmentedControl";
 import { PlusIcon } from "@heroicons/react/24/outline";
-import { useOrg, useMemberName, useResource } from "@/lib/org";
+import { memberLabel, useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import {
   daysUntil,
@@ -333,7 +333,7 @@ function NewTaskDialog({
                   onChange={setAssignee}
                   options={members.map((m) => ({
                     value: m.clerk_user_id,
-                    label: m.display_name ?? m.clerk_user_id,
+                    label: memberLabel(m),
                   }))}
                 />
                 <Selector

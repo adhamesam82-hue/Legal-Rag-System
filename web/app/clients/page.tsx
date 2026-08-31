@@ -15,6 +15,7 @@ import { Table, proportional, pixel } from "@astryxdesign/core/Table";
 import type { TableColumn } from "@astryxdesign/core/Table";
 import { Link } from "@astryxdesign/core/Link";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
+import { Banner } from "@astryxdesign/core/Banner";
 import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
 import { PlusIcon, MagnifyingGlassIcon, UserGroupIcon } from "@heroicons/react/24/outline";
 import { useOrg, useResource } from "@/lib/org";
@@ -48,6 +49,8 @@ export default function ClientsPage() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isCreating, setIsCreating] = useState(false);
+  /** The name of the client just created, for the confirmation banner. */
+  const [created, setCreated] = useState<string | null>(null);
 
   // The search box drives a server-side filter, so the input keeps its own
   // state and only the settled value reaches the fetch -- typing "Al-Sayed"
@@ -253,6 +256,19 @@ export default function ClientsPage() {
         }
         content={
           <LayoutContent padding={0}>
+            {/* Creating a client closed the dialog and refreshed the table in
+              * silence, which is the same thing a failed save would have
+              * looked like. */}
+            {created && (
+              <div style={{ paddingBlockEnd: 16 }}>
+                <Banner
+                  status="success"
+                  title={t("@legalos.clients.created", { name: created })}
+                  isDismissable
+                  onDismiss={() => setCreated(null)}
+                />
+              </div>
+            )}
             <DataView resource={resource} loadingLabel={t("@legalos.clients.loading")}>
               {() =>
                 rows.length > 0 ? (
@@ -299,7 +315,10 @@ export default function ClientsPage() {
       <NewClientDialog
         isOpen={isCreating}
         onOpenChange={setIsCreating}
-        onCreated={resource.reload}
+        onCreated={(name) => {
+          setCreated(name);
+          resource.reload();
+        }}
       />
     </>
   );
@@ -312,7 +331,8 @@ function NewClientDialog({
 }: {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreated: () => void;
+  /** Receives the new client's name, so the page can confirm what it saved. */
+  onCreated: (name: string) => void;
 }) {
   const t = useTranslator();
   const enumLabel = useEnumLabel();
@@ -342,9 +362,10 @@ function NewClientDialog({
     if (!practice || !name.trim()) return;
     setSaving(true);
     setError(null);
+    const created = name.trim();
     try {
       await practice.clients.create({
-        name: name.trim(),
+        name: created,
         client_type: clientType,
         industry,
         email,
@@ -354,7 +375,7 @@ function NewClientDialog({
       } as Partial<Client>);
       reset();
       onOpenChange(false);
-      onCreated();
+      onCreated(created);
     } catch (exc) {
       setError(exc instanceof Error ? exc.message : t("@legalos.clients.dialog.error"));
     } finally {

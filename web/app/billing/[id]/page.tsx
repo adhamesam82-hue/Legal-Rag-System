@@ -17,11 +17,14 @@ import { Table, proportional, pixel } from "@astryxdesign/core/Table";
 import type { TableColumn } from "@astryxdesign/core/Table";
 import {
   ArrowLeftIcon,
+  ArrowDownTrayIcon,
   PaperAirplaneIcon,
   BanknotesIcon,
   DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import { useTranslator } from "@astryxdesign/core/i18n";
+import { API_BASE } from "@/lib/api";
+import { useLocale } from "@/lib/i18n/provider";
 import { useOrg, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import {
@@ -58,7 +61,8 @@ export default function InvoiceDetailPage({
   const { formatDate, formatEGP } = useFormat();
   const { id } = use(params);
   const invoiceId = Number(id);
-  const { practice } = useOrg();
+  const { practice, organizationId } = useOrg();
+  const { locale } = useLocale();
   const t = useTranslator();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -159,6 +163,21 @@ export default function InvoiceDetailPage({
                       </Text>
                     </VStack>
                     <HStack gap={3}>
+                      {/* The renderer behind this has existed since T-020/21
+                        * — Arabic, embedded font, correct totals — and had no
+                        * button anywhere in the UI, so the one artefact a
+                        * firm actually sends a client was reachable only by
+                        * typing the URL. */}
+                      <Button
+                        label={t("@legalos.billingDetail.downloadPdf")}
+                        variant="secondary"
+                        href={`${API_BASE}/api/orgs/${organizationId}/invoices/${loaded.id}/pdf?lang=${locale}`}
+                        icon={
+                          <Icon icon={ArrowDownTrayIcon} size="sm" color="inherit" />
+                        }
+                      >
+                        {t("@legalos.billingDetail.downloadPdf")}
+                      </Button>
                       {loaded.status === "draft" && (
                         <Button
                           label={t("@legalos.billingDetail.sendInvoice")}

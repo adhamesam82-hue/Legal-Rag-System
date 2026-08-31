@@ -30,6 +30,7 @@ import { Text } from "@astryxdesign/core/Text";
 import { Button } from "@astryxdesign/core/Button";
 import { Banner } from "@astryxdesign/core/Banner";
 import { api, ApiError, type InvitationPreview } from "@/lib/api";
+import { useOrg } from "@/lib/org";
 import { USING_CLERK } from "@/lib/auth-mode";
 
 const ROLE_AR: Record<InvitationPreview["role"], string> = {
@@ -71,6 +72,7 @@ function Invite({ isSignedIn }: { isSignedIn: boolean }) {
   const params = useParams<{ token: string }>();
   const token = params?.token ?? "";
   const router = useRouter();
+  const { setOrganizationId, reloadOrganizations } = useOrg();
 
   const [preview, setPreview] = useState<InvitationPreview | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -102,7 +104,14 @@ function Invite({ isSignedIn }: { isSignedIn: boolean }) {
     setAccepting(true);
     setAcceptError(null);
     try {
-      await api.acceptInvite(token);
+      const membership = await api.acceptInvite(token);
+      // Bind the new firm before navigating, and refetch the membership list
+      // behind it. Without the first of these the dashboard mounted while the
+      // org context still held the pre-accept answer -- no memberships -- and
+      // greeted a lawyer who had just joined a firm with "create your firm",
+      // which corrected itself only on a manual reload.
+      setOrganizationId(membership.organization_id);
+      reloadOrganizations();
       router.push("/dashboard");
     } catch (cause) {
       setAcceptError(
@@ -112,7 +121,7 @@ function Invite({ isSignedIn }: { isSignedIn: boolean }) {
       );
       setAccepting(false);
     }
-  }, [token, router]);
+  }, [token, router, setOrganizationId, reloadOrganizations]);
 
   return (
     <div dir="rtl" style={{ maxWidth: 460, margin: "64px auto", padding: "0 20px" }}>

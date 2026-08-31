@@ -7,7 +7,12 @@ import pytest
 
 from conftest import drop_organizations_after
 
-from legalrag.invites import InvitationError, accept_invitation, create_invitation
+from legalrag.invites import (
+    InvitationError,
+    accept_invitation,
+    create_invitation,
+    list_invitations,
+)
 from legalrag.orgs import create_organization, get_membership
 
 
@@ -48,6 +53,71 @@ class TestCreateInvitation:
         )
         assert invite.status == "pending"
         assert len(invite.token) > 20
+
+
+class TestListInvitations:
+    def test_lists_this_firms_invitations_only(self, conn):
+        firm = create_organization(conn, "Firm", "user_owner")
+        other = create_organization(conn, "Other", "user_other")
+        create_invitation(conn, firm.id, "mine@example.com", "lawyer", "user_owner")
+        create_invitation(conn, other.id, "theirs@example.com", "staff", "user_other")
+
+        assert [i.email for i in list_invitations(conn, firm.id)] == [
+            "mine@example.com"
+        ]
+
+
+class TestTheAcceptedMembersEmail:
+    """Every new member must carry the address the reminder sweep writes to.
+
+    Accepting an invitation created the membership without one, so the daily
+    sweep reported each invited lawyer as undeliverable, every morning, and
+    the only members that ever had an address were the ones migration 0013
+    backfilled on the day it ran.
+    """
+
+    def accept(self, conn, email="new@example.com"):
+        org = create_organization(conn, "Firm", "user_owner")
+        invite = create_invitation(conn, org.id, email, "lawyer", "user_owner")
+        accept_invitation(conn, invite.token, "user_new", email)
+        return org
+
+    def test_the_membership_stores_the_invited_address(self, conn):
+        org = self.accept(conn)
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT email FROM memberships "
+                "WHERE organization_id = %s AND clerk_user_id = %s",
+                (org.id, "user_new"),
+            )
+            assert cur.fetchone()[0] == "new@example.com"
+
+    def test_only_the_accepting_member_gets_that_address(self, conn):
+        """A firm's other members must not inherit the invitee's address.
+
+        Nothing recorded which invitation created which membership, so a
+        backfill written to close the NULL-address gap joined on the
+        organization alone and wrote one lawyer's address onto everyone in the
+        firm. An address belonging to somebody else is worse than none: a NULL
+        is reported by the sweep, a wrong one is delivered to.
+        """
+        org = self.accept(conn)
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT email FROM memberships "
+                "WHERE organization_id = %s AND clerk_user_id = %s",
+                (org.id, "user_owner"),
+            )
+            assert cur.fetchone()[0] is None
+
+    def test_the_invitation_records_who_accepted_it(self, conn):
+        org = self.accept(conn)
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT accepted_by FROM invitations WHERE organization_id = %s",
+                (org.id,),
+            )
+            assert cur.fetchone()[0] == "user_new"
 
 
 class TestAcceptInvitation:

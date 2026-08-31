@@ -55,7 +55,17 @@ export interface ArticleDetail {
 export interface Organization {
   id: number;
   name: string;
+  /** The firm's own details. Null until somebody fills them in on /settings. */
+  registration_number: string | null;
+  phone: string | null;
+  address: string | null;
+  logo_url: string | null;
 }
+
+/** A PATCH body: only the fields present are written. */
+export type OrganizationUpdate = Partial<
+  Pick<Organization, "name" | "registration_number" | "phone" | "address">
+>;
 
 export interface Membership {
   organization_id: number;
@@ -77,6 +87,21 @@ export interface Invitation {
    * for a colleague who was never told.
    */
   email_sent: boolean;
+}
+
+/**
+ * One invitation the firm has issued, as its own roster screen lists it.
+ *
+ * No token: this is the record of who was asked to join, not a way to read
+ * somebody else's acceptance link back out of the API.
+ */
+export interface PendingInvite {
+  /** A firm can invite the same address twice, so the address is not a key. */
+  id: number;
+  email: string;
+  role: "lawyer" | "staff";
+  status: "pending" | "accepted" | "expired" | "revoked";
+  expires_at: string;
 }
 
 export interface InvitationPreview {
@@ -282,6 +307,19 @@ export const api = {
     }),
 
   myOrganizations: () => request<Membership[]>("/api/orgs/me"),
+
+  organization: (organizationId: number) =>
+    request<Organization>(`/api/orgs/${organizationId}`),
+
+  updateOrganization: (organizationId: number, body: OrganizationUpdate) =>
+    request<Organization>(`/api/orgs/${organizationId}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
+  /** Invitations this firm has issued. Owner only, server-side. */
+  listInvites: (organizationId: number) =>
+    request<PendingInvite[]>(`/api/orgs/${organizationId}/invites`),
 
   createInvite: (organizationId: number, email: string, role: "lawyer" | "staff") =>
     request<Invitation>(`/api/orgs/${organizationId}/invites`, {

@@ -20,10 +20,10 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Literal
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from openai import OpenAIError
 from pydantic import BaseModel, Field
 
@@ -63,6 +63,7 @@ from legalrag.invites import (
     create_invitation,
     effective_status,
     get_invitation_by_token,
+    list_invitations,
 )
 from legalrag import currency
 from legalrag.library import (
@@ -80,9 +81,11 @@ from legalrag.orgs import (
     add_membership,
     create_organization,
     get_membership,
+    get_organization,
     list_memberships_for_user,
     list_org_members,
     remove_membership,
+    update_organization,
 )
 from legalrag.pipeline import ask, ask_stream, retrieve_for
 from legalrag.ratelimit import RateLimitMiddleware
@@ -170,6 +173,42 @@ app.include_router(practice_router)
 # firm dependencies -- a client is not a member, and the guarantee that they
 # cannot reach firm data is that these routes have no path that could.
 app.include_router(portal_router)
+
+@app.exception_handler(Exception)
+def unhandled_exception(request: Request, exc: Exception) -> JSONResponse:
+    """Turns a crash into a 500 the browser is allowed to read.
+
+    Starlette's own last-resort handler runs OUTSIDE CORSMiddleware, so an
+    unhandled exception produced a response with no Access-Control-Allow-Origin
+    header. The browser then refused to expose it and the fetch rejected as a
+    network error -- which is why three separate server bugs all reached the
+    screen as "Could not reach the API", accusing the connection while the
+    server was the thing that broke. The headers are therefore attached here,
+    where the origin is still in hand, rather than left to a middleware this
+    response never passes back through.
+
+    The detail is the exception's type and message: this is an API consumed by
+    the firm's own staff, and a 500 that says nothing costs more in support
+    than it saves in secrecy. Full tracebacks stay in the log (and in Sentry
+    where it is configured).
+    """
+    logging.getLogger("uvicorn.error").exception(
+        "unhandled error on %s %s", request.method, request.url.path
+    )
+    origin = request.headers.get("origin")
+    headers = {}
+    if origin and origin in get_cors_origins():
+        headers = {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Vary": "Origin",
+        }
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"{type(exc).__name__}: {exc}"},
+        headers=headers,
+    )
+
 
 if get_dev_auth_user():
     # Loud on purpose: this disables JWT verification for every route.
@@ -403,10 +442,31 @@ class ExplainRequest(BaseModel):
 class OrganizationOut(BaseModel):
     id: int
     name: str
+    # The firm's own details. Absent on the create response, which knows only
+    # the name it was given.
+    registration_number: str | None = None
+    phone: str | None = None
+    address: str | None = None
+    logo_url: str | None = None
 
 
 class CreateOrganizationRequest(BaseModel):
     name: str = Field(min_length=1, max_length=200)
+
+
+class UpdateOrganizationRequest(BaseModel):
+    """A PATCH: every field is optional and only what is sent is written.
+
+    An empty string clears a field; omitting it (or null) leaves it alone --
+    so a client that renders four inputs and sends all four cannot wipe the
+    two it never showed.
+    """
+
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    registration_number: str | None = Field(default=None, max_length=200)
+    phone: str | None = Field(default=None, max_length=60)
+    address: str | None = Field(default=None, max_length=500)
+    logo_url: str | None = Field(default=None, max_length=1000)
 
 
 class MembershipOut(BaseModel):
@@ -454,6 +514,22 @@ class InvitationPreview(BaseModel):
     organization_name: str
     role: str
     status: str
+
+
+class PendingInviteOut(BaseModel):
+    """One issued invitation, as the firm's own roster screen shows it.
+
+    No token: this list is a record of who was invited, not a way to re-read
+    somebody else's acceptance link out of the API. The id is carried because
+    a firm can invite the same address more than once, so the address alone
+    does not identify a row.
+    """
+
+    id: int
+    email: str
+    role: str
+    status: str
+    expires_at: datetime
 
 
 # --- endpoints --------------------------------------------------------------
@@ -834,6 +910,76 @@ def get_my_organizations(clerk_user_id: str = Depends(get_current_user_id)):
     return result
 
 
+@app.get("/api/orgs/{organization_id}", response_model=OrganizationOut)
+def get_organization_detail(
+    organization_id: int,
+    membership: Membership = Depends(get_current_membership),
+):
+    """The firm's own details. Any member may read them -- they are printed on
+    the invoices and letterheads everyone in the firm already sends."""
+    with db() as conn:
+        org = get_organization(conn, organization_id)
+    if org is None:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    return OrganizationOut(
+        id=org.id,
+        name=org.name,
+        registration_number=org.registration_number,
+        phone=org.phone,
+        address=org.address,
+        logo_url=org.logo_url,
+    )
+
+
+@app.patch("/api/orgs/{organization_id}", response_model=OrganizationOut)
+def patch_organization(
+    organization_id: int,
+    request: UpdateOrganizationRequest,
+    owner: Membership = Depends(require_owner),
+):
+    """Edits the firm's details. Owner only -- the firm name reaches every
+    client on every invoice, so it is not a per-lawyer preference."""
+    with db() as conn:
+        org = update_organization(
+            conn, organization_id, **request.model_dump(exclude_unset=True)
+        )
+    if org is None:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    return OrganizationOut(
+        id=org.id,
+        name=org.name,
+        registration_number=org.registration_number,
+        phone=org.phone,
+        address=org.address,
+        logo_url=org.logo_url,
+    )
+
+
+@app.get(
+    "/api/orgs/{organization_id}/invites", response_model=list[PendingInviteOut]
+)
+def get_org_invites(
+    organization_id: int,
+    owner: Membership = Depends(require_owner),
+):
+    """Invitations this firm has issued. Owner only, matching who may create
+    them -- an invitation names somebody's email address."""
+    with db() as conn:
+        invitations = list_invitations(conn, organization_id)
+    return [
+        PendingInviteOut(
+            id=invite.id,
+            email=invite.email,
+            role=invite.role,
+            # Same reading as the public preview: a pending row whose window
+            # has closed is expired, whatever the column still says.
+            status=effective_status(invite),
+            expires_at=invite.expires_at,
+        )
+        for invite in invitations
+    ]
+
+
 @app.post("/api/orgs/{organization_id}/invites", response_model=InvitationOut)
 def post_create_invite(
     organization_id: int,
@@ -965,6 +1111,9 @@ def get_org_members(
         OrgMemberOut(
             clerk_user_id=m.clerk_user_id,
             role=m.role,
+            # Read from the row rather than left to the field default, which
+            # reported every restricted member as seeing the whole practice.
+            matter_scope=m.matter_scope,
             display_name=m.display_name,
             title=m.title,
         )

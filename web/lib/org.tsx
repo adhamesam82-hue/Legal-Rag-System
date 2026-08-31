@@ -21,6 +21,7 @@ import {
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useAuth } from "@clerk/nextjs";
 import {
+  API_BASE,
   ApiError,
   api,
   onApiInvalidate,
@@ -101,6 +102,7 @@ function OrgProviderInner({
   authState: AuthState;
   children: React.ReactNode;
 }) {
+  const describeError = useApiErrorMessage();
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [members, setMembers] = useState<OrgMember[]>([]);
   const [organizationId, setOrganizationIdState] = useState<number | null>(null);
@@ -165,11 +167,7 @@ function OrgProviderInner({
       })
       .catch((exc: unknown) => {
         if (cancelled) return;
-        setError(
-          exc instanceof ApiError
-            ? exc.message
-            : "Could not load your organizations.",
-        );
+        setError(describeError(exc));
       })
       .finally(() => {
         if (cancelled) return;
@@ -258,10 +256,58 @@ function OrgProviderInner({
   return <OrgContext.Provider value={value}>{children}</OrgContext.Provider>;
 }
 
+/**
+ * Turns a rejected request into a sentence to put on screen.
+ *
+ * Server messages arrive in one language and are shown as they come — they
+ * name the record and the rule that refused it, which is worth more than a
+ * translated generality. The exception is a fetch that never reached the
+ * server: status 0 is produced by lib/api.ts itself, in English, and it was
+ * the sentence a lawyer met most often on an Arabic screen, half in each
+ * language, blaming their connection for what was usually a 500.
+ */
+export function useApiErrorMessage() {
+  const t = useTranslator();
+  return useCallback(
+    (exc: unknown): string => {
+      if (exc instanceof ApiError) {
+        return exc.status === 0
+          ? t("@legalos.common.error.network", { base: API_BASE })
+          : exc.message;
+      }
+      return t("@legalos.common.error.unknown");
+    },
+    [t],
+  );
+}
+
 export function useOrg(): OrgContextValue {
   const ctx = useContext(OrgContext);
   if (!ctx) throw new Error("useOrg must be used within OrgProvider");
   return ctx;
+}
+
+/**
+ * A readable name for a member whose display name is not set.
+ *
+ * In production Clerk supplies one, but a membership created by accepting an
+ * invitation has none until somebody fills it in, and the local dev users
+ * have none at all — so assignment menus and activity feeds printed raw ids
+ * like `user_karim_nabil` in the middle of Arabic prose. Deriving the name
+ * from the id is not a substitute for the real one; it is the difference
+ * between a row that reads as a person and one that reads as a database key.
+ */
+export function memberFallbackName(clerkUserId: string): string {
+  const stripped = clerkUserId.replace(/^user_/, "").replace(/[_-]+/g, " ").trim();
+  if (!stripped) return clerkUserId;
+  return stripped.replace(/\b\p{Ll}/gu, (letter) => letter.toUpperCase());
+}
+
+/** The label to show for a member anywhere one is named. */
+export function memberLabel(
+  member: { display_name: string | null; clerk_user_id: string },
+): string {
+  return member.display_name ?? memberFallbackName(member.clerk_user_id);
 }
 
 /** Maps a Clerk user id to something worth showing a human. */
@@ -277,7 +323,7 @@ export function useMemberName() {
       // activity feed between Arabic names.
       if (clerkUserId === "system:ai") return t("@legalos.shell.nav.aiAssistant");
       const member = members.find((m) => m.clerk_user_id === clerkUserId);
-      return member?.display_name ?? clerkUserId;
+      return member?.display_name ?? memberFallbackName(clerkUserId);
     },
     [members, t],
   );
@@ -397,6 +443,7 @@ export function useResource<T>(
   deps: unknown[],
 ): Resource<T> {
   const { practice, organizationId, orgConfirmed, loading: orgLoading } = useOrg();
+  const describeError = useApiErrorMessage();
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -484,7 +531,7 @@ export function useResource<T>(
           provisionalFailure = true;
           return;
         }
-        setError(exc instanceof ApiError ? exc.message : "Something went wrong.");
+        setError(describeError(exc));
       })
       .finally(() => {
         if (cancelled || provisionalFailure) return;

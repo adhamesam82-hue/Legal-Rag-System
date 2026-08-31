@@ -33,7 +33,7 @@ import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useLocale } from "@/lib/i18n/provider";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
-import { useOrg, useResource } from "@/lib/org";
+import { memberLabel, useOrg, useResource } from "@/lib/org";
 import { DataView } from "@/components/DataState";
 import type { Locale } from "@/lib/i18n/locale";
 import type { Role } from "@/lib/practice";
@@ -84,7 +84,7 @@ export default function ProfileSettingsPage() {
         <LayoutContent>
           <DataView resource={me}>
             {(profile) => {
-              const name = profile.display_name ?? profile.clerk_user_id;
+              const name = memberLabel(profile);
               return (
                 <VStack gap={5}>
                   <Card>
@@ -139,8 +139,12 @@ export default function ProfileSettingsPage() {
                       <Heading level={4}>
                         {t("@legalos.settings.profile.languageHeading")}
                       </Heading>
+                      {/* `profile.languageLabel` was in neither catalog, so
+                        * the raw key rendered above the control in both
+                        * languages. The label this field needs was already
+                        * defined under its own name. */}
                       <Selector
-                        label={t("@legalos.settings.profile.languageLabel")}
+                        label={t("@legalos.settings.profile.interfaceLanguage")}
                         value={locale}
                         onChange={(value) => setLocale(value as Locale)}
                         options={[

@@ -102,6 +102,8 @@ function NewHearingDialog({
       });
       setCourt("");
       setPurpose("");
+      setHearingTime("");
+      setHearingDate(todayIso);
       setMatterId(null);
       onOpenChange(false);
       onCreated();
@@ -147,11 +149,16 @@ function NewHearingDialog({
                   value={hearingDate}
                   onChange={(v) => setHearingDate(v ?? hearingDate)}
                 />
+                {/* No "10:00" placeholder. A greyed-out plausible time reads
+                  * as a pre-filled default, so a sitting was booked with an
+                  * empty time by someone who believed they had left it at
+                  * ten. The format goes in the description, where it cannot
+                  * be mistaken for a value. */}
                 <TextInput
                   label={t("@legalos.hearings.field.time")}
                   value={hearingTime}
                   onChange={setHearingTime}
-                  placeholder="10:00"
+                  description={t("@legalos.hearings.field.timeHint")}
                 />
               </HStack>
               <TextInput

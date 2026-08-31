@@ -37,6 +37,19 @@ export const en: Catalog = {
   "@legalos.settings.firm.logoHint": {
     defaultMessage: "PNG, JPG, or SVG. Recommended 512×512px, up to 2MB.",
   },
+  "@legalos.settings.firm.logoUnavailable": {
+    defaultMessage:
+      "Uploading a logo is not available yet — there is nowhere to store it. Until then the firm's initials are used.",
+  },
+  "@legalos.settings.firm.saving": { defaultMessage: "Saving…" },
+  "@legalos.settings.firm.saved": { defaultMessage: "Firm details saved." },
+  "@legalos.settings.firm.saveFailed": {
+    defaultMessage: "Could not save the firm's details.",
+  },
+  "@legalos.settings.firm.ownerOnly": {
+    defaultMessage:
+      "Only an Owner can change these. They appear on every invoice the firm sends.",
+  },
   "@legalos.settings.firm.detailsHeading": { defaultMessage: "Firm details" },
   "@legalos.settings.firm.nameLabel": { defaultMessage: "Firm name" },
   "@legalos.settings.firm.registrationLabel": {
@@ -88,6 +101,10 @@ export const en: Catalog = {
   "@legalos.settings.users.inviteExpired": {
     defaultMessage: "Invited {sent} days ago · expired {expired} days ago",
   },
+  "@legalos.settings.users.inviteSent": {
+    defaultMessage: "Invitation emailed to {email}.",
+  },
+  "@legalos.settings.users.inviteExpiry": { defaultMessage: "Expires {date}" },
   "@legalos.settings.users.status.pending": { defaultMessage: "Pending" },
   "@legalos.settings.users.status.expired": { defaultMessage: "Expired" },
   "@legalos.settings.users.status.revoked": { defaultMessage: "Revoked" },
@@ -221,6 +238,19 @@ export const ar: Catalog = {
   "@legalos.settings.firm.logoHint": {
     defaultMessage: "PNG أو JPG أو SVG. يُفضَّل 512×512 بكسل، وبحد أقصى 2 ميجابايت.",
   },
+  "@legalos.settings.firm.logoUnavailable": {
+    defaultMessage:
+      "رفع الشعار غير متاح بعد — لا يوجد مكان لتخزينه. وحتى ذلك الحين تُستخدَم الأحرف الأولى من اسم المكتب.",
+  },
+  "@legalos.settings.firm.saving": { defaultMessage: "جارٍ الحفظ…" },
+  "@legalos.settings.firm.saved": { defaultMessage: "حُفظت بيانات المكتب." },
+  "@legalos.settings.firm.saveFailed": {
+    defaultMessage: "تعذّر حفظ بيانات المكتب.",
+  },
+  "@legalos.settings.firm.ownerOnly": {
+    defaultMessage:
+      "المالك وحده يمكنه تعديل هذه البيانات، فهي تظهر على كل فاتورة يصدرها المكتب.",
+  },
   "@legalos.settings.firm.detailsHeading": { defaultMessage: "بيانات المكتب" },
   "@legalos.settings.firm.nameLabel": { defaultMessage: "اسم المكتب" },
   "@legalos.settings.firm.registrationLabel": {
@@ -272,6 +302,10 @@ export const ar: Catalog = {
   "@legalos.settings.users.inviteExpired": {
     defaultMessage: "أُرسلت الدعوة منذ {sent} أيام · انتهت منذ {expired} يومين",
   },
+  "@legalos.settings.users.inviteSent": {
+    defaultMessage: "أُرسلت الدعوة بالبريد إلى {email}.",
+  },
+  "@legalos.settings.users.inviteExpiry": { defaultMessage: "تنتهي في {date}" },
   "@legalos.settings.users.status.pending": { defaultMessage: "معلَّقة" },
   "@legalos.settings.users.status.expired": { defaultMessage: "منتهية" },
   "@legalos.settings.users.status.revoked": { defaultMessage: "ملغاة" },

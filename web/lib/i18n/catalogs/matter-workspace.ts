@@ -26,6 +26,7 @@ export const en: Catalog = {
     defaultMessage: "Communications",
   },
   "@legalos.matterWorkspace.tab.bills": { defaultMessage: "Bills" },
+  "@legalos.matterWorkspace.tab.more": { defaultMessage: "More" },
   "@legalos.matterWorkspace.tab.transactions": { defaultMessage: "Transactions" },
   "@legalos.matterWorkspace.tab.connect": { defaultMessage: "Client portal" },
 
@@ -570,6 +571,7 @@ export const ar: Catalog = {
   "@legalos.matterWorkspace.tab.calendar": { defaultMessage: "التقويم" },
   "@legalos.matterWorkspace.tab.communications": { defaultMessage: "المراسلات" },
   "@legalos.matterWorkspace.tab.bills": { defaultMessage: "الفواتير" },
+  "@legalos.matterWorkspace.tab.more": { defaultMessage: "المزيد" },
   "@legalos.matterWorkspace.tab.transactions": { defaultMessage: "الحركات المالية" },
   "@legalos.matterWorkspace.tab.connect": { defaultMessage: "بوابة الموكّل" },
 

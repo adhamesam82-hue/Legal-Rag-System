@@ -19,6 +19,9 @@ export const en: Catalog = {
   "@legalos.hearings.field.matter": { defaultMessage: "Case" },
   "@legalos.hearings.field.date": { defaultMessage: "Date" },
   "@legalos.hearings.field.time": { defaultMessage: "Time" },
+  "@legalos.hearings.field.timeHint": {
+    defaultMessage: "24-hour, e.g. 10:00. Leave it empty if it is not set yet.",
+  },
   "@legalos.hearings.field.court": { defaultMessage: "Court" },
   "@legalos.hearings.field.purpose": { defaultMessage: "Purpose" },
   "@legalos.hearings.dialog.selectMatter": { defaultMessage: "Choose a case" },
@@ -195,6 +198,9 @@ export const ar: Catalog = {
   "@legalos.hearings.field.matter": { defaultMessage: "القضية" },
   "@legalos.hearings.field.date": { defaultMessage: "التاريخ" },
   "@legalos.hearings.field.time": { defaultMessage: "الوقت" },
+  "@legalos.hearings.field.timeHint": {
+    defaultMessage: "بنظام 24 ساعة، مثل 10:00. اتركه فارغًا إن لم يتحدد بعد.",
+  },
   "@legalos.hearings.field.court": { defaultMessage: "المحكمة" },
   "@legalos.hearings.field.purpose": { defaultMessage: "الغرض" },
   "@legalos.hearings.dialog.selectMatter": { defaultMessage: "اختر قضية" },

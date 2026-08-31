@@ -48,6 +48,73 @@ class TestCreateOrganization:
         assert response.json()["name"] == "Test Firm"
 
 
+class TestFirmDetails:
+    """The firm's own details -- what /settings collects.
+
+    The screen offered a name, a registration number, a phone and an address,
+    and there was no route to send them to and no columns to hold them, so
+    Save issued no request at all.
+    """
+
+    def test_a_new_firm_has_a_name_and_nothing_else(self, client):
+        org_id = client.post("/api/orgs", json={"name": "Firm"}).json()["id"]
+        body = client.get(f"/api/orgs/{org_id}").json()
+        assert body["name"] == "Firm"
+        assert body["registration_number"] is None
+        assert body["phone"] is None
+        assert body["address"] is None
+
+    def test_the_owner_can_save_the_details(self, client):
+        org_id = client.post("/api/orgs", json={"name": "Firm"}).json()["id"]
+        response = client.patch(
+            f"/api/orgs/{org_id}",
+            json={
+                "name": "السيد وشركاه",
+                "registration_number": "س.ت 4821 لسنة 2019",
+                "phone": "+20 2 2735 1190",
+                "address": "14 شارع طلعت حرب، القاهرة",
+            },
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["registration_number"] == "س.ت 4821 لسنة 2019"
+
+    def test_what_was_saved_survives_a_reload(self, client):
+        org_id = client.post("/api/orgs", json={"name": "Firm"}).json()["id"]
+        client.patch(f"/api/orgs/{org_id}", json={"name": "الاسم الجديد"})
+        assert client.get(f"/api/orgs/{org_id}").json()["name"] == "الاسم الجديد"
+
+    def test_the_new_name_reaches_the_membership_list(self, client):
+        """The rename has to show up where every screen reads the firm name."""
+        org_id = client.post("/api/orgs", json={"name": "Firm"}).json()["id"]
+        client.patch(f"/api/orgs/{org_id}", json={"name": "الاسم الجديد"})
+        names = [m["organization_name"] for m in client.get("/api/orgs/me").json()]
+        assert names == ["الاسم الجديد"]
+
+    def test_an_omitted_field_is_left_alone(self, client):
+        org_id = client.post("/api/orgs", json={"name": "Firm"}).json()["id"]
+        client.patch(f"/api/orgs/{org_id}", json={"phone": "0100"})
+        client.patch(f"/api/orgs/{org_id}", json={"address": "القاهرة"})
+        body = client.get(f"/api/orgs/{org_id}").json()
+        assert body["phone"] == "0100"
+        assert body["address"] == "القاهرة"
+
+    def test_a_non_owner_cannot_rename_the_firm(self, client, conn):
+        from legalrag.orgs import add_membership
+
+        org_id = client.post("/api/orgs", json={"name": "Firm"}).json()["id"]
+        add_membership(conn, org_id, "user_lawyer", "lawyer")
+
+        app.dependency_overrides[get_current_user_id] = lambda: "user_lawyer"
+        response = client.patch(f"/api/orgs/{org_id}", json={"name": "Mine now"})
+        assert response.status_code == 403
+
+    def test_a_non_member_cannot_read_the_details(self, client):
+        org_id = client.post("/api/orgs", json={"name": "Firm"}).json()["id"]
+
+        app.dependency_overrides[get_current_user_id] = lambda: "user_outsider"
+        assert client.get(f"/api/orgs/{org_id}").status_code == 403
+
+
 class TestListMyOrganizations:
     def test_lists_organizations_the_caller_belongs_to(self, client):
         client.post("/api/orgs", json={"name": "Firm A"})
@@ -131,6 +198,82 @@ class TestInvites:
         response = client.post(f"/api/invites/{token}/accept")
         assert response.status_code == 200
         assert response.json()["role"] == "lawyer"
+
+
+class TestListingIssuedInvitations:
+    """Who has been invited, for the owner who sent the invitations.
+
+    Sending one closed the dialog and left nothing behind: the recipient is
+    not a member until they accept, and the roster was the only list on the
+    screen -- so "did I already invite them?" could not be answered.
+    """
+
+    @pytest.fixture(autouse=True)
+    def _no_mail(self, monkeypatch):
+        monkeypatch.setattr("legalrag.api.send_invite_email", lambda **kwargs: None)
+
+    def test_lists_what_was_sent(self, client):
+        org_id = client.post("/api/orgs", json={"name": "Firm"}).json()["id"]
+        client.post(
+            f"/api/orgs/{org_id}/invites",
+            json={"email": "new@example.com", "role": "lawyer"},
+        )
+        rows = client.get(f"/api/orgs/{org_id}/invites").json()
+        assert [(r["email"], r["role"], r["status"]) for r in rows] == [
+            ("new@example.com", "lawyer", "pending")
+        ]
+
+    def test_the_same_address_can_be_invited_twice_and_both_are_listed(
+        self, client
+    ):
+        """Re-inviting somebody is ordinary -- the first link may have been
+        lost. Each row therefore has to be identifiable by something other
+        than the address, or a client keying on the address collapses them."""
+        org_id = client.post("/api/orgs", json={"name": "Firm"}).json()["id"]
+        for _ in range(2):
+            client.post(
+                f"/api/orgs/{org_id}/invites",
+                json={"email": "new@example.com", "role": "lawyer"},
+            )
+        rows = client.get(f"/api/orgs/{org_id}/invites").json()
+        assert len(rows) == 2
+        assert len({row["id"] for row in rows}) == 2
+
+    def test_does_not_hand_back_the_acceptance_token(self, client):
+        org_id = client.post("/api/orgs", json={"name": "Firm"}).json()["id"]
+        client.post(
+            f"/api/orgs/{org_id}/invites",
+            json={"email": "new@example.com", "role": "lawyer"},
+        )
+        assert "token" not in client.get(f"/api/orgs/{org_id}/invites").json()[0]
+
+    def test_an_accepted_invitation_says_so(self, client, monkeypatch):
+        monkeypatch.setattr(
+            "legalrag.api.get_user_primary_email",
+            lambda clerk_user_id: "new@example.com",
+        )
+        org_id = client.post("/api/orgs", json={"name": "Firm"}).json()["id"]
+        token = client.post(
+            f"/api/orgs/{org_id}/invites",
+            json={"email": "new@example.com", "role": "lawyer"},
+        ).json()["token"]
+
+        app.dependency_overrides[get_current_user_id] = lambda: "user_new"
+        client.post(f"/api/invites/{token}/accept")
+
+        app.dependency_overrides[get_current_user_id] = lambda: "user_owner"
+        assert client.get(f"/api/orgs/{org_id}/invites").json()[0]["status"] == (
+            "accepted"
+        )
+
+    def test_a_non_owner_cannot_read_them(self, client, conn):
+        from legalrag.orgs import add_membership
+
+        org_id = client.post("/api/orgs", json={"name": "Firm"}).json()["id"]
+        add_membership(conn, org_id, "user_lawyer", "lawyer")
+
+        app.dependency_overrides[get_current_user_id] = lambda: "user_lawyer"
+        assert client.get(f"/api/orgs/{org_id}/invites").status_code == 403
 
 
 class TestListOrgMembers:

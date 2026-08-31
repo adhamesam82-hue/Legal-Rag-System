@@ -43,11 +43,18 @@ FIRM_NAME = "السيد وشركاه للمحاماة والاستشارات ا�
 # too, so renaming the firm replaces it rather than seeding a second one.
 FORMER_FIRM_NAMES = ["Al-Sayed & Partners"]
 
+# (clerk id, role, display name, title, email)
+#
+# The address is what the daily reminder sweep delivers to. Seeded members had
+# none, so a local run of the sweep reported the whole demo firm as
+# undeliverable every morning -- which buries a real one when it appears.
+# example.com is reserved by RFC 2606 and cannot receive mail, which is the
+# point: these are demo people.
 TEAM = [
-    ("seed_ahmed_al_sayed", "owner", "أحمد السيد", "الشريك المدير"),
-    ("seed_mona_farouk", "lawyer", "منى فاروق", "محامية أولى"),
-    ("seed_youssef_adel", "lawyer", "يوسف عادل", "محامٍ"),
-    ("seed_layla_hassan", "staff", "ليلى حسن", "مساعدة قانونية"),
+    ("seed_ahmed_al_sayed", "owner", "أحمد السيد", "الشريك المدير", "ahmed@example.com"),
+    ("seed_mona_farouk", "lawyer", "منى فاروق", "محامية أولى", "mona@example.com"),
+    ("seed_youssef_adel", "lawyer", "يوسف عادل", "محامٍ", "youssef@example.com"),
+    ("seed_layla_hassan", "staff", "ليلى حسن", "مساعدة قانونية", "layla@example.com"),
 ]
 
 AHMED, MONA, YOUSSEF, LAYLA = (member[0] for member in TEAM)
@@ -599,10 +606,15 @@ MATTER_PARTIES = [
 
 # Contacts already on file at a client, attached to a matter by contact name.
 # (matter, client, contact name, relationship, is_bill_recipient)
+#
+# "الموكّل", not "العميل": a law firm's client is a موكّل throughout this
+# product (see PRODUCT.md's glossary and the T-005/T-015 rename). These three
+# rows were missed by that rename, so the matter workspace showed the one
+# screen where the old word was still on display.
 MATTER_CLIENT_CONTACTS = [
-    ("nabil-v-nile-trading", "nile-trading", "كريم فهمي", "العميل", True),
-    ("delta-foods-labour-dispute", "delta-foods", "تامر جابر", "العميل", True),
-    ("khalil-tax-objection", "khalil-holdings", "نادية خليل", "العميل", True),
+    ("nabil-v-nile-trading", "nile-trading", "كريم فهمي", "الموكّل", True),
+    ("delta-foods-labour-dispute", "delta-foods", "تامر جابر", "الموكّل", True),
+    ("khalil-tax-objection", "khalil-holdings", "نادية خليل", "الموكّل", True),
 ]
 
 # (matter, user, date, description, category, quantity, unit_amount, billable)
@@ -708,7 +720,7 @@ def reset(conn: psycopg.Connection, organization_id: int) -> None:
 def seed(conn: psycopg.Connection, owner_clerk_id: str | None) -> int:
     team = list(TEAM)
     if owner_clerk_id:
-        team[0] = (owner_clerk_id, "owner", TEAM[0][2], TEAM[0][3])
+        team[0] = (owner_clerk_id, "owner", TEAM[0][2], TEAM[0][3], TEAM[0][4])
     owner_id = team[0][0]
 
     with conn.cursor() as cur:
@@ -717,11 +729,11 @@ def seed(conn: psycopg.Connection, owner_clerk_id: str | None) -> int:
             (FIRM_NAME, owner_id),
         )
         org = cur.fetchone()[0]
-        for clerk_user_id, role, display_name, title in team:
+        for clerk_user_id, role, display_name, title, email in team:
             cur.execute(
                 "INSERT INTO memberships (organization_id, clerk_user_id, role, "
-                "display_name, title) VALUES (%s, %s, %s, %s, %s)",
-                (org, clerk_user_id, role, display_name, title),
+                "display_name, title, email) VALUES (%s, %s, %s, %s, %s, %s)",
+                (org, clerk_user_id, role, display_name, title, email),
             )
 
         # The seeded team ids are placeholders unless --owner-clerk-id rebound

@@ -142,12 +142,20 @@ def _load_children(conn: psycopg.Connection, case: Case) -> Case:
         "WHERE case_id = %s ORDER BY doc_date",
         (case.id,),
     )
+    # The same column list every other hearing query uses. It was a shorter,
+    # hand-written one, missing four of the model's fields -- which raised a
+    # TypeError only once a matter had a hearing that had not happened yet, so
+    # a seeded database full of past sittings never reached it and the first
+    # future hearing a real firm scheduled took down the case screen and the
+    # calendar with it.
     case.next_hearing = fetch_one(
         conn,
         Hearing,
-        "SELECT id, matter_id, hearing_date, hearing_time, court, purpose, outcome "
-        "FROM hearings WHERE matter_id = %s AND hearing_date >= CURRENT_DATE "
-        "ORDER BY hearing_date LIMIT 1",
+        f"SELECT {_HEARING_COLUMNS} FROM hearings h "
+        "JOIN matters m ON m.id = h.matter_id "
+        "LEFT JOIN cases c ON c.matter_id = h.matter_id "
+        "WHERE h.matter_id = %s AND h.hearing_date >= CURRENT_DATE "
+        "ORDER BY h.hearing_date, h.hearing_time LIMIT 1",
         (case.matter_id,),
     )
     return case
@@ -514,6 +522,18 @@ def create_hearing(
         )
         if cur.fetchone() is None:
             raise NotFoundError(f"matter {matter_id}")
+        # A sitting left without a court inherits the one its case is filed
+        # in. The circuit was already inherited through the join on read, so a
+        # blank court next to a filled-in circuit was the record contradicting
+        # itself -- either both come from the case or neither does.
+        if not court:
+            cur.execute(
+                "SELECT court FROM cases WHERE organization_id = %s AND matter_id = %s",
+                (organization_id, matter_id),
+            )
+            row = cur.fetchone()
+            if row is not None:
+                court = row[0] or ""
         cur.execute(
             "INSERT INTO hearings (organization_id, matter_id, hearing_date, "
             "hearing_time, court, purpose, outcome, outcome_note, next_hearing_date) "
