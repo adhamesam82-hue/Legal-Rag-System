@@ -56,6 +56,59 @@ def test_clerk_key_reaches_the_browser_at_request_time():
     assert "export function usingClerk" in auth_mode
 
 
+def test_enabled_features_are_decided_at_request_time():
+    """Staging exists to show every screen; production ships a small set. Both
+    run the same image, so the enabled set cannot be frozen when that image is
+    built -- it was, and every gated route answered 404 on staging.
+    """
+    layout = read("web/app/layout.tsx")
+    assert "NEXT_PUBLIC_LEGALOS_FEATURES" in layout, (
+        "the server-rendered layout does not read the feature set, so the "
+        "browser only has whatever was inlined at build time"
+    )
+
+    features = read("web/lib/features.ts")
+    assert "export function setEnabledFeatures" in features
+    assert "const ENABLED = parseEnabled" not in features, (
+        "a module constant is evaluated when the bundle is built, which is the "
+        "bug this replaced"
+    )
+
+
+def test_staging_shows_every_screen_and_production_does_not():
+    """The difference between the two environments is one variable, and it
+    should be visible in git rather than hidden in a secrets file on the box.
+    """
+    staging = _staging_compose()["services"]["web-staging"]
+    assert (staging.get("environment") or {}).get("NEXT_PUBLIC_LEGALOS_FEATURES") == "all", (
+        "staging does not enable every screen, which is what it is for"
+    )
+
+    import yaml
+
+    production = yaml.safe_load(read("deploy/docker-compose.prod.yml"))
+    prod_web = production["services"]["web"]
+    assert "NEXT_PUBLIC_LEGALOS_FEATURES" not in (prod_web.get("environment") or {}), (
+        "production must ship the default set from lib/features.ts, not "
+        "whatever staging is showing"
+    )
+
+
+def test_the_nav_is_filtered_after_the_feature_set_arrives():
+    """Module-scope work runs at import time, before Providers publishes the
+    server's value. A nav filtered there is built from the shipped set, so a
+    staging-only screen answers on its URL but never appears in the sidebar --
+    a half-enabled state that looks like a routing bug.
+    """
+    shell = read("web/components/Shell.tsx")
+    filter_index = shell.index("isPathEnabled(item.href)")
+    preceding = shell[:filter_index]
+    assert "function navSections" in preceding, (
+        "the nav is filtered at module scope rather than inside a function "
+        "called during render"
+    )
+
+
 def test_the_web_image_is_not_built_per_environment():
     """The promotion model depends on one artefact: production runs the image
     staging ran. Baking a Clerk key into the image would mean two builds and

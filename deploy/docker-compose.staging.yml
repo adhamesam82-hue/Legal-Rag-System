@@ -26,6 +26,17 @@ services:
     # production keys. Same narrow split as production: the internet-facing
     # container gets Clerk and nothing else.
     env_file: /opt/alsigil-staging/web.env
+    environment:
+      # Staging shows every screen; production ships the small set in
+      # lib/features.ts. Set here rather than in web.env because it is
+      # configuration, not a secret, and belongs in git where the difference
+      # between the two environments is visible.
+      #
+      # This works only because the value is read by the server-rendered layout
+      # at request time and handed to the client. As a build-time NEXT_PUBLIC_
+      # inline it would have meant a second image for staging, and the promoted
+      # artefact would no longer be the one that was tested.
+      NEXT_PUBLIC_LEGALOS_FEATURES: all
     expose:
       - "3000"
     networks:

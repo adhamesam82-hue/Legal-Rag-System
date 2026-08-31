@@ -88,11 +88,36 @@ function parseEnabled(raw: string | undefined): ReadonlySet<Feature> | "all" {
   );
 }
 
-const ENABLED = parseEnabled(process.env.NEXT_PUBLIC_LEGALOS_FEATURES);
+/**
+ * The enabled set, read at request time rather than frozen into the bundle.
+ *
+ * On the server -- middleware and server rendering -- the initialiser below is
+ * the real environment. In the browser it is not: Next inlines
+ * process.env.NEXT_PUBLIC_* when the image is BUILT, and this image is built
+ * once with no value so the same artefact can be promoted from staging to
+ * production. The client therefore starts with the shipped set and is corrected
+ * by setEnabledFeatures(), which Providers calls with the value the
+ * server-rendered layout read for this request.
+ *
+ * The same shape of mistake, read from the same env var, is what made every
+ * gated screen 404 on a staging environment whose whole purpose is to show
+ * them. See lib/auth-mode.ts for the sibling case that broke authentication.
+ */
+let enabled: ReadonlySet<Feature> | "all" = parseEnabled(
+  process.env.NEXT_PUBLIC_LEGALOS_FEATURES,
+);
+
+/** Called from Providers with the value the server read at request time. */
+export function setEnabledFeatures(raw: string | null | undefined): void {
+  const value = raw?.trim();
+  if (value) {
+    enabled = parseEnabled(value);
+  }
+}
 
 /** Whether this surface is shown in this build. */
 export function isEnabled(feature: Feature): boolean {
-  return ENABLED === "all" || ENABLED.has(feature);
+  return enabled === "all" || enabled.has(feature);
 }
 
 /**
