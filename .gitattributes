@@ -1,0 +1,11 @@
+# Shell scripts and the files copied onto the box must keep LF endings in the
+# working tree, on Windows too. core.autocrlf=true would otherwise hand a
+# checked-out provision.sh CRLF line endings, and `scp`ing that to the box
+# makes bash fail on every line with `$'\r': command not found` -- a failure
+# that says nothing about line endings and appears only on the server.
+*.sh text eol=lf
+deploy/Caddyfile text eol=lf
+deploy/*.example text eol=lf
+deploy/*.service text eol=lf
+deploy/*.timer text eol=lf
+deploy/*.yml text eol=lf

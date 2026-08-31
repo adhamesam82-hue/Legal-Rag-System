@@ -150,11 +150,81 @@ def test_caddyfile_holds_requests_across_a_container_restart():
         )
 
 
-def _build_workflow_steps():
+def _workflow(relative_path: str):
     import yaml
 
-    workflow = yaml.safe_load(read(".github/workflows/build.yml"))
-    return workflow["jobs"]["build"]["steps"]
+    return yaml.safe_load(read(relative_path))
+
+
+def _triggers(workflow) -> dict:
+    """A workflow's `on:` block.
+
+    YAML 1.1 reads a bare `on` key as the boolean True, so `workflow["on"]`
+    is a KeyError on every GitHub workflow file loaded with pyyaml. This is
+    the reason the assertions below are written against a helper rather than
+    against the key directly.
+    """
+    return workflow.get("on", workflow.get(True))
+
+
+def _build_workflow_steps():
+    return _workflow(".github/workflows/build.yml")["jobs"]["build"]["steps"]
+
+
+def test_build_workflow_runs_the_suite_before_building_anything():
+    """The tests must gate the image, not merely run beside it.
+
+    Both workflows used to fire independently on a push to main, so a commit
+    that broke tenant isolation was built, pushed to GHCR, and shipped by
+    deploy.yml -- which triggers on this workflow's conclusion -- while the
+    suite was still running. The red X then arrived after the box was already
+    serving the change. A `needs:` on a job that actually runs the suite is
+    what makes the failure structural instead of a race.
+    """
+    build_workflow = _workflow(".github/workflows/build.yml")
+    jobs = build_workflow["jobs"]
+
+    gate_names = [
+        name
+        for name, job in jobs.items()
+        if str(job.get("uses", "")).endswith(".github/workflows/test.yml")
+    ]
+    assert gate_names, (
+        "no job in build.yml runs the test suite; a failing suite would not "
+        "stop an image from being built and deployed"
+    )
+
+    needs = jobs["build"].get("needs")
+    required = [needs] if isinstance(needs, str) else (needs or [])
+    assert any(name in required for name in gate_names), (
+        "the build job does not depend on the test job, so the two run in "
+        "parallel and the gate is decorative"
+    )
+
+
+def test_test_workflow_is_callable_and_does_not_also_run_itself_on_main():
+    """The gate above needs `workflow_call`, and main must not additionally
+    trigger the same suite on its own -- that is a second run with no added
+    signal, and it makes the pre-merge and pre-build results diverge in the
+    logs for no reason. Pull requests keep their own trigger: that is where
+    the suite is read before a merge exists.
+    """
+    triggers = _triggers(_workflow(".github/workflows/test.yml"))
+
+    assert "workflow_call" in triggers, (
+        "test.yml is not callable, so build.yml cannot gate on it"
+    )
+    assert "pull_request" in triggers, (
+        "the suite must still run on pull requests"
+    )
+
+    push = triggers.get("push") or {}
+    branches = push.get("branches") or []
+    ignored = push.get("branches-ignore") or []
+    assert "main" in ignored or ("main" not in branches and "**" not in branches), (
+        "main triggers the suite directly as well as through build.yml; "
+        "the same commit would run the whole suite twice"
+    )
 
 
 def test_build_workflow_passes_api_base_as_a_build_arg():
@@ -204,10 +274,234 @@ def test_build_workflow_fails_the_build_if_localhost_leaks_into_the_bundle():
     )
 
 
-def _deploy_workflow():
-    import yaml
+def _provision_script() -> str:
+    return read("deploy/provision.sh")
 
-    return yaml.safe_load(read(".github/workflows/deploy.yml"))
+
+def test_provision_aborts_on_the_first_failure():
+    """Half a baseline is worse than none: without this, a failed `ufw enable`
+    or a failed Docker install scrolls past and the script still prints
+    "Done", so the box looks provisioned and is not.
+    """
+    assert "set -euo pipefail" in _provision_script()
+
+
+def test_provision_never_overwrites_the_secrets_files():
+    """Re-running is how the box is rebuilt, and it is also what somebody does
+    when a deploy misbehaves. An unguarded `install /dev/null` over
+    /opt/alsigil/.env would blank every secret on the machine -- the database
+    password, the restic key -- and the failure would surface later as a
+    container that cannot connect, with nothing pointing back at the re-run.
+    """
+    script = _provision_script()
+    for target in ("$APP_DIR/.env", "$APP_DIR/web.env", "$APP_DIR/deploy/.env"):
+        guard = f'if [ ! -f "{target}" ]; then'
+        assert guard in script, (
+            f"{target} is created without an existence guard, so re-running "
+            "provision.sh destroys it"
+        )
+
+
+def test_provision_creates_the_secrets_files_readable_by_the_deploy_user():
+    """0600 root:root is the intuitive choice here and it breaks every deploy:
+    Compose resolves `env_file:` client-side as the invoking user, which is
+    always `deploy` on this box, so `pull`, `run` and `up -d` all fail with
+    "permission denied" before a container exists.
+    """
+    script = _provision_script()
+    for target in ("$APP_DIR/.env", "$APP_DIR/web.env"):
+        line = next(
+            line for line in script.splitlines()
+            if "install -m" in line and target in line
+        )
+        assert "-m 0640" in line, f"{target} must be group-readable by deploy"
+        assert "-o root" in line and '-g "$DEPLOY_USER"' in line, (
+            f"{target} must be root:deploy"
+        )
+
+
+def test_provision_creates_swap_that_survives_a_reboot():
+    """4 GB across four containers has no headroom for the spikes -- a
+    migration, the first vector query after a restart, an image unpack -- and
+    the kernel's answer to a spike without swap is to kill the largest
+    process, which is Postgres, mid-deploy. An /etc/fstab entry is what makes
+    it still be there after the reboot that follows the first crash.
+    """
+    script = _provision_script()
+    assert "mkswap" in script and "swapon" in script, (
+        "provision.sh does not create swap"
+    )
+    assert "/etc/fstab" in script, (
+        "the swapfile is not registered in fstab, so it disappears on reboot"
+    )
+
+
+def test_provision_does_not_recreate_swap_it_already_made():
+    """Re-running must not append a second fstab line or reformat a swapfile
+    the kernel is currently using."""
+    script = _provision_script()
+    assert 'if ! swapon --show=NAME --noheadings 2>/dev/null | grep -qx "$SWAP_FILE"' in script, (
+        "the swap block has no guard against an already-active swapfile"
+    )
+    assert 'if ! grep -q "^$SWAP_FILE " /etc/fstab' in script, (
+        "re-running would append a duplicate fstab entry"
+    )
+
+
+def test_provision_keeps_the_swapfile_private():
+    """Swap holds whatever the API had in memory: the database password, Clerk
+    keys, document contents. A world-readable swapfile is a world-readable
+    copy of all of it.
+    """
+    script = _provision_script()
+    assert 'chmod 0600 "$SWAP_FILE"' in script
+
+
+def test_provision_lowers_swappiness_for_a_database_box():
+    """The default of 60 pages out idle Postgres buffers to grow the page
+    cache, turning indexed lookups into disk reads. The swapfile here is an
+    OOM cushion, not a memory tier.
+    """
+    script = _provision_script()
+    assert "vm.swappiness=10" in script
+    # Written to a file but never loaded would leave the default in force
+    # until the next reboot.
+    assert "sysctl" in script
+
+
+def test_provision_lets_the_deploy_user_reach_docker_and_sudo():
+    """The deploy workflow SSHs in as `deploy` and runs compose; the backup,
+    restore-check and monitoring units are installed by that same account
+    through sudo. Missing either group turns a later task into an
+    unexplained permission error.
+    """
+    script = _provision_script()
+    assert 'usermod -aG docker "$DEPLOY_USER"' in script
+    assert 'usermod -aG sudo "$DEPLOY_USER"' in script
+
+
+def test_provision_gives_the_deploy_user_passwordless_sudo():
+    """Group membership alone is not enough. The account is created with
+    --disabled-password and authenticates by key, so `sudo` prompts for a
+    password that does not exist -- measured on the box as "sudo: interactive
+    authentication is required". Every unattended path that needs root (the
+    backup timer, the restore check) would hang or fail on that prompt.
+    """
+    script = _provision_script()
+    assert "NOPASSWD:ALL" in script, (
+        "deploy is in the sudo group but has no password, so sudo can never "
+        "succeed for it"
+    )
+    assert "/etc/sudoers.d/" in script, (
+        "the rule must be a drop-in file, not an edit to /etc/sudoers"
+    )
+    assert "visudo -cf" in script, (
+        "a malformed sudoers file breaks sudo for every account on a box "
+        "where root login is already disabled; validate before installing it"
+    )
+
+
+def test_provision_refuses_to_harden_ssh_with_no_key_to_come_back_in_with():
+    """A Hetzner server created without an SSH key attached has no
+    /root/.ssh/authorized_keys, so the deploy user inherits none. Hardening
+    such a box turns off root login and password login in one step and
+    leaves a machine reachable only through the provider's rescue console --
+    while printing "Done". The check must run before the sshd config is
+    written, and must exit non-zero.
+    """
+    script = _provision_script()
+
+    guard_index = script.find('if [ ! -s "/home/$DEPLOY_USER/.ssh/authorized_keys" ]')
+    assert guard_index != -1, (
+        "provision.sh disables password login without first checking that a "
+        "key exists to get back in with"
+    )
+
+    harden_index = script.index("PasswordAuthentication no")
+    assert guard_index < harden_index, (
+        "the key check must run before password authentication is disabled"
+    )
+
+    guard_block = script[guard_index:harden_index]
+    assert "exit 1" in guard_block, (
+        "the guard must abort provisioning, not merely warn and continue"
+    )
+
+
+def test_provision_disables_root_login_and_passwords():
+    """The box has a public IPv4 and will be scanned within minutes of
+    existing. Key-only, non-root is the whole of the SSH story here."""
+    script = _provision_script()
+    assert "PermitRootLogin no" in script
+    assert "PasswordAuthentication no" in script
+    # A config file that is written but never loaded hardens nothing.
+    assert "systemctl restart ssh" in script
+
+
+def test_provision_opens_only_ssh_and_the_web_ports():
+    """ufw is the second line after Caddy. Anything else opened here -- a
+    published 5432 in particular -- would put Postgres on the internet.
+    """
+    script = _provision_script()
+    allowed = re.findall(r"^\s*ufw allow (\S+)", script, flags=re.MULTILINE)
+    assert set(allowed) == {"22/tcp", "80/tcp", "443/tcp"}, (
+        f"provision.sh opens unexpected ports: {sorted(set(allowed))}"
+    )
+    assert "ufw --force enable" in script, (
+        "the rules are configured but the firewall is never enabled"
+    )
+
+
+def test_web_env_example_carries_nothing_but_clerk():
+    """The split between the two env files is only worth having if the
+    narrow one stays narrow. This is the test that notices when somebody
+    debugging a broken deploy pastes DATABASE_URL in here to see if it
+    helps, and then commits it as the template.
+    """
+    template = read("deploy/web.env.example")
+    keys = {
+        line.split("=", 1)[0].strip()
+        for line in template.splitlines()
+        if "=" in line and not line.strip().startswith("#")
+    }
+    assert keys == {"NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "CLERK_SECRET_KEY"}, (
+        f"web.env.example carries more than Clerk: {sorted(keys)}"
+    )
+
+
+def test_env_example_does_not_ship_the_authentication_bypass():
+    """LEGALOS_DEV_AUTH treats every request as one user. Present in the
+    template -- even blank, even commented as optional -- it is one
+    uncomment away from an unauthenticated production box.
+    """
+    template = read("deploy/env.example")
+    settings = [
+        line for line in template.splitlines()
+        if not line.strip().startswith("#") and "=" in line
+    ]
+    assert not any(line.startswith("LEGALOS_DEV_AUTH") for line in settings)
+
+
+def test_env_example_covers_what_the_containers_are_given():
+    """A template missing a variable becomes a deploy that fails at runtime
+    on a box, which is the most expensive place to discover it.
+    """
+    template = read("deploy/env.example")
+    for variable in (
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_DB",
+        "DATABASE_URL",
+        "CLERK_JWKS_URL",
+        "LEGALOS_DOCUMENT_ROOT",
+        "RESTIC_REPOSITORY",
+        "RESTIC_PASSWORD",
+    ):
+        assert f"{variable}=" in template, f"env.example does not mention {variable}"
+
+
+def _deploy_workflow():
+    return _workflow(".github/workflows/deploy.yml")
 
 
 def _deploy_steps():
