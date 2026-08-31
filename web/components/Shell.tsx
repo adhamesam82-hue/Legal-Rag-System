@@ -141,14 +141,26 @@ const ALL_NAV_SECTIONS: { titleKey: string; items: NavItem[] }[] = [
 ];
 
 // Hidden screens leave the nav here and the router in middleware.ts; see
-// lib/features.ts for what is off and why. Filtered once at module scope --
-// the enabled set is fixed at build time, so per-render work would buy
-// nothing. A section whose every item is gated off disappears with them
-// rather than leaving an empty heading.
-const NAV_SECTIONS = ALL_NAV_SECTIONS.map((section) => ({
-  ...section,
-  items: section.items.filter((item) => isPathEnabled(item.href)),
-})).filter((section) => section.items.length > 0);
+// lib/features.ts for what is off and why. A section whose every item is gated
+// off disappears with them rather than leaving an empty heading.
+//
+// Filtered on first use and cached, NOT at module scope. The enabled set is no
+// longer fixed when the bundle is built: it arrives from the server-rendered
+// layout and Providers publishes it during render. Module-scope work runs at
+// import time, before that -- so this list would have been built from the
+// shipped set, and every staging-only screen would stay missing from the nav
+// even though its route now answers.
+let navSectionsCache: { titleKey: string; items: NavItem[] }[] | null = null;
+
+function navSections(): { titleKey: string; items: NavItem[] }[] {
+  if (navSectionsCache === null) {
+    navSectionsCache = ALL_NAV_SECTIONS.map((section) => ({
+      ...section,
+      items: section.items.filter((item) => isPathEnabled(item.href)),
+    })).filter((section) => section.items.length > 0);
+  }
+  return navSectionsCache;
+}
 
 const FIRMS = [
   { id: "al-sayed", nameKey: "@legalos.shell.firm.alSayed" },
@@ -183,7 +195,7 @@ type CommandItem = {
  */
 function useCommandSource(t: TranslatorFn, practice: PracticeApi | null) {
   return useMemo(() => {
-    const navItems: CommandItem[] = NAV_SECTIONS.flatMap((section) =>
+    const navItems: CommandItem[] = navSections().flatMap((section) =>
       section.items.map((item) => ({
         id: item.href,
         label: t(item.labelKey),
@@ -457,7 +469,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         />
       }
     >
-      {NAV_SECTIONS.map((section) => (
+      {navSections().map((section) => (
         <SideNavSection key={section.titleKey} title={t(section.titleKey)}>
           {section.items.map((item) => {
             const isSelected = [item.href, ...(item.alsoMatch ?? [])].some((prefix) =>
@@ -561,3 +573,4 @@ export function Shell({ children }: { children: React.ReactNode }) {
     </>
   );
 }
+

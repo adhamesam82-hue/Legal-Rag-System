@@ -55,6 +55,7 @@ export default async function RootLayout({
         <Providers
           initialLocale={locale}
           clerkPublishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? null}
+          features={process.env.NEXT_PUBLIC_LEGALOS_FEATURES ?? null}
         >
           <Shell>{children}</Shell>
         </Providers>

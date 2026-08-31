@@ -10,6 +10,7 @@ import { Theme } from "@astryxdesign/core/theme";
 import { LinkProvider } from "@astryxdesign/core/Link";
 import { legalosTheme } from "@/lib/legalos";
 import { setClerkPublishableKey, usingClerk } from "@/lib/auth-mode";
+import { setEnabledFeatures } from "@/lib/features";
 import { AuthTokenBridge } from "@/components/AuthTokenBridge";
 import { OrgProvider } from "@/lib/org";
 import { LocaleProvider } from "@/lib/i18n/provider";
@@ -70,6 +71,7 @@ export function Providers({
   children,
   initialLocale,
   clerkPublishableKey,
+  features,
 }: {
   children: React.ReactNode;
   initialLocale?: Locale;
@@ -78,10 +80,15 @@ export function Providers({
    *  bundle at build time, and the image is built once with no Clerk key so the
    *  same artefact can serve staging and production. See lib/auth-mode.ts. */
   clerkPublishableKey?: string | null;
+  /** NEXT_PUBLIC_LEGALOS_FEATURES, read by the server layout on each request.
+   *  Same reason as the Clerk key: inlining it at build time would tie the
+   *  image to one environment, and staging exists to show every screen. */
+  features?: string | null;
 }) {
   // During render, not in an effect: children read usingClerk() while they
   // render, and an effect would run after they had already decided.
   setClerkPublishableKey(clerkPublishableKey);
+  setEnabledFeatures(features);
   const clerkIsConfigured = usingClerk();
   const [mode, setMode] = useState<ColorMode>("system");
   const ctxValue = useMemo(() => ({ mode, setMode }), [mode]);
@@ -112,3 +119,4 @@ export function Providers({
     inner
   );
 }
+
