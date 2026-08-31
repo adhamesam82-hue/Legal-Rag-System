@@ -1,0 +1,375 @@
+[
+  {
+    "id": "T-001",
+    "title": "إغلاق مسارات LLM الثلاثة المفتوحة",
+    "batch": 0,
+    "owner": "backend",
+    "est": "30د",
+    "labels": [
+      "أمان",
+      "حرج",
+      "backend"
+    ],
+    "deps": [],
+    "files": [
+      "src/legalrag/api.py",
+      "tests/"
+    ]
+  },
+  {
+    "id": "T-002",
+    "title": "حد حجم ونوع لرفع المستندات",
+    "batch": 0,
+    "owner": "backend",
+    "est": "1س",
+    "labels": [
+      "أمان",
+      "حرج",
+      "backend"
+    ],
+    "deps": [],
+    "files": [
+      "src/legalrag/practice_api.py",
+      "src/legalrag/practice/documents.py"
+    ]
+  },
+  {
+    "id": "T-003",
+    "title": "إغلاق ثغرة XSS في تقديم المستندات",
+    "batch": 0,
+    "owner": "backend",
+    "est": "1س",
+    "labels": [
+      "أمان",
+      "حرج",
+      "backend"
+    ],
+    "deps": [],
+    "files": [
+      "src/legalrag/practice_api.py"
+    ]
+  },
+  {
+    "id": "T-004",
+    "title": "حد معدل الطلبات على البروكسي",
+    "batch": 0,
+    "owner": "backend",
+    "est": "1س",
+    "labels": [
+      "أمان",
+      "ops"
+    ],
+    "deps": [],
+    "files": [
+      "deploy/Caddyfile",
+      "docs/deployment.md"
+    ]
+  },
+  {
+    "id": "T-005",
+    "title": "العملاء ← الموكّلين في كل الواجهة",
+    "batch": 1,
+    "owner": "frontend",
+    "est": "3س",
+    "labels": [
+      "i18n",
+      "frontend"
+    ],
+    "deps": [],
+    "files": [
+      "web/lib/i18n/catalogs/"
+    ]
+  },
+  {
+    "id": "T-006",
+    "title": "قاعدة المعرفة ← نماذج وقوالب",
+    "batch": 1,
+    "owner": "frontend",
+    "est": "1س",
+    "labels": [
+      "i18n",
+      "frontend"
+    ],
+    "deps": [],
+    "files": [
+      "web/lib/i18n/catalogs/shell.ts",
+      "web/lib/i18n/catalogs/knowledge-base.ts"
+    ]
+  },
+  {
+    "id": "T-007",
+    "title": "وحدة الـ flags وإخفاء التبويبات وشاشات الذكاء الاصطناعي",
+    "batch": 1,
+    "owner": "frontend",
+    "est": "4س",
+    "labels": [
+      "frontend",
+      "نطاق"
+    ],
+    "deps": [
+      "T-001"
+    ],
+    "files": [
+      "web/lib/features.ts",
+      "web/components/Shell.tsx",
+      "web/app/"
+    ]
+  },
+  {
+    "id": "T-008",
+    "title": "إضافة مهمة من داخل القضية",
+    "batch": 1,
+    "owner": "frontend",
+    "est": "4س",
+    "labels": [
+      "frontend",
+      "تحسين"
+    ],
+    "deps": [],
+    "files": [
+      "web/app/matters/[id]/page.tsx",
+      "web/lib/i18n/catalogs/matters.ts"
+    ]
+  },
+  {
+    "id": "T-009",
+    "title": "اختيار المحامين بالبحث والتحديد المتعدد",
+    "batch": 1,
+    "owner": "frontend",
+    "est": "1ي",
+    "labels": [
+      "frontend",
+      "تحسين"
+    ],
+    "deps": [],
+    "files": [
+      "web/lib/api.ts",
+      "web/app/matters/page.tsx"
+    ]
+  },
+  {
+    "id": "T-010",
+    "title": "توصيل شاشة المستخدمين بالـ API",
+    "batch": 1,
+    "owner": "frontend",
+    "est": "1ي",
+    "labels": [
+      "frontend",
+      "حرج"
+    ],
+    "deps": [],
+    "files": [
+      "web/app/settings/users/page.tsx",
+      "web/lib/api.ts"
+    ]
+  },
+  {
+    "id": "T-011",
+    "title": "توصيل شاشة الملف الشخصي",
+    "batch": 1,
+    "owner": "frontend",
+    "est": "4س",
+    "labels": [
+      "frontend",
+      "حرج"
+    ],
+    "deps": [],
+    "files": [
+      "web/app/settings/profile/page.tsx"
+    ]
+  },
+  {
+    "id": "T-012",
+    "title": "سجل التوكيلات",
+    "batch": 2,
+    "owner": "backend",
+    "est": "2ي",
+    "labels": [
+      "نموذج-بيانات",
+      "حرج",
+      "backend"
+    ],
+    "deps": [],
+    "files": [
+      "migrations/",
+      "src/legalrag/practice/",
+      "src/legalrag/practice_api.py"
+    ]
+  },
+  {
+    "id": "T-013",
+    "title": "رقم الدعوى بالسنة القضائية ودرجة التقاضي",
+    "batch": 2,
+    "owner": "backend",
+    "est": "1ي",
+    "labels": [
+      "نموذج-بيانات",
+      "backend"
+    ],
+    "deps": [],
+    "files": [
+      "migrations/",
+      "src/legalrag/practice/cases.py",
+      "web/app/cases/"
+    ]
+  },
+  {
+    "id": "T-014",
+    "title": "نتيجة الجلسة كقائمة محدّدة",
+    "batch": 2,
+    "owner": "backend",
+    "est": "4س",
+    "labels": [
+      "نموذج-بيانات",
+      "backend"
+    ],
+    "deps": [],
+    "files": [
+      "migrations/",
+      "src/legalrag/practice/cases.py",
+      "web/lib/i18n/catalogs/enums.ts"
+    ]
+  },
+  {
+    "id": "T-015",
+    "title": "تصحيح المصطلحات المهنية",
+    "batch": 2,
+    "owner": "frontend",
+    "est": "3س",
+    "labels": [
+      "i18n",
+      "frontend"
+    ],
+    "deps": [
+      "T-005"
+    ],
+    "files": [
+      "web/lib/i18n/catalogs/"
+    ]
+  },
+  {
+    "id": "T-016",
+    "title": "استكمال أنواع القضايا",
+    "batch": 2,
+    "owner": "backend",
+    "est": "3س",
+    "labels": [
+      "نموذج-بيانات",
+      "backend"
+    ],
+    "deps": [],
+    "files": [
+      "migrations/",
+      "web/lib/i18n/catalogs/enums.ts"
+    ]
+  },
+  {
+    "id": "T-017",
+    "title": "تبويب الجلسات: إنشاء وفلترة وبحث",
+    "batch": 2,
+    "owner": "fullstack",
+    "est": "2ي",
+    "labels": [
+      "frontend",
+      "backend",
+      "ميزة"
+    ],
+    "deps": [
+      "T-014",
+      "T-013"
+    ],
+    "files": [
+      "web/app/cases/",
+      "src/legalrag/practice_api.py",
+      "src/legalrag/practice/cases.py"
+    ]
+  },
+  {
+    "id": "T-018",
+    "title": "تقسيم practice_api.py إلى راوترات",
+    "batch": 3,
+    "owner": "backend",
+    "est": "1ي",
+    "labels": [
+      "إعادة-هيكلة",
+      "backend"
+    ],
+    "deps": [],
+    "files": [
+      "src/legalrag/practice_api.py"
+    ]
+  },
+  {
+    "id": "T-019",
+    "title": "الصلاحيات المرنة: حصر رؤية القضايا",
+    "batch": 3,
+    "owner": "backend",
+    "est": "2ي",
+    "labels": [
+      "أمان",
+      "ميزة",
+      "backend"
+    ],
+    "deps": [
+      "T-018",
+      "T-010"
+    ],
+    "files": [
+      "migrations/",
+      "src/legalrag/practice/",
+      "web/app/settings/users/page.tsx"
+    ]
+  },
+  {
+    "id": "T-020",
+    "title": "فاتورة PDF قابلة للطباعة",
+    "batch": 4,
+    "owner": "backend",
+    "est": "2ي",
+    "labels": [
+      "ميزة",
+      "backend",
+      "حرج"
+    ],
+    "deps": [],
+    "files": [
+      "src/legalrag/practice/billing.py",
+      "src/legalrag/practice_api.py"
+    ]
+  },
+  {
+    "id": "T-021",
+    "title": "سطر الضريبة على الفواتير",
+    "batch": 4,
+    "owner": "backend",
+    "est": "1ي",
+    "labels": [
+      "ميزة",
+      "امتثال",
+      "backend"
+    ],
+    "deps": [
+      "T-020"
+    ],
+    "files": [
+      "migrations/",
+      "src/legalrag/practice/billing.py"
+    ]
+  },
+  {
+    "id": "T-022",
+    "title": "استيراد الموكّلين والقضايا من CSV",
+    "batch": 4,
+    "owner": "fullstack",
+    "est": "2ي",
+    "labels": [
+      "ميزة",
+      "تبنّي"
+    ],
+    "deps": [],
+    "files": [
+      "src/legalrag/practice/",
+      "web/app/"
+    ]
+  }
+]
