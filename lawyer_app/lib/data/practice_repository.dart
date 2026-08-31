@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../models/agenda.dart';
+import '../models/document.dart';
 import '../models/hearing.dart';
 import '../models/matter.dart';
 
@@ -48,6 +49,28 @@ class PracticeRepository {
         .map((e) => Hearing.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+
+  Future<List<MatterDocument>> documents({int? matterId}) async {
+    final response = await _dio.get<List<dynamic>>(
+      _path('documents'),
+      queryParameters: {if (matterId != null) 'matter_id': matterId},
+    );
+    return (response.data ?? [])
+        .map((e) => MatterDocument.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Where a document's bytes are served from.
+  ///
+  /// Returned as a URL rather than fetched: on web the browser downloads it
+  /// itself, and pulling a 50MB scan through Dio into memory to hand straight
+  /// back to the browser would be pointless on a phone.
+  ///
+  /// Note this carries no Authorization header. Fine under dev-auth; when
+  /// Clerk lands this needs a short-lived signed URL from the server, the way
+  /// the client portal already does it -- see legalrag/client_access.py.
+  String documentContentUrl(int documentId) =>
+      '${_dio.options.baseUrl}${_path('documents/$documentId/content')}';
 
   /// Recording what happened at a sitting. The app's reason to allow writes.
   ///

@@ -67,6 +67,7 @@ emulator is the emulator.
 | يومي | `GET /my-day` | Overdue first and never collapsed — a deadline missed last week is exactly what a horizon starting today would drop. |
 | الجلسات | `GET /hearings`, `PATCH /hearings/{id}` | Search across every column. Recording an outcome is the app's one real write. |
 | القضايا | `GET /matters`, `POST /time-entries` | Search and open-only filter, both local to one fetch. |
+| المستندات | `GET /documents` | Read-only. A row with no `storage_key` says so instead of offering an Open button that 404s. |
 
 ## What is not here yet
 
@@ -80,8 +81,13 @@ which is pre-1.0. `auth_gateway.dart` is an interface for exactly this reason
 calls it; it needs an FCM token, which needs the Firebase client SDK on this
 side. The server half is done — see `src/legalrag/push.py` and migration 0017.
 
-**Documents.** `GET /documents/{id}/content` serves them with the right
-headers; no screen reads it yet.
+**Opening a document's bytes.** The list is there; tapping through to the
+file is not. `documentContentUrl()` builds the address but sends no
+Authorization header -- fine under dev-auth, and wrong the moment Clerk lands.
+The fix is a short-lived signed URL from the server, which the client portal
+already does (`legalrag/client_access.py`). Uploading from a phone is
+deliberately absent: a half-uploaded scan on a dying courthouse connection
+leaves a row with no bytes behind it.
 
 **Offline (E-4).** Deliberately not started. The roadmap gates it on a
 design-partner firm asking, and there is an unresolved question in front of

@@ -6,6 +6,7 @@ import 'core/api_client.dart';
 import 'core/config.dart';
 import 'core/theme.dart';
 import 'data/practice_repository.dart';
+import 'ui/documents_page.dart';
 import 'ui/hearings_page.dart';
 import 'ui/matters_page.dart';
 import 'ui/today_page.dart';
@@ -69,6 +70,7 @@ class _HomeState extends State<Home> {
       TodayPage(repository: widget.repository),
       HearingsPage(repository: widget.repository),
       MattersPage(repository: widget.repository),
+      DocumentsPage(repository: widget.repository),
     ];
 
     return Scaffold(
@@ -80,6 +82,10 @@ class _HomeState extends State<Home> {
           NavigationDestination(icon: Icon(Icons.today), label: 'يومي'),
           NavigationDestination(icon: Icon(Icons.gavel), label: 'الجلسات'),
           NavigationDestination(icon: Icon(Icons.folder_outlined), label: 'القضايا'),
+          NavigationDestination(
+            icon: Icon(Icons.description_outlined),
+            label: 'المستندات',
+          ),
         ],
       ),
     );

@@ -9,6 +9,7 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:legalos_lawyer/models/agenda.dart';
+import 'package:legalos_lawyer/models/document.dart';
 import 'package:legalos_lawyer/models/hearing.dart';
 import 'package:legalos_lawyer/models/matter.dart';
 
@@ -140,6 +141,55 @@ void main() {
     test('status drives isOpen', () {
       expect(Matter.fromJson(payload).isOpen, isTrue);
       expect(Matter.fromJson({...payload, 'status': 'closed'}).isOpen, isFalse);
+    });
+  });
+
+  group('MatterDocument', () {
+    // Verbatim from GET /api/orgs/1/documents.
+    final payload = {
+      'id': 11,
+      'matter_id': 3,
+      'matter_name': 'نزاع عمالي — دلتا للأغذية',
+      'name': 'ملفات العاملين — تحت المراجعة',
+      'doc_type': 'ZIP',
+      'status': 'under_review',
+      'size_bytes': 5347737,
+      'storage_key': null,
+      'uploaded_at': '2026-07-29T00:00:00+00:00',
+      'visible_to_client': false,
+    };
+
+    test('a row with no storage_key has no file', () {
+      // The content endpoint 404s for these. The screen must not offer to
+      // open them -- a button that always fails is worse than an absent one,
+      // because the lawyer retries it standing in a corridor.
+      expect(MatterDocument.fromJson(payload).hasFile, isFalse);
+    });
+
+    test('a stored document has one', () {
+      final stored = MatterDocument.fromJson({
+        ...payload,
+        'storage_key': 'orgs/1/documents/11.zip',
+      });
+      expect(stored.hasFile, isTrue);
+    });
+
+    test('size is rendered in units a person reads', () {
+      expect(MatterDocument.fromJson(payload).readableSize, '5.1 م.ب');
+    });
+
+    test('a sizeless row renders nothing rather than "0"', () {
+      final empty = MatterDocument.fromJson({...payload, 'size_bytes': 0});
+      expect(empty.readableSize, isEmpty);
+    });
+
+    test('client visibility is carried through', () {
+      expect(MatterDocument.fromJson(payload).visibleToClient, isFalse);
+      expect(
+        MatterDocument.fromJson({...payload, 'visible_to_client': true})
+            .visibleToClient,
+        isTrue,
+      );
     });
   });
 }
