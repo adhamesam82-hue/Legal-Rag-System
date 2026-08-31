@@ -112,7 +112,23 @@ export function Providers({
   return clerkIsConfigured ? (
     // publishableKey passed explicitly: ClerkProvider would otherwise look for
     // the build-time inlined value, which is absent in this image by design.
-    <ClerkProvider publishableKey={clerkPublishableKey ?? undefined}>
+    //
+    // The four URLs are passed for the same reason, and they are literals
+    // rather than configuration because they are the same in both
+    // environments: this app has its own /sign-in and /sign-up screens. Clerk
+    // otherwise falls back to its hosted Account Portal, and a visitor to
+    // alsigil.com/dashboard is sent to accounts.alsigil.com -- a different
+    // origin, outside this repository, that has to be separately provisioned,
+    // and which sends them back with a redirect_url round trip. Observed in
+    // production on 1 September 2026, where that hostname did not yet resolve
+    // at all, so signing in ended nowhere.
+    <ClerkProvider
+      publishableKey={clerkPublishableKey ?? undefined}
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
+      signInFallbackRedirectUrl="/dashboard"
+      signUpFallbackRedirectUrl="/dashboard"
+    >
       {inner}
     </ClerkProvider>
   ) : (

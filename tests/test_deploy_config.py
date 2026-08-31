@@ -56,6 +56,29 @@ def test_clerk_key_reaches_the_browser_at_request_time():
     assert "export function usingClerk" in auth_mode
 
 
+def test_sign_in_stays_on_this_origin():
+    """Without explicit URLs, Clerk sends visitors to its hosted Account
+    Portal at accounts.<domain> -- a second origin that lives outside this
+    repository and has to be provisioned separately. On 1 September 2026 that
+    hostname did not resolve, so every visit to /dashboard ended nowhere.
+
+    The app ships its own screens; a test rather than a comment because the
+    failure is invisible until a signed-out visitor tries, and the redirect
+    looks deliberate when it happens.
+    """
+    providers = read("web/app/providers.tsx")
+    for prop, value in (
+        ("signInUrl", "/sign-in"),
+        ("signUpUrl", "/sign-up"),
+    ):
+        assert f'{prop}="{value}"' in providers, (
+            f"ClerkProvider does not pin {prop}; sign-in falls back to the "
+            "hosted portal on another origin"
+        )
+        route = Path("web/app") / value.strip("/")
+        assert (REPO_ROOT / route).is_dir(), f"{value} has no route to land on"
+
+
 def test_enabled_features_are_decided_at_request_time():
     """Staging exists to show every screen; production ships a small set. Both
     run the same image, so the enabled set cannot be frozen when that image is
