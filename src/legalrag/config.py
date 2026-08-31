@@ -157,7 +157,17 @@ def get_firebase_service_account() -> str | None:
     return os.environ.get("FIREBASE_SERVICE_ACCOUNT") or None
 
 
-LOCAL_CORS_ORIGINS = ("http://localhost:3000", "http://127.0.0.1:3000")
+# 3000 is the Next.js dev server; 5000 is the lawyer app's Flutter web dev
+# server (`flutter run -d web-server --web-port 5000`). Both are localhost-only
+# and cannot be reached from another machine, which is why they are allowed
+# unconditionally while every deployed origin goes through
+# LEGALOS_CORS_ORIGINS.
+LOCAL_CORS_ORIGINS = (
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5000",
+    "http://127.0.0.1:5000",
+)
 
 
 def get_cors_origins() -> list[str]:

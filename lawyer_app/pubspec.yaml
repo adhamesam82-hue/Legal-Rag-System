@@ -1,0 +1,48 @@
+name: legalos_lawyer
+description: "Hearings, deadlines and matters for a lawyer away from the desk."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.2
+
+# A SEPARATE APP FROM mobile/, ON PURPOSE.
+#
+# mobile/ is the consumer product: Firebase sign-in, one person per account, no
+# firm, and its whole surface is a Q&A chat. This one signs in a member of a
+# law firm, is organization-scoped on every call, and has no chat at all. They
+# share a backend and nothing else, so they do not share an identity provider
+# or a dependency set -- firebase_auth and google_sign_in are absent here.
+#
+# What IS shared is copied deliberately rather than extracted into a package:
+# core/api_client.dart and core/config.dart are ~100 lines between them, and a
+# shared package pinning two apps to one Dio version would cost more than the
+# duplication saves.
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # Cubit only. This app has no event vocabulary worth a full Bloc -- every
+  # screen loads a list and shows it. mobile/ needs Bloc because its chat has
+  # real events (ask, cancel, retry); nothing here does.
+  flutter_bloc: ^9.0.0
+  bloc: ^9.0.0
+  equatable: ^2.0.7
+
+  # Same HTTP client as mobile/, so the auth interceptor transfers unchanged.
+  dio: ^5.7.0
+
+  intl: ^0.20.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
