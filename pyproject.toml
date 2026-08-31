@@ -38,7 +38,14 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pytest>=8.0"]
+dev = [
+    "pytest>=8.0",
+    # tests/test_invoice_pdf.py::TestFontCoverage reads the vendored invoice
+    # face's cmap to prove it can draw digits and Arabic -- the check that was
+    # missing when the first invoice came out as tofu. Dev-only: the deployed
+    # image ships the committed .ttf files and never inspects them.
+    "fonttools>=4.0",
+]
 # Corpus ingestion and the original Streamlit prototype. Kept out of the
 # project dependencies because the API imports none of it, and these packages
 # (streamlit, datasets, and their pandas/pyarrow/pillow tail) are most of the
