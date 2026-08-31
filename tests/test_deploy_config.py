@@ -29,6 +29,46 @@ def test_web_dockerfile_declares_the_api_base_build_arg():
     assert "ENV NEXT_PUBLIC_API_BASE=$NEXT_PUBLIC_API_BASE" in dockerfile
 
 
+def test_clerk_key_reaches_the_browser_at_request_time():
+    """One image serves staging and production, and their Clerk instances
+    differ -- so the publishable key cannot be baked into the client bundle.
+
+    Next inlines process.env.NEXT_PUBLIC_* at build time. When a client module
+    read the key that way, the server (which reads the real environment at
+    request time) rendered the app as Clerk-configured while the hydrated
+    client believed it was not: AuthTokenBridge never mounted, api.ts kept its
+    default token getter returning null, and every API call went out with no
+    Authorization header. Staging answered 403 to every data screen while its
+    sign-in page looked perfectly healthy.
+    """
+    layout = read("web/app/layout.tsx")
+    assert "clerkPublishableKey" in layout, (
+        "the server-rendered layout does not pass the Clerk key down, so the "
+        "browser can only get it from the build-time bundle"
+    )
+    assert "process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY" in layout
+
+    auth_mode = read("web/lib/auth-mode.ts")
+    assert "export const USING_CLERK" not in auth_mode, (
+        "USING_CLERK as a module constant is evaluated when the bundle is "
+        "built, which is exactly the bug this replaced"
+    )
+    assert "export function usingClerk" in auth_mode
+
+
+def test_the_web_image_is_not_built_per_environment():
+    """The promotion model depends on one artefact: production runs the image
+    staging ran. Baking a Clerk key into the image would mean two builds and
+    two artefacts, and "it worked on staging" would stop being a statement
+    about the thing being deployed.
+    """
+    build_workflow = read(".github/workflows/build.yml")
+    assert "CLERK" not in build_workflow, (
+        "a Clerk key is passed at build time; the image would then belong to "
+        "one environment only"
+    )
+
+
 def test_web_dockerignore_excludes_build_artefacts():
     """node_modules and .next from the host would poison the image."""
     ignored = read("web/.dockerignore").split()
