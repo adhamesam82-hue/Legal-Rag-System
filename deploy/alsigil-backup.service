@@ -1,0 +1,18 @@
+[Unit]
+Description=alsigil nightly encrypted backup to R2
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/alsigil/deploy/backup.sh
+# Not root, unlike the rest of this unit's obvious shape. Everything the script
+# does is available to the deploy user already -- it talks to Docker through the
+# group, reads /opt/alsigil/.env through root:deploy 0640, and stages under
+# /var/tmp -- and the other two timers on this box (reminders, disk alert) run
+# as deploy for the same reason. Running it as root would also write the restic
+# cache into /root, so a later by-hand `restic snapshots` as deploy would
+# rebuild the whole cache instead of reusing it.
+User=deploy
+StandardOutput=journal
+StandardError=journal

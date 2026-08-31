@@ -500,6 +500,107 @@ def test_env_example_covers_what_the_containers_are_given():
         assert f"{variable}=" in template, f"env.example does not mention {variable}"
 
 
+def _backup_script() -> str:
+    return read("deploy/backup.sh")
+
+
+def test_backup_fails_before_it_starts_when_restic_is_not_configured():
+    """restic asked for a passphrase it cannot get would hang the unit rather
+    than fail it, and a hung timer looks like a backup that ran.
+    """
+    script = _backup_script()
+    assert "set -euo pipefail" in script
+    for variable in ("RESTIC_REPOSITORY", "RESTIC_PASSWORD"):
+        assert f'"${{{variable}:?' in script, (
+            f"{variable} is used without the required-variable form, so an "
+            "unconfigured box would hang instead of failing"
+        )
+
+
+def test_backup_refuses_a_dump_that_is_not_from_a_migrated_database():
+    """`pg_dump` against a database that exists but was never migrated writes
+    a valid file with a header and no tables. Backing that up is worse than
+    failing: it succeeds, and its retention policy then prunes the older good
+    snapshots on schedule.
+    """
+    script = _backup_script()
+    assert 'test -s "$STAGING/dump.sql"' in script, (
+        "an empty dump must abort the run"
+    )
+    assert "schema_migrations" in script, (
+        "a non-empty dump is not necessarily a dump of a real database; "
+        "check for a table every deployment has"
+    )
+
+
+def test_backup_includes_the_documents_beside_the_dump():
+    """A database backup that omits the files its rows reference restores a
+    matter whose every document link points at nothing. Both must be in the
+    same snapshot, so a restore cannot pick up one without the other.
+    """
+    script = _backup_script()
+    assert "/data/documents" in script, "uploaded documents are not backed up"
+
+    backup_index = script.index("restic backup")
+    assert script.index("/data/documents") < backup_index, (
+        "the documents must be staged before the snapshot is taken"
+    )
+    staged = script[:backup_index]
+    assert "dump.sql" in staged, "the dump must be in the same snapshot"
+
+
+def test_backup_removes_the_plaintext_staging_copy_however_it_exits():
+    """The staging directory holds the whole database unencrypted. A failure
+    between the dump and the upload must not leave it on disk.
+    """
+    script = _backup_script()
+    assert 'trap \'rm -rf "$STAGING"\' EXIT' in script, (
+        "the plaintext staging copy is only removed on the happy path"
+    )
+
+
+def test_backup_keeps_more_than_one_snapshot():
+    """Retention that keeps only the newest snapshot means corruption
+    discovered a day late has already overwritten the last good copy.
+    """
+    script = _backup_script()
+    assert "--keep-daily" in script and "--keep-weekly" in script, (
+        "no retention policy; either snapshots accumulate forever or only "
+        "the newest survives"
+    )
+
+
+def test_backup_timer_does_not_collide_with_the_other_two():
+    """The reminder sweep (06:00) and the disk check (07:00) are the two jobs
+    a lawyer notices when they are late. A long prune must not sit in front
+    of either.
+    """
+    import re as _re
+
+    times = {}
+    for name in ("backup", "reminders", "diskalert"):
+        timer = read(f"deploy/alsigil-{name}.timer")
+        match = _re.search(r"OnCalendar=\S+ (\d{2}):(\d{2})", timer)
+        assert match, f"{name} timer has no parseable OnCalendar"
+        times[name] = int(match.group(1)) * 60 + int(match.group(2))
+
+    assert len(set(times.values())) == 3, f"two timers fire together: {times}"
+    assert times["backup"] < times["reminders"], (
+        "the backup must finish before the morning reminder sweep"
+    )
+
+
+def test_backup_unit_runs_as_the_account_that_owns_the_stack():
+    """root cannot read /opt/alsigil/.env any more usefully than deploy can,
+    and running as root puts the restic cache in /root -- so a by-hand
+    `restic snapshots` as deploy rebuilds the entire cache. The other two
+    timers on this box already run as deploy.
+    """
+    unit = read("deploy/alsigil-backup.service")
+    assert "User=deploy" in unit
+    assert "Type=oneshot" in unit
+
+
 def _deploy_workflow():
     return _workflow(".github/workflows/deploy.yml")
 
