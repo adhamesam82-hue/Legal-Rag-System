@@ -636,11 +636,25 @@ def test_staging_hostname_is_password_protected_and_unindexed():
         "staging would be indexed alongside production"
     )
 
-    # The password must guard the whole site, not sit inside one handle block.
+    # The password must guard the interface and NOT /api/*, which is the
+    # opposite of what this test asserted when it was written -- and that
+    # version shipped a staging environment nobody could sign in to.
+    #
+    # `Authorization` is one header. A browser holding basic credentials sends
+    # `Authorization: Basic`, and the app must send `Authorization: Bearer
+    # <clerk session>` on the same request; whichever wins, the other side
+    # rejects it. Measured on the box: Basic reaches the API and gets 403 for
+    # having no bearer token, Bearer gets 401 from Caddy for not being Basic.
+    api_index = block.index("handle /api/*")
     auth_index = block.index("basic_auth")
-    assert auth_index < block.index("handle /api/*"), (
-        "basic_auth must apply site-wide, before any route is handled"
+    assert auth_index > api_index, (
+        "basic_auth covers /api/*, which makes signing in impossible: the "
+        "browser cannot send both a Basic and a Bearer Authorization header"
     )
+
+    api_block = block[api_index:auth_index]
+    assert "basic_auth" not in api_block
+    assert "reverse_proxy api-staging:8000" in api_block
 
     # And it must not have leaked into the production site block.
     production = caddyfile[: caddyfile.index("www.alsigil.com {")]
@@ -768,11 +782,11 @@ def test_backup_unit_runs_as_the_account_that_owns_the_stack():
 
 
 def _deploy_workflow():
-    return _workflow(".github/workflows/deploy.yml")
+    return _workflow(".github/workflows/promote.yml")
 
 
 def _deploy_steps():
-    return _deploy_workflow()["jobs"]["deploy"]["steps"]
+    return _deploy_workflow()["jobs"]["promote"]["steps"]
 
 
 def _step_text(step) -> str:
@@ -787,18 +801,103 @@ def _step_text(step) -> str:
     return "\n".join([*(f"{k}={v}" for k, v in env.items()), step.get("run", "")])
 
 
-def test_deploy_job_does_not_run_on_a_failed_build():
+def _staging_workflow():
+    return _workflow(".github/workflows/deploy-staging.yml")
+
+
+def _staging_steps():
+    return _staging_workflow()["jobs"]["deploy"]["steps"]
+
+
+def test_staging_deploy_does_not_run_on_a_failed_build():
     """workflow_run fires on both success and failure. Without a job-level
     gate keyed to the conclusion, a broken build would still reach the box --
     the entire point of splitting build and deploy into separate workflows.
     """
-    condition = _deploy_workflow()["jobs"]["deploy"]["if"]
+    condition = _staging_workflow()["jobs"]["deploy"]["if"]
     assert "github.event.workflow_run.conclusion" in condition
     assert "success" in condition
     # workflow_dispatch (manual rollback) has no build conclusion to check,
     # so it must be admitted independently rather than folded into the same
     # equality check.
     assert "workflow_dispatch" in condition
+
+
+def test_production_is_never_deployed_automatically():
+    """The whole reason the two tracks exist. Production takes an artefact a
+    person chose after seeing it run on staging; a push or workflow_run
+    trigger here would quietly restore "every green merge ships", which is
+    what this replaced.
+    """
+    triggers = _triggers(_workflow(".github/workflows/promote.yml"))
+    assert set(triggers) == {"workflow_dispatch"}, (
+        f"promote.yml has automatic triggers: {sorted(triggers)}"
+    )
+
+
+def test_promotion_refuses_a_tag_staging_has_not_run():
+    """Without this the dispatch input is simply a second way to deploy
+    anything straight to production, and staging becomes optional in practice
+    within a week. The override exists for rollbacks -- an older known-good
+    tag that staging has moved past -- and has to be deliberate.
+    """
+    steps = _deploy_steps()
+    check = next(
+        (s for s in steps if "not what staging is running" in s.get("run", "")),
+        None,
+    )
+    assert check is not None, (
+        "nothing verifies that the promoted tag is the one staging ran"
+    )
+    assert ".current_tag" in check["run"] and "alsigil-staging" in check["run"], (
+        "the check must read what staging is actually running, from the box"
+    )
+    assert "exit 1" in check["run"], "the check must fail the promotion"
+    assert "ALLOW_UNSTAGED" in (check.get("env") or {}), (
+        "the override must be an explicit input, not an environment variable "
+        "that happens to be set on the runner"
+    )
+
+    # And it must run before anything is mutated.
+    swap_index = next(
+        i for i, s in enumerate(steps) if s.get("name") == "Pull, migrate, and swap"
+    )
+    assert steps.index(check) < swap_index
+
+
+def test_staging_deploy_does_not_ship_the_production_proxy_config():
+    """The Caddyfile belongs to the production compose project -- one Caddy
+    serves both hostnames. A staging deploy that synced it could reconfigure,
+    or break, the production proxy.
+    """
+    for step in _staging_steps():
+        # Comments stripped first: this step explains in prose why it does not
+        # copy the Caddyfile, and a raw substring check would fail on the
+        # explanation while passing on the mistake.
+        script = "\n".join(
+            line
+            for line in step.get("run", "").splitlines()
+            if not line.strip().startswith("#")
+        )
+        if "scp" in script:
+            assert "Caddyfile" not in script, (
+                "the staging track must not copy the Caddyfile to the box"
+            )
+
+
+def test_staging_smoke_check_can_get_past_the_password():
+    """staging is behind basic_auth on every route. Without credentials the
+    check reads 401 as a broken deployment and rolls back a healthy one.
+    """
+    smoke = next(s for s in _staging_steps() if s.get("id") == "smoke")
+    env = smoke.get("env") or {}
+    assert "SMOKE_BASIC_AUTH" in env, (
+        "the staging smoke check has no way to authenticate"
+    )
+    assert "secrets." in str(env["SMOKE_BASIC_AUTH"]), (
+        "the staging password must come from a secret, not be inlined"
+    )
+    assert "staging.alsigil.com" in smoke["run"]
 
 
 def test_rollback_step_is_gated_on_the_health_check_and_uses_the_recorded_tag():
@@ -1067,7 +1166,9 @@ def test_no_attacker_controlled_value_is_templated_into_a_shell_script():
     the previous tag is read back from a file the dispatch input wrote.
     """
     tainted = ("inputs.", "steps.", "github.event.")
-    for step in _deploy_steps():
+    # Both deployment workflows: they hold the same SSH key and run the same
+    # shell on the same box, so an injection in either is the same incident.
+    for step in [*_deploy_steps(), *_staging_steps()]:
         script = step.get("run", "")
         for expression in re.findall(r"\$\{\{(.*?)\}\}", script):
             assert not any(source in expression for source in tainted), (

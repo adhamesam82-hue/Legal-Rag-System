@@ -1,0 +1,211 @@
+# Production. Replaces the old deploy.yml, which shipped every green build to
+# alsigil.com automatically.
+#
+# The difference is the whole two-track design: production takes an image that
+# has already been running on staging, chosen deliberately, rather than
+# whatever main last built. "It worked on staging" is then a statement about
+# this exact artefact -- not about a commit range that may have moved since.
+#
+# There is no push trigger on purpose. A production deployment is an act, not a
+# side effect of a merge.
+name: Promote to production
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: >-
+          Image tag to promote (a git SHA). Leave empty to promote whatever is
+          currently running on staging. Set it explicitly to roll back.
+        required: false
+      allow_unstaged:
+        description: >-
+          Promote a tag staging is not running. For rolling back to an older
+          known-good image, not for skipping staging.
+        type: boolean
+        default: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    # Creates a `production` environment on first run. Once it exists, a repo
+    # admin can require a reviewer on it, which turns this workflow into a
+    # two-person action without changing a line here.
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up SSH
+        run: |
+          install -d -m 0700 ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Work out which tag to promote
+        id: tag
+        # image_tag is attacker-influenced: anyone who can dispatch this
+        # workflow chooses it. Through env: the shell only ever sees a variable
+        # reference, never the value spliced into its source.
+        env:
+          DISPATCH_TAG: ${{ inputs.image_tag }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          tag="$DISPATCH_TAG"
+          if [ -z "$tag" ]; then
+            # The default is what staging is running -- read from the box, not
+            # from git. A branch head could have moved since the tag was
+            # deployed there, and promoting that would ship something nobody
+            # has looked at.
+            tag=$(ssh "deploy@$SSH_HOST" \
+              "cat /opt/alsigil-staging/deploy/.current_tag 2>/dev/null || true")
+            echo "No tag given; promoting what staging is running: ${tag:-<none>}"
+          fi
+          if [ -z "$tag" ]; then
+            echo "::error::No tag to promote: none was given and staging has none recorded."
+            exit 1
+          fi
+          printf 'value=%s\n' "$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Refuse to promote an image staging never ran
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.value }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          ALLOW_UNSTAGED: ${{ inputs.allow_unstaged }}
+        # The rule the two tracks exist to enforce. Without this the dispatch
+        # input is just a second way to deploy anything straight to production,
+        # and the staging step becomes optional in practice within a week.
+        # Deliberately overridable -- ALLOW_UNSTAGED=true on a rollback to an
+        # older, known-good tag that staging has since moved past.
+        run: |
+          if [ "${ALLOW_UNSTAGED:-}" = "true" ]; then
+            echo "ALLOW_UNSTAGED set; skipping the staging check."
+            exit 0
+          fi
+          staged=$(ssh "deploy@$SSH_HOST" \
+            "cat /opt/alsigil-staging/deploy/.current_tag 2>/dev/null || true")
+          if [ "$staged" != "$IMAGE_TAG" ]; then
+            echo "::error::$IMAGE_TAG is not what staging is running ($staged)."
+            echo "::error::Deploy it to staging first, or set ALLOW_UNSTAGED=true for a rollback."
+            exit 1
+          fi
+          echo "Confirmed: staging is running $IMAGE_TAG."
+
+      - name: Record the tag currently running, for rollback
+        id: previous
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          # Must not fall back to "latest": build.yml tags every image :latest
+          # too, so on a bootstrap deploy that is the image that just failed.
+          # Rolling back to it would look like a recovery and be a redeploy of
+          # the fault. An empty value is what makes the no-target case
+          # detectable and lets the rollback step fail closed instead.
+          current=$(ssh "deploy@$SSH_HOST" \
+            "cat /opt/alsigil/deploy/.current_tag 2>/dev/null || true")
+          printf 'value=%s\n' "$current" >> "$GITHUB_OUTPUT"
+          echo "Currently deployed: ${current:-<none, first deploy to this box>}"
+
+      - name: Sync the compose configuration
+        env:
+          OWNER: ${{ github.repository_owner }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          # Keep whatever configuration is live, so the rollback step can put it
+          # back. This step overwrites the Caddyfile and the compose file
+          # *before* the swap, so a commit that breaks the proxy config would
+          # otherwise fail the smoke check and then roll the image back behind
+          # the new broken proxy -- reporting a successful rollback while the
+          # site stays down.
+          ssh "deploy@$SSH_HOST" bash -euo pipefail <<'EOF'
+          cd /opt/alsigil/deploy
+          for f in docker-compose.prod.yml Caddyfile; do
+            if [ -f "$f" ]; then cp -p "$f" "$f.rollback"; fi
+          done
+          EOF
+          scp deploy/docker-compose.prod.yml deploy/Caddyfile \
+            "deploy@$SSH_HOST:/opt/alsigil/deploy/"
+          # /opt/alsigil/deploy/.env is the compose *interpolation* env file --
+          # separate from /opt/alsigil/.env, which is wired in via `env_file:`
+          # as container secrets. Rewriting it every promotion makes the box
+          # self-healing if the file is ever lost or hand-edited.
+          printf 'GITHUB_REPOSITORY_OWNER=%s\n' "$OWNER" \
+            | ssh "deploy@$SSH_HOST" "cat > /opt/alsigil/deploy/.env"
+
+      - name: Pull, migrate, and swap
+        env:
+          IMAGE_TAG: ${{ steps.tag.outputs.value }}
+          OWNER: ${{ github.repository_owner }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        # A *quoted* heredoc, so neither the runner's shell nor GitHub
+        # templating substitutes anything into it. The two values it needs are
+        # prepended as `printf %q` assignments, which the remote bash re-reads
+        # as literals -- a tag containing a quote is data on the box, not a
+        # command running as deploy.
+        run: |
+          {
+            printf 'IMAGE_TAG=%q\n' "$IMAGE_TAG"
+            printf 'GITHUB_REPOSITORY_OWNER=%q\n' "$OWNER"
+            cat <<'REMOTE'
+          export IMAGE_TAG GITHUB_REPOSITORY_OWNER
+          cd /opt/alsigil/deploy
+          docker compose -f docker-compose.prod.yml pull
+          # A discrete step so a failed migration aborts the promotion instead
+          # of leaving a container crash-looping against a half-applied schema.
+          docker compose -f docker-compose.prod.yml run --rm api \
+            python scripts/migrate.py
+          docker compose -f docker-compose.prod.yml up -d
+          printf '%s\n' "$IMAGE_TAG" > /opt/alsigil/deploy/.current_tag
+          REMOTE
+          } | ssh "deploy@$SSH_HOST" bash -euo pipefail
+
+      - name: Set up Python for the smoke check
+        uses: astral-sh/setup-uv@v5
+
+      - name: Smoke check
+        id: smoke
+        # The second argument pins alsigil.com to the box just deployed to, so
+        # the check cannot pass against whatever DNS answers for the name.
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          uv run --with httpx python scripts/smoke_check.py \
+            https://alsigil.com "$SSH_HOST"
+
+      - name: Report that no rollback target exists
+        if: failure() && steps.previous.outputs.value == ''
+        run: |
+          echo "::error::Promotion failed and there is no previously deployed tag to roll back to."
+          echo "::error::This is the first deploy to this box. Investigate before retrying."
+          exit 1
+
+      - name: Roll back to the previous tag
+        # Keyed off steps.previous rather than steps.smoke: when the swap itself
+        # fails, every later step including the smoke check is skipped, so
+        # steps.smoke.outcome would be 'skipped' and this would never fire for
+        # exactly the case that leaves containers in a mixed old/new state.
+        if: failure() && steps.previous.outcome == 'success' && steps.previous.outputs.value != ''
+        env:
+          IMAGE_TAG: ${{ steps.previous.outputs.value }}
+          OWNER: ${{ github.repository_owner }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          echo "::error::Promotion failed. Rolling back to $IMAGE_TAG."
+          {
+            printf 'IMAGE_TAG=%q\n' "$IMAGE_TAG"
+            printf 'GITHUB_REPOSITORY_OWNER=%q\n' "$OWNER"
+            cat <<'REMOTE'
+          export IMAGE_TAG GITHUB_REPOSITORY_OWNER
+          cd /opt/alsigil/deploy
+          # Restore the configuration too, not just the tag: the sync step
+          # already overwrote the Caddyfile and the compose file, and bringing
+          # the old image up behind them would leave the site broken while the
+          # run claims it recovered.
+          for f in docker-compose.prod.yml Caddyfile; do
+            if [ -f "$f.rollback" ]; then mv "$f.rollback" "$f"; fi
+          done
+          docker compose -f docker-compose.prod.yml up -d
+          printf '%s\n' "$IMAGE_TAG" > /opt/alsigil/deploy/.current_tag
+          REMOTE
+          } | ssh "deploy@$SSH_HOST" bash -euo pipefail
+          exit 1

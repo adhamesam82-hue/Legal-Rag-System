@@ -45,7 +45,7 @@ separate images tag, database, document volume and secrets tree.
 | | Production | Staging |
 | --- | --- | --- |
 | URL | https://alsigil.com | https://staging.alsigil.com |
-| Access | public | HTTP password (user `alsigil`; ask Ahmed for the password — it is not in this repository) |
+| Access | public | HTTP password on the interface (user `alsigil`; ask Ahmed for it — it is not in this repository). `/api/*` is **not** password-protected; see below |
 | Clerk | production instance, `pk_live_` | development instance, `pk_test_` |
 | Secrets | `/opt/alsigil/.env`, `/opt/alsigil/web.env` | `/opt/alsigil-staging/.env`, `/opt/alsigil-staging/web.env` |
 | Compose project | `deploy` | `alsigil-staging` |
@@ -78,6 +78,17 @@ over an external Docker network, `alsigil-edge`, that both projects join.
 > two name sets stay disjoint. **Anything new added to `alsigil-edge` must carry
 > a name that cannot collide with a production service.**
 
+> **Why staging's `/api/*` has no password.** `Authorization` is a single
+> header. A browser holding basic credentials sends `Authorization: Basic …`,
+> and the app must send `Authorization: Bearer <clerk session>` on the same
+> request — they cannot both be present. Measured through the proxy: with Basic,
+> the request reaches the API, which finds no bearer token and answers 403; with
+> Bearer, Caddy itself answers 401. Signing in to staging was structurally
+> impossible until the password was scoped to the interface alone. What guards
+> those routes is the API's own authentication — every route requires a valid
+> Clerk session — so **restrict sign-ups on the staging Clerk development
+> instance to our own addresses** (Clerk dashboard → Restrictions → allowlist).
+
 ## 3. Repository layout that matters here
 
 | Path | What it is |
@@ -107,14 +118,31 @@ The test suite is a **gate on the image**, not an opinion beside it:
 `build.yml` calls `test.yml` as a reusable workflow and depends on it, so a red
 suite means no image is ever built, and therefore nothing can be deployed.
 
-`.github/workflows/deploy.yml` deploys to production automatically after a
-successful build. It pulls the image, runs migrations as a discrete step, swaps
-the containers, smoke-checks the result and **rolls back automatically** —
-image *and* configuration — if the check fails.
+From there the two tracks diverge, and the difference is deliberate:
 
-It cannot run yet: it needs three repository secrets that only a repo admin can
-add (see [What Adham needs to do](#what-adham-needs-to-do)). Until then,
-deployments are the same steps run by hand over SSH.
+| | `deploy-staging.yml` | `promote.yml` |
+| --- | --- | --- |
+| Trigger | automatic, after every successful build on `main` | `workflow_dispatch` only — a person, on purpose |
+| Target | `staging.alsigil.com` | `alsigil.com` |
+| Which tag | the SHA just built | by default, **the SHA staging is running** |
+| Refuses to run when | the build failed | the tag is not what staging is running (override: `allow_unstaged`, for rollbacks) |
+
+Both pull the image, run migrations as a discrete step, swap the containers,
+smoke-check the result, and **roll back automatically** — image *and*
+configuration — if the check fails.
+
+`promote.yml` reads its default tag from `/opt/alsigil-staging/deploy/.current_tag`
+**on the box**, not from git: a branch head can move between the moment
+something was verified on staging and the moment it is promoted, and promoting
+that would ship an artefact nobody looked at.
+
+The staging track deliberately never copies the `Caddyfile`. One Caddy serves
+both hostnames and it belongs to the production project, so a staging deploy
+that shipped it could break the production proxy.
+
+Neither can run yet: they need repository secrets that only a repo admin can add
+(see [What Adham needs to do](#what-adham-needs-to-do)). Until then, deployments
+are the same steps run by hand over SSH.
 
 ### Deploying by hand
 
@@ -200,6 +228,9 @@ moment is how a stack ends up half old and half new.
    - `SSH_HOST` — `91.99.216.187`
    - `SSH_KNOWN_HOSTS` — output of `ssh-keyscan -H 91.99.216.187`
    - `SSH_PRIVATE_KEY` — the deploy key Ahmed holds
+   - `STAGING_BASIC_AUTH` — `alsigil:<the staging password>`, so the staging
+     smoke check can get past Caddy's password. Without it every staging
+     deployment reads 401 as a broken deployment and rolls back a healthy one.
 3. **Protect `main`**: require pull requests, and require the `pytest` and
    `typecheck` checks to pass. The in-repo gate stops a red suite from producing
    an image; branch protection is what stops a direct push from skipping the PR
@@ -234,9 +265,9 @@ In rough priority order:
 3. **The corpus is not loaded** in either environment — `/api/health` reports an
    empty corpus and legal search returns nothing. It has to be copied from the
    local development database (~138 MB).
-4. **Automated deployment is blocked** on the three repository secrets above,
-   and the two-track workflows (`deploy-staging.yml`, `promote.yml`) described in
-   `docs/ci-cd.ar.md` are designed but not written.
+4. **Automated deployment is blocked** on the repository secrets above. The
+   two-track workflows themselves are written and their invariants are tested;
+   they have never executed, because no run can authenticate to the box yet.
 5. **No monitoring.** `SENTRY_DSN` is unset and there is no external uptime
    check. The smoke check protects the moment of deployment, nothing after it.
 6. **A missing Clerk setting surfaces as a 500**, not as a refusal to boot — the

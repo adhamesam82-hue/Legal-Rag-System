@@ -104,3 +104,31 @@ def test_pinning_leaves_every_other_hostname_alone():
     resolve("example.com", 443)
 
     assert seen == [("example.com", 443)]
+
+
+def test_basic_auth_is_absent_unless_configured(monkeypatch):
+    """Production has no password, and passing empty credentials to httpx
+    would send an Authorization header production never asked for."""
+    from scripts.smoke_check import basic_auth
+
+    monkeypatch.delenv("SMOKE_BASIC_AUTH", raising=False)
+    assert basic_auth() is None
+
+
+def test_basic_auth_is_read_from_the_environment(monkeypatch):
+    """staging is behind Caddy basic_auth on every route, /api included, so
+    without credentials the check reads 401 as a broken deployment and rolls
+    back a healthy one."""
+    from scripts.smoke_check import basic_auth
+
+    monkeypatch.setenv("SMOKE_BASIC_AUTH", "alsigil:s3cr3t:with:colons")
+    assert basic_auth() == ("alsigil", "s3cr3t:with:colons")
+
+
+def test_malformed_credentials_are_treated_as_absent(monkeypatch):
+    """A value with no colon is a misconfiguration. Failing on the 401 that
+    follows says more about the deployment than a traceback would."""
+    from scripts.smoke_check import basic_auth
+
+    monkeypatch.setenv("SMOKE_BASIC_AUTH", "no-colon-here")
+    assert basic_auth() is None
