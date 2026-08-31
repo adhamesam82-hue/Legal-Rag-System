@@ -22,6 +22,17 @@ class Organization:
     id: int
     name: str
     created_by: str
+    # The firm's own details, as shown on /settings and printed on invoices.
+    # All optional: an organization is created with a name and nothing else.
+    registration_number: str | None = None
+    phone: str | None = None
+    address: str | None = None
+    logo_url: str | None = None
+
+
+_ORG_COLUMNS = (
+    "id, name, created_by, registration_number, phone, address, logo_url"
+)
 
 
 @dataclass(frozen=True)
@@ -61,6 +72,49 @@ def create_organization(
         )
     conn.commit()
     return Organization(id=org_id, name=name, created_by=creator_clerk_user_id)
+
+
+def get_organization(
+    conn: psycopg.Connection, organization_id: int
+) -> Organization | None:
+    with conn.cursor() as cur:
+        cur.execute(
+            f"SELECT {_ORG_COLUMNS} FROM organizations WHERE id = %s",
+            (organization_id,),
+        )
+        row = cur.fetchone()
+        return Organization(*row) if row else None
+
+
+_ORG_UPDATABLE = ("name", "registration_number", "phone", "address", "logo_url")
+
+
+def update_organization(
+    conn: psycopg.Connection, organization_id: int, **changes
+) -> Organization | None:
+    """Edits the firm's own details. Unmentioned fields are left alone.
+
+    None means "not supplied" rather than "clear it", matching the other
+    PATCH-shaped updates in this codebase; an empty string is how a field is
+    emptied, so a firm that deletes its phone number can actually do so.
+    """
+    fields = {
+        key: value
+        for key, value in changes.items()
+        if key in _ORG_UPDATABLE and value is not None
+    }
+    if fields:
+        assignments = ", ".join(f"{name} = %s" for name in fields)
+        with conn.cursor() as cur:
+            cur.execute(
+                f"UPDATE organizations SET {assignments}, updated_at = now() "
+                "WHERE id = %s",
+                (*fields.values(), organization_id),
+            )
+            if cur.rowcount == 0:
+                return None
+        conn.commit()
+    return get_organization(conn, organization_id)
 
 
 def list_memberships_for_user(
@@ -124,15 +178,26 @@ def set_member_profile(
 
 
 def add_membership(
-    conn: psycopg.Connection, organization_id: int, clerk_user_id: str, role: str
+    conn: psycopg.Connection,
+    organization_id: int,
+    clerk_user_id: str,
+    role: str,
+    email: str | None = None,
 ) -> Membership:
+    """Adds someone to a firm.
+
+    `email` is where the reminder sweep writes to, and it is optional only
+    because a membership can be created without one being known. Whoever DOES
+    know it must pass it: a member with no address is silently reported as
+    undeliverable by the sweep every morning, forever.
+    """
     if role not in ROLES:
         raise ValueError(f"invalid role {role!r}; expected one of {ROLES}")
     with conn.cursor() as cur:
         cur.execute(
-            "INSERT INTO memberships (organization_id, clerk_user_id, role) "
-            "VALUES (%s, %s, %s) RETURNING id",
-            (organization_id, clerk_user_id, role),
+            "INSERT INTO memberships (organization_id, clerk_user_id, role, email) "
+            "VALUES (%s, %s, %s, %s) RETURNING id",
+            (organization_id, clerk_user_id, role, email),
         )
         membership_id = cur.fetchone()[0]
     conn.commit()

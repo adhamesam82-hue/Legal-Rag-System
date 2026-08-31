@@ -14,6 +14,7 @@ import { Spinner } from "@astryxdesign/core/Spinner";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { GroundedAnswer } from "@/components/GroundedAnswer";
 import { api, ApiError, AskResponse, dirOf } from "@/lib/api";
+import { useCorpusStats } from "@/lib/corpus";
 import { useTranslator } from "@astryxdesign/core/i18n";
 
 interface Turn {
@@ -30,8 +31,14 @@ const SUGGESTION_KEYS = [
 
 export default function ChatPage() {
   const t = useTranslator();
+  const corpus = useCorpusStats();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [pending, setPending] = useState(false);
+  // With nothing ingested, every answer is a refusal — correctly, but the
+  // refusal reads as "your question is outside what the law covers" when the
+  // truth is that no law has been loaded at all. `has()` treats the unknown
+  // state as stocked, so this cannot flash on a normal load.
+  const corpusEmpty = !corpus.has("EG");
 
   async function send(question: string) {
     const trimmed = question.trim();
@@ -72,6 +79,15 @@ export default function ChatPage() {
         flexDirection: "column",
       }}
     >
+      {corpusEmpty && (
+        <div style={{ paddingBlock: 12 }}>
+          <Banner
+            status="warning"
+            title={t("@legalos.home.emptyCorpus.title")}
+            description={t("@legalos.home.emptyCorpus.description")}
+          />
+        </div>
+      )}
       <ChatLayout
         emptyState={
           <EmptyState

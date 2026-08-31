@@ -13,6 +13,13 @@ export const en: Catalog = {
   "@legalos.home.suggestion.singlePersonCompanies": {
     defaultMessage: "Does Egypt's Companies Law recognise single-person companies?",
   },
+  "@legalos.home.emptyCorpus.title": {
+    defaultMessage: "No legislation is loaded",
+  },
+  "@legalos.home.emptyCorpus.description": {
+    defaultMessage:
+      "The corpus holds no articles, so every question will be refused — not because it falls outside the law, but because there is nothing here to answer it from. Run the ingest to load the statutes.",
+  },
   "@legalos.home.empty.title": { defaultMessage: "Ask about Egyptian law" },
   "@legalos.home.empty.description": {
     defaultMessage:
@@ -180,6 +187,13 @@ export const ar: Catalog = {
   },
   "@legalos.home.suggestion.singlePersonCompanies": {
     defaultMessage: "هل يعترف قانون الشركات المصري بالشركة ذات الشخص الواحد؟",
+  },
+  "@legalos.home.emptyCorpus.title": {
+    defaultMessage: "لا توجد تشريعات محمَّلة",
+  },
+  "@legalos.home.emptyCorpus.description": {
+    defaultMessage:
+      "قاعدة البيانات لا تحتوي على أي مادة، ولذلك سيُرفض كل سؤال — لا لأنه خارج نطاق القانون، بل لأنه لا يوجد نص هنا يُجاب منه. شغّل عملية الإدخال لتحميل التشريعات.",
   },
   "@legalos.home.empty.title": { defaultMessage: "اسأل عن القانون المصري" },
   "@legalos.home.empty.description": {

@@ -295,14 +295,24 @@ export default function TimeTrackingPage() {
                                   tickLine={false}
                                 />
                                 <YAxis
+                                  // Hours to one decimal. A nine-second entry
+                                  // is 0.0025 of an hour, and the axis was
+                                  // printing exactly that -- four decimals of
+                                  // false precision on a chart whose smallest
+                                  // useful unit is six minutes.
+                                  tickFormatter={(value: number) =>
+                                    String(Number(value.toFixed(1)))
+                                  }
                                   tick={{ fontSize: "var(--font-size-sm)", fill: "var(--color-text-secondary)" }}
                                   axisLine={false}
                                   tickLine={false}
-                                  width={32}
+                                  width={36}
                                 />
                                 <Tooltip
                                   formatter={(value, name) => [
-                                    t("@legalos.timeTracking.hoursShort", { hours: value }),
+                                    t("@legalos.timeTracking.hoursShort", {
+                                      hours: Number(value).toFixed(2),
+                                    }),
                                     name,
                                   ]}
                                   contentStyle={{

@@ -14,6 +14,7 @@ export const en: Catalog = {
 
   "@legalos.billingDetail.sendInvoice": { defaultMessage: "Send invoice" },
   "@legalos.billingDetail.markAsPaid": { defaultMessage: "Mark as paid" },
+  "@legalos.billingDetail.downloadPdf": { defaultMessage: "Download PDF" },
 
   "@legalos.billingDetail.lineItemsHeading": { defaultMessage: "Line items" },
   "@legalos.billingDetail.column.description": { defaultMessage: "Description" },
@@ -195,6 +196,7 @@ export const ar: Catalog = {
 
   "@legalos.billingDetail.sendInvoice": { defaultMessage: "إرسال الفاتورة" },
   "@legalos.billingDetail.markAsPaid": { defaultMessage: "تحديد كمدفوعة" },
+  "@legalos.billingDetail.downloadPdf": { defaultMessage: "تنزيل PDF" },
 
   "@legalos.billingDetail.lineItemsHeading": { defaultMessage: "بنود الفاتورة" },
   "@legalos.billingDetail.column.description": { defaultMessage: "الوصف" },

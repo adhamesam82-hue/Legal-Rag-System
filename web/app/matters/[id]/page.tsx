@@ -22,7 +22,7 @@ import { Icon } from "@astryxdesign/core/Icon";
 import { Badge } from "@astryxdesign/core/Badge";
 import { Avatar } from "@astryxdesign/core/Avatar";
 import { List, ListItem } from "@astryxdesign/core/List";
-import { TabList, Tab } from "@astryxdesign/core/TabList";
+import { TabList, Tab, TabMenu } from "@astryxdesign/core/TabList";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { TextArea } from "@astryxdesign/core/TextArea";
 import { Selector } from "@astryxdesign/core/Selector";
@@ -40,7 +40,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import { ApiError } from "@/lib/api";
-import { useOrg, useMemberName, useResource } from "@/lib/org";
+import { memberLabel, useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import {
   daysUntil,
@@ -60,16 +60,29 @@ import { CommunicationsTab } from "@/components/matter/CommunicationsTab";
 import { CustomFieldsTab } from "@/components/matter/CustomFieldsTab";
 import { BillsTab, TransactionsTab } from "@/components/matter/FinanceTabs";
 
+/**
+ * The seven tabs that stay on the bar, and the four behind the overflow menu.
+ *
+ * All eleven were laid out in one row. At the layout floor that row is wider
+ * than the content region, so the last of them ("الجدول الزمني") was cut off
+ * mid-word with nothing to say the bar continued — a tab that exists and
+ * cannot be read or reached. Which four moved is a frequency judgement: the
+ * ones a lawyer opens a file to do are on the bar, and the ones consulted
+ * occasionally are one click further away rather than invisible.
+ */
 const TABS = [
   { value: "dashboard", labelKey: "@legalos.matterWorkspace.tab.dashboard" },
-  { value: "customFields", labelKey: "@legalos.matterWorkspace.tab.customFields" },
   { value: "activities", labelKey: "@legalos.matterWorkspace.tab.activities" },
   { value: "calendar", labelKey: "@legalos.matterWorkspace.tab.calendar" },
   { value: "communications", labelKey: "@legalos.matterWorkspace.tab.communications" },
-  { value: "notes", labelKey: "@legalos.matters.detail.tab.notes" },
   { value: "documents", labelKey: "@legalos.matters.detail.tab.documents" },
   { value: "tasks", labelKey: "@legalos.matters.detail.tab.tasks" },
   { value: "bills", labelKey: "@legalos.matterWorkspace.tab.bills" },
+] as const;
+
+const OVERFLOW_TABS = [
+  { value: "notes", labelKey: "@legalos.matters.detail.tab.notes" },
+  { value: "customFields", labelKey: "@legalos.matterWorkspace.tab.customFields" },
   { value: "transactions", labelKey: "@legalos.matterWorkspace.tab.transactions" },
   { value: "timeline", labelKey: "@legalos.matters.detail.tab.timeline" },
 ] as const;
@@ -327,6 +340,13 @@ export default function MatterWorkspacePage({
                         }
                       />
                     ))}
+                    <TabMenu
+                      label={t("@legalos.matterWorkspace.tab.more")}
+                      options={OVERFLOW_TABS.map((tabDef) => ({
+                        value: tabDef.value,
+                        label: t(tabDef.labelKey),
+                      }))}
+                    />
                   </TabList>
                 </VStack>
               </LayoutHeader>
@@ -513,7 +533,7 @@ function EditMatterDialog({
                   onChange={(value) => value && setResponsible(value)}
                   options={members.map((member) => ({
                     value: member.clerk_user_id,
-                    label: member.display_name ?? member.clerk_user_id,
+                    label: memberLabel(member),
                   }))}
                 />
                 <Selector
@@ -684,7 +704,11 @@ function DocumentsTab({ data }: TabProps) {
                 <HStack gap={3} vAlign="center">
                   <Badge variant="neutral" label={enumLabel(doc.status)} />
                   <Text type="supporting" color="secondary">
-                    {doc.size_bytes ? formatBytes(doc.size_bytes) : "—"}
+                    {/* Only for a record that actually holds a file; the
+                      * seeded ones carry a size with nothing behind it. */}
+                    {doc.storage_key && doc.size_bytes
+                      ? formatBytes(doc.size_bytes)
+                      : "—"}
                   </Text>
                 </HStack>
               }
@@ -771,7 +795,7 @@ function NewMatterTaskDialog({
                 hasClear
                 options={members.map((m) => ({
                   value: m.clerk_user_id,
-                  label: m.display_name ?? m.clerk_user_id,
+                  label: memberLabel(m),
                 }))}
               />
               <HStack gap={3}>

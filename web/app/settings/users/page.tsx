@@ -31,7 +31,8 @@ import { Icon } from "@astryxdesign/core/Icon";
 import { EnvelopeIcon, PlusIcon, UserPlusIcon } from "@heroicons/react/24/outline";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
-import { useOrg, useResource } from "@/lib/org";
+import { memberLabel, useOrg, useResource } from "@/lib/org";
+import { useFormat } from "@/lib/i18n/format";
 import { DataView, InlineError } from "@/components/DataState";
 import { api, ApiError, type MatterScope, type OrgMember } from "@/lib/api";
 
@@ -52,7 +53,10 @@ function InviteMemberDialog({
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   organizationId: number | null;
-  onInvited: () => void;
+  /** `emailed` is false when the invitation was created but no mail went out;
+   *  the dialog then stays open with the link, so the page must not claim a
+   *  message was sent. */
+  onInvited: (recipient: string, emailed: boolean) => void;
 }) {
   const t = useTranslator();
   const enumLabel = useEnumLabel();
@@ -77,7 +81,7 @@ function InviteMemberDialog({
       const recipient = email.trim();
       const invitation = await api.createInvite(organizationId, recipient, role);
       setEmail("");
-      onInvited();
+      onInvited(recipient, invitation.email_sent);
       // Only a sent invitation closes the dialog on its own. When the mail
       // did not go, saying nothing would leave the owner waiting on a
       // colleague who was never told.
@@ -250,7 +254,7 @@ function MemberRow({
   const [removing, setRemoving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const name = member.display_name ?? member.clerk_user_id;
+  const name = memberLabel(member);
   const [scope, setScope] = useState<MatterScope>(member.matter_scope);
   const [savingScope, setSavingScope] = useState(false);
 
@@ -340,10 +344,77 @@ function MemberRow({
   );
 }
 
+/**
+ * Invitations that have been sent but not yet accepted.
+ *
+ * Sending one closed the dialog and left nothing behind — the recipient is
+ * not a member until they accept, so an owner had no way to see that they had
+ * already invited someone, or that the link had since expired. The endpoint
+ * behind this did not exist either; both halves are new.
+ */
+function PendingInvitations({ organizationId }: { organizationId: number }) {
+  const t = useTranslator();
+  const enumLabel = useEnumLabel();
+  const { formatDate } = useFormat();
+
+  const invites = useResource(() => api.listInvites(organizationId), [
+    organizationId,
+  ]);
+
+  const rows = (invites.data ?? []).filter(
+    (invite) => invite.status !== "accepted",
+  );
+  if (rows.length === 0) return null;
+
+  return (
+    <VStack gap={3}>
+      <VStack gap={1}>
+        <Heading level={5}>
+          {t("@legalos.settings.users.pendingInvitations")}
+        </Heading>
+        <Text type="supporting" color="secondary">
+          {t("@legalos.settings.users.invitationsHint")}
+        </Text>
+      </VStack>
+      <Card padding={0}>
+        <List hasDividers density="compact">
+          {rows.map((invite) => (
+            <ListItem
+              key={invite.id}
+              label={invite.email}
+              description={enumLabel(invite.role)}
+              startContent={<Icon icon={EnvelopeIcon} size="sm" color="secondary" />}
+              endContent={
+                <HStack gap={3} vAlign="center">
+                  <Text type="supporting" color="secondary">
+                    {t("@legalos.settings.users.inviteExpiry", {
+                      date: formatDate(invite.expires_at),
+                    })}
+                  </Text>
+                  <Badge
+                    variant={invite.status === "pending" ? "info" : "neutral"}
+                    label={t(
+                      `@legalos.settings.users.status.${invite.status}`,
+                    )}
+                  />
+                </HStack>
+              }
+            />
+          ))}
+        </List>
+      </Card>
+    </VStack>
+  );
+}
+
 export default function UsersPermissionsPage() {
   const t = useTranslator();
   const { organizationId, organizationName, role: myRole } = useOrg();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+  // What the dialog never said. A successful send closed it in silence, which
+  // is indistinguishable from a send that failed.
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [invitesNonce, setInvitesNonce] = useState(0);
 
   // Who "you" are, from the API rather than a Clerk hook: this has to be right
   // in the local dev-auth mode too, where there is no Clerk session to ask.
@@ -381,6 +452,15 @@ export default function UsersPermissionsPage() {
         )}
       </HStack>
 
+      {sentTo && (
+        <Banner
+          status="success"
+          title={t("@legalos.settings.users.inviteSent", { email: sentTo })}
+          isDismissable
+          onDismiss={() => setSentTo(null)}
+        />
+      )}
+
       <DataView resource={members}>
         {(roster) => (
           <Card padding={0}>
@@ -407,11 +487,22 @@ export default function UsersPermissionsPage() {
         )}
       </DataView>
 
+      {isOwner && organizationId !== null && (
+        <PendingInvitations
+          key={invitesNonce}
+          organizationId={organizationId}
+        />
+      )}
+
       <InviteMemberDialog
         isOpen={isInviteOpen}
         onOpenChange={setIsInviteOpen}
         organizationId={organizationId}
-        onInvited={members.reload}
+        onInvited={(recipient, emailed) => {
+          if (emailed) setSentTo(recipient);
+          setInvitesNonce((n) => n + 1);
+          members.reload();
+        }}
       />
     </VStack>
   );

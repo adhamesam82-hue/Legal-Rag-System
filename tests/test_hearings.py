@@ -329,3 +329,72 @@ class TestCaseRecordShape:
             f"/api/orgs/{org}/cases/{case_id}", json={"litigation_degree": "appeal"}
         )
         assert response.json()["litigation_degree"] == "appeal"
+
+
+class TestTheNextHearingOnACase:
+    """A case whose next sitting is still ahead of it.
+
+    Every seeded hearing was in the past, so the "next hearing" subquery
+    matched nothing and its short column list never had to build a Hearing.
+    The first future sitting a firm scheduled 500ed GET /cases/{id} and the
+    calendar with it -- which is the ordinary state of any real practice, so
+    these tests use a date well ahead of today rather than a fixed one.
+    """
+
+    FUTURE = "2099-04-14"
+
+    @pytest.fixture
+    def case(self, client, org, matter):
+        return client.post(
+            f"/api/orgs/{org}/cases",
+            json={
+                "matter_id": matter,
+                "court": "محكمة شمال القاهرة الابتدائية",
+                "case_number": "1345",
+                "judicial_year": 2026,
+                "filed_date": "2026-01-20",
+                "judge": "الدائرة 7 تجاري",
+            },
+        ).json()["id"]
+
+    def test_the_case_loads_with_a_hearing_still_to_come(
+        self, client, org, matter, case
+    ):
+        add_hearing(client, org, matter, hearing_date=self.FUTURE)
+        response = client.get(f"/api/orgs/{org}/cases/{case}")
+        assert response.status_code == 200, response.text
+        assert response.json()["next_hearing"]["hearing_date"] == self.FUTURE
+
+    def test_the_next_hearing_carries_every_field_of_the_model(
+        self, client, org, matter, case
+    ):
+        add_hearing(
+            client, org, matter,
+            hearing_date=self.FUTURE,
+            outcome_note="",
+        )
+        next_hearing = client.get(f"/api/orgs/{org}/cases/{case}").json()[
+            "next_hearing"
+        ]
+        assert next_hearing["matter_name"] == "نزاع إيجار"
+        assert next_hearing["judge"] == "الدائرة 7 تجاري"
+        assert next_hearing["next_hearing_date"] is None
+
+    def test_the_soonest_one_is_the_next_one(self, client, org, matter, case):
+        add_hearing(client, org, matter, hearing_date="2099-09-01")
+        add_hearing(client, org, matter, hearing_date=self.FUTURE)
+        next_hearing = client.get(f"/api/orgs/{org}/cases/{case}").json()[
+            "next_hearing"
+        ]
+        assert next_hearing["hearing_date"] == self.FUTURE
+
+    def test_a_hearing_with_no_court_inherits_the_cases(
+        self, client, org, matter, case
+    ):
+        """Otherwise the row shows a blank court beside an inherited circuit."""
+        body = add_hearing(client, org, matter, court="").json()
+        assert body["court"] == "محكمة شمال القاهرة الابتدائية"
+
+    def test_a_stated_court_is_kept(self, client, org, matter, case):
+        body = add_hearing(client, org, matter, court="محكمة الجيزة").json()
+        assert body["court"] == "محكمة الجيزة"

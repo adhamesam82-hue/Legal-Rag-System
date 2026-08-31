@@ -17,8 +17,12 @@ import { Button } from "@astryxdesign/core/Button";
 import { Icon } from "@astryxdesign/core/Icon";
 import { Avatar } from "@astryxdesign/core/Avatar";
 import { DropdownMenu } from "@astryxdesign/core/DropdownMenu";
-import { CommandPalette } from "@astryxdesign/core/CommandPalette";
-import { createStaticSource } from "@astryxdesign/core/Typeahead";
+import {
+  CommandPalette,
+  CommandPaletteFooter,
+  CommandPaletteInput,
+} from "@astryxdesign/core/CommandPalette";
+import { Kbd } from "@astryxdesign/core/Kbd";
 import { HStack } from "@astryxdesign/core/Stack";
 import {
   ScaleIcon,
@@ -40,7 +44,6 @@ import {
   LightBulbIcon,
   ChatBubbleLeftRightIcon,
   BoltIcon,
-  BellIcon,
   ArrowRightOnRectangleIcon,
   MoonIcon,
   SunIcon,
@@ -49,6 +52,8 @@ import { useMediaQuery } from "@astryxdesign/core/hooks";
 import { useTranslator, type TranslatorFn } from "@astryxdesign/core/i18n";
 import { PrefetchedNavLink, useThemeMode } from "@/app/providers";
 import { useLocale } from "@/lib/i18n/provider";
+import { useOrg } from "@/lib/org";
+import type { PracticeApi } from "@/lib/practice";
 import { isPathEnabled } from "@/lib/features";
 import { Alsigil, AlsigilPunch } from "@/components/brand/Alsigil";
 
@@ -150,20 +155,95 @@ const FIRMS = [
   { id: "cairo-legal", nameKey: "@legalos.shell.firm.cairoLegal" },
 ];
 
-function useCommandSource(t: TranslatorFn) {
-  return useMemo(
-    () =>
-      createStaticSource(
-        NAV_SECTIONS.flatMap((section) =>
-          section.items.map((item) => ({
-            id: item.href,
-            label: t(item.labelKey),
-            auxiliaryData: { group: t(section.titleKey), href: item.href },
-          })),
-        ),
-      ),
-    [t],
-  );
+/** How many rows of each kind the palette shows before it stops listing. */
+const SEARCH_LIMIT = 5;
+
+/** Below this a query matches most of the practice, so it stays local to the
+ *  nav rather than sending three requests per keystroke. */
+const MIN_QUERY = 2;
+
+type CommandItem = {
+  id: string;
+  label: string;
+  auxiliaryData: { group: string; href: string };
+};
+
+/**
+ * What the command palette searches.
+ *
+ * It used to search the navigation headings and nothing else, under a button
+ * that said "search LegalOS": typing a client's name — a client who was in
+ * the database, with a matter open — returned "No results". The nav is still
+ * matched, because "take me to Billing" is a real use of this box, but the
+ * firm's own records are the point of it.
+ *
+ * Records are fetched per query rather than pre-loaded: the server already
+ * has a `q` filter on each of these lists, and a practice with three years of
+ * files is not something to hold in a palette's memory.
+ */
+function useCommandSource(t: TranslatorFn, practice: PracticeApi | null) {
+  return useMemo(() => {
+    const navItems: CommandItem[] = NAV_SECTIONS.flatMap((section) =>
+      section.items.map((item) => ({
+        id: item.href,
+        label: t(item.labelKey),
+        auxiliaryData: {
+          group: t("@legalos.shell.search.group.navigation"),
+          href: item.href,
+        },
+      })),
+    );
+
+    const rows = (
+      items: { id: number; label: string }[],
+      path: string,
+      groupKey: string,
+    ): CommandItem[] =>
+      items.slice(0, SEARCH_LIMIT).map((item) => ({
+        id: `${path}/${item.id}`,
+        label: item.label,
+        auxiliaryData: { group: t(groupKey), href: `${path}/${item.id}` },
+      }));
+
+    return {
+      bootstrap: () => navItems,
+      async search(query: string): Promise<CommandItem[]> {
+        const q = query.trim();
+        const folded = q.toLowerCase();
+        const nav = navItems.filter((item) =>
+          item.label.toLowerCase().includes(folded),
+        );
+        if (!practice || q.length < MIN_QUERY) return nav;
+
+        // One slow or failing list must not empty the whole palette, so each
+        // falls back to no rows of its own kind.
+        const [clients, matters, documents] = await Promise.all([
+          practice.clients.list({ q }).catch(() => []),
+          practice.matters.list({ q }).catch(() => []),
+          practice.documents.list({ q }).catch(() => []),
+        ]);
+
+        return [
+          ...nav,
+          ...rows(
+            matters.map((m) => ({ id: m.id, label: m.name })),
+            "/matters",
+            "@legalos.shell.search.group.matters",
+          ),
+          ...rows(
+            clients.map((c) => ({ id: c.id, label: c.name })),
+            "/clients",
+            "@legalos.shell.search.group.clients",
+          ),
+          ...rows(
+            documents.map((d) => ({ id: d.id, label: d.name })),
+            "/documents",
+            "@legalos.shell.search.group.documents",
+          ),
+        ];
+      },
+    };
+  }, [t, practice]);
 }
 
 /** The mark in the rail's brand slot.
@@ -264,26 +344,13 @@ function UtilityControls({ onSearch }: { onSearch: () => void }) {
       </Button>
       <LanguageToggle />
       <ThemeToggle />
-      <DropdownMenu
-        button={{
-          label: t("@legalos.shell.notifications.button"),
-          variant: "ghost",
-          isIconOnly: true,
-          icon: <Icon icon={BellIcon} size="sm" />,
-        }}
-        hasChevron={false}
-        items={[
-          {
-            type: "section",
-            title: t("@legalos.shell.notifications.today"),
-            items: [
-              { label: t("@legalos.shell.notifications.hearingReminder") },
-              { label: t("@legalos.shell.notifications.inviteAccepted") },
-              { label: t("@legalos.shell.notifications.contractReviewFinished") },
-            ],
-          },
-        ]}
-      />
+      {/* The bell used to open three fixed notifications — a hearing reminder,
+        * an accepted invite, a finished contract review — none of them from
+        * any API, because there is no notifications table yet (phase 1). They
+        * named real seeded people and a real seeded case, so they read as
+        * genuine, and a lawyer who trusts a reminder that was never generated
+        * is worse off than one who has no bell at all. It comes back when
+        * something is behind it. */}
       <DropdownMenu
         button={{
           label: t("@legalos.shell.account.menuAriaLabel"),
@@ -339,7 +406,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const [isSideNavCollapsed, setIsSideNavCollapsed] = useState(false);
   const isBelowFloor = useMediaQuery(BELOW_FLOOR_QUERY);
   const isMobileBar = useMediaQuery(MOBILE_BAR_QUERY);
-  const commandSource = useCommandSource(t);
+  const { practice } = useOrg();
+  const commandSource = useCommandSource(t, practice);
 
   // Read the saved preference after mount rather than lazily in useState, so
   // server and first client render agree (no localStorage on the server) and
@@ -450,19 +518,44 @@ export function Shell({ children }: { children: React.ReactNode }) {
         isOpen={isSearchOpen}
         onOpenChange={setIsSearchOpen}
         searchSource={commandSource}
+        label={t("@legalos.shell.search.ariaLabel")}
         emptyBootstrapText={t("@legalos.shell.search.emptyBootstrap")}
-        renderItem={(item) => (
-          <HStack gap={2} align="center">
-            <Icon icon={SparklesIcon} size="sm" className={AI_ICON_CLASS} />
-            {item.label}
-          </HStack>
-        )}
+        emptySearchText={t("@legalos.shell.search.empty")}
+        // The input's own placeholder and the footer's hints are the two
+        // strings the design system hardcodes in English rather than
+        // resolving through the catalog (see lib/i18n/catalogs/astryx.ts for
+        // everything that does resolve), so both slots are passed explicitly.
+        input={
+          <CommandPaletteInput
+            placeholder={t("@legalos.shell.search.placeholder")}
+            label={t("@legalos.shell.search.ariaLabel")}
+          />
+        }
+        footer={
+          <CommandPaletteFooter>
+            <HStack gap={4} vAlign="center">
+              <HStack gap={1} vAlign="center">
+                <Kbd keys="up" />
+                <Kbd keys="down" />
+                {t("@legalos.shell.search.hint.navigate")}
+              </HStack>
+              <HStack gap={1} vAlign="center">
+                <Kbd keys="enter" />
+                {t("@legalos.shell.search.hint.select")}
+              </HStack>
+              <HStack gap={1} vAlign="center">
+                <Kbd keys="escape" />
+                {t("@legalos.shell.search.hint.close")}
+              </HStack>
+            </HStack>
+          </CommandPaletteFooter>
+        }
+        // Every id IS the route to open, records included, so the palette no
+        // longer has to find the value in the nav list to act on it.
         onValueChange={(value) => {
-          const target = NAV_SECTIONS.flatMap((s) => s.items).find((i) => i.href === value);
-          if (target) {
-            router.push(target.href);
-            setIsSearchOpen(false);
-          }
+          if (!value) return;
+          router.push(value);
+          setIsSearchOpen(false);
         }}
       />
     </>

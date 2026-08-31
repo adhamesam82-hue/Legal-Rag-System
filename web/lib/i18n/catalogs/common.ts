@@ -5,6 +5,16 @@ export const en: Catalog = {
   "@legalos.common.loadingFirm": { defaultMessage: "Loading your firm…" },
   "@legalos.common.errorTitle": { defaultMessage: "Could not load this data" },
   "@legalos.common.tryAgain": { defaultMessage: "Try again" },
+  // A failed fetch is the ONE error with no server text behind it, so it is
+  // the one this app has to word itself — otherwise an Arabic screen reports
+  // its only untranslatable failure in English.
+  "@legalos.common.error.network": {
+    defaultMessage: "Could not reach the API at {base}. Is it running?",
+  },
+  "@legalos.common.error.unknown": { defaultMessage: "Something went wrong." },
+  "@legalos.common.error.organizations": {
+    defaultMessage: "Could not load your organizations.",
+  },
 
   "@legalos.common.noOrg.title": { defaultMessage: "Set up your firm" },
   "@legalos.common.noOrg.description": {
@@ -75,6 +85,13 @@ export const ar: Catalog = {
   "@legalos.common.loadingFirm": { defaultMessage: "جارٍ تحميل بيانات المكتب…" },
   "@legalos.common.errorTitle": { defaultMessage: "تعذّر تحميل هذه البيانات" },
   "@legalos.common.tryAgain": { defaultMessage: "إعادة المحاولة" },
+  "@legalos.common.error.network": {
+    defaultMessage: "تعذّر الوصول إلى الـAPI على {base}. هل هو قيد التشغيل؟",
+  },
+  "@legalos.common.error.unknown": { defaultMessage: "حدث خطأ ما." },
+  "@legalos.common.error.organizations": {
+    defaultMessage: "تعذّر تحميل قائمة مكاتبك.",
+  },
 
   "@legalos.common.noOrg.title": { defaultMessage: "أنشئ مكتبك" },
   "@legalos.common.noOrg.description": {

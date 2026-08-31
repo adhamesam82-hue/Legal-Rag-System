@@ -96,6 +96,10 @@ export default function DashboardPage() {
 
             <DataView resource={resource} loadingLabel={t("@legalos.dashboard.loading")}>
               {({ board }) => {
+                // Each figure counts rows that live on one screen, so every
+                // card is a link to that screen -- "8 overdue tasks" used to
+                // be a dead end, and the whole point of a number on a
+                // dashboard is that you can go and act on it.
                 const kpis = [
                   {
                     label: t("@legalos.dashboard.kpi.activeMatters"),
@@ -105,6 +109,7 @@ export default function DashboardPage() {
                     }),
                     icon: BriefcaseIcon,
                     warn: false,
+                    href: "/matters",
                   },
                   {
                     label: t("@legalos.dashboard.kpi.openTasks"),
@@ -117,6 +122,7 @@ export default function DashboardPage() {
                         : t("@legalos.dashboard.kpi.noneOverdue"),
                     icon: CheckCircleIcon,
                     warn: board.overdue_tasks > 0,
+                    href: "/tasks",
                   },
                   {
                     label: t("@legalos.dashboard.kpi.unbilledTime"),
@@ -126,6 +132,7 @@ export default function DashboardPage() {
                     }),
                     icon: ClockIcon,
                     warn: false,
+                    href: "/time-tracking",
                   },
                   {
                     label: t("@legalos.dashboard.kpi.outstanding"),
@@ -133,34 +140,48 @@ export default function DashboardPage() {
                     detail: t("@legalos.dashboard.kpi.outstandingDetail"),
                     icon: BanknotesIcon,
                     warn: false,
+                    href: "/billing",
                   },
                 ];
 
                 return (
                   <VStack gap={6}>
-                    <Grid columns={{ minWidth: 220, repeat: "fit" }} gap={4}>
+                    {/* 180 rather than 220: the four cards have to survive the
+                      * content width left at 1280 with the rail open, and at
+                      * 220 the fourth dropped to a row of its own -- one card
+                      * alone under three, which reads as a different section
+                      * rather than as wrapping. */}
+                    <Grid columns={{ minWidth: 180, repeat: "fit" }} gap={4}>
                       {kpis.map((kpi) => (
-                        <Card key={kpi.label}>
-                          <VStack gap={2}>
-                            {/* The glyph is kept only where it carries the
-                              * warning; as decoration on every card it made
-                              * four identical rows of ornament and left
-                              * nothing for the one card that needs attention
-                              * to stand out with. */}
-                            <HStack gap={1.5} vAlign="center">
-                              {kpi.warn && (
-                                <Icon icon={kpi.icon} size="sm" color="warning" />
-                              )}
-                              <Text type="label" color="secondary">
-                                {kpi.label}
+                        <Link
+                          key={kpi.label}
+                          href={kpi.href}
+                          color="inherit"
+                          hasUnderline={false}
+                          display="block"
+                        >
+                          <Card>
+                            <VStack gap={2}>
+                              {/* The glyph is kept only where it carries the
+                                * warning; as decoration on every card it made
+                                * four identical rows of ornament and left
+                                * nothing for the one card that needs attention
+                                * to stand out with. */}
+                              <HStack gap={1.5} vAlign="center">
+                                {kpi.warn && (
+                                  <Icon icon={kpi.icon} size="sm" color="warning" />
+                                )}
+                                <Text type="label" color="secondary">
+                                  {kpi.label}
+                                </Text>
+                              </HStack>
+                              <Text size="2xl" weight="semibold">{kpi.value}</Text>
+                              <Text type="supporting" color="secondary">
+                                {kpi.detail}
                               </Text>
-                            </HStack>
-                            <Text size="2xl" weight="semibold">{kpi.value}</Text>
-                            <Text type="supporting" color="secondary">
-                              {kpi.detail}
-                            </Text>
-                          </VStack>
-                        </Card>
+                            </VStack>
+                          </Card>
+                        </Link>
                       ))}
                     </Grid>
 

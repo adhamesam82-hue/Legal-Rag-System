@@ -14,11 +14,6 @@ import { Icon } from "@astryxdesign/core/Icon";
 import { List, ListItem } from "@astryxdesign/core/List";
 import {
   BuildingOffice2Icon,
-  CreditCardIcon,
-  KeyIcon,
-  PaintBrushIcon,
-  PuzzlePieceIcon,
-  SparklesIcon,
   UserCircleIcon,
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
@@ -45,11 +40,12 @@ const NAV_GROUPS: { titleKey?: string; items: NavItem[] }[] = [
     items: [
       { href: "/settings", labelKey: "@legalos.settings.nav.firmSettings", icon: BuildingOffice2Icon },
       { href: "/settings/users", labelKey: "@legalos.settings.nav.users", icon: UserGroupIcon },
-      { href: "/settings/integrations", labelKey: "@legalos.settings.nav.integrations", icon: PuzzlePieceIcon },
-      { href: "/settings/branding", labelKey: "@legalos.settings.nav.branding", icon: PaintBrushIcon },
-      { href: "/settings/billing", labelKey: "@legalos.settings.nav.billing", icon: CreditCardIcon },
-      { href: "/settings/api-keys", labelKey: "@legalos.settings.nav.apiKeys", icon: KeyIcon },
-      { href: "/settings/ai-models", labelKey: "@legalos.settings.nav.aiModels", icon: SparklesIcon, ai: true },
+      // Integrations, Branding, Billing, API keys and AI models were listed
+      // here with no page behind any of them. Each one landed on Next's own
+      // default 404 — English, outside the app shell entirely, with no way
+      // back — which is a worse answer than not offering the link. They come
+      // back with the screens, as entries beside the two that exist; the
+      // labels are kept in the catalog so that is a one-line change.
     ],
   },
 ];

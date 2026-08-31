@@ -30,7 +30,7 @@ import {
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { useOrg, useMemberName, useResource } from "@/lib/org";
+import { memberLabel, useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import {
   todayIso,
@@ -233,7 +233,7 @@ export default function CalendarPage() {
                     { value: "all", label: t("@legalos.calendar.wholeFirm") },
                     ...members.map((m) => ({
                       value: m.clerk_user_id,
-                      label: m.display_name ?? m.clerk_user_id,
+                      label: memberLabel(m),
                     })),
                   ]}
                 />

@@ -199,11 +199,19 @@ export default function DocumentDetailPage({
                         <MetadataListItem label={t("@legalos.documents.field.status")}>
                           <Badge variant="neutral" label={enumLabel(doc.status)} />
                         </MetadataListItem>
+                        {/* A record with no stored file has no format and no
+                          * size, whatever its metadata says. The seeded rows
+                          * carry both — "PDF · 540 KB" — and printing them
+                          * beside a card that reads "no file stored" made the
+                          * page contradict itself, describing a file that is
+                          * not there as though it were. */}
                         <MetadataListItem label={t("@legalos.documents.field.type")}>
-                          {doc.doc_type || "—"}
+                          {(doc.storage_key && doc.doc_type) || "—"}
                         </MetadataListItem>
                         <MetadataListItem label={t("@legalos.documents.field.size")}>
-                          {doc.size_bytes ? formatBytes(doc.size_bytes) : "—"}
+                          {doc.storage_key && doc.size_bytes
+                            ? formatBytes(doc.size_bytes)
+                            : "—"}
                         </MetadataListItem>
                         <MetadataListItem label={t("@legalos.documents.field.uploadedBy")}>
                           {memberName(doc.uploaded_by)}
