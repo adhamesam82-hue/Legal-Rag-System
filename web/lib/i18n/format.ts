@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useLocale } from "./provider";
-import type { Locale } from "./locale";
+import { INTL_LOCALE, type Locale } from "./locale";
 
 /**
  * Dates, money and file sizes in the active locale.
@@ -21,10 +21,6 @@ import type { Locale } from "./locale";
  * Callers use the `useFormat()` hook rather than these functions directly —
  * the locale then comes from context instead of being passed at each site.
  */
-const INTL_LOCALE: Record<Locale, string> = {
-  en: "en-US",
-  ar: "ar-EG-u-nu-latn",
-};
 
 /** The BCP 47 tag to hand to Intl for a UI locale. */
 export function intlLocale(locale: Locale): string {

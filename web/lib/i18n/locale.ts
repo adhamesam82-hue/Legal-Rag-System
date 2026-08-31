@@ -18,6 +18,23 @@ export const DEFAULT_LOCALE: Locale = "ar";
 
 export const LOCALE_COOKIE = "legalos-locale";
 
+/**
+ * The BCP 47 tag each UI locale formats with.
+ *
+ * Lives HERE rather than in format.ts because format.ts pulls in React and
+ * this has to be importable from pin-intl.ts, which runs on the bare server
+ * before any component does.
+ *
+ * `ar-EG-u-nu-latn`, not a bare `ar`: the extension pins Western numerals. A
+ * bare tag leaves the numbering system to whatever the runtime decides, and
+ * Node and the browser decide differently -- which is exactly the divergence
+ * pin-intl.ts exists to close.
+ */
+export const INTL_LOCALE: Record<Locale, string> = {
+  en: "en-US",
+  ar: "ar-EG-u-nu-latn",
+};
+
 export function isLocale(value: string | undefined | null): value is Locale {
   return value === "en" || value === "ar";
 }

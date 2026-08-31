@@ -1,5 +1,8 @@
 "use client";
 
+// Same pin as layout.tsx, for the browser half of the render. Both
+// sides must agree or the calendar hydrates with different digits.
+import "@/lib/i18n/pin-intl";
 import { createContext, useContext, useMemo, useState } from "react";
 import Link from "next/link";
 import { ClerkProvider } from "@clerk/nextjs";

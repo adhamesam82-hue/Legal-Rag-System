@@ -1,3 +1,7 @@
+// FIRST, and for effect only: pins Intl's default locale before any
+// component formats a date. Astryx's calendar calls Intl with no locale at
+// all, and Node and the browser default differently -- see pin-intl.ts.
+import "@/lib/i18n/pin-intl";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { getLocaleDirection } from "@astryxdesign/core/i18n";
