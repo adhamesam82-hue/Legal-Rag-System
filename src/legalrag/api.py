@@ -908,8 +908,24 @@ def get_invite_preview(token: str):
 
 @app.post("/api/invites/{token}/accept", response_model=MembershipOut)
 def post_accept_invite(token: str, clerk_user_id: str = Depends(get_current_user_id)):
-    email = get_user_primary_email(clerk_user_id)
+    # The email-match inside accept_invitation is a real security check, and
+    # in production the address it checks must come from Clerk's Backend API,
+    # never from the caller. The dev escape hatch has no Clerk to ask -- the
+    # lookup would raise over the missing CLERK_SECRET_KEY and kill the whole
+    # local invite flow at its last step -- and the check is moot in a mode
+    # that already impersonates whoever LEGALOS_DEV_AUTH names, so accept as
+    # the address the invitation was sent to.
+    dev_mode = get_dev_auth_user() is not None
+    if not dev_mode:
+        # Before the connection is opened: a network call to Clerk must not
+        # hold a pooled connection hostage while it waits.
+        email = get_user_primary_email(clerk_user_id)
     with db() as conn:
+        if dev_mode:
+            found = get_invitation_by_token(conn, token)
+            if found is None:
+                raise HTTPException(status_code=404, detail="Invitation not found")
+            email = found.email
         try:
             invitation = accept_invitation(conn, token, clerk_user_id, email)
         except InvitationError as exc:

@@ -103,6 +103,35 @@ class TestInvites:
         assert response.status_code == 200
         assert response.json()["role"] == "lawyer"
 
+    def test_dev_auth_accepts_without_clerk(self, client, conn, monkeypatch):
+        """Accepting must work where Clerk is not configured at all.
+
+        The dev escape hatch exists so the whole stack runs before Clerk is
+        set up, and accept was its one dead end: the endpoint asked Clerk's
+        Backend API for the accepter's email, which raised over the missing
+        CLERK_SECRET_KEY -- a 500 that surfaced in the browser as a CORS
+        failure and read as "API unreachable". In dev mode the invitation's
+        own address is the accepting address.
+        """
+        monkeypatch.setattr("legalrag.api.send_invite_email", lambda **kwargs: None)
+
+        def explode(clerk_user_id):
+            raise AssertionError("dev mode must never call Clerk")
+
+        monkeypatch.setattr("legalrag.api.get_user_primary_email", explode)
+        monkeypatch.setenv("LEGALOS_DEV_AUTH", "user_dev_invitee")
+
+        org_id = client.post("/api/orgs", json={"name": "Firm"}).json()["id"]
+        token = client.post(
+            f"/api/orgs/{org_id}/invites",
+            json={"email": "colleague@example.com", "role": "lawyer"},
+        ).json()["token"]
+
+        app.dependency_overrides[get_current_user_id] = lambda: "user_dev_invitee"
+        response = client.post(f"/api/invites/{token}/accept")
+        assert response.status_code == 200
+        assert response.json()["role"] == "lawyer"
+
 
 class TestListOrgMembers:
     def test_member_can_list_the_roster(self, client, conn):
