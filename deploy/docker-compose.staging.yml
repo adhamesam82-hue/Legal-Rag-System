@@ -19,7 +19,7 @@ x-logging: &logging
     max-file: "3"
 
 services:
-  web:
+  web-staging:
     image: ghcr.io/${GITHUB_REPOSITORY_OWNER:?set GITHUB_REPOSITORY_OWNER in /opt/alsigil-staging/deploy/.env}/alsigil-web:${IMAGE_TAG:-latest}
     restart: unless-stopped
     # Staging's own Clerk configuration -- a development instance, never the
@@ -31,15 +31,26 @@ services:
     networks:
       default:
       edge:
-        # Caddy addresses this by name from the other project, so the alias is
-        # the contract between the two compose files, not an implementation
-        # detail. Without it the container is only reachable as
-        # `alsigil-staging-web-1`, which the Caddyfile does not know.
+        # The service is NAMED web-staging, not named web with an alias, and
+        # that distinction is the whole reason production stayed production.
+        #
+        # Compose publishes a container's service name as a network alias on
+        # EVERY network it joins, aliases here or not. A service called `web`
+        # on the shared network therefore answers to `web` -- the exact name
+        # production's Caddyfile uses for its own frontend. Docker then load
+        # balances between the two containers, and roughly half of production's
+        # traffic is served by the staging stack, against the staging database
+        # and a development Clerk instance. Observed in production on 31 August
+        # 2026: alsigil.com's sign-in page shipped the pk_test_ key.
+        #
+        # Names on this network are one flat namespace shared with production.
+        # Anything added here must not collide with a production service name;
+        # a test asserts the two sets stay disjoint.
         aliases:
           - web-staging
     logging: *logging
 
-  api:
+  api-staging:
     image: ghcr.io/${GITHUB_REPOSITORY_OWNER:?set GITHUB_REPOSITORY_OWNER in /opt/alsigil-staging/deploy/.env}/alsigil-api:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: /opt/alsigil-staging/.env

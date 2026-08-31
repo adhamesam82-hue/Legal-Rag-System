@@ -524,13 +524,13 @@ def test_staging_has_its_own_database_and_secrets():
     """
     compose = _staging_compose()
 
-    for service in ("api", "postgres"):
+    for service in ("api-staging", "postgres"):
         env_file = compose["services"][service].get("env_file")
         assert env_file == "/opt/alsigil-staging/.env", (
             f"staging {service} reads {env_file!r}; it must read staging's own "
             "secrets file, never production's"
         )
-    assert compose["services"]["web"]["env_file"] == "/opt/alsigil-staging/web.env"
+    assert compose["services"]["web-staging"]["env_file"] == "/opt/alsigil-staging/web.env"
 
     # Its own volumes, not production's under another name.
     assert set(compose["volumes"]) == {"pgdata", "documents"}
@@ -550,19 +550,52 @@ def test_staging_database_is_not_on_the_shared_network():
 
 
 def test_staging_upstreams_are_addressable_by_the_names_caddy_uses():
-    """Compose names containers `<project>-<service>-<n>`, which the Caddyfile
-    cannot know. The network aliases are the contract between the two files:
-    drop them and staging 502s with no error anywhere else.
+    """The Caddyfile addresses staging by name across projects; those names
+    have to exist on the shared network.
     """
     compose = _staging_compose()
     caddyfile = read("deploy/Caddyfile")
 
-    for service, alias, port in (("api", "api-staging", 8000), ("web", "web-staging", 3000)):
-        aliases = compose["services"][service]["networks"]["edge"]["aliases"]
-        assert alias in aliases, f"staging {service} has no {alias} alias"
-        assert f"reverse_proxy {alias}:{port}" in caddyfile, (
-            f"the Caddyfile does not route to {alias}:{port}"
+    for service, port in (("api-staging", 8000), ("web-staging", 3000)):
+        assert service in compose["services"], f"no {service} service"
+        assert f"reverse_proxy {service}:{port}" in caddyfile, (
+            f"the Caddyfile does not route to {service}:{port}"
         )
+
+
+def test_staging_cannot_answer_to_a_production_service_name():
+    """The regression this file exists for, and it reached production.
+
+    Compose publishes a service's NAME as a network alias on every network the
+    container joins -- explicit aliases are additional, not a replacement. A
+    staging service called `web` therefore answered to `web` on the shared
+    network, which is the name production's Caddyfile uses for its own
+    frontend, and Docker load balanced production's traffic between the two.
+    On 31 August 2026 alsigil.com served its sign-in page with the staging
+    pk_test_ key and would have served API calls from the staging database.
+
+    The shared network is one flat namespace. The two sets of names must be
+    disjoint, and no explicit alias may reintroduce a collision either.
+    """
+    import yaml
+
+    production = yaml.safe_load(read("deploy/docker-compose.prod.yml"))["services"]
+    staging = _staging_compose()["services"]
+
+    published = set()
+    for name, service in staging.items():
+        networks = service.get("networks") or {}
+        if "edge" not in networks:
+            continue
+        published.add(name)
+        published.update((networks["edge"] or {}).get("aliases") or [])
+
+    collisions = published & set(production)
+    assert not collisions, (
+        f"staging publishes {sorted(collisions)} on the shared network, which "
+        "production also uses -- production traffic will be load balanced into "
+        "the staging stack"
+    )
 
 
 def test_production_caddy_keeps_its_own_network_while_joining_the_shared_one():
