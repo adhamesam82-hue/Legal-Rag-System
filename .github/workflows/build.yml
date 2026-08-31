@@ -12,7 +12,22 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  # The suite is a gate on the image, not a parallel opinion about it. Until
+  # this job existed, build.yml and test.yml both fired on a push to main and
+  # neither waited for the other: a commit that broke tenant isolation was
+  # built, pushed to GHCR and deployed by deploy.yml while the tests were still
+  # running -- and the red X arrived after the box was already serving it.
+  #
+  # Expressed as a called workflow rather than as branch protection because
+  # this repository's branch settings are not ours to set, and because a gate
+  # that lives in the repository is reviewable in the same pull request as the
+  # code it guards. Branch protection on main is still worth adding on top; it
+  # is what stops a direct push from bypassing pull requests altogether.
+  tests:
+    uses: ./.github/workflows/test.yml
+
   build:
+    needs: tests
     runs-on: ubuntu-latest
     permissions:
       contents: read

@@ -12,8 +12,16 @@ name: tests
 
 on:
   push:
-    branches: ["**"]
+    # main is excluded here and only here. On main the suite runs as the first
+    # job of build.yml via workflow_call below, which is what makes a red test
+    # stop the image from being built at all. Leaving the push trigger on main
+    # as well would run the same suite twice per merge for no added signal.
+    branches-ignore: [main]
   pull_request:
+  # Called by build.yml before it builds anything. Without this the two
+  # workflows run in parallel on a merge to main and a failing suite does not
+  # prevent a broken image reaching GHCR -- and from there the box.
+  workflow_call:
 
 concurrency:
   # A second push to the same branch makes the first run irrelevant.

@@ -46,3 +46,50 @@ alsigil.com {
 www.alsigil.com {
 	redir https://alsigil.com{uri} permanent
 }
+
+# The development track. Same box and the same Caddy -- it owns 80 and 443, and
+# both certificates renew in one place -- but different upstreams, reached over
+# the external `alsigil-edge` network because staging is a separate compose
+# project and Compose does not join projects together by default.
+staging.alsigil.com {
+	encode zstd gzip
+
+	# A password on the WHOLE site, before any route. staging runs with a Clerk
+	# development instance and may run with LEGALOS_DEV_AUTH, which treats every
+	# caller as one signed-in user -- so the only thing between this hostname and
+	# an open system is this directive. It guards /api/* too: an attacker who
+	# only wanted the data would never load the frontend.
+	#
+	# The hash is committed on purpose, and is safe to: it is bcrypt cost 14 over
+	# a 28-character random password that exists nowhere in this repository.
+	# Rotate by generating a new pair with `caddy hash-password` and replacing
+	# this line -- the plaintext belongs in a password manager, not here.
+	basic_auth {
+		alsigil $2a$14$7KNiOnkNjLvSzhOqQlVZiOTW9kEMcJ/skm.0e6m6tEkGMJP94p2BS
+	}
+
+	# Keeps the development copy out of search results. Without it the same
+	# content is indexed twice under two hostnames, and the copy with sample
+	# client data and a dev-instance banner is the one that can rank.
+	header X-Robots-Tag "noindex, nofollow"
+
+	handle /api/* {
+		reverse_proxy api-staging:8000 {
+			lb_try_duration 15s
+			lb_try_interval 500ms
+			flush_interval -1
+		}
+	}
+
+	handle {
+		reverse_proxy web-staging:3000 {
+			lb_try_duration 15s
+			lb_try_interval 500ms
+		}
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

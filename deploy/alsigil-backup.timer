@@ -1,0 +1,13 @@
+[Unit]
+Description=Run the alsigil backup nightly
+
+[Timer]
+# 02:30 Africa/Cairo, well clear of the working day and clear of both the
+# reminder sweep (06:00) and the disk check (07:00) -- a long prune must not
+# delay the thing that tells a lawyer about tomorrow's hearing. The box runs on
+# Cairo time, so this needs no conversion.
+OnCalendar=*-*-* 02:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

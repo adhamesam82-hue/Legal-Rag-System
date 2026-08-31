@@ -1,0 +1,102 @@
+# The development track: the same images as production, a separate database,
+# separate secrets, and no Caddy of its own -- production's Caddy reaches these
+# containers over the external `alsigil-edge` network and puts them behind a
+# password on staging.alsigil.com.
+#
+# Run it with an explicit project name so it cannot collide with production:
+#   docker compose -f docker-compose.staging.yml -p alsigil-staging up -d
+# The `name:` below sets that, so the -p is belt and braces.
+#
+# Production's project name is `deploy` (from its directory) and MUST NOT be
+# renamed: its volumes are already namespaced under it, and renaming would
+# silently start the stack on empty ones.
+name: alsigil-staging
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  web-staging:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:?set GITHUB_REPOSITORY_OWNER in /opt/alsigil-staging/deploy/.env}/alsigil-web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    # Staging's own Clerk configuration -- a development instance, never the
+    # production keys. Same narrow split as production: the internet-facing
+    # container gets Clerk and nothing else.
+    env_file: /opt/alsigil-staging/web.env
+    expose:
+      - "3000"
+    networks:
+      default:
+      edge:
+        # The service is NAMED web-staging, not named web with an alias, and
+        # that distinction is the whole reason production stayed production.
+        #
+        # Compose publishes a container's service name as a network alias on
+        # EVERY network it joins, aliases here or not. A service called `web`
+        # on the shared network therefore answers to `web` -- the exact name
+        # production's Caddyfile uses for its own frontend. Docker then load
+        # balances between the two containers, and roughly half of production's
+        # traffic is served by the staging stack, against the staging database
+        # and a development Clerk instance. Observed in production on 31 August
+        # 2026: alsigil.com's sign-in page shipped the pk_test_ key.
+        #
+        # Names on this network are one flat namespace shared with production.
+        # Anything added here must not collide with a production service name;
+        # a test asserts the two sets stay disjoint.
+        aliases:
+          - web-staging
+    logging: *logging
+
+  api-staging:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:?set GITHUB_REPOSITORY_OWNER in /opt/alsigil-staging/deploy/.env}/alsigil-api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file: /opt/alsigil-staging/.env
+    environment:
+      LEGALOS_DOCUMENT_ROOT: /data/documents
+    expose:
+      - "8000"
+    volumes:
+      - documents:/data/documents
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      default:
+      edge:
+        aliases:
+          - api-staging
+    logging: *logging
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    env_file: /opt/alsigil-staging/.env
+    # No `ports:`, and deliberately NOT on the edge network either: nothing
+    # outside this project has any business reaching staging's database.
+    expose:
+      - "5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # $$ so the container's shell expands these, not the Compose client on
+      # the host where they are unset -- same reason as the production file.
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-legalrag} -d $${POSTGRES_DB:-legalrag}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    logging: *logging
+
+networks:
+  edge:
+    name: alsigil-edge
+    external: true
+
+volumes:
+  # Namespaced under the project name above, so these are a different database
+  # and a different document store from production's -- not the same volumes
+  # under a second name.
+  pgdata:
+  documents:
