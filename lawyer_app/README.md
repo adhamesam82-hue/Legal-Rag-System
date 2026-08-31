@@ -3,7 +3,7 @@
 What a lawyer needs away from the desk: what is due, what is in court, and
 what happened when they walked out of it.
 
-Three screens, Arabic-first and RTL from the first line. Not a second copy of
+Four screens, Arabic-first and RTL from the first line. Not a second copy of
 the web app — the web app answers "how is the firm doing", and this answers
 "what is mine and what is now", which is the only question worth asking in a
 corridor between sittings.
