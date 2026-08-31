@@ -17,6 +17,7 @@ against the real hostname.
 """
 from __future__ import annotations
 
+import os
 import socket
 import sys
 import time
@@ -95,9 +96,29 @@ def check_frontend_serves(client: httpx.Client, base_url: str) -> str | None:
     return None
 
 
+def basic_auth() -> tuple[str, str] | None:
+    """Credentials from SMOKE_BASIC_AUTH ("user:password"), or None.
+
+    staging.alsigil.com sits behind Caddy's basic_auth, which covers /api/* as
+    well as the frontend -- the password is the only thing between a hostname
+    running a Clerk development instance and an open system. Without a way to
+    present it, every staging check would read 401 as a broken deployment and
+    roll back a perfectly healthy one.
+
+    A malformed value is treated as absent rather than raising: the request
+    then gets a 401 the checks already report clearly, which is a better
+    failure than a traceback that says nothing about the deployment.
+    """
+    raw = os.environ.get("SMOKE_BASIC_AUTH")
+    if not raw or ":" not in raw:
+        return None
+    user, _, password = raw.partition(":")
+    return user, password
+
+
 def run_checks(base_url: str) -> list[str]:
     """Every failure reason, empty when the deployment is healthy."""
-    with httpx.Client() as client:
+    with httpx.Client(auth=basic_auth()) as client:
         return [
             reason
             for reason in (
