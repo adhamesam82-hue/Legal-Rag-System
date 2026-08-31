@@ -9,7 +9,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Theme } from "@astryxdesign/core/theme";
 import { LinkProvider } from "@astryxdesign/core/Link";
 import { legalosTheme } from "@/lib/legalos";
-import { USING_CLERK } from "@/lib/auth-mode";
+import { setClerkPublishableKey, usingClerk } from "@/lib/auth-mode";
 import { AuthTokenBridge } from "@/components/AuthTokenBridge";
 import { OrgProvider } from "@/lib/org";
 import { LocaleProvider } from "@/lib/i18n/provider";
@@ -69,10 +69,20 @@ export function useThemeMode() {
 export function Providers({
   children,
   initialLocale,
+  clerkPublishableKey,
 }: {
   children: React.ReactNode;
   initialLocale?: Locale;
+  /** Read from the environment by the server-rendered layout on every request.
+   *  Not read from process.env here: Next inlines NEXT_PUBLIC_* into the client
+   *  bundle at build time, and the image is built once with no Clerk key so the
+   *  same artefact can serve staging and production. See lib/auth-mode.ts. */
+  clerkPublishableKey?: string | null;
 }) {
+  // During render, not in an effect: children read usingClerk() while they
+  // render, and an effect would run after they had already decided.
+  setClerkPublishableKey(clerkPublishableKey);
+  const clerkIsConfigured = usingClerk();
   const [mode, setMode] = useState<ColorMode>("system");
   const ctxValue = useMemo(() => ({ mode, setMode }), [mode]);
 
@@ -82,7 +92,7 @@ export function Providers({
         <Theme theme={legalosTheme} mode={mode}>
           {/* Routes every Astryx Link through the Next router. */}
           <LinkProvider component={Link}>
-            {USING_CLERK && <AuthTokenBridge />}
+            {clerkIsConfigured && <AuthTokenBridge />}
             <OrgProvider>{children}</OrgProvider>
           </LinkProvider>
         </Theme>
@@ -92,5 +102,13 @@ export function Providers({
 
   // ClerkProvider throws without a publishable key, so it is only mounted
   // when one is configured; see lib/auth-mode.ts.
-  return USING_CLERK ? <ClerkProvider>{inner}</ClerkProvider> : inner;
+  return clerkIsConfigured ? (
+    // publishableKey passed explicitly: ClerkProvider would otherwise look for
+    // the build-time inlined value, which is absent in this image by design.
+    <ClerkProvider publishableKey={clerkPublishableKey ?? undefined}>
+      {inner}
+    </ClerkProvider>
+  ) : (
+    inner
+  );
 }

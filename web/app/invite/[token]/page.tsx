@@ -31,7 +31,7 @@ import { Button } from "@astryxdesign/core/Button";
 import { Banner } from "@astryxdesign/core/Banner";
 import { api, ApiError, type InvitationPreview } from "@/lib/api";
 import { useOrg } from "@/lib/org";
-import { USING_CLERK } from "@/lib/auth-mode";
+import { usingClerk } from "@/lib/auth-mode";
 
 const ROLE_AR: Record<InvitationPreview["role"], string> = {
   lawyer: "محامٍ",
@@ -59,7 +59,7 @@ export default function InvitePage() {
   // this component -- useAuth() may only be called when ClerkProvider is
   // actually mounted (providers.tsx mounts it conditionally), and calling it
   // in dev-auth mode throws.
-  return USING_CLERK ? <ClerkInvite /> : <Invite isSignedIn />;
+  return usingClerk() ? <ClerkInvite /> : <Invite isSignedIn />;
 }
 
 function ClerkInvite() {
@@ -225,3 +225,4 @@ function Body({
     </div>
   );
 }
+

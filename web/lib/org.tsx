@@ -28,7 +28,7 @@ import {
   type Membership,
   type OrgMember,
 } from "@/lib/api";
-import { USING_CLERK } from "@/lib/auth-mode";
+import { usingClerk } from "@/lib/auth-mode";
 import { practiceApi, type PracticeApi, type Role } from "@/lib/practice";
 
 interface OrgContextValue {
@@ -63,7 +63,7 @@ type AuthState = "loading" | "signed-in" | "signed-out";
  * Reports Clerk's session state to OrgProvider.
  *
  * Split into its own component because useAuth() only works under
- * ClerkProvider, which is not mounted in dev-auth mode. USING_CLERK is a
+ * ClerkProvider, which is not mounted in dev-auth mode. usingClerk() is a
  * module constant, so the branch below never flips between renders and hook
  * order stays stable.
  */
@@ -83,7 +83,7 @@ function ClerkAuthGate({
 }
 
 export function OrgProvider({ children }: { children: React.ReactNode }) {
-  if (!USING_CLERK) {
+  if (!usingClerk()) {
     return <OrgProviderInner authState="signed-in">{children}</OrgProviderInner>;
   }
   return (
@@ -569,3 +569,4 @@ export function useOptionalResource<T>(
   wrapped.snapshotSource = String(fetcher);
   return useResource<T>(wrapped, deps);
 }
+

@@ -45,7 +45,17 @@ export default async function RootLayout({
   return (
     <html lang={locale} dir={getLocaleDirection(locale)} suppressHydrationWarning>
       <body>
-        <Providers initialLocale={locale}>
+        {/* Read here, on the server, on every request. NEXT_PUBLIC_* is
+            inlined into the client bundle at build time, and this image is
+            built once with no Clerk key so the same artefact can be promoted
+            from staging to production -- where the two Clerk instances differ.
+            Reading it in a client module instead left the browser believing
+            Clerk was unconfigured while the server rendered it as configured,
+            and every API call went out unauthenticated. */}
+        <Providers
+          initialLocale={locale}
+          clerkPublishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? null}
+        >
           <Shell>{children}</Shell>
         </Providers>
       </body>
