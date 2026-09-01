@@ -185,7 +185,7 @@ export default function DashboardPage() {
                       ))}
                     </Grid>
 
-                    <Grid columns={3} gap={6}>
+                    <Grid columns={{ minWidth: 360, repeat: "fit" }} gap={6}>
                       <GridSpan columns={2}>
                         <Card>
                           <VStack gap={4}>
