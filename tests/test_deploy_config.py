@@ -78,6 +78,16 @@ def test_sign_in_stays_on_this_origin():
         route = Path("web/app") / value.strip("/")
         assert (REPO_ROOT / route).is_dir(), f"{value} has no route to land on"
 
+    # And the middleware, which is where the redirect is actually decided:
+    # auth.protect() runs there, and ClerkProvider's props never reach it.
+    # Pinning only the provider left /dashboard answering 404 to a signed-out
+    # visitor -- a missing page, where the truth was a missing session.
+    middleware = read("web/middleware.ts")
+    assert 'signInUrl: "/sign-in"' in middleware, (
+        "clerkMiddleware does not pin the sign-in URL, so auth.protect() "
+        "falls back to the hosted portal or to a bare 404"
+    )
+
 
 def test_enabled_features_are_decided_at_request_time():
     """Staging exists to show every screen; production ships a small set. Both

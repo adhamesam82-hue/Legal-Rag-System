@@ -36,13 +36,28 @@ function notFoundIfDisabled(request: NextRequest) {
 }
 
 export default hasClerk
-  ? clerkMiddleware(async (auth, request) => {
-      const gated = notFoundIfDisabled(request);
-      if (gated) return gated;
-      if (!isPublicRoute(request)) {
-        await auth.protect();
-      }
-    })
+  ? clerkMiddleware(
+      async (auth, request) => {
+        const gated = notFoundIfDisabled(request);
+        if (gated) return gated;
+        if (!isPublicRoute(request)) {
+          await auth.protect();
+        }
+      },
+      // Where auth.protect() sends a signed-out visitor. Passing it here, and
+      // not only to ClerkProvider, because the redirect is decided in this
+      // middleware -- the provider's props never reach it.
+      //
+      // Left to its defaults, Clerk resolves the destination from
+      // NEXT_PUBLIC_CLERK_SIGN_IN_URL, which is inlined at build time and is
+      // absent from an image built once for both environments. What remained
+      // was the hosted Account Portal on accounts.<domain>: a second origin,
+      // provisioned outside this repository, which on 1 September 2026 did not
+      // resolve at all -- so /dashboard sent visitors nowhere. Where it could
+      // not resolve a destination, the same call answered 404 instead, which
+      // reads as a missing page rather than a missing session.
+      { signInUrl: "/sign-in", signUpUrl: "/sign-up" },
+    )
   : (request: NextRequest) => notFoundIfDisabled(request) ?? NextResponse.next();
 
 export const config = {
