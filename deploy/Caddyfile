@@ -95,7 +95,7 @@ staging.alsigil.com {
 		# Rotate by generating a new pair with `caddy hash-password` and
 		# replacing this line -- the plaintext belongs in a password manager.
 		basic_auth {
-			alsigil $2a$14$7KNiOnkNjLvSzhOqQlVZiOTW9kEMcJ/skm.0e6m6tEkGMJP94p2BS
+			alsigil $2a$14$t7EFqZF/uEXvgOUesGXPNecZ2KIQydwHaA5XbDhadMdp7vlknYWp2
 		}
 
 		reverse_proxy web-staging:3000 {
