@@ -187,6 +187,17 @@ class CasePatch(BaseModel):
     opposing_counsel: str | None = None
     filed_date: date | None = None
     ai_summary: str | None = None
+    # The case file (0022). Long text; no length cap because a statement of
+    # facts is as long as the facts are.
+    summary: str | None = None
+    facts: str | None = None
+    legal_basis: str | None = None
+    defences: str | None = None
+    procedural_posture: str | None = None
+    client_narrative: str | None = None
+    # null clears the link; omitted leaves it alone (exclude_unset on the
+    # route tells the two apart).
+    parent_case_id: int | None = None
 
 
 class CaseTimelineIn(BaseModel):
