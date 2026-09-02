@@ -167,13 +167,15 @@ def localise_document(html: str) -> str:
         # translation. No `dir` on either: the switcher is a word, not a passage,
         # so it takes the page's direction like every other item in the bar and
         # `.ar`'s bidi isolation keeps it from disturbing its neighbours.
-        ('<a class="nav-locale" href="/ar" hreflang="ar" lang="ar"><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg><span class="nav-locale-label ar">العربية</span></a>',
-         '<a class="nav-locale" href="/" hreflang="en" lang="en"><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg><span class="nav-locale-label">English</span></a>'),
-        ('<a class="mobile-locale ar" href="/ar" hreflang="ar" lang="ar">العربية</a>',
-         '<a class="mobile-locale" href="/" hreflang="en" lang="en">English</a>'),
+        # Arabic is the root; English lives at /en/ (T-036). The English source
+        # points its switchers at "/", and this page points back at "/en/".
+        ('<a class="nav-locale" href="/" hreflang="ar" lang="ar"><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg><span class="nav-locale-label ar">العربية</span></a>',
+         '<a class="nav-locale" href="/en" hreflang="en" lang="en"><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg><span class="nav-locale-label">English</span></a>'),
+        ('<a class="mobile-locale ar" href="/" hreflang="ar" lang="ar">العربية</a>',
+         '<a class="mobile-locale" href="/en" hreflang="en" lang="en">English</a>'),
         # The footer switcher points back at the page you are not on.
-        ('<span class="foot-locale"><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg>القاهرة · العربية<i>/</i><a href="/ar" class="ar">العربية</a></span>',
-         '<span class="foot-locale"><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg>القاهرة · العربية<i>/</i><a href="/" lang="en" dir="ltr">English</a></span>'),
+        ('<span class="foot-locale"><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg>القاهرة · العربية<i>/</i><a href="/" hreflang="ar" lang="ar" class="ar">العربية</a></span>',
+         '<span class="foot-locale"><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg>القاهرة · العربية<i>/</i><a href="/en" hreflang="en" lang="en" dir="ltr">English</a></span>'),
     ]
     for old, new in subs:
         if old not in html:
@@ -184,8 +186,8 @@ def localise_document(html: str) -> str:
     # both sides of the pair, so it comes through the copy unchanged. Added
     # here only if the source ever loses it.
     if 'hreflang="ar"' not in html:
-        alt = ('<link rel="alternate" hreflang="en" href="/">\n'
-               '<link rel="alternate" hreflang="ar" href="/ar/">\n'
+        alt = ('<link rel="alternate" hreflang="ar" href="/">\n'
+               '<link rel="alternate" hreflang="en" href="/en">\n'
                '<link rel="alternate" hreflang="x-default" href="/">\n')
         html = html.replace('<link rel="icon"', alt + '<link rel="icon"', 1)
     return html

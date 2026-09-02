@@ -581,3 +581,32 @@
     init();
   }
 })();
+
+/* ------------------------------------------------------------------------
+ * Language preference (T-036).
+ *
+ * Arabic is the root and English is /en. Clicking either switcher records
+ * the choice; a later visit to "/" honours a recorded "en" by moving to
+ * /en. The English page never redirects: a request for /en is explicit,
+ * whatever was recorded, so a shared link opens what it says.
+ *
+ * localStorage rather than a cookie: nothing server-side reads this, and a
+ * cookie would ride along on every API request for no reason.
+ * ---------------------------------------------------------------------- */
+(function () {
+  var KEY = 'alsigil-lang';
+  function read() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+  function write(v) { try { localStorage.setItem(KEY, v); } catch (e) { /* private mode */ } }
+
+  var links = document.querySelectorAll('a[hreflang="ar"], a[hreflang="en"]');
+  for (var i = 0; i < links.length; i++) {
+    links[i].addEventListener('click', function (ev) {
+      write(ev.currentTarget.getAttribute('hreflang'));
+    });
+  }
+
+  var isRoot = location.pathname === '/' || location.pathname === '/index.html';
+  if (isRoot && document.documentElement.lang === 'ar' && read() === 'en') {
+    location.replace('/en');
+  }
+})();
