@@ -348,6 +348,9 @@ export interface InvoiceLine {
   quantity: number;
   unit_amount: number;
   line_total: number;
+  /** Per-line tax since migration 0024; 0 when the invoice is taxed as a whole. */
+  tax_rate: number;
+  tax_amount: number;
 }
 
 export interface Invoice {
@@ -357,14 +360,23 @@ export interface Invoice {
   matter_name: string | null;
   client_id: number;
   client_name: string;
+  client_tax_id: string | null;
   number: string;
+  /** Sum of the lines, before tax. */
   amount: number;
+  /** Input when the invoice is taxed as a whole; derived (tax / amount) when lines carry their own rates. */
+  tax_rate: number;
+  tax_amount: number;
+  /** What the client owes. */
+  total_amount: number;
   currency: string;
   status: InvoiceStatus;
   issued_date: string;
   due_date: string;
   paid_date: string | null;
   created_at: string;
+  /** Printed under the totals. Editable on drafts only. */
+  notes: string;
   lines: InvoiceLine[];
 }
 
@@ -974,6 +986,9 @@ export function practiceApi(organizationId: number) {
         }),
       setStatus: (id: number, status: InvoiceStatus) =>
         patch<Invoice>(`/invoices/${id}`, { status }),
+      /** Drafts only; the API answers 409 once the invoice has been sent. */
+      setNotes: (id: number, notes: string) => patch<Invoice>(`/invoices/${id}`, { notes }),
+      pdfUrl: (id: number, lang: "ar" | "en" = "ar") => `${base}/invoices/${id}/pdf?lang=${lang}`,
       remove: (id: number) => remove(`/invoices/${id}`),
     },
 

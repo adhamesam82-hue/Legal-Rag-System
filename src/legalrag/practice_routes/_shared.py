@@ -299,6 +299,9 @@ class InvoiceLineIn(BaseModel):
     description: str
     quantity: Decimal = Decimal(1)
     unit_amount: Decimal = Decimal(0)
+    # Per line since 0024. A fraction, like the invoice rate. Leave at 0 on
+    # every line to tax the whole invoice at InvoiceIn.tax_rate instead.
+    tax_rate: Decimal = Field(default=Decimal(0), ge=0, le=1)
 
 
 class InvoiceIn(BaseModel):
@@ -314,10 +317,14 @@ class InvoiceIn(BaseModel):
     tax_rate: Decimal = Field(default=Decimal(0), ge=0, le=1)
     status: Literal["draft", "sent", "paid", "overdue"] = "draft"
     lines: list[InvoiceLineIn] = Field(default_factory=list)
+    # Printed under the totals: payment terms, bank account, a reference.
+    notes: str = Field(default="", max_length=4000)
 
 
-class InvoiceStatusIn(BaseModel):
-    status: Literal["draft", "sent", "paid", "overdue"]
+class InvoicePatch(BaseModel):
+    status: Literal["draft", "sent", "paid", "overdue"] | None = None
+    # Drafts only; the API refuses it on a sent invoice.
+    notes: str | None = Field(default=None, max_length=4000)
 
 
 class GenerateInvoiceIn(BaseModel):
@@ -327,6 +334,7 @@ class GenerateInvoiceIn(BaseModel):
     include_expenses: bool = True
     # A fraction, not a percentage: Egyptian VAT is 0.14, not 14.
     tax_rate: Decimal = Field(default=Decimal(0), ge=0, le=1)
+    notes: str = Field(default="", max_length=4000)
 
 
 class DocumentPatch(BaseModel):

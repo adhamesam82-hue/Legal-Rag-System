@@ -63,12 +63,41 @@ export interface Organization {
   logo_url: string | null;
   /** Practice areas, from the same list as matter types. Empty until set. */
   specialties: MatterType[];
+  // --- migration 0025 (T-027). Nullable unless it has a default.
+  governorate: string | null;
+  main_court: string | null;
+  firm_size: FirmSize | null;
+  client_kind: ClientKind | null;
+  legal_name: string | null;
+  tax_id: string | null;
+  bar_number: string | null;
+  website: string | null;
+  /** A design-system palette name, never a hex. */
+  brand_color: BrandColor | null;
+  locale: "ar" | "en";
+  timezone: string;
+  date_format: DateFormat;
+  default_currency: string;
+  /** null = the built-in INV-{year}-{seq}. Must end with {seq}. */
+  invoice_number_pattern: string | null;
+  /** A preference that pre-fills new invoices; every invoice keeps its own rate. */
+  default_tax_rate: number;
+  default_payment_terms_days: number;
+  /** Which optional form fields this firm makes mandatory. */
+  required_fields: { matter?: string[]; client?: string[] };
 }
 
-/** A PATCH body: only the fields present are written. */
-export type OrganizationUpdate = Partial<
-  Pick<Organization, "name" | "registration_number" | "phone" | "address" | "specialties">
->;
+export const FIRM_SIZES = ["solo", "small", "medium", "large"] as const;
+export type FirmSize = (typeof FIRM_SIZES)[number];
+export const CLIENT_KINDS = ["individuals", "companies", "mixed"] as const;
+export type ClientKind = (typeof CLIENT_KINDS)[number];
+export const BRAND_COLORS = ["blue", "cyan", "green", "orange", "pink", "purple", "red", "teal", "yellow"] as const;
+export type BrandColor = (typeof BRAND_COLORS)[number];
+export const DATE_FORMATS = ["DD/MM/YYYY", "YYYY-MM-DD", "DD-MM-YYYY"] as const;
+export type DateFormat = (typeof DATE_FORMATS)[number];
+
+/** A PATCH body: only the fields present are written; "" clears a nullable text field. */
+export type OrganizationUpdate = Partial<Omit<Organization, "id" | "logo_url">>;
 
 export interface Membership {
   organization_id: number;

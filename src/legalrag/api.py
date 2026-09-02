@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
+from decimal import Decimal
 import os
 import re
 import uuid
@@ -455,6 +456,56 @@ class OrganizationOut(BaseModel):
     logo_url: str | None = None
     # Values from the shared matter-type list (practice.matters.MATTER_TYPES).
     specialties: list[str] = Field(default_factory=list)
+    # --- 0025 (T-027). Closed lists are in orgs.py.
+    governorate: str | None = None
+    main_court: str | None = None
+    firm_size: str | None = None
+    client_kind: str | None = None
+    legal_name: str | None = None
+    tax_id: str | None = None
+    bar_number: str | None = None
+    website: str | None = None
+    brand_color: str | None = None
+    locale: str = "ar"
+    timezone: str = "Africa/Cairo"
+    date_format: str = "DD/MM/YYYY"
+    default_currency: str = "EGP"
+    invoice_number_pattern: str | None = None
+    # A preference that pre-fills new invoices; never read when printing.
+    default_tax_rate: Decimal = Decimal(0)
+    default_payment_terms_days: int = 30
+    required_fields: dict[str, list[str]] = Field(default_factory=dict)
+
+
+def _org_out(org: Organization) -> OrganizationOut:
+    """The one place an Organization becomes its API shape, so a column added
+    in orgs.py reaches every route that returns a firm."""
+    return OrganizationOut(
+        id=org.id,
+        name=org.name,
+        registration_number=org.registration_number,
+        phone=org.phone,
+        address=org.address,
+        logo_url=org.logo_url,
+        specialties=list(org.specialties),
+        governorate=org.governorate,
+        main_court=org.main_court,
+        firm_size=org.firm_size,
+        client_kind=org.client_kind,
+        legal_name=org.legal_name,
+        tax_id=org.tax_id,
+        bar_number=org.bar_number,
+        website=org.website,
+        brand_color=org.brand_color,
+        locale=org.locale,
+        timezone=org.timezone,
+        date_format=org.date_format,
+        default_currency=org.default_currency,
+        invoice_number_pattern=org.invoice_number_pattern,
+        default_tax_rate=org.default_tax_rate,
+        default_payment_terms_days=org.default_payment_terms_days,
+        required_fields=dict(org.required_fields),
+    )
 
 
 class CreateOrganizationRequest(BaseModel):
@@ -480,6 +531,27 @@ class UpdateOrganizationRequest(BaseModel):
     # The whole list, replaced as one: a firm with three specialties that
     # unticks one sends two. Validated against MATTER_TYPES in orgs.py.
     specialties: list[str] | None = None
+    # --- 0025 (T-027). Lengths bound the free text here; the closed lists
+    # (locale, date_format, firm_size, client_kind, brand_color), the
+    # timezone, the currency code, the pattern and required_fields are
+    # validated in orgs.validate_settings, which is where the lists live.
+    governorate: str | None = Field(default=None, max_length=100)
+    main_court: str | None = Field(default=None, max_length=200)
+    firm_size: str | None = Field(default=None, max_length=20)
+    client_kind: str | None = Field(default=None, max_length=20)
+    legal_name: str | None = Field(default=None, max_length=300)
+    tax_id: str | None = Field(default=None, max_length=60)
+    bar_number: str | None = Field(default=None, max_length=60)
+    website: str | None = Field(default=None, max_length=300)
+    brand_color: str | None = Field(default=None, max_length=20)
+    locale: str | None = Field(default=None, max_length=5)
+    timezone: str | None = Field(default=None, max_length=64)
+    date_format: str | None = Field(default=None, max_length=20)
+    default_currency: str | None = Field(default=None, max_length=3)
+    invoice_number_pattern: str | None = Field(default=None, max_length=40)
+    default_tax_rate: Decimal | None = None
+    default_payment_terms_days: int | None = None
+    required_fields: dict[str, list[str]] | None = None
 
 
 class MembershipOut(BaseModel):
@@ -904,7 +976,7 @@ def post_create_organization(
             )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
-    return OrganizationOut(id=org.id, name=org.name)
+    return _org_out(org)
 
 
 @app.get("/api/orgs/me", response_model=list[MembershipOut])
@@ -939,15 +1011,7 @@ def get_organization_detail(
         org = get_organization(conn, organization_id)
     if org is None:
         raise HTTPException(status_code=404, detail="Organization not found")
-    return OrganizationOut(
-        id=org.id,
-        name=org.name,
-        registration_number=org.registration_number,
-        phone=org.phone,
-        address=org.address,
-        logo_url=org.logo_url,
-        specialties=list(org.specialties),
-    )
+    return _org_out(org)
 
 
 @app.patch("/api/orgs/{organization_id}", response_model=OrganizationOut)
@@ -967,15 +1031,7 @@ def patch_organization(
         raise HTTPException(status_code=422, detail=str(exc))
     if org is None:
         raise HTTPException(status_code=404, detail="Organization not found")
-    return OrganizationOut(
-        id=org.id,
-        name=org.name,
-        registration_number=org.registration_number,
-        phone=org.phone,
-        address=org.address,
-        logo_url=org.logo_url,
-        specialties=list(org.specialties),
-    )
+    return _org_out(org)
 
 
 # --- firm logo ----------------------------------------------------------------
