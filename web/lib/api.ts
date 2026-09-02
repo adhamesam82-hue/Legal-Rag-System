@@ -99,6 +99,17 @@ export type DateFormat = (typeof DATE_FORMATS)[number];
 /** A PATCH body: only the fields present are written; "" clears a nullable text field. */
 export type OrganizationUpdate = Partial<Omit<Organization, "id" | "logo_url">>;
 
+/** The caller's own reminder channels (T-034), not a firm setting.
+ *  `*_available` says whether the channel can deliver anything right now --
+ *  an install with no mail provider or no Firebase service account still has
+ *  these columns, and a switch for a channel that cannot fire is a lie. */
+export interface NotificationPreferences {
+  wants_reminders: boolean;
+  wants_push: boolean;
+  email_available: boolean;
+  push_available: boolean;
+}
+
 export interface Membership {
   organization_id: number;
   organization_name: string;
@@ -360,6 +371,20 @@ export const api = {
 
   updateOrganization: (organizationId: number, body: OrganizationUpdate) =>
     request<Organization>(`/api/orgs/${organizationId}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
+  /** The caller's own reminder channels (T-034) -- not a firm setting, so any
+   *  member reads and writes their own regardless of role. */
+  notificationPreferences: (organizationId: number) =>
+    request<NotificationPreferences>(`/api/orgs/${organizationId}/notification-preferences`),
+
+  updateNotificationPreferences: (
+    organizationId: number,
+    body: { wants_reminders?: boolean; wants_push?: boolean },
+  ) =>
+    request<NotificationPreferences>(`/api/orgs/${organizationId}/notification-preferences`, {
       method: "PATCH",
       body: JSON.stringify(body),
     }),

@@ -87,12 +87,15 @@ from legalrag.orgs import (
     add_membership,
     create_organization,
     get_membership,
+    get_notification_preferences,
     get_organization,
     list_memberships_for_user,
     list_org_members,
     remove_membership,
+    set_notification_preferences,
     update_organization,
 )
+from legalrag.push import push_is_configured
 from legalrag.pipeline import ask, ask_stream, retrieve_for
 from legalrag.ratelimit import RateLimitMiddleware
 from legalrag.portal_api import router as portal_router
@@ -1032,6 +1035,76 @@ def patch_organization(
     if org is None:
         raise HTTPException(status_code=404, detail="Organization not found")
     return _org_out(org)
+
+
+# --- notification preferences --------------------------------------------------
+#
+# The member's own reminder channels (T-034), not a firm setting: any member
+# reads and writes their own regardless of role. `*_available` says whether the
+# channel can deliver anything at all right now -- an install with no Resend
+# key or no Firebase service account still has the columns and the toggle
+# would just be a promise nobody keeps. The settings screen hides a channel
+# entirely when its `_available` is false, rather than show a switch that
+# does nothing.
+
+
+class NotificationPreferencesOut(BaseModel):
+    wants_reminders: bool
+    wants_push: bool
+    email_available: bool
+    push_available: bool
+
+
+class NotificationPreferencesPatch(BaseModel):
+    wants_reminders: bool | None = None
+    wants_push: bool | None = None
+
+
+def _notification_preferences_out(prefs) -> NotificationPreferencesOut:
+    return NotificationPreferencesOut(
+        wants_reminders=prefs.wants_reminders,
+        wants_push=prefs.wants_push,
+        email_available=email_is_configured(),
+        push_available=push_is_configured(),
+    )
+
+
+@app.get(
+    "/api/orgs/{organization_id}/notification-preferences",
+    response_model=NotificationPreferencesOut,
+)
+def get_my_notification_preferences(
+    organization_id: int,
+    membership: Membership = Depends(get_current_membership),
+):
+    with db() as conn:
+        prefs = get_notification_preferences(
+            conn, organization_id, membership.clerk_user_id
+        )
+    if prefs is None:
+        raise HTTPException(status_code=404, detail="Membership not found")
+    return _notification_preferences_out(prefs)
+
+
+@app.patch(
+    "/api/orgs/{organization_id}/notification-preferences",
+    response_model=NotificationPreferencesOut,
+)
+def patch_my_notification_preferences(
+    organization_id: int,
+    request: NotificationPreferencesPatch,
+    membership: Membership = Depends(get_current_membership),
+):
+    with db() as conn:
+        prefs = set_notification_preferences(
+            conn,
+            organization_id,
+            membership.clerk_user_id,
+            **request.model_dump(exclude_unset=True),
+        )
+    if prefs is None:
+        raise HTTPException(status_code=404, detail="Membership not found")
+    return _notification_preferences_out(prefs)
 
 
 # --- firm logo ----------------------------------------------------------------

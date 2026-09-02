@@ -1,287 +1,98 @@
 "use client";
 
 /**
- * The firm's own details.
+ * The firm's own settings, as sections on one route rather than sub-pages.
  *
- * This screen used to be four inputs seeded with one hardcoded Cairo firm and
- * a Save button wired to nothing: pressing it issued no request at all, gave
- * no feedback, and the old values came back on reload — while the avatar in
- * the header re-lettered itself from the new name, so it looked like it had
- * worked. There was no update endpoint and no columns behind three of the
- * four fields; both exist now (migration 0018, PATCH /api/orgs/{id}).
+ * A firm sets most of this once, at onboarding -- navigating between six
+ * pages for one setup session is a burden, not organisation (T-034). Each
+ * section saves independently: one button for every field on the page
+ * would make each save a gamble that some unrelated section did not just
+ * get overwritten, and a lawyer or staff member sees every section
+ * read-only with a reason, rather than a page that vanishes and leaves
+ * "where did settings go?" unanswered.
  *
- * The logo picker uploads to POST /api/orgs/{id}/logo (T-028) and the API
- * serves the result from /api/logos/<name>, so the picker is live for the
- * owner and read-only for everyone else.
+ * Two sections the spec asked for are not here, both recorded rather than
+ * silently dropped:
+ *   - Calendar (ICS subscription): no backend route exists, and building a
+ *     token-authenticated read-only feed is a separate piece of work: T-034
+ *     names it as in scope only if a route already existed, and explicitly
+ *     allows omitting the section otherwise.
+ *   - Account export / deletion: deferred in T-027 already -- an
+ *     irreversible action deserves its own design, not a button bolted on
+ *     here. A delete button with no backend behind it is the worst thing
+ *     this screen could show.
  */
 
-import { useEffect, useState } from "react";
-import { useTranslator } from "@astryxdesign/core/i18n";
 import { useOrg, useResource } from "@/lib/org";
-import { API_BASE, api, ApiError, type Organization } from "@/lib/api";
-import { DataView, InlineError } from "@/components/DataState";
-import { LayoutFooter } from "@astryxdesign/core/Layout";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Card } from "@astryxdesign/core/Card";
-import { Banner } from "@astryxdesign/core/Banner";
-import { Button } from "@astryxdesign/core/Button";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { TextArea } from "@astryxdesign/core/TextArea";
-import { FileInput } from "@astryxdesign/core/FileInput";
-import { Divider } from "@astryxdesign/core/Divider";
-import { Avatar } from "@astryxdesign/core/Avatar";
+import { api } from "@/lib/api";
+import { DataView } from "@/components/DataState";
+import { VStack } from "@astryxdesign/core/Stack";
+import { ProfileSection } from "@/components/settings/ProfileSection";
+import { IdentitySection } from "@/components/settings/IdentitySection";
+import { PreferencesSection } from "@/components/settings/PreferencesSection";
+import { BillingSection } from "@/components/settings/BillingSection";
+import { RequiredFieldsSection } from "@/components/settings/RequiredFieldsSection";
+import { NotificationsSection } from "@/components/settings/NotificationsSection";
 
 export default function FirmSettingsPage() {
-  const { organizationId, organizationName, role, reloadOrganizations } = useOrg();
+  const { organizationId, role, reloadOrganizations } = useOrg();
 
   // Never called before an organization is bound: useResource holds the
   // fetcher until one is, which is the same guarantee every practice screen
   // relies on.
-  const firm = useResource(() => api.organization(organizationId!), [
-    organizationId,
-  ]);
+  const firm = useResource(() => api.organization(organizationId!), [organizationId]);
+  const canEdit = role === "owner";
 
   return (
     <DataView resource={firm}>
-      {(loaded) => (
-        <FirmSettingsForm
-          key={loaded.id}
-          firm={loaded}
-          organizationId={loaded.id}
-          canEdit={role === "owner"}
-          onSaved={() => {
-            // The name is on every screen's header and in the sidebar, both
-            // of which read it from the membership list rather than from
-            // here, so a rename that stopped at this form would look like it
-            // had not taken.
-            firm.reload();
-            reloadOrganizations();
-          }}
-          fallbackName={organizationName ?? ""}
-        />
-      )}
-    </DataView>
-  );
-}
+      {(loaded) => {
+        // The name is on every screen's header and in the sidebar, both of
+        // which read it from the membership list rather than from here, so
+        // a rename that stopped at this form would look like it had not
+        // taken.
+        function onSaved() {
+          firm.reload();
+          reloadOrganizations();
+        }
 
-function FirmSettingsForm({
-  firm,
-  organizationId,
-  canEdit,
-  onSaved,
-  fallbackName,
-}: {
-  firm: Organization;
-  organizationId: number;
-  canEdit: boolean;
-  onSaved: () => void;
-  fallbackName: string;
-}) {
-  const t = useTranslator();
-  const [name, setName] = useState(firm.name);
-  const [registrationNumber, setRegistrationNumber] = useState(
-    firm.registration_number ?? "",
-  );
-  const [phone, setPhone] = useState(firm.phone ?? "");
-  const [address, setAddress] = useState(firm.address ?? "");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-  const [uploadingLogo, setUploadingLogo] = useState(false);
-
-  async function uploadLogo(files: File | File[] | null) {
-    const file = Array.isArray(files) ? files[0] : files;
-    if (!file) return;
-    setUploadingLogo(true);
-    setError(null);
-    try {
-      await api.uploadLogo(organizationId, file);
-      onSaved();
-    } catch (exc) {
-      setError(
-        exc instanceof ApiError ? exc.message : t("@legalos.settings.firm.logoFailed"),
-      );
-    } finally {
-      setUploadingLogo(false);
-    }
-  }
-
-  // Re-seed the inputs whenever the record behind them changes -- after a save
-  // reloads it, or when the firm switcher moves to another firm.
-  useEffect(() => {
-    setName(firm.name);
-    setRegistrationNumber(firm.registration_number ?? "");
-    setPhone(firm.phone ?? "");
-    setAddress(firm.address ?? "");
-  }, [firm]);
-
-  const dirty =
-    name !== firm.name ||
-    registrationNumber !== (firm.registration_number ?? "") ||
-    phone !== (firm.phone ?? "") ||
-    address !== (firm.address ?? "");
-
-  function discard() {
-    setName(firm.name);
-    setRegistrationNumber(firm.registration_number ?? "");
-    setPhone(firm.phone ?? "");
-    setAddress(firm.address ?? "");
-    setError(null);
-    setSaved(false);
-  }
-
-  async function save() {
-    if (!name.trim()) return;
-    setSaving(true);
-    setError(null);
-    setSaved(false);
-    try {
-      await api.updateOrganization(organizationId, {
-        name: name.trim(),
-        registration_number: registrationNumber,
-        phone,
-        address,
-      });
-      setSaved(true);
-      onSaved();
-    } catch (exc) {
-      setError(
-        exc instanceof ApiError
-          ? exc.message
-          : t("@legalos.settings.firm.saveFailed"),
-      );
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <VStack gap={6}>
-      <VStack gap={1}>
-        <Heading level={4}>{t("@legalos.settings.firm.heading")}</Heading>
-        <Text type="body" color="secondary">
-          {t("@legalos.settings.firm.subtitle", { firm: firm.name || fallbackName })}
-        </Text>
-      </VStack>
-
-      <InlineError message={error} onDismiss={() => setError(null)} />
-      {saved && !dirty && (
-        <Banner
-          status="success"
-          title={t("@legalos.settings.firm.saved")}
-          isDismissable
-          onDismiss={() => setSaved(false)}
-        />
-      )}
-      {!canEdit && (
-        <Banner
-          status="info"
-          title={t("@legalos.settings.firm.ownerOnly")}
-        />
-      )}
-
-      <Card>
-        <VStack gap={4}>
-          <HStack gap={4} vAlign="center">
-            <Avatar
-              name={name}
-              size="lg"
-              tooltip={false}
-              // The API returns a same-origin path; API_BASE is empty in
-              // production (Caddy, one origin) and localhost:8000 in dev.
-              src={firm.logo_url ? `${API_BASE}${firm.logo_url}` : undefined}
+        return (
+          <VStack gap={6} key={loaded.id}>
+            <ProfileSection
+              firm={loaded}
+              organizationId={loaded.id}
+              canEdit={canEdit}
+              onSaved={onSaved}
             />
-            <VStack gap={0.5}>
-              <Text type="label" weight="semibold">
-                {t("@legalos.settings.firm.logoHeading")}
-              </Text>
-              <Text type="supporting" color="secondary">
-                {t("@legalos.settings.firm.logoDescription")}
-              </Text>
-            </VStack>
-          </HStack>
-          <FileInput
-            label={t("@legalos.settings.firm.uploadLogo")}
-            isLabelHidden
-            value={null}
-            onChange={uploadLogo}
-            // SVG is refused server-side (it can carry script), so it is not
-            // offered here either.
-            accept="image/png,image/jpeg,image/webp"
-            mode="dropzone"
-            isDisabled={!canEdit || uploadingLogo}
-            placeholder={t("@legalos.settings.firm.logoPlaceholder")}
-            description={t("@legalos.settings.firm.logoHint")}
-          />
-        </VStack>
-      </Card>
-
-      <Card>
-        <VStack gap={4}>
-          <Text type="label" weight="semibold">
-            {t("@legalos.settings.firm.detailsHeading")}
-          </Text>
-          <Divider />
-          <TextInput
-            label={t("@legalos.settings.firm.nameLabel")}
-            value={name}
-            onChange={setName}
-            isDisabled={!canEdit || saving}
-            isRequired
-          />
-          <TextInput
-            label={t("@legalos.settings.firm.registrationLabel")}
-            value={registrationNumber}
-            onChange={setRegistrationNumber}
-            isDisabled={!canEdit || saving}
-            description={t("@legalos.settings.firm.registrationHint")}
-          />
-          <TextInput
-            label={t("@legalos.settings.firm.phoneLabel")}
-            value={phone}
-            onChange={setPhone}
-            isDisabled={!canEdit || saving}
-            type="text"
-          />
-          <TextArea
-            label={t("@legalos.settings.firm.addressLabel")}
-            value={address}
-            onChange={setAddress}
-            isDisabled={!canEdit || saving}
-            rows={3}
-          />
-        </VStack>
-      </Card>
-
-      {canEdit && (
-        <LayoutFooter hasDivider>
-          <HStack gap={2} hAlign="end">
-            <Button
-              label={t("@legalos.settings.action.cancel")}
-              variant="secondary"
-              isDisabled={saving || !dirty}
-              onClick={discard}
-            >
-              {t("@legalos.settings.action.cancel")}
-            </Button>
-            <Button
-              label={
-                saving
-                  ? t("@legalos.settings.firm.saving")
-                  : t("@legalos.settings.action.saveChanges")
-              }
-              variant="primary"
-              isDisabled={saving || !dirty || !name.trim()}
-              onClick={save}
-            >
-              {saving
-                ? t("@legalos.settings.firm.saving")
-                : t("@legalos.settings.action.saveChanges")}
-            </Button>
-          </HStack>
-        </LayoutFooter>
-      )}
-    </VStack>
+            <IdentitySection
+              firm={loaded}
+              organizationId={loaded.id}
+              canEdit={canEdit}
+              onSaved={onSaved}
+            />
+            <PreferencesSection
+              firm={loaded}
+              organizationId={loaded.id}
+              canEdit={canEdit}
+              onSaved={onSaved}
+            />
+            <BillingSection
+              firm={loaded}
+              organizationId={loaded.id}
+              canEdit={canEdit}
+              onSaved={onSaved}
+            />
+            <RequiredFieldsSection
+              firm={loaded}
+              organizationId={loaded.id}
+              canEdit={canEdit}
+              onSaved={onSaved}
+            />
+            {/* Not gated by canEdit -- a personal channel preference, not a
+              * firm setting. Every member, any role, sets their own. */}
+            <NotificationsSection />
+          </VStack>
+        );
+      }}
+    </DataView>
   );
 }
