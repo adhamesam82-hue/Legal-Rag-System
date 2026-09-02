@@ -27,6 +27,7 @@ import { DataView } from "@/components/DataState";
 import { daysUntil } from "@/lib/practice";
 import { useFormat } from "@/lib/i18n/format";
 import { enumLabelWith } from "@/lib/i18n/enum-label";
+import { CaseRefItem, ParentLine, PrimaryBadge } from "@/components/matter/SubCases";
 
 function statusVariant(status: string): "success" | "warning" | "neutral" {
   if (status.startsWith("Active")) return "success";
@@ -86,6 +87,7 @@ export default function CaseDetailPage({
                         label={record.status}
                       />
                     )}
+                    <PrimaryBadge record={record} />
                   </HStack>
                   <Text type="body" color="secondary">
                     <Link href={`/matters/${record.matter_id}`}>
@@ -93,6 +95,7 @@ export default function CaseDetailPage({
                     </Link>
                     {record.court ? ` · ${record.court}` : ""}
                   </Text>
+                  <ParentLine record={record} />
                 </VStack>
 
                 {record.ai_summary && (
@@ -245,6 +248,32 @@ export default function CaseDetailPage({
                             </MetadataListItem>
                           )}
                         </MetadataList>
+                      </VStack>
+                    </Card>
+
+                    {/* Read-only here; linking and unlinking happen in the
+                      * case file on the matter page, where the lawyer works. */}
+                    <Card>
+                      <VStack gap={4}>
+                        <Heading level={4}>{t("@legalos.cases.related.heading")}</Heading>
+                        {record.parent ? (
+                          <Text type="body" color="secondary">
+                            {t("@legalos.cases.related.childCannotParent")}
+                          </Text>
+                        ) : record.children.length === 0 ? (
+                          <Text type="body" color="secondary">
+                            {t("@legalos.cases.related.empty")}
+                          </Text>
+                        ) : (
+                          <List hasDividers density="compact">
+                            {record.children.map((child) => (
+                              <CaseRefItem key={child.id} ref={child} />
+                            ))}
+                          </List>
+                        )}
+                        <Link href={`/matters/${record.matter_id}`}>
+                          {t("@legalos.cases.related.manageOnMatter")}
+                        </Link>
                       </VStack>
                     </Card>
 

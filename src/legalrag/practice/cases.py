@@ -103,6 +103,8 @@ class CaseRef:
     case_number: str
     court: str
     litigation_degree: str
+    status: str
+    matter_id: int
 
 
 @dataclass
@@ -148,7 +150,7 @@ class Case:
     next_hearing: Hearing | None = None
 
 
-_REF_COLUMNS = "c.id, c.case_number, c.court, c.litigation_degree"
+_REF_COLUMNS = "c.id, c.case_number, c.court, c.litigation_degree, c.status, c.matter_id"
 
 
 def _load_children(conn: psycopg.Connection, case: Case) -> Case:

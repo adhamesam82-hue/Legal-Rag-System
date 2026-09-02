@@ -3,7 +3,8 @@
 /**
  * The case file proper: what the matter is about, in the lawyer's words.
  *
- * Six sections, each collapsible and each edited in place. Collapsible rather
+ * Six text sections, each collapsible and each edited in place, then a
+ * seventh for the same dispute before other courts (SubCases). Collapsible rather
  * than tabbed because a lawyer preparing for a hearing reads them in
  * sequence, not one at a time; and an empty section stays on screen saying
  * what belongs in it, because a section that hides itself when empty is a
@@ -25,6 +26,7 @@ import { Link } from "@astryxdesign/core/Link";
 import { useOrg } from "@/lib/org";
 import type { CaseRecord } from "@/lib/practice";
 import { Panel, useWrite, type TabProps } from "./shared";
+import { SubCases } from "./SubCases";
 
 /** The six fields, in reading order. Keys match the API columns. */
 export const CASE_FILE_FIELDS = [
@@ -38,6 +40,10 @@ export const CASE_FILE_FIELDS = [
 
 export type CaseFileField = (typeof CASE_FILE_FIELDS)[number];
 
+/** Every collapsible in the file: the six fields plus the related-cases section. */
+const SECTIONS = [...CASE_FILE_FIELDS, "sub_cases"] as const;
+type SectionKey = (typeof SECTIONS)[number];
+
 const STORAGE_PREFIX = "legalos-casefile-open:";
 
 /**
@@ -48,8 +54,8 @@ const STORAGE_PREFIX = "legalos-casefile-open:";
  */
 function useOpenSections(matterId: number) {
   const key = `${STORAGE_PREFIX}${matterId}`;
-  const [open, setOpen] = useState<Record<CaseFileField, boolean>>(() =>
-    Object.fromEntries(CASE_FILE_FIELDS.map((f) => [f, true])) as Record<CaseFileField, boolean>,
+  const [open, setOpen] = useState<Record<SectionKey, boolean>>(() =>
+    Object.fromEntries(SECTIONS.map((f) => [f, true])) as Record<SectionKey, boolean>,
   );
   const [loaded, setLoaded] = useState(false);
 
@@ -57,7 +63,7 @@ function useOpenSections(matterId: number) {
     try {
       const raw = localStorage.getItem(key);
       if (raw) {
-        const saved = JSON.parse(raw) as Partial<Record<CaseFileField, boolean>>;
+        const saved = JSON.parse(raw) as Partial<Record<SectionKey, boolean>>;
         setOpen((current) => ({ ...current, ...saved }));
       }
     } catch {
@@ -66,7 +72,7 @@ function useOpenSections(matterId: number) {
     setLoaded(true);
   }, [key]);
 
-  function toggle(field: CaseFileField, isOpen: boolean) {
+  function toggle(field: SectionKey, isOpen: boolean) {
     setOpen((current) => {
       const next = { ...current, [field]: isOpen };
       try {
@@ -147,6 +153,14 @@ function CaseFileSections({
             />
           </Collapsible>
         ))}
+        <Collapsible
+          value="sub_cases"
+          isOpen={loaded ? open.sub_cases : true}
+          onOpenChange={(isOpen) => toggle("sub_cases", isOpen)}
+          trigger={<Heading level={5}>{t("@legalos.cases.related.heading")}</Heading>}
+        >
+          <SubCases linkedCase={linkedCase} reload={reload} onError={onError} />
+        </Collapsible>
       </VStack>
     </Panel>
   );

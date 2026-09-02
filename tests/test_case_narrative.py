@@ -124,6 +124,8 @@ class TestSubCases:
         fetched_parent = client.get(f"/api/orgs/{org}/cases/{parent['id']}").json()
         assert [c["id"] for c in fetched_parent["children"]] == [child["id"]]
         assert fetched_parent["children"][0]["litigation_degree"] == "appeal"
+        # A ref carries enough to render a row, not just a link.
+        assert set(fetched_parent["children"][0]) >= {"id", "case_number", "court", "litigation_degree", "status", "matter_id"}
         assert fetched_parent["parent"] is None
 
     def test_a_case_cannot_be_its_own_parent(self, client, org):
