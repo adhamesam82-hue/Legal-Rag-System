@@ -248,6 +248,22 @@ export interface CaseRecord {
   next_hearing: Hearing | null;
 }
 
+/** What a document IS. Mirrors DOC_TYPES in the API (migration 0023). */
+export const DOC_TYPES = [
+  "brief",
+  "judgment",
+  "contract",
+  "poa",
+  "evidence",
+  "police_report",
+  "identity",
+  "receipt",
+  "correspondence",
+  "form",
+  "other",
+] as const;
+export type DocType = (typeof DOC_TYPES)[number];
+
 export interface MatterDocument {
   id: number;
   organization_id: number;
@@ -255,12 +271,34 @@ export interface MatterDocument {
   matter_name: string | null;
   name: string;
   doc_type: string;
+  /** What the firm had typed before 0023 made doc_type a list; "" since. */
+  doc_type_legacy: string;
   status: DocumentStatus;
   size_bytes: number;
   content_type: string;
   storage_key: string | null;
   uploaded_by: string;
   uploaded_at: string;
+  tag_ids: number[];
+}
+
+/** A tag the firm owns. `color` is a Badge/Token palette name. */
+export interface DocumentTag {
+  id: number;
+  organization_id: number;
+  name: string;
+  color: "blue" | "cyan" | "green" | "orange" | "pink" | "purple" | "red" | "teal" | "yellow";
+  created_at: string;
+  document_count: number;
+}
+
+/** Counts behind each node of the documents tree, computed server-side. */
+export interface DocumentFacets {
+  total: number;
+  unfiled: number;
+  by_matter: Record<string, number>;
+  by_client: Record<string, number>;
+  by_type: Record<string, number>;
 }
 
 export interface Task {
@@ -824,8 +862,32 @@ export function practiceApi(organizationId: number) {
     },
 
     documents: {
-      list: (filters: { matter_id?: number; status?: string; q?: string } = {}) =>
-        request<MatterDocument[]>(`${base}/documents${query(filters)}`),
+      list: (
+        filters: {
+          matter_id?: number;
+          client_id?: number;
+          status?: string;
+          doc_type?: string;
+          tag_ids?: number[];
+          unfiled?: boolean;
+          limit?: number;
+          offset?: number;
+          q?: string;
+        } = {},
+      ) => {
+        const { tag_ids, ...rest } = filters;
+        // tag_ids repeats (?tag_ids=3&tag_ids=7); query() sets one value per key.
+        const search = new URLSearchParams(query(rest).replace(/^\?/, ""));
+        for (const id of tag_ids ?? []) search.append("tag_ids", String(id));
+        const encoded = search.toString();
+        return request<MatterDocument[]>(`${base}/documents${encoded ? `?${encoded}` : ""}`);
+      },
+      facets: () => request<DocumentFacets>(`${base}/documents/facets`),
+      setTags: (id: number, tagIds: number[]) =>
+        request<{ document_id: number; tag_ids: number[] }>(`${base}/documents/${id}/tags`, {
+          method: "PUT",
+          body: JSON.stringify({ tag_ids: tagIds }),
+        }),
       get: (id: number) => request<MatterDocument>(`${base}/documents/${id}`),
       update: (id: number, body: Record<string, unknown>) =>
         patch<MatterDocument>(`/documents/${id}`, body),
@@ -845,6 +907,15 @@ export function practiceApi(organizationId: number) {
         });
       },
       contentUrl: (id: number) => `${base}/documents/${id}/content`,
+    },
+
+    documentTags: {
+      list: () => request<DocumentTag[]>(`${base}/document-tags`),
+      create: (body: { name: string; color?: DocumentTag["color"] }) =>
+        post<DocumentTag>("/document-tags", body),
+      update: (id: number, body: { name?: string; color?: DocumentTag["color"] }) =>
+        patch<DocumentTag>(`/document-tags/${id}`, body),
+      remove: (id: number) => remove(`/document-tags/${id}`),
     },
 
     tasks: {

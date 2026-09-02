@@ -31,3 +31,26 @@ export function useEnumLabel() {
     [t],
   );
 }
+
+/**
+ * Document types (doc_type, T-025) get their own namespace because the flat
+ * enum namespace already has "judgment" as a hearing outcome. Falls back to
+ * the flat label, so "other" and any unknown value still resolve.
+ */
+export function docTypeLabelWith(
+  t: TranslatorFn,
+  value: string | null | undefined,
+): string {
+  if (!value) return "—";
+  const key = `@legalos.enum.docType.${value}`;
+  const translated = t(key);
+  return translated === key ? enumLabelWith(t, value) : translated;
+}
+
+export function useDocTypeLabel() {
+  const t = useTranslator();
+  return useCallback(
+    (value: string | null | undefined) => docTypeLabelWith(t, value),
+    [t],
+  );
+}

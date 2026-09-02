@@ -37,6 +37,13 @@ DEFAULT_TAGS: tuple[tuple[str, str], ...] = (
 )
 
 _COLUMNS = "t.id, t.organization_id, t.name, t.color, t.created_at"
+# The list carries how many documents each tag is on, so the tree can show a
+# count without loading the documents. One correlated subquery per row on a
+# list of a few dozen tags is cheaper than a second request.
+_LIST_COLUMNS = (
+    _COLUMNS
+    + ", (SELECT count(*) FROM document_tag_links l WHERE l.tag_id = t.id) AS document_count"
+)
 
 
 class DuplicateTagError(Exception):
@@ -50,6 +57,8 @@ class Tag:
     name: str
     color: str
     created_at: datetime
+    # Only filled by list_tags; single-tag reads leave it at 0.
+    document_count: int = 0
 
 
 def _validate(name: str | None, color: str | None) -> None:
@@ -63,7 +72,7 @@ def list_tags(conn: psycopg.Connection, organization_id: int) -> list[Tag]:
     return fetch_all(
         conn,
         Tag,
-        f"SELECT {_COLUMNS} FROM document_tags t WHERE t.organization_id = %s "
+        f"SELECT {_LIST_COLUMNS} FROM document_tags t WHERE t.organization_id = %s "
         "ORDER BY t.name",
         (organization_id,),
     )

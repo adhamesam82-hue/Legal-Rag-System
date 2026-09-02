@@ -87,6 +87,9 @@ def list_documents(
     doc_type: str | None = None,
     client_id: int | None = None,
     tag_ids: list[int] | None = None,
+    unfiled: bool = False,
+    limit: int | None = None,
+    offset: int = 0,
     viewer: Membership | None = None,
 ) -> list[Document]:
     visible, visible_params = (
@@ -100,6 +103,8 @@ def list_documents(
     if matter_id is not None:
         sql += " AND d.matter_id = %s"
         params.append(matter_id)
+    if unfiled:
+        sql += " AND d.matter_id IS NULL"
     if client_id is not None:
         # Documents reach a client through the matter they are filed on.
         sql += " AND m.client_id = %s"
@@ -123,7 +128,49 @@ def list_documents(
         sql += " AND d.name ILIKE %s"
         params.append(f"%{query}%")
     sql += " ORDER BY d.uploaded_at DESC, d.id DESC"
+    if limit is not None:
+        sql += " LIMIT %s OFFSET %s"
+        params.extend([limit, offset])
     return fetch_all(conn, Document, sql, tuple(params))
+
+
+@dataclass
+class Facets:
+    """How many documents sit behind each node of the documents tree.
+
+    Computed in the database so the screen can show counts for a thousand
+    documents without downloading a thousand rows to count them. Keys are
+    strings because they travel as JSON object keys.
+    """
+
+    total: int
+    unfiled: int
+    by_matter: dict[str, int]
+    by_client: dict[str, int]
+    by_type: dict[str, int]
+
+
+def facets(
+    conn: psycopg.Connection, organization_id: int, viewer: Membership | None = None
+) -> Facets:
+    visible, visible_params = (
+        nullable_matter_visibility("d.matter_id", viewer) if viewer else UNRESTRICTED
+    )
+    base = (
+        "FROM documents d LEFT JOIN matters m ON m.id = d.matter_id "
+        f"WHERE d.organization_id = %s AND {visible}"
+    )
+    params = (organization_id, *visible_params)
+    with conn.cursor() as cur:
+        cur.execute(f"SELECT count(*), count(*) FILTER (WHERE d.matter_id IS NULL) {base}", params)
+        total, unfiled = cur.fetchone()
+        cur.execute(f"SELECT d.matter_id, count(*) {base} AND d.matter_id IS NOT NULL GROUP BY 1", params)
+        by_matter = {str(row[0]): row[1] for row in cur.fetchall()}
+        cur.execute(f"SELECT m.client_id, count(*) {base} AND m.client_id IS NOT NULL GROUP BY 1", params)
+        by_client = {str(row[0]): row[1] for row in cur.fetchall()}
+        cur.execute(f"SELECT d.doc_type, count(*) {base} GROUP BY 1", params)
+        by_type = {row[0]: row[1] for row in cur.fetchall()}
+    return Facets(total, unfiled, by_matter, by_client, by_type)
 
 
 def get_document(
