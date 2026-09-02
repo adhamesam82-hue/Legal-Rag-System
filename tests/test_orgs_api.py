@@ -47,6 +47,30 @@ class TestCreateOrganization:
         assert response.status_code == 200
         assert response.json()["name"] == "Test Firm"
 
+    def test_the_name_alone_is_enough(self, client):
+        """The create screen asks for specialties, but a firm may start without."""
+        org_id = client.post("/api/orgs", json={"name": "Firm"}).json()["id"]
+        assert client.get(f"/api/orgs/{org_id}").json()["specialties"] == []
+
+    def test_specialties_chosen_at_creation_reach_settings(self, client):
+        response = client.post(
+            "/api/orgs", json={"name": "Firm", "specialties": ["labour", "civil", "labour"]}
+        )
+        assert response.status_code == 200, response.text
+        org_id = response.json()["id"]
+        # Order kept, duplicate dropped -- same rule as the settings PATCH.
+        assert client.get(f"/api/orgs/{org_id}").json()["specialties"] == ["labour", "civil"]
+
+    def test_an_unknown_specialty_is_refused_and_no_firm_is_created(self, client, conn):
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) FROM organizations")
+            before = cur.fetchone()[0]
+        response = client.post("/api/orgs", json={"name": "Firm", "specialties": ["space_law"]})
+        assert response.status_code == 422
+        with conn.cursor() as cur:
+            cur.execute("SELECT count(*) FROM organizations")
+            assert cur.fetchone()[0] == before
+
 
 class TestFirmDetails:
     """The firm's own details -- what /settings collects.

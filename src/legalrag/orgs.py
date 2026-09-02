@@ -123,13 +123,23 @@ class Membership:
 
 
 def create_organization(
-    conn: psycopg.Connection, name: str, creator_clerk_user_id: str
+    conn: psycopg.Connection,
+    name: str,
+    creator_clerk_user_id: str,
+    specialties: list[str] | None = None,
 ) -> Organization:
-    """Creates an organization and makes its creator the Owner, atomically."""
+    """Creates an organization and makes its creator the Owner, atomically.
+
+    `specialties` is the one detail collected on the create screen besides
+    the name (T-040): it is what makes the first screen after sign-in mean
+    something. Validated against the same list as the settings PATCH.
+    """
+    chosen = validate_specialties(specialties or [])
     with conn.cursor() as cur:
         cur.execute(
-            "INSERT INTO organizations (name, created_by) VALUES (%s, %s) RETURNING id",
-            (name, creator_clerk_user_id),
+            "INSERT INTO organizations (name, created_by, specialties) "
+            "VALUES (%s, %s, %s) RETURNING id",
+            (name, creator_clerk_user_id, chosen),
         )
         org_id = cur.fetchone()[0]
         cur.execute(
@@ -144,7 +154,9 @@ def create_organization(
 
     seed_default_tags(conn, org_id)
     conn.commit()
-    return Organization(id=org_id, name=name, created_by=creator_clerk_user_id)
+    return Organization(
+        id=org_id, name=name, created_by=creator_clerk_user_id, specialties=tuple(chosen)
+    )
 
 
 def get_organization(

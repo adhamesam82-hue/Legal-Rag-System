@@ -21,9 +21,11 @@ import {
   BuildingOffice2Icon,
 } from "@heroicons/react/24/outline";
 import { TextInput } from "@astryxdesign/core/TextInput";
+import { MultiSelector } from "@astryxdesign/core/MultiSelector";
 import { api } from "@/lib/api";
 import { useOrg } from "@/lib/org";
-import { usingDevAuth } from "@/lib/auth-mode";
+import { useEnumLabel } from "@/lib/i18n/enum-label";
+import { MATTER_TYPES, type MatterType } from "@/lib/practice";
 
 export function LoadingState({ label }: { label?: string }) {
   const t = useTranslator();
@@ -109,11 +111,18 @@ export function DataView<T>({
  * brand-new Clerk sign-up lands in. It creates the firm inline rather than
  * pointing elsewhere: this is the only route out, so a dead end here would
  * strand the account with no way into the product.
+ *
+ * Two fields, not a form (T-040): the name, and the practice areas that make
+ * the first screen after sign-in mean something -- matter-type suggestions
+ * and the distribution reports start from them. Specialties are optional and
+ * the screen says the rest lives in Settings; the name alone still works.
  */
 export function NoOrganizationState() {
   const { reloadOrganizations } = useOrg();
   const t = useTranslator();
+  const enumLabel = useEnumLabel();
   const [name, setName] = useState("");
+  const [specialties, setSpecialties] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -122,7 +131,7 @@ export function NoOrganizationState() {
     setSaving(true);
     setError(null);
     try {
-      await api.createOrganization(name.trim());
+      await api.createOrganization(name.trim(), specialties as MatterType[]);
       // The creator becomes the Owner server-side; refetch so every screen
       // picks the new firm up.
       reloadOrganizations();
@@ -148,6 +157,17 @@ export function NoOrganizationState() {
           placeholder={t("@legalos.common.noOrg.firmNamePlaceholder")}
           isRequired
         />
+        <MultiSelector
+          label={t("@legalos.common.noOrg.specialtiesLabel")}
+          description={t("@legalos.common.noOrg.specialtiesHint")}
+          isOptional
+          value={specialties}
+          onChange={setSpecialties}
+          placeholder={t("@legalos.common.noOrg.specialtiesPlaceholder")}
+          options={MATTER_TYPES.map((value) => ({ value, label: enumLabel(value) }))}
+          hasSearch
+          maxBadges={3}
+        />
         <Button
           label={saving ? t("@legalos.common.noOrg.creating") : t("@legalos.common.noOrg.createFirm")}
           variant="primary"
@@ -157,15 +177,10 @@ export function NoOrganizationState() {
         <Text type="supporting" color="secondary">
           {t("@legalos.common.noOrg.settingsHint")}
         </Text>
-        {/* A shell command is a developer's instruction, not a lawyer's. It
-            used to be printed unconditionally on the first screen a new firm
-            owner ever sees; now it appears only in the local dev-auth mode,
-            which is the only place anyone can act on it. */}
-        {usingDevAuth() && (
-          <Text type="supporting" color="secondary">
-            {t("@legalos.common.noOrg.seedHint")}
-          </Text>
-        )}
+        {/* No shell command here, in any mode. The seeded demo firm is a
+            developer's tool and lives in docs/onboarding.md; a string in the
+            catalog would still ship in the production bundle even behind a
+            dev-mode check. */}
       </VStack>
     </VStack>
   );

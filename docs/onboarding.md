@@ -101,6 +101,24 @@ over an external Docker network, `alsigil-edge`, that both projects join.
 | `docs/ci-cd.ar.md` | The two-track CI/CD design (Arabic) |
 | `tests/test_deploy_config.py` | Assertions about all of the above — read it before changing anything in `deploy/` |
 
+### Local development: the seeded demo firm
+
+A brand-new account lands on "Set up your firm" and creates one with a name
+and, optionally, its practice areas. For local work you usually want the
+seeded sample firm instead -- matters, hearings, invoices and documents
+already in place. With the API running against your local Postgres:
+
+```bash
+uv run python scripts/seed_demo_firm.py --reset --owner-clerk-id <your Clerk user id>
+```
+
+`--reset` drops and recreates the demo firm; the id is the `user_...` value
+Clerk shows for your account (with `LEGALOS_DEV_AUTH` set, it is that value).
+This used to be printed on the create-firm screen itself. It is not any
+more, in any mode: a shell command is a developer's instruction, not a
+lawyer's, and a string in the web catalog ships in the production bundle
+whatever check guards its rendering.
+
 ## 4. How a change reaches production today
 
 ```
