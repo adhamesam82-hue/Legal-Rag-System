@@ -30,6 +30,9 @@ export const en: Catalog = {
       "To take over the seeded sample firm instead, run: uv run python scripts/seed_demo_firm.py --reset --owner-clerk-id <your Clerk user id>",
   },
   "@legalos.common.noOrg.createFailed": { defaultMessage: "Could not create the firm." },
+  "@legalos.common.noOrg.settingsHint": {
+    defaultMessage: "You can complete the rest of your firm's details later in Settings.",
+  },
 
   // ---------------------------------------------------------------------
   // components/GroundedAnswer.tsx — every surface that renders /api/ask
@@ -107,6 +110,9 @@ export const ar: Catalog = {
       "لاستخدام المكتب التجريبي المُهيّأ مسبقاً بدلاً من ذلك، شغّل: uv run python scripts/seed_demo_firm.py --reset --owner-clerk-id <معرّف مستخدم Clerk الخاص بك>",
   },
   "@legalos.common.noOrg.createFailed": { defaultMessage: "تعذّر إنشاء المكتب." },
+  "@legalos.common.noOrg.settingsHint": {
+    defaultMessage: "يمكنك استكمال بقية بيانات المكتب لاحقًا من الإعدادات.",
+  },
 
   // ---------------------------------------------------------------------
   // components/GroundedAnswer.tsx — every surface that renders /api/ask
