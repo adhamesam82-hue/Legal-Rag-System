@@ -128,7 +128,8 @@ class TestRendering:
             "description": "البيان", "quantity": "الكمية",
             "unitPrice": "سعر الوحدة", "amount": "الإجمالي",
             "subtotal": "الإجمالي قبل الضريبة", "tax": "ضريبة القيمة المضافة",
-            "total": "المستحق", "footer": "شكرًا لثقتكم.",
+            "total": "المستحق", "lineTax": "الضريبة", "notes": "ملاحظات",
+            "footer": "شكرًا لثقتكم.",
         }
 
     def test_produces_a_pdf(self):
