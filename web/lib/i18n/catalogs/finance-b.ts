@@ -21,6 +21,8 @@ export const en: Catalog = {
   "@legalos.billingDetail.column.quantity": { defaultMessage: "Quantity" },
   "@legalos.billingDetail.column.amount": { defaultMessage: "Amount" },
   "@legalos.billingDetail.linesTotal": { defaultMessage: "Lines total" },
+  "@legalos.billingDetail.tax": { defaultMessage: "Tax" },
+  "@legalos.billingDetail.column.tax": { defaultMessage: "Tax" },
   "@legalos.billingDetail.invoiceTotal": { defaultMessage: "Invoice total" },
 
   "@legalos.billingDetail.noLineItems.title": { defaultMessage: "No line items" },
@@ -37,6 +39,18 @@ export const en: Catalog = {
   "@legalos.billingDetail.field.amount": { defaultMessage: "Amount" },
 
   "@legalos.billingDetail.updateError": { defaultMessage: "Could not update this invoice." },
+
+  "@legalos.billingDetail.notes.heading": { defaultMessage: "Notes" },
+  "@legalos.billingDetail.notes.empty": { defaultMessage: "No notes on this invoice." },
+  "@legalos.billingDetail.notes.edit": { defaultMessage: "Edit notes" },
+  "@legalos.billingDetail.notes.save": { defaultMessage: "Save" },
+  "@legalos.billingDetail.notes.placeholder": {
+    defaultMessage: "Payment terms, bank account, any note that appears under the invoice",
+  },
+  "@legalos.billingDetail.notes.saveError": { defaultMessage: "Could not save the notes." },
+  "@legalos.billingDetail.notes.lockedError": {
+    defaultMessage: "Notes can only be changed on a draft invoice -- this one has already been sent.",
+  },
 
   // ---------------------------------------------------------------------
   // Accounting (app/accounting/page.tsx) — mock/placeholder pillar
@@ -203,6 +217,8 @@ export const ar: Catalog = {
   "@legalos.billingDetail.column.quantity": { defaultMessage: "الكمية" },
   "@legalos.billingDetail.column.amount": { defaultMessage: "المبلغ" },
   "@legalos.billingDetail.linesTotal": { defaultMessage: "إجمالي البنود" },
+  "@legalos.billingDetail.tax": { defaultMessage: "الضريبة" },
+  "@legalos.billingDetail.column.tax": { defaultMessage: "الضريبة" },
   "@legalos.billingDetail.invoiceTotal": { defaultMessage: "إجمالي الفاتورة" },
 
   "@legalos.billingDetail.noLineItems.title": { defaultMessage: "لا توجد بنود" },
@@ -219,6 +235,18 @@ export const ar: Catalog = {
   "@legalos.billingDetail.field.amount": { defaultMessage: "المبلغ" },
 
   "@legalos.billingDetail.updateError": { defaultMessage: "تعذّر تحديث هذه الفاتورة." },
+
+  "@legalos.billingDetail.notes.heading": { defaultMessage: "ملاحظات" },
+  "@legalos.billingDetail.notes.empty": { defaultMessage: "لا ملاحظات على هذه الفاتورة." },
+  "@legalos.billingDetail.notes.edit": { defaultMessage: "تعديل الملاحظات" },
+  "@legalos.billingDetail.notes.save": { defaultMessage: "حفظ" },
+  "@legalos.billingDetail.notes.placeholder": {
+    defaultMessage: "شروط السداد، رقم الحساب البنكي، أي بيان يظهر أسفل الفاتورة",
+  },
+  "@legalos.billingDetail.notes.saveError": { defaultMessage: "تعذّر حفظ الملاحظات." },
+  "@legalos.billingDetail.notes.lockedError": {
+    defaultMessage: "الملاحظات تُعدَّل على المسودّة فقط \u2014 هذه الفاتورة أُرسلت بالفعل.",
+  },
 
   // ---------------------------------------------------------------------
   // Accounting

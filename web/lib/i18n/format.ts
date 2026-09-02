@@ -119,18 +119,24 @@ export function formatMonth(
 }
 
 /** "45,500 ج.م" / "EGP 45,500". Intl places the symbol per locale, so the
- *  currency lands after the amount in Arabic and before it in English. */
+ *  currency lands after the amount in Arabic and before it in English.
+ *  `fractionDigits` defaults to 0 for the whole-figure tiles and tables this
+ *  was written for; the invoice screen (T-033) passes 2, since a piastre is
+ *  real money on a document going to a client and rounding it away there
+ *  would show a different total than the one that was actually computed. */
 export function formatMoney(
   amount: number | null | undefined,
   locale: Locale,
   currency = "EGP",
+  fractionDigits = 0,
 ): string {
   if (amount === null || amount === undefined) return "—";
   return stripBidi(
     new Intl.NumberFormat(INTL_LOCALE[locale], {
       style: "currency",
       currency,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
     }).format(Number(amount)),
   );
 }
@@ -194,6 +200,10 @@ export function useFormat() {
       formatMonth: (iso: string | null | undefined) => formatMonth(iso, locale),
       formatEGP: (amount: number | null | undefined, currency = "EGP") =>
         formatMoney(amount, locale, currency),
+      /** Two decimal places -- the invoice screen (T-033), where a piastre
+       *  is a figure a client can check against their own copy. */
+      formatEGPExact: (amount: number | null | undefined, currency = "EGP") =>
+        formatMoney(amount, locale, currency, 2),
       formatEGPCompact: (amount: number | null | undefined, currency = "EGP") =>
         formatMoneyCompact(amount, locale, currency),
       formatBytes: (bytes: number) => formatBytes(bytes, locale),
