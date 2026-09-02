@@ -9,7 +9,9 @@ import { Text } from "@astryxdesign/core/Text";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { Button } from "@astryxdesign/core/Button";
 import { Banner } from "@astryxdesign/core/Banner";
+import { Link } from "@astryxdesign/core/Link";
 import { RedirectIfSignedIn } from "@/components/RedirectIfSignedIn";
+import { withRedirect } from "@/lib/redirect-url";
 
 // Same reason as the sign-in page: useSearchParams() needs a Suspense
 // boundary or `next build` fails.
@@ -147,6 +149,13 @@ function SignUpForm() {
                 variant="primary"
                 isLoading={fetchStatus === "fetching"}
               />
+              {/* Same redirect_url hand-off as the sign-in page, in reverse. */}
+              <Text type="supporting">
+                لديك حساب؟{" "}
+                <Link href={withRedirect("/sign-in", searchParams.get("redirect_url"))}>
+                  سجّل الدخول
+                </Link>
+              </Text>
             </form>
           ) : (
             <form onSubmit={handleVerify} style={{ display: "grid", gap: 14 }}>
