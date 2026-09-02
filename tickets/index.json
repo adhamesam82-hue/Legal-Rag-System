@@ -371,5 +371,403 @@
       "src/legalrag/practice/",
       "web/app/"
     ]
+  },
+  {
+    "id": "T-023",
+    "title": "التصنيف الموحّد: أنواع القضايا الأربعة عشر وتخصصات المكتب",
+    "batch": 5,
+    "owner": "backend",
+    "est": "1ي",
+    "labels": [
+      "نموذج-بيانات",
+      "backend"
+    ],
+    "deps": [],
+    "files": [
+      "migrations/0021_matter_taxonomy.sql",
+      "src/legalrag/practice/matters.py",
+      "src/legalrag/practice_routes/_shared.py",
+      "src/legalrag/orgs.py",
+      "web/lib/i18n/catalogs/enums.ts"
+    ],
+    "source": "docs/ui-upgrade-spec.ar.md"
+  },
+  {
+    "id": "T-024",
+    "title": "ملف القضية الموضوعي — الخلفية والقضايا الفرعية",
+    "batch": 5,
+    "owner": "backend",
+    "est": "1ي",
+    "labels": [
+      "نموذج-بيانات",
+      "backend"
+    ],
+    "deps": [
+      "T-023"
+    ],
+    "files": [
+      "migrations/0022_case_narrative.sql",
+      "src/legalrag/practice/cases.py",
+      "src/legalrag/practice_routes/cases.py"
+    ],
+    "source": "docs/ui-upgrade-spec.ar.md"
+  },
+  {
+    "id": "T-029",
+    "title": "ملف القضية الموضوعي — الواجهة",
+    "batch": 5,
+    "owner": "frontend",
+    "est": "2ي",
+    "labels": [
+      "frontend",
+      "ميزة"
+    ],
+    "deps": [
+      "T-024"
+    ],
+    "files": [
+      "web/components/matter/DashboardTab.tsx",
+      "web/app/matters/[id]/page.tsx"
+    ],
+    "source": "docs/ui-upgrade-spec.ar.md"
+  },
+  {
+    "id": "T-030",
+    "title": "القضايا الفرعية والمحاكم المتعددة — الواجهة",
+    "batch": 5,
+    "owner": "frontend",
+    "est": "1ي",
+    "labels": [
+      "frontend",
+      "ميزة"
+    ],
+    "deps": [
+      "T-024",
+      "T-029"
+    ],
+    "files": [
+      "web/components/matter/DashboardTab.tsx"
+    ],
+    "source": "docs/ui-upgrade-spec.ar.md"
+  },
+  {
+    "id": "T-025",
+    "title": "وسوم المستندات وتصنيف أنواعها — الخلفية",
+    "batch": 6,
+    "owner": "backend",
+    "est": "1.5ي",
+    "labels": [
+      "نموذج-بيانات",
+      "backend"
+    ],
+    "deps": [
+      "T-024"
+    ],
+    "files": [
+      "migrations/0023_document_tags.sql",
+      "src/legalrag/practice/documents.py",
+      "src/legalrag/practice_routes/documents.py"
+    ],
+    "source": "docs/ui-upgrade-spec.ar.md"
+  },
+  {
+    "id": "T-026",
+    "title": "الفاتورة: ملاحظات وضريبة البند والترقيم التلقائي",
+    "batch": 6,
+    "owner": "backend",
+    "est": "1ي",
+    "labels": [
+      "نموذج-بيانات",
+      "امتثال",
+      "backend"
+    ],
+    "deps": [
+      "T-025"
+    ],
+    "files": [
+      "migrations/0024_invoice_notes_line_tax.sql",
+      "src/legalrag/practice/billing.py",
+      "src/legalrag/practice/invoice_pdf.py"
+    ],
+    "source": "docs/ui-upgrade-spec.ar.md"
+  },
+  {
+    "id": "T-027",
+    "title": "حقول الإعدادات الجديدة — الخلفية",
+    "batch": 6,
+    "owner": "backend",
+    "est": "1ي",
+    "labels": [
+      "نموذج-بيانات",
+      "backend"
+    ],
+    "deps": [
+      "T-023",
+      "T-026"
+    ],
+    "files": [
+      "migrations/0025_organization_settings.sql",
+      "src/legalrag/orgs.py",
+      "src/legalrag/api.py"
+    ],
+    "source": "docs/ui-upgrade-spec.ar.md"
+  },
+  {
+    "id": "T-028",
+    "title": "رفع شعار المكتب — يفكّ تعطيل المنتقي",
+    "batch": 6,
+    "owner": "backend",
+    "est": "4س",
+    "labels": [
+      "أمان",
+      "backend",
+      "ميزة"
+    ],
+    "deps": [],
+    "files": [
+      "src/legalrag/practice/uploads.py",
+      "src/legalrag/api.py"
+    ],
+    "source": "docs/ui-upgrade-spec.ar.md"
+  },
+  {
+    "id": "T-031",
+    "title": "المستندات: الشجرة الجانبية متعددة المحاور",
+    "batch": 6,
+    "owner": "frontend",
+    "est": "1.5ي",
+    "labels": [
+      "frontend",
+      "ميزة"
+    ],
+    "deps": [
+      "T-025"
+    ],
+    "files": [
+      "web/app/documents/page.tsx"
+    ],
+    "source": "docs/ui-upgrade-spec.ar.md"
+  },
+  {
+    "id": "T-032",
+    "title": "المستندات: إدارة الوسوم واختيار النوع وعرض البطاقات",
+    "batch": 6,
+    "owner": "frontend",
+    "est": "1.5ي",
+    "labels": [
+      "frontend",
+      "ميزة"
+    ],
+    "deps": [
+      "T-025",
+      "T-031"
+    ],
+    "files": [
+      "web/app/documents/page.tsx"
+    ],
+    "source": "docs/ui-upgrade-spec.ar.md"
+  },
+  {
+    "id": "T-033",
+    "title": "شاشة الفاتورة: البنود والضريبة والملاحظات والترقيم",
+    "batch": 6,
+    "owner": "frontend",
+    "est": "1ي",
+    "labels": [
+      "frontend",
+      "ميزة"
+    ],
+    "deps": [
+      "T-026"
+    ],
+    "files": [
+      "web/app/billing/page.tsx",
+      "web/app/billing/[id]/page.tsx"
+    ],
+    "source": "docs/ui-upgrade-spec.ar.md"
+  },
+  {
+    "id": "T-034",
+    "title": "شاشة الإعدادات الموسَّعة",
+    "batch": 6,
+    "owner": "frontend",
+    "est": "2ي",
+    "labels": [
+      "frontend",
+      "ميزة"
+    ],
+    "deps": [
+      "T-027",
+      "T-028",
+      "T-023"
+    ],
+    "files": [
+      "web/app/settings/page.tsx"
+    ],
+    "source": "docs/ui-upgrade-spec.ar.md"
+  },
+  {
+    "id": "T-035",
+    "title": "نظام التمييز البصري: لون وأيقونة تحملان معلومة",
+    "batch": 7,
+    "owner": "frontend",
+    "est": "2ي",
+    "labels": [
+      "frontend",
+      "تحسين"
+    ],
+    "deps": [
+      "T-023",
+      "T-032",
+      "T-029",
+      "T-033"
+    ],
+    "files": [
+      "web/lib/",
+      "web/app/",
+      "web/components/"
+    ],
+    "source": "docs/ui-upgrade-spec.ar.md"
+  },
+  {
+    "id": "T-036",
+    "title": "صفحة الهبوط عربية افتراضيًا",
+    "batch": 7,
+    "owner": "frontend",
+    "est": "4س",
+    "labels": [
+      "frontend",
+      "تحسين"
+    ],
+    "deps": [],
+    "files": [
+      "marketing/",
+      "web/next.config.mjs",
+      "web/public/landing/"
+    ],
+    "source": "docs/ui-upgrade-spec.ar.md"
+  },
+  {
+    "id": "T-037",
+    "title": "باب إنشاء الحساب: من صفحة الهبوط ومن شاشة الدخول",
+    "batch": "onboarding",
+    "owner": "frontend",
+    "est": "3س",
+    "labels": [
+      "frontend",
+      "حرج",
+      "تبنّي"
+    ],
+    "deps": [],
+    "files": [
+      "marketing/",
+      "web/app/sign-in/",
+      "web/app/sign-up/"
+    ],
+    "source": "onboarding review 2026-09-02"
+  },
+  {
+    "id": "T-038",
+    "title": "استعادة كلمة المرور",
+    "batch": "onboarding",
+    "owner": "frontend",
+    "est": "1ي",
+    "labels": [
+      "frontend",
+      "حرج"
+    ],
+    "deps": [
+      "T-037"
+    ],
+    "files": [
+      "web/app/sign-in/"
+    ],
+    "source": "onboarding review 2026-09-02"
+  },
+  {
+    "id": "T-039",
+    "title": "شاشات الدخول والتسجيل والدعوة إلى كتالوج الترجمة",
+    "batch": "onboarding",
+    "owner": "frontend",
+    "est": "3س",
+    "labels": [
+      "frontend",
+      "i18n"
+    ],
+    "deps": [
+      "T-037",
+      "T-038"
+    ],
+    "files": [
+      "web/app/sign-in/",
+      "web/app/sign-up/",
+      "web/app/invite/",
+      "web/lib/i18n/catalogs/auth.ts"
+    ],
+    "source": "onboarding review 2026-09-02"
+  },
+  {
+    "id": "T-040",
+    "title": "شاشة إنشاء المكتب: إزالة أمر المطوّر وجمع ما يعرّف المكتب",
+    "batch": "onboarding",
+    "owner": "frontend",
+    "est": "3س",
+    "labels": [
+      "frontend",
+      "تبنّي"
+    ],
+    "deps": [],
+    "files": [
+      "web/components/DataState.tsx",
+      "web/lib/i18n/catalogs/common.ts"
+    ],
+    "source": "onboarding review 2026-09-02"
+  },
+  {
+    "id": "T-041",
+    "title": "الباقات والتجربة المجانية وبوابة الدفع — هيكل صادق قبل القرار",
+    "batch": "onboarding",
+    "owner": "fullstack",
+    "est": "1.5ي",
+    "labels": [
+      "backend",
+      "frontend",
+      "ميزة"
+    ],
+    "deps": [
+      "T-040",
+      "T-027"
+    ],
+    "files": [
+      "migrations/0026_subscription.sql",
+      "src/legalrag/orgs.py",
+      "web/app/plans/",
+      "web/app/subscribe/",
+      "web/components/Shell.tsx"
+    ],
+    "source": "onboarding review 2026-09-02"
+  },
+  {
+    "id": "T-042",
+    "title": "أكواد الخصم وقسم العروض في صفحة الهبوط",
+    "batch": "onboarding",
+    "owner": "fullstack",
+    "est": "1ي",
+    "labels": [
+      "backend",
+      "frontend",
+      "ميزة"
+    ],
+    "deps": [
+      "T-041",
+      "T-037"
+    ],
+    "files": [
+      "migrations/0027_discount_codes.sql",
+      "src/legalrag/orgs.py",
+      "web/app/plans/",
+      "marketing/"
+    ],
+    "source": "onboarding review 2026-09-02"
   }
 ]
