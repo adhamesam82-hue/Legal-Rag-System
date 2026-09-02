@@ -219,9 +219,23 @@ def get_invoice(
 
 
 def next_invoice_number(conn: psycopg.Connection, organization_id: int) -> str:
-    """Next sequential number in the INV-<year>-<nnnn> series for this firm."""
+    """Next sequential number in the firm's series.
+
+    The series is organizations.invoice_number_pattern (0025) with {year}
+    filled in and {seq} as a four-digit counter, or INV-{year}-{seq} when the
+    firm has not set one. The pattern ends with {seq} (validated on save),
+    so everything before it is a fixed prefix and the last number issued
+    parses back into an integer.
+    """
     year = date.today().year
-    prefix = f"INV-{year}-"
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT invoice_number_pattern FROM organizations WHERE id = %s",
+            (organization_id,),
+        )
+        row = cur.fetchone()
+    pattern = (row[0] if row else None) or "INV-{year}-{seq}"
+    prefix = pattern.removesuffix("{seq}").format(year=year)
     with conn.cursor() as cur:
         cur.execute(
             "SELECT number FROM invoices WHERE organization_id = %s "
