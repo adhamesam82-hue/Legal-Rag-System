@@ -148,7 +148,7 @@ class TestExpiryIsASignalNotALock:
                 "name": "قضية بعد انتهاء التجربة",
             },
         )
-        assert response.status_code == 200, response.text
+        assert response.status_code == 201, response.text
         assert client.patch(f"/api/orgs/{org}", json={"phone": "0100"}).status_code == 200
 
 
