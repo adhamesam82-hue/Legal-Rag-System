@@ -23,6 +23,7 @@ import {
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { api } from "@/lib/api";
 import { useOrg } from "@/lib/org";
+import { usingDevAuth } from "@/lib/auth-mode";
 
 export function LoadingState({ label }: { label?: string }) {
   const t = useTranslator();
@@ -154,8 +155,17 @@ export function NoOrganizationState() {
           onClick={createFirm}
         />
         <Text type="supporting" color="secondary">
-          {t("@legalos.common.noOrg.seedHint")}
+          {t("@legalos.common.noOrg.settingsHint")}
         </Text>
+        {/* A shell command is a developer's instruction, not a lawyer's. It
+            used to be printed unconditionally on the first screen a new firm
+            owner ever sees; now it appears only in the local dev-auth mode,
+            which is the only place anyone can act on it. */}
+        {usingDevAuth() && (
+          <Text type="supporting" color="secondary">
+            {t("@legalos.common.noOrg.seedHint")}
+          </Text>
+        )}
       </VStack>
     </VStack>
   );
