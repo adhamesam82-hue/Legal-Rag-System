@@ -3,13 +3,13 @@
 import { Suspense, useState } from "react";
 import { useSignUp } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Card } from "@astryxdesign/core/Card";
-import { Heading } from "@astryxdesign/core/Heading";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import { Text } from "@astryxdesign/core/Text";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { Button } from "@astryxdesign/core/Button";
 import { Banner } from "@astryxdesign/core/Banner";
 import { Link } from "@astryxdesign/core/Link";
+import { AuthFrame } from "@/components/AuthFrame";
 import { RedirectIfSignedIn } from "@/components/RedirectIfSignedIn";
 import { withRedirect } from "@/lib/redirect-url";
 
@@ -26,6 +26,7 @@ export default function SignUpPage() {
 }
 
 function SignUpForm() {
+  const t = useTranslator();
   const { signUp, errors, fetchStatus } = useSignUp();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -41,6 +42,8 @@ function SignUpForm() {
   // validation; this is for everything else.
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [resent, setResent] = useState(false);
+
+  const busy = fetchStatus === "fetching";
 
   async function handleCreateAccount(e: React.FormEvent) {
     e.preventDefault();
@@ -104,99 +107,95 @@ function SignUpForm() {
     }
   }
 
+  const form = { display: "grid", gap: 14 } as const;
+
   return (
-    <div dir="rtl" style={{ maxWidth: 420, margin: "64px auto", padding: "0 20px" }}>
-      <Heading level={1}>إنشاء حساب</Heading>
-      <div style={{ marginBlockStart: 20 }}>
-        <Card padding={4}>
-          {!awaitingCode ? (
-            <form
-              onSubmit={handleCreateAccount}
-              style={{ display: "grid", gap: 14 }}
-            >
-              {globalError && (
-                <Banner status="error" title="تعذر إنشاء الحساب" description={globalError} />
-              )}
-              <TextInput
-                label="البريد الإلكتروني"
-                type="email"
-                value={email}
-                onChange={setEmail}
-              />
-              {errors?.fields?.emailAddress && (
-                <Banner
-                  status="error"
-                  title="البريد الإلكتروني"
-                  description={errors.fields.emailAddress.message}
-                />
-              )}
-              <TextInput
-                label="كلمة المرور"
-                type="password"
-                value={password}
-                onChange={setPassword}
-              />
-              {errors?.fields?.password && (
-                <Banner
-                  status="error"
-                  title="كلمة المرور"
-                  description={errors.fields.password.message}
-                />
-              )}
-              <Button
-                type="submit"
-                label="متابعة"
-                variant="primary"
-                isLoading={fetchStatus === "fetching"}
-              />
-              {/* Same redirect_url hand-off as the sign-in page, in reverse. */}
-              <Text type="supporting">
-                لديك حساب؟{" "}
-                <Link href={withRedirect("/sign-in", searchParams.get("redirect_url"))}>
-                  سجّل الدخول
-                </Link>
-              </Text>
-            </form>
-          ) : (
-            <form onSubmit={handleVerify} style={{ display: "grid", gap: 14 }}>
-              <Text type="supporting">
-                {`أرسلنا رمزًا إلى ${email}. أدخله أدناه لإكمال إنشاء حسابك.`}
-              </Text>
-              {globalError && (
-                <Banner status="error" title="تعذر إرسال الرمز" description={globalError} />
-              )}
-              {resent && !globalError && (
-                <Banner status="info" title="تم إرسال رمز جديد" />
-              )}
-              <TextInput
-                label="رمز التحقق"
-                value={code}
-                onChange={setCode}
-              />
-              {errors?.fields?.code && (
-                <Banner
-                  status="error"
-                  title="رمز التحقق"
-                  description={errors.fields.code.message}
-                />
-              )}
-              <Button
-                type="submit"
-                label="تحقق"
-                variant="primary"
-                isLoading={fetchStatus === "fetching"}
-              />
-              <Button
-                type="button"
-                label="إعادة إرسال الرمز"
-                variant="ghost"
-                onClick={handleResend}
-                isLoading={fetchStatus === "fetching"}
-              />
-            </form>
+    <AuthFrame title={t("@legalos.auth.signUp.title")}>
+      {!awaitingCode ? (
+        <form onSubmit={handleCreateAccount} style={form}>
+          {globalError && (
+            <Banner
+              status="error"
+              title={t("@legalos.auth.signUp.errorTitle")}
+              description={globalError}
+            />
           )}
-        </Card>
-      </div>
-    </div>
+          <TextInput
+            label={t("@legalos.auth.signIn.email")}
+            type="email"
+            value={email}
+            onChange={setEmail}
+          />
+          {errors?.fields?.emailAddress && (
+            <Banner
+              status="error"
+              title={t("@legalos.auth.signIn.email")}
+              description={errors.fields.emailAddress.message}
+            />
+          )}
+          <TextInput
+            label={t("@legalos.auth.signIn.password")}
+            type="password"
+            value={password}
+            onChange={setPassword}
+          />
+          {errors?.fields?.password && (
+            <Banner
+              status="error"
+              title={t("@legalos.auth.signIn.password")}
+              description={errors.fields.password.message}
+            />
+          )}
+          <Button
+            type="submit"
+            label={t("@legalos.auth.signUp.continue")}
+            variant="primary"
+            isLoading={busy}
+          />
+          {/* Same redirect_url hand-off as the sign-in page, in reverse. */}
+          <Text type="supporting">
+            {t("@legalos.auth.signUp.haveAccount")}{" "}
+            <Link href={withRedirect("/sign-in", searchParams.get("redirect_url"))}>
+              {t("@legalos.auth.signUp.signIn")}
+            </Link>
+          </Text>
+        </form>
+      ) : (
+        <form onSubmit={handleVerify} style={form}>
+          <Text type="supporting">{t("@legalos.auth.signUp.codeIntro", { email })}</Text>
+          {globalError && (
+            <Banner
+              status="error"
+              title={t("@legalos.auth.signUp.sendErrorTitle")}
+              description={globalError}
+            />
+          )}
+          {resent && !globalError && (
+            <Banner status="info" title={t("@legalos.auth.code.resent")} />
+          )}
+          <TextInput label={t("@legalos.auth.code.label")} value={code} onChange={setCode} />
+          {errors?.fields?.code && (
+            <Banner
+              status="error"
+              title={t("@legalos.auth.code.label")}
+              description={errors.fields.code.message}
+            />
+          )}
+          <Button
+            type="submit"
+            label={t("@legalos.auth.code.verify")}
+            variant="primary"
+            isLoading={busy}
+          />
+          <Button
+            type="button"
+            label={t("@legalos.auth.code.resend")}
+            variant="ghost"
+            onClick={handleResend}
+            isLoading={busy}
+          />
+        </form>
+      )}
+    </AuthFrame>
   );
 }
