@@ -386,6 +386,51 @@ def set_member_profile(
     return Membership(*row) if row else None
 
 
+@dataclass(frozen=True)
+class NotificationPreferences:
+    """A member's own reminder channels (T-034). Not a firm setting -- these
+    columns (wants_reminders since 0013, wants_push since 0016) belong to the
+    membership, so any member sets their own regardless of role."""
+
+    wants_reminders: bool
+    wants_push: bool
+
+
+def get_notification_preferences(
+    conn: psycopg.Connection, organization_id: int, clerk_user_id: str
+) -> NotificationPreferences | None:
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT wants_reminders, wants_push FROM memberships "
+            "WHERE organization_id = %s AND clerk_user_id = %s",
+            (organization_id, clerk_user_id),
+        )
+        row = cur.fetchone()
+    return NotificationPreferences(*row) if row else None
+
+
+def set_notification_preferences(
+    conn: psycopg.Connection,
+    organization_id: int,
+    clerk_user_id: str,
+    *,
+    wants_reminders: bool | None = None,
+    wants_push: bool | None = None,
+) -> NotificationPreferences | None:
+    with conn.cursor() as cur:
+        cur.execute(
+            "UPDATE memberships SET "
+            "wants_reminders = coalesce(%s, wants_reminders), "
+            "wants_push = coalesce(%s, wants_push) "
+            "WHERE organization_id = %s AND clerk_user_id = %s "
+            "RETURNING wants_reminders, wants_push",
+            (wants_reminders, wants_push, organization_id, clerk_user_id),
+        )
+        row = cur.fetchone()
+    conn.commit()
+    return NotificationPreferences(*row) if row else None
+
+
 def add_membership(
     conn: psycopg.Connection,
     organization_id: int,

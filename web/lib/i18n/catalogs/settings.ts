@@ -209,6 +209,121 @@ export const en: Catalog = {
   "@legalos.settings.month.apr": { defaultMessage: "Apr" },
   "@legalos.settings.month.may": { defaultMessage: "May" },
   "@legalos.settings.month.jun": { defaultMessage: "Jun" },
+
+  // --- T-034: the settings screen's remaining sections ---------------------
+
+  "@legalos.settings.firm.specialtiesLabel": { defaultMessage: "Practice areas" },
+  "@legalos.settings.firm.specialtiesHint": {
+    defaultMessage: "Shapes the matter-type suggestions and distribution reports.",
+  },
+  "@legalos.settings.firm.specialtiesPlaceholder": { defaultMessage: "Choose what the firm handles" },
+  "@legalos.settings.firm.governorateLabel": { defaultMessage: "Governorate" },
+  "@legalos.settings.firm.mainCourtLabel": { defaultMessage: "Main court" },
+  "@legalos.settings.firm.firmSizeLabel": { defaultMessage: "Firm size" },
+  "@legalos.settings.firm.firmSize.solo": { defaultMessage: "Solo practitioner" },
+  "@legalos.settings.firm.firmSize.small": { defaultMessage: "Small (2\u201310)" },
+  "@legalos.settings.firm.firmSize.medium": { defaultMessage: "Medium (11\u201350)" },
+  "@legalos.settings.firm.firmSize.large": { defaultMessage: "Large (50+)" },
+  "@legalos.settings.firm.clientKindLabel": { defaultMessage: "Client base" },
+  "@legalos.settings.firm.clientKind.individuals": { defaultMessage: "Mostly individuals" },
+  "@legalos.settings.firm.clientKind.companies": { defaultMessage: "Mostly companies" },
+  "@legalos.settings.firm.clientKind.mixed": { defaultMessage: "Mixed" },
+
+  "@legalos.settings.identity.heading": { defaultMessage: "Brand identity" },
+  "@legalos.settings.identity.subtitle": {
+    defaultMessage: "What appears on invoices, generated documents, and the firm's letterhead.",
+  },
+  "@legalos.settings.identity.legalNameLabel": { defaultMessage: "Full legal name" },
+  "@legalos.settings.identity.legalNameHint": {
+    defaultMessage: "If different from the firm name above -- printed on invoices when set.",
+  },
+  "@legalos.settings.identity.taxIdLabel": { defaultMessage: "Tax ID" },
+  "@legalos.settings.identity.barNumberLabel": { defaultMessage: "Bar registration number" },
+  "@legalos.settings.identity.websiteLabel": { defaultMessage: "Website" },
+  "@legalos.settings.identity.brandColorLabel": { defaultMessage: "Brand colour" },
+  "@legalos.settings.identity.brandColorHint": {
+    defaultMessage: "From the design system's own palette, so contrast stays correct everywhere it appears.",
+  },
+
+  "@legalos.settings.preferences.heading": { defaultMessage: "Preferences" },
+  "@legalos.settings.preferences.subtitle": {
+    defaultMessage: "Language, time zone, and how dates and amounts are shown.",
+  },
+  "@legalos.settings.preferences.localeLabel": { defaultMessage: "Language" },
+  "@legalos.settings.preferences.locale.ar": { defaultMessage: "Arabic" },
+  "@legalos.settings.preferences.locale.en": { defaultMessage: "English" },
+  "@legalos.settings.preferences.timezoneLabel": { defaultMessage: "Time zone" },
+  "@legalos.settings.preferences.dateFormatLabel": { defaultMessage: "Date format" },
+  "@legalos.settings.preferences.currencyLabel": { defaultMessage: "Default currency" },
+  "@legalos.settings.preferences.currencyHint": { defaultMessage: "Three-letter code, e.g. EGP." },
+  "@legalos.settings.preferences.currencyInvalid": {
+    defaultMessage: "Must be a three-letter code, e.g. EGP or USD.",
+  },
+
+  "@legalos.settings.billing.heading": { defaultMessage: "Billing" },
+  "@legalos.settings.billing.subtitle": {
+    defaultMessage:
+      "How new invoices are numbered and pre-filled. Every invoice already sent keeps its own figures -- changing these does not touch it.",
+  },
+  "@legalos.settings.billing.patternLabel": { defaultMessage: "Invoice numbering pattern" },
+  "@legalos.settings.billing.patternHint": {
+    defaultMessage: "Leave blank for the built-in INV-{year}-{seq}. Must end with {seq}.",
+  },
+  "@legalos.settings.billing.patternError.unknown": {
+    defaultMessage: "Only {year} and {seq} are allowed as placeholders.",
+  },
+  "@legalos.settings.billing.patternError.mustEndWithSeq": {
+    defaultMessage: "The pattern must end with {seq}, exactly once.",
+  },
+  "@legalos.settings.billing.taxRateLabel": { defaultMessage: "Default tax rate (%)" },
+  "@legalos.settings.billing.taxRateHint": {
+    defaultMessage: "Pre-fills new invoices only. Never applied to an invoice already created.",
+  },
+  "@legalos.settings.billing.taxRateInvalid": { defaultMessage: "Must be between 0 and 100." },
+  "@legalos.settings.billing.termsLabel": { defaultMessage: "Default payment terms (days)" },
+  "@legalos.settings.billing.termsInvalid": { defaultMessage: "Cannot be negative." },
+
+  "@legalos.settings.requiredFields.heading": { defaultMessage: "Required fields" },
+  "@legalos.settings.requiredFields.subtitle": {
+    defaultMessage: "Which optional fields this firm considers essential when opening a matter or registering a client.",
+  },
+  "@legalos.settings.requiredFields.notEnforcedYet": {
+    defaultMessage:
+      "This records the firm's choice. The matter and client forms do not check it yet.",
+  },
+  "@legalos.settings.requiredFields.matterGroup": { defaultMessage: "When opening a matter" },
+  "@legalos.settings.requiredFields.matter.matter_number": { defaultMessage: "Matter number" },
+  "@legalos.settings.requiredFields.matter.description": { defaultMessage: "Description" },
+  "@legalos.settings.requiredFields.matter.budget_amount": { defaultMessage: "Budget" },
+  "@legalos.settings.requiredFields.matter.tags": { defaultMessage: "Tags" },
+  "@legalos.settings.requiredFields.matter.staff": { defaultMessage: "Assigned staff" },
+  "@legalos.settings.requiredFields.clientGroup": { defaultMessage: "When registering a client" },
+  "@legalos.settings.requiredFields.client.industry": { defaultMessage: "Industry" },
+  "@legalos.settings.requiredFields.client.client_since": { defaultMessage: "Client since" },
+  "@legalos.settings.requiredFields.client.registration_number": { defaultMessage: "Registration number" },
+  "@legalos.settings.requiredFields.client.tax_id": { defaultMessage: "Tax ID" },
+  "@legalos.settings.requiredFields.client.address": { defaultMessage: "Address" },
+  "@legalos.settings.requiredFields.client.phone": { defaultMessage: "Phone" },
+  "@legalos.settings.requiredFields.client.email": { defaultMessage: "Email" },
+  "@legalos.settings.requiredFields.client.notes": { defaultMessage: "Notes" },
+
+  "@legalos.settings.notifications.loading": { defaultMessage: "Loading notification settings\u2026" },
+  "@legalos.settings.notifications.heading": { defaultMessage: "Notifications" },
+  "@legalos.settings.notifications.subtitle": {
+    defaultMessage: "Your own reminder channels -- every member sets these regardless of role.",
+  },
+  "@legalos.settings.notifications.saveFailed": { defaultMessage: "Could not save this preference." },
+  "@legalos.settings.notifications.noneAvailable": {
+    defaultMessage: "No reminder channel is configured on this install yet.",
+  },
+  "@legalos.settings.notifications.emailLabel": { defaultMessage: "Email reminders" },
+  "@legalos.settings.notifications.emailHint": {
+    defaultMessage: "A hearing, deadline, or task reminder by email.",
+  },
+  "@legalos.settings.notifications.pushLabel": { defaultMessage: "Push notifications" },
+  "@legalos.settings.notifications.pushHint": {
+    defaultMessage: "The same reminders, pushed to a registered device.",
+  },
 };
 
 export const ar: Catalog = {
@@ -408,4 +523,117 @@ export const ar: Catalog = {
   "@legalos.settings.month.apr": { defaultMessage: "أبريل" },
   "@legalos.settings.month.may": { defaultMessage: "مايو" },
   "@legalos.settings.month.jun": { defaultMessage: "يونيو" },
+
+  // --- T-034: بقية أقسام شاشة الإعدادات -------------------------------------
+
+  "@legalos.settings.firm.specialtiesLabel": { defaultMessage: "مجالات الممارسة" },
+  "@legalos.settings.firm.specialtiesHint": {
+    defaultMessage: "تحدّد اقتراحات أنواع القضايا وتقارير التوزيع.",
+  },
+  "@legalos.settings.firm.specialtiesPlaceholder": { defaultMessage: "اختر ما يتعامل معه المكتب" },
+  "@legalos.settings.firm.governorateLabel": { defaultMessage: "المحافظة" },
+  "@legalos.settings.firm.mainCourtLabel": { defaultMessage: "المحكمة الرئيسية" },
+  "@legalos.settings.firm.firmSizeLabel": { defaultMessage: "حجم المكتب" },
+  "@legalos.settings.firm.firmSize.solo": { defaultMessage: "محامٍ منفرد" },
+  "@legalos.settings.firm.firmSize.small": { defaultMessage: "صغير (٢–١٠)" },
+  "@legalos.settings.firm.firmSize.medium": { defaultMessage: "متوسط (١١–٥٠)" },
+  "@legalos.settings.firm.firmSize.large": { defaultMessage: "كبير (+٥٠)" },
+  "@legalos.settings.firm.clientKindLabel": { defaultMessage: "نوع الموكّلين" },
+  "@legalos.settings.firm.clientKind.individuals": { defaultMessage: "أفراد في الغالب" },
+  "@legalos.settings.firm.clientKind.companies": { defaultMessage: "شركات في الغالب" },
+  "@legalos.settings.firm.clientKind.mixed": { defaultMessage: "مزيج" },
+
+  "@legalos.settings.identity.heading": { defaultMessage: "الهوية البصرية" },
+  "@legalos.settings.identity.subtitle": {
+    defaultMessage: "ما يظهر على الفواتير والمستندات المُنشأة وترويسة المكتب.",
+  },
+  "@legalos.settings.identity.legalNameLabel": { defaultMessage: "الاسم القانوني الكامل" },
+  "@legalos.settings.identity.legalNameHint": {
+    defaultMessage: "إن اختلف عن اسم المكتب أعلاه — يُطبع على الفواتير عند تعبئته.",
+  },
+  "@legalos.settings.identity.taxIdLabel": { defaultMessage: "الرقم الضريبي" },
+  "@legalos.settings.identity.barNumberLabel": { defaultMessage: "رقم القيد بالنقابة" },
+  "@legalos.settings.identity.websiteLabel": { defaultMessage: "الموقع الإلكتروني" },
+  "@legalos.settings.identity.brandColorLabel": { defaultMessage: "لون الهوية" },
+  "@legalos.settings.identity.brandColorHint": {
+    defaultMessage: "من لوحة نظام التصميم نفسها، فيبقى التباين صحيحًا أينما ظهر.",
+  },
+
+  "@legalos.settings.preferences.heading": { defaultMessage: "التفضيلات" },
+  "@legalos.settings.preferences.subtitle": {
+    defaultMessage: "اللغة والمنطقة الزمنية وطريقة عرض التواريخ والمبالغ.",
+  },
+  "@legalos.settings.preferences.localeLabel": { defaultMessage: "اللغة" },
+  "@legalos.settings.preferences.locale.ar": { defaultMessage: "العربية" },
+  "@legalos.settings.preferences.locale.en": { defaultMessage: "الإنجليزية" },
+  "@legalos.settings.preferences.timezoneLabel": { defaultMessage: "المنطقة الزمنية" },
+  "@legalos.settings.preferences.dateFormatLabel": { defaultMessage: "تنسيق التاريخ" },
+  "@legalos.settings.preferences.currencyLabel": { defaultMessage: "العملة الافتراضية" },
+  "@legalos.settings.preferences.currencyHint": { defaultMessage: "رمز من ثلاثة أحرف، مثل EGP." },
+  "@legalos.settings.preferences.currencyInvalid": {
+    defaultMessage: "يجب أن يكون رمزًا من ثلاثة أحرف، مثل EGP أو USD.",
+  },
+
+  "@legalos.settings.billing.heading": { defaultMessage: "الفوترة" },
+  "@legalos.settings.billing.subtitle": {
+    defaultMessage: "كيف تُرقَّم الفواتير الجديدة وتُملأ ابتداءً. كل فاتورة أُرسلت بالفعل تحتفظ بأرقامها — تغيير هذه القيم لا يمسّها.",
+  },
+  "@legalos.settings.billing.patternLabel": { defaultMessage: "نمط ترقيم الفواتير" },
+  "@legalos.settings.billing.patternHint": {
+    defaultMessage: "اتركه فارغًا لاستخدام النمط المدمج INV-{year}-{seq}. يجب أن ينتهي بـ{seq}.",
+  },
+  "@legalos.settings.billing.patternError.unknown": {
+    defaultMessage: "يُسمح فقط بـ{year} و{seq} كعناصر نائبة.",
+  },
+  "@legalos.settings.billing.patternError.mustEndWithSeq": {
+    defaultMessage: "يجب أن ينتهي النمط بـ{seq}، مرة واحدة فقط.",
+  },
+  "@legalos.settings.billing.taxRateLabel": { defaultMessage: "نسبة الضريبة الافتراضية (٪)" },
+  "@legalos.settings.billing.taxRateHint": {
+    defaultMessage: "تملأ الفواتير الجديدة فقط. لا تُطبَّق أبدًا على فاتورة أُنشئت بالفعل.",
+  },
+  "@legalos.settings.billing.taxRateInvalid": { defaultMessage: "يجب أن تكون بين ٠ و١٠٠." },
+  "@legalos.settings.billing.termsLabel": { defaultMessage: "مهلة السداد الافتراضية (أيام)" },
+  "@legalos.settings.billing.termsInvalid": { defaultMessage: "لا يمكن أن تكون سالبة." },
+
+  "@legalos.settings.requiredFields.heading": { defaultMessage: "الحقول الإلزامية" },
+  "@legalos.settings.requiredFields.subtitle": {
+    defaultMessage: "الحقول الاختيارية التي يعتبرها المكتب أساسية عند فتح قضية أو تسجيل موكّل.",
+  },
+  "@legalos.settings.requiredFields.notEnforcedYet": {
+    defaultMessage: "هذا يسجّل اختيار المكتب. نماذج القضايا والموكّلين لا تتحقق منه بعد.",
+  },
+  "@legalos.settings.requiredFields.matterGroup": { defaultMessage: "عند فتح قضية" },
+  "@legalos.settings.requiredFields.matter.matter_number": { defaultMessage: "رقم القضية" },
+  "@legalos.settings.requiredFields.matter.description": { defaultMessage: "الوصف" },
+  "@legalos.settings.requiredFields.matter.budget_amount": { defaultMessage: "الميزانية" },
+  "@legalos.settings.requiredFields.matter.tags": { defaultMessage: "الوسوم" },
+  "@legalos.settings.requiredFields.matter.staff": { defaultMessage: "الفريق المُسنَد" },
+  "@legalos.settings.requiredFields.clientGroup": { defaultMessage: "عند تسجيل موكّل" },
+  "@legalos.settings.requiredFields.client.industry": { defaultMessage: "النشاط" },
+  "@legalos.settings.requiredFields.client.client_since": { defaultMessage: "موكّل منذ" },
+  "@legalos.settings.requiredFields.client.registration_number": { defaultMessage: "رقم السجل" },
+  "@legalos.settings.requiredFields.client.tax_id": { defaultMessage: "الرقم الضريبي" },
+  "@legalos.settings.requiredFields.client.address": { defaultMessage: "العنوان" },
+  "@legalos.settings.requiredFields.client.phone": { defaultMessage: "الهاتف" },
+  "@legalos.settings.requiredFields.client.email": { defaultMessage: "البريد الإلكتروني" },
+  "@legalos.settings.requiredFields.client.notes": { defaultMessage: "ملاحظات" },
+
+  "@legalos.settings.notifications.loading": { defaultMessage: "جارٍ تحميل إعدادات الإشعارات…" },
+  "@legalos.settings.notifications.heading": { defaultMessage: "الإشعارات" },
+  "@legalos.settings.notifications.subtitle": {
+    defaultMessage: "قنواتك الخاصة للتذكير — كل عضو يضبطها لنفسه أيًا كانت صلاحيته.",
+  },
+  "@legalos.settings.notifications.saveFailed": { defaultMessage: "تعذّر حفظ هذا التفضيل." },
+  "@legalos.settings.notifications.noneAvailable": {
+    defaultMessage: "لا توجد قناة تذكير مُفعَّلة على هذا التثبيت بعد.",
+  },
+  "@legalos.settings.notifications.emailLabel": { defaultMessage: "تذكير بالبريد الإلكتروني" },
+  "@legalos.settings.notifications.emailHint": {
+    defaultMessage: "تذكير بجلسة أو موعد نهائي أو مهمة عبر البريد الإلكتروني.",
+  },
+  "@legalos.settings.notifications.pushLabel": { defaultMessage: "إشعارات فورية" },
+  "@legalos.settings.notifications.pushHint": {
+    defaultMessage: "التذكيرات نفسها، تُرسَل إلى جهاز مسجَّل.",
+  },
 };
