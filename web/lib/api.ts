@@ -320,6 +320,16 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
+  /** Replaces the firm's logo. Owner only, server-side. PNG, JPEG or WebP, 2MB. */
+  uploadLogo: (organizationId: number, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return request<Organization>(`/api/orgs/${organizationId}/logo`, {
+      method: "POST",
+      body: form,
+    });
+  },
+
   /** Invitations this firm has issued. Owner only, server-side. */
   listInvites: (organizationId: number) =>
     request<PendingInvite[]>(`/api/orgs/${organizationId}/invites`),

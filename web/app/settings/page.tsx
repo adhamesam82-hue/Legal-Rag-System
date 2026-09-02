@@ -10,15 +10,15 @@
  * worked. There was no update endpoint and no columns behind three of the
  * four fields; both exist now (migration 0018, PATCH /api/orgs/{id}).
  *
- * The logo picker stays, disabled, and says why: there are no uploads for it
- * to write to yet. A control that opens a file dialog and drops the file is
- * the same lie in a smaller box.
+ * The logo picker uploads to POST /api/orgs/{id}/logo (T-028) and the API
+ * serves the result from /api/logos/<name>, so the picker is live for the
+ * owner and read-only for everyone else.
  */
 
 import { useEffect, useState } from "react";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useOrg, useResource } from "@/lib/org";
-import { api, ApiError, type Organization } from "@/lib/api";
+import { API_BASE, api, ApiError, type Organization } from "@/lib/api";
 import { DataView, InlineError } from "@/components/DataState";
 import { LayoutFooter } from "@astryxdesign/core/Layout";
 import { VStack, HStack } from "@astryxdesign/core/Stack";
@@ -88,6 +88,24 @@ function FirmSettingsForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+
+  async function uploadLogo(files: File | File[] | null) {
+    const file = Array.isArray(files) ? files[0] : files;
+    if (!file) return;
+    setUploadingLogo(true);
+    setError(null);
+    try {
+      await api.uploadLogo(organizationId, file);
+      onSaved();
+    } catch (exc) {
+      setError(
+        exc instanceof ApiError ? exc.message : t("@legalos.settings.firm.logoFailed"),
+      );
+    } finally {
+      setUploadingLogo(false);
+    }
+  }
 
   // Re-seed the inputs whenever the record behind them changes -- after a save
   // reloads it, or when the firm switcher moves to another firm.
@@ -166,7 +184,14 @@ function FirmSettingsForm({
       <Card>
         <VStack gap={4}>
           <HStack gap={4} vAlign="center">
-            <Avatar name={name} size="lg" tooltip={false} />
+            <Avatar
+              name={name}
+              size="lg"
+              tooltip={false}
+              // The API returns a same-origin path; API_BASE is empty in
+              // production (Caddy, one origin) and localhost:8000 in dev.
+              src={firm.logo_url ? `${API_BASE}${firm.logo_url}` : undefined}
+            />
             <VStack gap={0.5}>
               <Text type="label" weight="semibold">
                 {t("@legalos.settings.firm.logoHeading")}
@@ -180,14 +205,14 @@ function FirmSettingsForm({
             label={t("@legalos.settings.firm.uploadLogo")}
             isLabelHidden
             value={null}
-            onChange={() => {}}
-            accept="image/png,image/jpeg,image/svg+xml"
+            onChange={uploadLogo}
+            // SVG is refused server-side (it can carry script), so it is not
+            // offered here either.
+            accept="image/png,image/jpeg,image/webp"
             mode="dropzone"
-            isDisabled
+            isDisabled={!canEdit || uploadingLogo}
             placeholder={t("@legalos.settings.firm.logoPlaceholder")}
-            // Says what it cannot do instead of accepting a file and dropping
-            // it: there is nowhere to store a logo yet.
-            description={t("@legalos.settings.firm.logoUnavailable")}
+            description={t("@legalos.settings.firm.logoHint")}
           />
         </VStack>
       </Card>
