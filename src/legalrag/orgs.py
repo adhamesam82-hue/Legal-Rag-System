@@ -28,11 +28,20 @@ class Organization:
     phone: str | None = None
     address: str | None = None
     logo_url: str | None = None
+    # What the firm practises: any subset of the matter-type list. Empty until
+    # the owner picks some on /settings; never NULL, so callers can iterate.
+    specialties: tuple[str, ...] = ()
 
 
 _ORG_COLUMNS = (
-    "id, name, created_by, registration_number, phone, address, logo_url"
+    "id, name, created_by, registration_number, phone, address, logo_url, "
+    "specialties"
 )
+
+
+def _row_to_organization(row) -> Organization:
+    *head, specialties = row
+    return Organization(*head, specialties=tuple(specialties or ()))
 
 
 @dataclass(frozen=True)
@@ -83,10 +92,29 @@ def get_organization(
             (organization_id,),
         )
         row = cur.fetchone()
-        return Organization(*row) if row else None
+        return _row_to_organization(row) if row else None
 
 
-_ORG_UPDATABLE = ("name", "registration_number", "phone", "address", "logo_url")
+_ORG_UPDATABLE = (
+    "name", "registration_number", "phone", "address", "logo_url", "specialties",
+)
+
+
+def validate_specialties(values) -> list[str]:
+    """Rejects anything outside the shared matter-type list, and de-duplicates.
+
+    Order is kept as given: a firm that lists its main practice area first
+    means something by it, and a set would lose that.
+    """
+    from legalrag.practice.matters import MATTER_TYPES
+
+    seen: list[str] = []
+    for value in values:
+        if value not in MATTER_TYPES:
+            raise ValueError(f"unknown specialty {value!r}")
+        if value not in seen:
+            seen.append(value)
+    return seen
 
 
 def update_organization(
@@ -103,6 +131,8 @@ def update_organization(
         for key, value in changes.items()
         if key in _ORG_UPDATABLE and value is not None
     }
+    if "specialties" in fields:
+        fields["specialties"] = validate_specialties(fields["specialties"])
     if fields:
         assignments = ", ".join(f"{name} = %s" for name in fields)
         with conn.cursor() as cur:

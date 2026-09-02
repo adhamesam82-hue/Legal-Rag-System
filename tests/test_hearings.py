@@ -61,7 +61,7 @@ def matter(client, org):
         json={
             "name": "نزاع إيجار",
             "client_id": client_id,
-            "matter_type": "litigation",
+            "matter_type": "civil",
             "billing_type": "hourly",
             "responsible_user": OWNER,
             "opened_date": "2026-01-05",

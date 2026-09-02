@@ -58,7 +58,7 @@ def make_matter(client, org, client_id, **overrides):
     body = {
         "client_id": client_id,
         "name": "Nabil v. Nile Trading",
-        "matter_type": "litigation",
+        "matter_type": "civil",
         "billing_type": "hourly",
         "responsible_user": OWNER,
         "opened_date": "2026-01-05",

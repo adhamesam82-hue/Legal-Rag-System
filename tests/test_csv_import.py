@@ -230,7 +230,7 @@ class TestMatterImportRoute:
     def test_imports_against_an_existing_client(self, client, with_clients):
         body = (
             "القضية,الموكل,النوع,تاريخ الفتح\n"
-            "نزاع توريد,شركة دلتا,litigation,2026-01-05\n"
+            "نزاع توريد,شركة دلتا,civil,2026-01-05\n"
         ).encode("utf-8")
         response = upload(client, with_clients, "imports/matters", body, MATTER_MAP)
         assert response.status_code == 201, response.text
@@ -241,7 +241,7 @@ class TestMatterImportRoute:
         the firm already has under a slightly different spelling."""
         body = (
             "القضية,الموكل,النوع,تاريخ الفتح\n"
-            "نزاع,شركة مجهولة,litigation,2026-01-05\n"
+            "نزاع,شركة مجهولة,civil,2026-01-05\n"
         ).encode("utf-8")
         response = upload(client, with_clients, "imports/matters", body, MATTER_MAP)
         assert response.json()["created"] == 0
@@ -250,8 +250,8 @@ class TestMatterImportRoute:
     def test_an_unreadable_date_stops_that_row_only(self, client, with_clients):
         body = (
             "القضية,الموكل,النوع,تاريخ الفتح\n"
-            "أولى,شركة دلتا,litigation,2026-01-05\n"
-            "ثانية,شركة دلتا,litigation,last March\n"
+            "أولى,شركة دلتا,civil,2026-01-05\n"
+            "ثانية,شركة دلتا,civil,last March\n"
         ).encode("utf-8")
         response = upload(client, with_clients, "imports/matters", body, MATTER_MAP)
         assert response.json()["created"] == 1
@@ -271,7 +271,7 @@ class TestMatterImportRoute:
         other = client.post("/api/orgs", json={"name": "Other Firm"}).json()["id"]
         body = (
             "القضية,الموكل,النوع,تاريخ الفتح\n"
-            "نزاع,شركة دلتا,litigation,2026-01-05\n"
+            "نزاع,شركة دلتا,civil,2026-01-05\n"
         ).encode("utf-8")
         response = upload(client, other, "imports/matters", body, MATTER_MAP)
         assert response.json()["created"] == 0

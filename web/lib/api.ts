@@ -1,3 +1,4 @@
+import type { MatterType } from "@/lib/practice";
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
 
@@ -60,11 +61,13 @@ export interface Organization {
   phone: string | null;
   address: string | null;
   logo_url: string | null;
+  /** Practice areas, from the same list as matter types. Empty until set. */
+  specialties: MatterType[];
 }
 
 /** A PATCH body: only the fields present are written. */
 export type OrganizationUpdate = Partial<
-  Pick<Organization, "name" | "registration_number" | "phone" | "address">
+  Pick<Organization, "name" | "registration_number" | "phone" | "address" | "specialties">
 >;
 
 export interface Membership {

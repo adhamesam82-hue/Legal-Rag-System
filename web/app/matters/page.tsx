@@ -29,6 +29,7 @@ import {
   type ISODateString,
   type MatterStatus,
   type MatterType,
+  MATTER_TYPES,
 } from "@/lib/practice";
 import { useFormat } from "@/lib/i18n/format";
 
@@ -43,14 +44,6 @@ interface MatterRow extends Record<string, unknown> {
   deadlineDate: string | null;
 }
 
-const MATTER_TYPES: MatterType[] = [
-  "litigation",
-  "corporate",
-  "tax",
-  "labour",
-  "family_probate",
-  "contract_review",
-];
 
 const STATUS_VARIANT: Record<MatterStatus, "success" | "warning" | "neutral"> = {
   active: "success",
@@ -64,14 +57,9 @@ const MATTER_STATUS_KEY: Record<MatterStatus, string> = {
   closed: "@legalos.matters.status.closed",
 };
 
-const MATTER_TYPE_KEY: Record<MatterType, string> = {
-  litigation: "@legalos.matters.type.litigation",
-  corporate: "@legalos.matters.type.corporate",
-  tax: "@legalos.matters.type.tax",
-  labour: "@legalos.matters.type.labour",
-  family_probate: "@legalos.matters.type.familyProbate",
-  contract_review: "@legalos.matters.type.contractReview",
-};
+// One label per value, from the enum catalog, so the fourteen types read the
+// same here as on every other screen that shows one.
+const MATTER_TYPE_KEY = (type: MatterType) => `@legalos.enum.${type}`;
 
 export default function MattersPage() {
   const { formatDate } = useFormat();
@@ -145,7 +133,7 @@ export default function MattersPage() {
       key: "matter_type",
       header: t("@legalos.matters.field.type"),
       width: pixel(140),
-      renderCell: (row) => <Text type="body">{t(MATTER_TYPE_KEY[row.matter_type])}</Text>,
+      renderCell: (row) => <Text type="body">{t(MATTER_TYPE_KEY(row.matter_type))}</Text>,
     },
     {
       key: "responsibleName",
@@ -266,7 +254,7 @@ export default function MattersPage() {
                     { value: "all", label: t("@legalos.matters.list.filter.allTypes") },
                     ...MATTER_TYPES.map((type) => ({
                       value: type,
-                      label: t(MATTER_TYPE_KEY[type]),
+                      label: t(MATTER_TYPE_KEY(type)),
                     })),
                   ]}
                   width={180}
@@ -339,7 +327,7 @@ function NewMatterDialog({
   const t = useTranslator();
   const [name, setName] = useState("");
   const [clientId, setClientId] = useState<string | null>(null);
-  const [matterType, setMatterType] = useState<MatterType>("litigation");
+  const [matterType, setMatterType] = useState<MatterType>("civil");
   const [billingType, setBillingType] = useState("hourly");
   const [responsible, setResponsible] = useState<string | null>(null);
   // Who else works this case. The responsible lawyer owns it; these are the
@@ -429,10 +417,10 @@ function NewMatterDialog({
                 <Selector
                   label={t("@legalos.matters.field.type")}
                   value={matterType}
-                  onChange={(v) => setMatterType((v as MatterType) ?? "litigation")}
+                  onChange={(v) => setMatterType((v as MatterType) ?? "civil")}
                   options={MATTER_TYPES.map((type) => ({
                     value: type,
-                    label: t(MATTER_TYPE_KEY[type]),
+                    label: t(MATTER_TYPE_KEY(type)),
                   }))}
                 />
                 <Selector

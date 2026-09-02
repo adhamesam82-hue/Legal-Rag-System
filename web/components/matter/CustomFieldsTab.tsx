@@ -34,6 +34,7 @@ import {
   type CustomFieldValue,
   type ISODateString,
   type MatterType,
+  MATTER_TYPES,
 } from "@/lib/practice";
 import { Panel, lines, useWrite, type TabProps } from "./shared";
 
@@ -45,14 +46,6 @@ const FIELD_TYPES: CustomFieldType[] = [
   "select",
 ];
 
-const MATTER_TYPES: MatterType[] = [
-  "litigation",
-  "corporate",
-  "tax",
-  "labour",
-  "family_probate",
-  "contract_review",
-];
 
 export function CustomFieldsTab({ data, reload, onError }: TabProps) {
   const t = useTranslator();
