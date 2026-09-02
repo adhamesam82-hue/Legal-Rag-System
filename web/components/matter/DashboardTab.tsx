@@ -44,6 +44,7 @@ import {
 import { useFormat } from "@/lib/i18n/format";
 import { Panel, lines, useWrite, type TabProps } from "./shared";
 import { CaseFile } from "./CaseFile";
+import { ParentLine, PrimaryBadge } from "./SubCases";
 
 const CONFLICT_VARIANT: Record<ConflictResult, "success" | "warning" | "error"> = {
   clear: "success",
@@ -122,11 +123,15 @@ export function DashboardTab({ data, reload, onError }: TabProps) {
               <Panel
                 title={t("@legalos.matters.detail.linkedCase.heading")}
                 action={
-                  <Link href={`/cases/${data.linkedCase.id}`}>
-                    {t("@legalos.matters.detail.linkedCase.openCase")}
-                  </Link>
+                  <HStack gap={3} vAlign="center">
+                    <PrimaryBadge record={data.linkedCase} />
+                    <Link href={`/cases/${data.linkedCase.id}`}>
+                      {t("@legalos.matters.detail.linkedCase.openCase")}
+                    </Link>
+                  </HStack>
                 }
               >
+                <ParentLine record={data.linkedCase} />
                 <MetadataList>
                   <MetadataListItem
                     label={t("@legalos.matters.detail.linkedCase.caseNumber")}

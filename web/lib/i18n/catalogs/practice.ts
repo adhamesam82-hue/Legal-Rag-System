@@ -177,6 +177,36 @@ export const en: Catalog = {
   "@legalos.tasks.dialog.saving": { defaultMessage: "Saving…" },
   "@legalos.tasks.dialog.error": { defaultMessage: "Could not create this task." },
   "@legalos.tasks.updateError": { defaultMessage: "Could not update this task." },
+
+  // Related cases: sub-cases and the primary case (T-030). Shared by the case
+  // file section, the case page header and the matter dashboard card.
+  "@legalos.cases.related.heading": { defaultMessage: "Related cases" },
+  "@legalos.cases.related.primary": { defaultMessage: "Primary" },
+  "@legalos.cases.related.subCaseOf": { defaultMessage: "Sub-case of" },
+  "@legalos.cases.related.empty": {
+    defaultMessage:
+      "No sub-cases yet. Link a case that continues this dispute before another court — an appeal, a cassation, or an ancillary suit.",
+  },
+  "@legalos.cases.related.childCannotParent": {
+    defaultMessage: "This case is itself a sub-case, so it cannot have sub-cases of its own.",
+  },
+  "@legalos.cases.related.link": { defaultMessage: "Link a case" },
+  "@legalos.cases.related.unlink": { defaultMessage: "Unlink" },
+  "@legalos.cases.related.unlinkFailed": { defaultMessage: "Could not unlink the case." },
+  "@legalos.cases.related.linkFailed": { defaultMessage: "Could not link the case." },
+  "@legalos.cases.related.rejected": {
+    defaultMessage:
+      "The link was refused: a case can be a sub-case of one primary case only, one level deep, and never of itself.",
+  },
+  "@legalos.cases.related.notFound": { defaultMessage: "That case no longer exists." },
+  "@legalos.cases.related.manageOnMatter": { defaultMessage: "Link or unlink on the matter page" },
+  "@legalos.cases.related.dialog.title": { defaultMessage: "Link a case as a sub-case" },
+  "@legalos.cases.related.dialog.search": { defaultMessage: "Search by case number, court or matter" },
+  "@legalos.cases.related.dialog.loading": { defaultMessage: "Loading cases…" },
+  "@legalos.cases.related.dialog.noCandidates": {
+    defaultMessage: "No case can be linked: every other case is already a sub-case or a primary case itself.",
+  },
+  "@legalos.cases.related.dialog.noMatch": { defaultMessage: "No case matches." },
 };
 
 export const ar: Catalog = {
@@ -356,4 +386,33 @@ export const ar: Catalog = {
   "@legalos.tasks.dialog.saving": { defaultMessage: "جارٍ الحفظ…" },
   "@legalos.tasks.dialog.error": { defaultMessage: "تعذّر إنشاء هذه المهمة." },
   "@legalos.tasks.updateError": { defaultMessage: "تعذّر تحديث هذه المهمة." },
+
+  // القضايا المرتبطة: الفروع والقضية الرئيسية (T-030)
+  "@legalos.cases.related.heading": { defaultMessage: "القضايا الفرعية" },
+  "@legalos.cases.related.primary": { defaultMessage: "رئيسية" },
+  "@legalos.cases.related.subCaseOf": { defaultMessage: "فرع من القضية" },
+  "@legalos.cases.related.empty": {
+    defaultMessage:
+      "لا قضايا فرعية بعد. اربط قضية تتابع النزاع نفسه أمام محكمة أخرى — استئنافًا أو نقضًا أو دعوى فرعية.",
+  },
+  "@legalos.cases.related.childCannotParent": {
+    defaultMessage: "هذه القضية فرع بنفسها، فلا تُربط بها فروع.",
+  },
+  "@legalos.cases.related.link": { defaultMessage: "ربط قضية" },
+  "@legalos.cases.related.unlink": { defaultMessage: "فكّ الارتباط" },
+  "@legalos.cases.related.unlinkFailed": { defaultMessage: "تعذّر فكّ ارتباط القضية." },
+  "@legalos.cases.related.linkFailed": { defaultMessage: "تعذّر ربط القضية." },
+  "@legalos.cases.related.rejected": {
+    defaultMessage:
+      "رُفض الربط: القضية تكون فرعًا لقضية رئيسية واحدة فقط، بمستوى واحد، ولا تكون فرعًا لنفسها.",
+  },
+  "@legalos.cases.related.notFound": { defaultMessage: "هذه القضية لم تعد موجودة." },
+  "@legalos.cases.related.manageOnMatter": { defaultMessage: "الربط وفكّه من صفحة القضية" },
+  "@legalos.cases.related.dialog.title": { defaultMessage: "ربط قضية كفرع" },
+  "@legalos.cases.related.dialog.search": { defaultMessage: "ابحث برقم الدعوى أو المحكمة أو القضية" },
+  "@legalos.cases.related.dialog.loading": { defaultMessage: "جارٍ تحميل القضايا…" },
+  "@legalos.cases.related.dialog.noCandidates": {
+    defaultMessage: "لا قضية يمكن ربطها: كل القضايا الأخرى فرع بالفعل أو رئيسية بنفسها.",
+  },
+  "@legalos.cases.related.dialog.noMatch": { defaultMessage: "لا قضية تطابق البحث." },
 };

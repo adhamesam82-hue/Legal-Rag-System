@@ -214,6 +214,8 @@ export interface CaseRef {
   case_number: string;
   court: string;
   litigation_degree: string;
+  status: string;
+  matter_id: number;
 }
 
 export interface CaseRecord {
@@ -222,6 +224,8 @@ export interface CaseRecord {
   matter_id: number;
   matter_name: string;
   court: string;
+  /** first_instance | appeal | cassation — an @legalos.enum.* key. */
+  litigation_degree: string;
   judge: string;
   case_number: string;
   status: string;
