@@ -71,8 +71,12 @@ def patch_case(
         return cases.update_case(
             conn, organization_id, case_id, **body.model_dump(exclude_unset=True)
         )
-    except NotFoundError:
-        raise HTTPException(status_code=404, detail="Case not found")
+    except NotFoundError as exc:
+        # The case itself, or a parent_case_id that is not one of this
+        # firm's cases. Both are "not found"; the message says which.
+        raise HTTPException(status_code=404, detail=f"{exc} not found")
+    except cases.ParentCaseError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
 
 def _case_child(fn, conn, organization_id: int, case_id: int, **kwargs):

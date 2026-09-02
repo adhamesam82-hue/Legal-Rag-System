@@ -19,11 +19,24 @@ SUBMITTED_BY = ("us", "opposing_party", "court")
 
 DEGREES = ("first_instance", "appeal", "cassation")
 
+# The six narrative fields (0022). Free text the lawyer writes; the screen
+# shows each as its own collapsible section.
+NARRATIVE_FIELDS = (
+    "summary",
+    "facts",
+    "legal_basis",
+    "defences",
+    "procedural_posture",
+    "client_narrative",
+)
+
 _COLUMNS = """
     c.id, c.organization_id, c.matter_id, m.name AS matter_name, c.court,
     c.judge, c.case_number, c.judicial_year, c.case_category,
     c.litigation_degree, c.status, c.opposing_party, c.opposing_counsel,
-    c.filed_date, c.ai_summary, c.created_at
+    c.filed_date, c.ai_summary, c.created_at,
+    c.summary, c.facts, c.legal_basis, c.defences, c.procedural_posture,
+    c.client_narrative, c.parent_case_id
 """
 
 
@@ -83,6 +96,16 @@ class Hearing:
 
 
 @dataclass
+class CaseRef:
+    """Enough of a related case to name it on screen and link to it."""
+
+    id: int
+    case_number: str
+    court: str
+    litigation_degree: str
+
+
+@dataclass
 class Case:
     id: int
     organization_id: int
@@ -106,6 +129,18 @@ class Case:
     filed_date: date
     ai_summary: str | None
     created_at: datetime
+    # The case file proper (0022): what it is about, in the lawyer's words.
+    # Empty strings, never None -- "nothing written yet" is one state.
+    summary: str = ""
+    facts: str = ""
+    legal_basis: str = ""
+    defences: str = ""
+    procedural_posture: str = ""
+    client_narrative: str = ""
+    # The same dispute before another court. See migration 0022.
+    parent_case_id: int | None = None
+    parent: CaseRef | None = None
+    children: list[CaseRef] = field(default_factory=list)
     timeline: list[TimelineEvent] = field(default_factory=list)
     deadlines: list[CaseDeadline] = field(default_factory=list)
     evidence: list[Evidence] = field(default_factory=list)
@@ -113,7 +148,27 @@ class Case:
     next_hearing: Hearing | None = None
 
 
+_REF_COLUMNS = "c.id, c.case_number, c.court, c.litigation_degree"
+
+
 def _load_children(conn: psycopg.Connection, case: Case) -> Case:
+    # Related suits. Scoped to the organization even though the foreign key
+    # already is: a parent from another firm cannot be set (see
+    # _check_parent), and this keeps that true on the read side too.
+    if case.parent_case_id is not None:
+        case.parent = fetch_one(
+            conn,
+            CaseRef,
+            f"SELECT {_REF_COLUMNS} FROM cases c WHERE c.organization_id = %s AND c.id = %s",
+            (case.organization_id, case.parent_case_id),
+        )
+    case.children = fetch_all(
+        conn,
+        CaseRef,
+        f"SELECT {_REF_COLUMNS} FROM cases c "
+        "WHERE c.organization_id = %s AND c.parent_case_id = %s ORDER BY c.filed_date, c.id",
+        (case.organization_id, case.id),
+    )
     case.timeline = fetch_all(
         conn,
         TimelineEvent,
@@ -251,14 +306,61 @@ def create_case(
 _UPDATABLE = {
     "court", "judge", "case_number", "judicial_year", "case_category",
     "litigation_degree", "status", "opposing_party", "opposing_counsel",
-    "filed_date", "ai_summary",
+    "filed_date", "ai_summary", *NARRATIVE_FIELDS,
 }
+
+
+class ParentCaseError(ValueError):
+    """The requested parent link is not allowed. The message says why."""
+
+
+def _check_parent(
+    cur: psycopg.Cursor, organization_id: int, case_id: int, parent_id: int
+) -> None:
+    """The rules a parent link must satisfy, checked in one place.
+
+    Same organization and existence come back as NotFoundError -- a parent
+    from another firm is not a case this caller can see, so it is "not
+    found", never a hint that it exists. The two structural rules are
+    ParentCaseError: not itself, and one level only. A case that already has
+    a parent cannot be a parent, and a case that already has children cannot
+    be given a parent; between them that rules out cycles without a walk.
+    """
+    if parent_id == case_id:
+        raise ParentCaseError("a case cannot be a sub-case of itself")
+    cur.execute(
+        "SELECT parent_case_id FROM cases WHERE organization_id = %s AND id = %s",
+        (organization_id, parent_id),
+    )
+    row = cur.fetchone()
+    if row is None:
+        raise NotFoundError(f"case {parent_id}")
+    if row[0] is not None:
+        raise ParentCaseError(
+            f"case {parent_id} is itself a sub-case; sub-cases go one level deep"
+        )
+    cur.execute(
+        "SELECT 1 FROM cases WHERE organization_id = %s AND parent_case_id = %s LIMIT 1",
+        (organization_id, case_id),
+    )
+    if cur.fetchone() is not None:
+        raise ParentCaseError(
+            f"case {case_id} has sub-cases of its own and cannot become one"
+        )
 
 
 def update_case(
     conn: psycopg.Connection, organization_id: int, case_id: int, **changes
 ) -> Case:
     fields = {k: v for k, v in changes.items() if k in _UPDATABLE and v is not None}
+    # parent_case_id is the one field where None means "clear it", so it is
+    # handled outside the None-means-unset rule the others follow.
+    if "parent_case_id" in changes:
+        parent_id = changes["parent_case_id"]
+        if parent_id is not None:
+            with conn.cursor() as cur:
+                _check_parent(cur, organization_id, case_id, parent_id)
+        fields["parent_case_id"] = parent_id
     if fields:
         assignments = ", ".join(f"{name} = %s" for name in fields)
         with conn.cursor() as cur:
