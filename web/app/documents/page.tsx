@@ -11,6 +11,11 @@
  * the list, because a filter that is not visible makes a lawyer think a file
  * is lost.
  *
+ * Two views of the same list (T-032): the table, and cards with a thumbnail
+ * where one is honest. The choice is a display preference, kept per browser
+ * in localStorage. Tags are managed from here too, and put on a document from
+ * its row or its card; the type is changed from a dialog, never prompt().
+ *
  * Deliberately absent: favourites, archive, deleted. There is no backend for
  * any of them (no column, no soft delete), and a "Deleted" folder that is
  * empty forever tells a lawyer a deleted file can be recovered when it cannot.
@@ -32,13 +37,16 @@ import { Table, proportional, pixel } from "@astryxdesign/core/Table";
 import type { TableColumn } from "@astryxdesign/core/Table";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { Link } from "@astryxdesign/core/Link";
+import { Grid } from "@astryxdesign/core/Grid";
+import { SegmentedControl, SegmentedControlItem } from "@astryxdesign/core/SegmentedControl";
 import {
   DocumentIcon,
-  DocumentTextIcon,
-  PhotoIcon,
-  TableCellsIcon,
   ArrowUpTrayIcon,
   MagnifyingGlassIcon,
+  ListBulletIcon,
+  PencilSquareIcon,
+  Squares2X2Icon,
+  TagIcon,
 } from "@heroicons/react/24/outline";
 import { API_BASE } from "@/lib/api";
 import { useOrg, useMemberName, useResource } from "@/lib/org";
@@ -46,12 +54,15 @@ import { DataView, InlineError } from "@/components/DataState";
 import {
   DOC_TYPES,
   type DocumentStatus,
-  type DocumentTag,
   type MatterDocument,
 } from "@/lib/practice";
 import { useFormat } from "@/lib/i18n/format";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useDocTypeLabel, useEnumLabel } from "@/lib/i18n/enum-label";
+import { DocumentCard, fileIcon, type CardDocument } from "@/components/documents/DocumentCard";
+import { TagsDialog, TagToken } from "@/components/documents/TagsDialog";
+import { DocTypeDialog } from "@/components/documents/DocTypeDialog";
+import { ManageTagsDialog } from "@/components/documents/ManageTagsDialog";
 
 const STATUS_VARIANT: Record<
   DocumentStatus,
@@ -64,20 +75,14 @@ const STATUS_VARIANT: Record<
   final: "success",
 };
 
-/** The file's format decides the icon; doc_type is what the file IS. */
-function fileIcon(contentType: string) {
-  if (contentType === "application/pdf") return DocumentTextIcon;
-  if (contentType.includes("spreadsheet") || contentType === "text/csv") return TableCellsIcon;
-  if (contentType.startsWith("image/")) return PhotoIcon;
-  return DocumentIcon;
-}
-
 /** The general views: one list, three ways in. */
 type View = "all" | "recent" | "unfiled";
 
 const RECENT_LIMIT = 20;
 const PAGE_SIZE = 100;
 const OPEN_GROUPS_KEY = "legalos-documents-tree-open";
+const VIEW_KEY = "legalos-documents-view";
+type ViewMode = "list" | "cards";
 const GROUPS = ["general", "matters", "clients", "types", "tags"] as const;
 type Group = (typeof GROUPS)[number];
 
@@ -133,6 +138,32 @@ function useOpenGroups() {
   return { open, toggle };
 }
 
+/**
+ * List or cards, remembered per browser. Read after mount so the server and
+ * the first client render agree; every storage access is guarded because a
+ * private window or blocked storage throws and the page must still render.
+ */
+function useViewMode() {
+  const [mode, setMode] = useState<ViewMode>("list");
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(VIEW_KEY);
+      if (saved === "cards" || saved === "list") setMode(saved);
+    } catch {
+      /* storage unavailable: the list it is */
+    }
+  }, []);
+  function choose(next: ViewMode) {
+    setMode(next);
+    try {
+      localStorage.setItem(VIEW_KEY, next);
+    } catch {
+      /* not persisted this time */
+    }
+  }
+  return { mode, choose };
+}
+
 export default function DocumentsPage() {
   const { formatDate, formatBytes } = useFormat();
   const t = useTranslator();
@@ -147,6 +178,17 @@ export default function DocumentsPage() {
   const [error, setError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const { open, toggle } = useOpenGroups();
+  const { mode, choose } = useViewMode();
+  const [tagsFor, setTagsFor] = useState<CardDocument | null>(null);
+  const [typeFor, setTypeFor] = useState<CardDocument | null>(null);
+  const [manageTags, setManageTags] = useState(false);
+
+  // Tags or type changed on the server: the rows, the counts and the tag
+  // list all move, so both resources refetch.
+  function changed() {
+    list.reload();
+    panel.reload();
+  }
 
   // The search box filters server-side, so only the settled value reaches the
   // fetch; typing a file name otherwise fired a request per keystroke.
@@ -357,9 +399,7 @@ export default function DocumentsPage() {
               <HStack gap={1} wrap="wrap">
                 {row.tagIds.map((tagId) => {
                   const tag = tagById.get(tagId);
-                  return tag ? (
-                    <Token key={tagId} label={tag.name} size="sm" color={tag.color as DocumentTag["color"]} />
-                  ) : null;
+                  return tag ? <TagToken key={tagId} tag={tag} /> : null;
                 })}
               </HStack>
             )}
@@ -446,6 +486,33 @@ export default function DocumentsPage() {
           </Text>
         ),
     },
+    {
+      // Tags and type, from the row itself; both open a dialog in the page.
+      key: "actions",
+      header: "",
+      width: pixel(96),
+      align: "end",
+      renderCell: (row) => (
+        <HStack gap={0.5} hAlign="end">
+          <Button
+            label={t("@legalos.documents.tags.edit")}
+            variant="ghost"
+            size="sm"
+            icon={<Icon icon={TagIcon} size="sm" color="inherit" />}
+            isIconOnly
+            onClick={() => setTagsFor(row)}
+          />
+          <Button
+            label={t("@legalos.documents.type.change")}
+            variant="ghost"
+            size="sm"
+            icon={<Icon icon={PencilSquareIcon} size="sm" color="inherit" />}
+            isIconOnly
+            onClick={() => setTypeFor(row)}
+          />
+        </HStack>
+      ),
+    },
   ];
 
   const filtered = activeCount > 0 || Boolean(debouncedQuery);
@@ -475,6 +542,15 @@ export default function DocumentsPage() {
                     {t("@legalos.documents.tree.groupEmpty")}
                   </Text>
                 )}
+                {group.key === "tags" && (
+                  <Button
+                    label={t("@legalos.documents.tags.manage")}
+                    variant="ghost"
+                    size="sm"
+                    icon={<Icon icon={TagIcon} size="sm" color="inherit" />}
+                    onClick={() => setManageTags(true)}
+                  />
+                )}
               </Collapsible>
             ))}
           </VStack>
@@ -495,7 +571,7 @@ export default function DocumentsPage() {
                   )}
                 </Text>
               </VStack>
-              <HStack gap={3}>
+              <HStack gap={3} vAlign="center" wrap="wrap">
                 <TextInput
                   label={t("@legalos.documents.search.label")}
                   isLabelHidden
@@ -504,6 +580,28 @@ export default function DocumentsPage() {
                   placeholder={t("@legalos.documents.search.placeholder")}
                   startIcon={MagnifyingGlassIcon}
                   width={280}
+                />
+                <SegmentedControl
+                  label={t("@legalos.documents.view.label")}
+                  value={mode}
+                  onChange={(value) => choose(value as ViewMode)}
+                >
+                  <SegmentedControlItem
+                    value="list"
+                    label={t("@legalos.documents.view.list")}
+                    icon={<Icon icon={ListBulletIcon} size="sm" color="inherit" />}
+                  />
+                  <SegmentedControlItem
+                    value="cards"
+                    label={t("@legalos.documents.view.cards")}
+                    icon={<Icon icon={Squares2X2Icon} size="sm" color="inherit" />}
+                  />
+                </SegmentedControl>
+                <Button
+                  label={t("@legalos.documents.tags.manage")}
+                  variant="secondary"
+                  icon={<Icon icon={TagIcon} size="sm" color="inherit" />}
+                  onClick={() => setManageTags(true)}
                 />
                 <Button
                   label={uploading ? t("@legalos.documents.uploading") : t("@legalos.documents.upload")}
@@ -544,7 +642,23 @@ export default function DocumentsPage() {
               {() =>
                 rows.length > 0 ? (
                   <VStack gap={3}>
-                    <Table<DocRow> data={rows} columns={columns} idKey="id" hasHover />
+                    {mode === "cards" ? (
+                      // Responsive by width: one column on a phone, as many as
+                      // fit on a desktop. Each card wraps its own name.
+                      <Grid columns={{ minWidth: 220, repeat: "fill" }} gap={4}>
+                        {rows.map((row) => (
+                          <DocumentCard
+                            key={row.id}
+                            doc={row}
+                            tagById={tagById}
+                            onEditTags={setTagsFor}
+                            onChangeType={setTypeFor}
+                          />
+                        ))}
+                      </Grid>
+                    ) : (
+                      <Table<DocRow> data={rows} columns={columns} idKey="id" hasHover />
+                    )}
                     {lastPageFull && (
                       <HStack hAlign="center">
                         <Button
@@ -591,6 +705,34 @@ export default function DocumentsPage() {
               }
             </DataView>
           </VStack>
+
+          {tagsFor && (
+            <TagsDialog
+              isOpen
+              onOpenChange={(open) => !open && setTagsFor(null)}
+              documentId={tagsFor.id}
+              documentName={tagsFor.name}
+              tags={tags}
+              selected={tagsFor.tagIds}
+              onSaved={changed}
+            />
+          )}
+          {typeFor && (
+            <DocTypeDialog
+              isOpen
+              onOpenChange={(open) => !open && setTypeFor(null)}
+              documentId={typeFor.id}
+              documentName={typeFor.name}
+              current={typeFor.docType}
+              onSaved={changed}
+            />
+          )}
+          <ManageTagsDialog
+            isOpen={manageTags}
+            onOpenChange={setManageTags}
+            tags={tags}
+            onChanged={changed}
+          />
         </LayoutContent>
       }
     />
