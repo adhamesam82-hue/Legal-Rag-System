@@ -9,7 +9,9 @@ import { Text } from "@astryxdesign/core/Text";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { Button } from "@astryxdesign/core/Button";
 import { Banner } from "@astryxdesign/core/Banner";
+import { Link } from "@astryxdesign/core/Link";
 import { RedirectIfSignedIn } from "@/components/RedirectIfSignedIn";
+import { withRedirect } from "@/lib/redirect-url";
 
 // useSearchParams() in a Client Component requires a Suspense boundary --
 // without one, `next build` fails outright (it has no way to prerender a
@@ -174,6 +176,17 @@ function SignInForm() {
                 variant="primary"
                 isLoading={fetchStatus === "fetching"}
               />
+              {/* The only door to sign-up from inside the app. redirect_url
+                  travels with it: someone who arrived from an invitation link
+                  and turns out not to have an account must come back to that
+                  invitation after signing up, not land on "create your firm"
+                  for a firm that already exists. */}
+              <Text type="supporting">
+                ليس لديك حساب؟{" "}
+                <Link href={withRedirect("/sign-up", searchParams.get("redirect_url"))}>
+                  أنشئ حساب مكتبك
+                </Link>
+              </Text>
             </form>
           ) : (
             <form onSubmit={handleVerify} style={{ display: "grid", gap: 14 }}>
