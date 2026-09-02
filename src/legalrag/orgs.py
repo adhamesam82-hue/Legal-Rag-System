@@ -79,6 +79,12 @@ def create_organization(
             "VALUES (%s, %s, 'owner')",
             (org_id, creator_clerk_user_id),
         )
+    # Suggested document tags, planted once. Imported here rather than at
+    # module level because legalrag.practice imports Membership from this
+    # module.
+    from legalrag.practice.document_tags import seed_default_tags
+
+    seed_default_tags(conn, org_id)
     conn.commit()
     return Organization(id=org_id, name=name, created_by=creator_clerk_user_id)
 

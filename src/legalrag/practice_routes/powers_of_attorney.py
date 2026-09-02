@@ -153,7 +153,9 @@ async def post_document(
     organization_id: int,
     file: UploadFile,
     matter_id: int | None = None,
-    doc_type: str = "",
+    # A classification from docs.DOC_TYPES. Omitted means "other"; the file's
+    # format is content_type, not this.
+    doc_type: str = "other",
     status: str = "draft",
     membership: Membership = Depends(get_current_membership),
     conn=Depends(db),
@@ -181,7 +183,7 @@ async def post_document(
             name=filename,
             uploaded_by=membership.clerk_user_id,
             matter_id=matter_id,
-            doc_type=doc_type or uploads.doc_type_for(filename),
+            doc_type=doc_type or "other",
             status=status,
             content=content,
             content_type=uploads.content_type_for(filename),
@@ -254,6 +256,8 @@ def patch_document(
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Document not found")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
 
 @router.delete("/documents/{document_id}", status_code=204)
