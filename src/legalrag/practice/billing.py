@@ -21,7 +21,7 @@ _COLUMNS = """
     i.id, i.organization_id, i.matter_id, m.name AS matter_name, i.client_id,
     c.name AS client_name, c.tax_id AS client_tax_id, i.number, i.amount,
     i.tax_rate, i.tax_amount, i.total_amount, i.currency, i.status,
-    i.issued_date, i.due_date, i.paid_date, i.created_at
+    i.issued_date, i.due_date, i.paid_date, i.created_at, i.notes
 """
 
 # Two places, half-up. An invoice is the one document where a rounding
@@ -46,6 +46,80 @@ def compute_tax(subtotal: Decimal, tax_rate: Decimal) -> tuple[Decimal, Decimal]
     return tax_amount, round_money(subtotal + tax_amount)
 
 
+def _rate(value: object) -> Decimal:
+    rate = Decimal(str(value))
+    if not (0 <= rate <= 1):
+        # A rate is a fraction, not a percentage: 0.14, not 14. Caught here
+        # because the difference is a bill fourteen times too large.
+        raise ValueError(f"tax rate must be between 0 and 1, got {rate}")
+    return rate
+
+
+@dataclass(frozen=True)
+class PricedLine:
+    """One line with its arithmetic done: what create_invoice writes."""
+
+    description: str
+    quantity: Decimal
+    unit_amount: Decimal
+    line_total: Decimal
+    tax_rate: Decimal
+    tax_amount: Decimal
+
+
+def price_lines(lines: list[dict]) -> list[PricedLine]:
+    """Every line rounded ONCE, on the line.
+
+    line_total is quantity x unit price to the piastre, and the line's tax is
+    that figure times its rate, also to the piastre. Rounding on the line
+    rather than on the sum is what lets a client add the printed rows and
+    land on the printed subtotal; the database column is 2 places anyway, so
+    a subtotal summed from unrounded products could disagree with the page
+    by a piastre.
+    """
+    priced = []
+    for line in lines:
+        quantity = Decimal(str(line.get("quantity", 1)))
+        unit_amount = Decimal(str(line.get("unit_amount", 0)))
+        tax_rate = _rate(line.get("tax_rate", 0))
+        line_total = round_money(quantity * unit_amount)
+        priced.append(
+            PricedLine(
+                description=line["description"],
+                quantity=quantity,
+                unit_amount=unit_amount,
+                line_total=line_total,
+                tax_rate=tax_rate,
+                tax_amount=round_money(line_total * tax_rate),
+            )
+        )
+    return priced
+
+
+def totals_of(
+    priced: list[PricedLine], invoice_rate: Decimal
+) -> tuple[Decimal, Decimal, Decimal, Decimal]:
+    """(amount, tax_rate, tax_amount, total) for the invoice row.
+
+    The rule stated in migration 0024: if any line carries a rate, the
+    invoice's tax is the sum of the lines' tax and its rate is DERIVED
+    (tax / amount) for display. Otherwise the invoice rate applies to the
+    subtotal exactly as before 0024. Both at once is refused rather than
+    silently resolved, because the two readings give different bills.
+    """
+    amount = round_money(sum((p.line_total for p in priced), Decimal(0)))
+    if any(p.tax_rate > 0 for p in priced):
+        if invoice_rate > 0:
+            raise ValueError(
+                "tax is set per line on this invoice; leave the invoice rate at 0"
+            )
+        tax_amount = sum((p.tax_amount for p in priced), Decimal(0))
+        derived = (tax_amount / amount).quantize(Decimal("0.0001")) if amount else Decimal(0)
+        return amount, derived, tax_amount, round_money(amount + tax_amount)
+    tax_amount, total = compute_tax(amount, invoice_rate)
+    return amount, invoice_rate, tax_amount, total
+
+
 @dataclass
 class InvoiceLine:
     id: int
@@ -53,6 +127,10 @@ class InvoiceLine:
     quantity: Decimal
     unit_amount: Decimal
     line_total: Decimal
+    # 0 on every line written before 0024 and on any line without its own
+    # rate; the invoice-level rate covers those.
+    tax_rate: Decimal = Decimal(0)
+    tax_amount: Decimal = Decimal(0)
 
 
 @dataclass
@@ -80,6 +158,8 @@ class Invoice:
     due_date: date
     paid_date: date | None
     created_at: datetime
+    # Printed under the totals: payment terms, a bank account, a reference.
+    notes: str = ""
     lines: list[InvoiceLine] = field(default_factory=list)
 
     @property
@@ -91,7 +171,7 @@ def _load_lines(conn: psycopg.Connection, invoice: Invoice) -> Invoice:
     invoice.lines = fetch_all(
         conn,
         InvoiceLine,
-        "SELECT id, description, quantity, unit_amount, line_total "
+        "SELECT id, description, quantity, unit_amount, line_total, tax_rate, tax_amount "
         "FROM invoice_lines WHERE invoice_id = %s ORDER BY id",
         (invoice.id,),
     )
@@ -179,14 +259,14 @@ def create_invoice(
     currency: str = "EGP",
     status: str = "draft",
     lines: list[dict] | None = None,
+    notes: str = "",
 ) -> Invoice:
     if status not in STATUSES:
         raise ValueError(f"invalid status {status!r}")
-    tax_rate = Decimal(str(tax_rate))
-    if not (0 <= tax_rate <= 1):
-        # A rate is a fraction, not a percentage: 0.14, not 14. Caught here
-        # because the difference is a bill fourteen times too large.
-        raise ValueError(f"tax rate must be between 0 and 1, got {tax_rate}")
+    tax_rate = _rate(tax_rate)
+    # Priced before anything is written, so a bad rate on line three fails
+    # the request instead of leaving an invoice with two lines.
+    priced = price_lines(lines or [])
     with conn.cursor() as cur:
         cur.execute(
             "SELECT 1 FROM clients WHERE organization_id = %s AND id = %s",
@@ -195,37 +275,34 @@ def create_invoice(
         if cur.fetchone() is None:
             raise NotFoundError(f"client {client_id}")
         invoice_number = number or next_invoice_number(conn, organization_id)
+        if priced:
+            # The lines are the truth once there are any; an `amount` the
+            # caller also passed is ignored in their favour.
+            amount, tax_rate, tax_amount, grand_total = totals_of(priced, tax_rate)
+        else:
+            amount = round_money(Decimal(str(amount)))
+            tax_amount, grand_total = compute_tax(amount, tax_rate)
         cur.execute(
             "INSERT INTO invoices (organization_id, matter_id, client_id, number, "
             "amount, tax_rate, tax_amount, total_amount, currency, status, "
-            "issued_date, due_date) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            "issued_date, due_date, notes) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
             (
                 organization_id, matter_id, client_id, invoice_number, amount,
-                tax_rate, *compute_tax(amount, tax_rate), currency, status,
-                issued_date, due_date,
+                tax_rate, tax_amount, grand_total, currency, status,
+                issued_date, due_date, notes,
             ),
         )
         invoice_id = cur.fetchone()[0]
-        total = Decimal(0)
-        for line in lines or []:
-            quantity = Decimal(str(line.get("quantity", 1)))
-            unit_amount = Decimal(str(line.get("unit_amount", 0)))
-            line_total = quantity * unit_amount
-            total += line_total
+        for line in priced:
             cur.execute(
                 "INSERT INTO invoice_lines (invoice_id, description, quantity, "
-                "unit_amount, line_total) VALUES (%s, %s, %s, %s, %s)",
-                (invoice_id, line["description"], quantity, unit_amount, line_total),
-            )
-        if lines:
-            # The lines are the truth once there are any; recompute rather
-            # than trusting an `amount` the caller also passed.
-            tax_amount, grand_total = compute_tax(total, tax_rate)
-            cur.execute(
-                "UPDATE invoices SET amount = %s, tax_amount = %s, total_amount = %s "
-                "WHERE id = %s",
-                (round_money(total), tax_amount, grand_total, invoice_id),
+                "unit_amount, line_total, tax_rate, tax_amount) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                (
+                    invoice_id, line.description, line.quantity, line.unit_amount,
+                    line.line_total, line.tax_rate, line.tax_amount,
+                ),
             )
     conn.commit()
     invoice = get_invoice(conn, organization_id, invoice_id)
@@ -242,6 +319,7 @@ def generate_from_unbilled(
     payment_terms_days: int = 30,
     include_expenses: bool = True,
     tax_rate: Decimal = Decimal(0),
+    notes: str = "",
 ) -> Invoice:
     """Draft an invoice for every unbilled billable hour and expense on a matter.
 
@@ -251,6 +329,7 @@ def generate_from_unbilled(
     it, so neither can be pulled onto a second invoice.
     """
     issued = issued_date or date.today()
+    tax_rate = _rate(tax_rate)
     with conn.cursor() as cur:
         cur.execute(
             "SELECT m.client_id FROM matters m "
@@ -294,13 +373,13 @@ def generate_from_unbilled(
         cur.execute(
             "INSERT INTO invoices (organization_id, matter_id, client_id, number, "
             "amount, tax_rate, tax_amount, total_amount, currency, status, "
-            "issued_date, due_date) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'draft', %s, %s) "
+            "issued_date, due_date, notes) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'draft', %s, %s, %s) "
             "RETURNING id",
             (
                 organization_id, matter_id, client_id, number,
                 round_money(total), tax_rate, *compute_tax(total, tax_rate),
-                currency, issued, issued + timedelta(days=payment_terms_days),
+                currency, issued, issued + timedelta(days=payment_terms_days), notes,
             ),
         )
         invoice_id = cur.fetchone()[0]
@@ -360,6 +439,31 @@ def update_invoice_status(
         )
         if cur.rowcount == 0:
             raise NotFoundError(f"invoice {invoice_id}")
+    conn.commit()
+    invoice = get_invoice(conn, organization_id, invoice_id)
+    assert invoice is not None
+    return invoice
+
+
+def update_invoice_notes(
+    conn: psycopg.Connection, organization_id: int, invoice_id: int, notes: str
+) -> Invoice:
+    """Drafts only. The note is printed on the document, and what was sent
+    to the client does not change afterwards -- same rule as the figures."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "UPDATE invoices SET notes = %s, updated_at = now() "
+            "WHERE organization_id = %s AND id = %s AND status = 'draft'",
+            (notes, organization_id, invoice_id),
+        )
+        if cur.rowcount == 0:
+            cur.execute(
+                "SELECT 1 FROM invoices WHERE organization_id = %s AND id = %s",
+                (organization_id, invoice_id),
+            )
+            if cur.fetchone() is None:
+                raise NotFoundError(f"invoice {invoice_id}")
+            raise ValueError("notes can only be changed on a draft invoice")
     conn.commit()
     invoice = get_invoice(conn, organization_id, invoice_id)
     assert invoice is not None

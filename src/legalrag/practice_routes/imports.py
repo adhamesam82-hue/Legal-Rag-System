@@ -141,16 +141,29 @@ async def post_matter_import(
 def patch_invoice(
     organization_id: int,
     invoice_id: int,
-    body: InvoiceStatusIn,
+    body: InvoicePatch,
     membership: Membership = Depends(get_current_membership),
     conn=Depends(db),
 ):
     try:
-        return billing.update_invoice_status(
-            conn, organization_id, invoice_id, body.status
-        )
+        invoice = None
+        if body.notes is not None:
+            invoice = billing.update_invoice_notes(
+                conn, organization_id, invoice_id, body.notes
+            )
+        if body.status is not None:
+            invoice = billing.update_invoice_status(
+                conn, organization_id, invoice_id, body.status
+            )
+        if invoice is None:
+            invoice = found(billing.get_invoice(conn, organization_id, invoice_id), "Invoice")
+        return invoice
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Invoice not found")
+    except ValueError as exc:
+        # Notes on an invoice that has already gone out.
+        conn.rollback()
+        raise HTTPException(status_code=409, detail=str(exc))
 
 
 @router.delete("/invoices/{invoice_id}", status_code=204)

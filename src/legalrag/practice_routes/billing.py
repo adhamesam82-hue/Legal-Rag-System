@@ -44,6 +44,11 @@ def post_invoice(
         return billing.create_invoice(conn, organization_id, **payload)
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Client not found")
+    except ValueError as exc:
+        # Line tax and invoice tax on the same bill, or a rate out of range
+        # that got past the model (e.g. via `amount` without lines).
+        conn.rollback()
+        raise HTTPException(status_code=422, detail=str(exc))
     except UniqueViolation:
         conn.rollback()
         raise HTTPException(
@@ -66,6 +71,10 @@ def post_generate_invoice(
             issued_date=body.issued_date,
             payment_terms_days=body.payment_terms_days,
             include_expenses=body.include_expenses,
+            # Accepted by the model since T-021 and never passed on: every
+            # generated invoice came out untaxed whatever the caller sent.
+            tax_rate=body.tax_rate,
+            notes=body.notes,
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Matter not found")
@@ -112,6 +121,8 @@ _PDF_LABELS = {
         "subtotal": "الإجمالي قبل الضريبة",
         "tax": "ضريبة القيمة المضافة",
         "total": "المستحق",
+        "lineTax": "الضريبة",
+        "notes": "ملاحظات",
         "footer": "شكرًا لثقتكم.",
     },
     "en": {
@@ -128,6 +139,8 @@ _PDF_LABELS = {
         "subtotal": "Subtotal",
         "tax": "VAT",
         "total": "Total due",
+        "lineTax": "Tax",
+        "notes": "Notes",
         "footer": "Thank you for your business.",
     },
 }
@@ -170,6 +183,8 @@ def get_invoice_pdf(
                 quantity=line.quantity,
                 unit_amount=line.unit_amount,
                 line_total=line.line_total,
+                tax_rate=line.tax_rate,
+                tax_amount=line.tax_amount,
             )
             for line in invoice.lines
         ],
@@ -178,6 +193,7 @@ def get_invoice_pdf(
         tax_amount=invoice.tax_amount,
         total=invoice.total_amount,
         status=invoice.status,
+        notes=invoice.notes,
     )
     pdf = invoice_pdf.render(document, _PDF_LABELS[lang])
 
