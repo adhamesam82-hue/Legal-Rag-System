@@ -38,6 +38,7 @@ import { type InvoiceStatus } from "@/lib/practice";
 import { useFormat } from "@/lib/i18n/format";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
+import { CreateInvoiceDialog } from "@/components/billing/CreateInvoiceDialog";
 
 // Retainer balances and disbursements/expenses were part of the UI concept but
 // have no backend and no schema, so they are not rendered here rather than
@@ -68,6 +69,7 @@ export default function BillingPage() {
   const enumLabel = useEnumLabel();
   const { practice } = useOrg();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [pendingId, setPendingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -293,15 +295,26 @@ export default function BillingPage() {
                     {t("@legalos.billing.subheading")}
                   </Text>
                 </VStack>
-                <Button
-                  label={t("@legalos.billing.invoiceUnbilled")}
-                  variant="primary"
-                  icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
-                  onClick={() => setIsGenerating(true)}
-                  isDisabled={!practice}
-                >
-                  {t("@legalos.billing.invoiceUnbilled")}
-                </Button>
+                <HStack gap={2}>
+                  <Button
+                    label={t("@legalos.billing.create.title")}
+                    variant="secondary"
+                    icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
+                    onClick={() => setIsCreating(true)}
+                    isDisabled={!practice}
+                  >
+                    {t("@legalos.billing.create.title")}
+                  </Button>
+                  <Button
+                    label={t("@legalos.billing.invoiceUnbilled")}
+                    variant="primary"
+                    icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
+                    onClick={() => setIsGenerating(true)}
+                    isDisabled={!practice}
+                  >
+                    {t("@legalos.billing.invoiceUnbilled")}
+                  </Button>
+                </HStack>
               </HStack>
 
               <DataView resource={resource} loadingLabel={t("@legalos.billing.loading")}>
@@ -429,6 +442,11 @@ export default function BillingPage() {
         onOpenChange={setIsGenerating}
         onCreated={resource.reload}
       />
+      <CreateInvoiceDialog
+        isOpen={isCreating}
+        onOpenChange={setIsCreating}
+        onCreated={resource.reload}
+      />
     </>
   );
 }
@@ -501,13 +519,10 @@ function GenerateInvoiceDialog({
             <VStack gap={4}>
               <InlineError message={error} onDismiss={() => setError(null)} />
               <Text type="body" color="secondary">
-                Drafts an invoice covering every unbilled billable hour logged
-                against the matter. Those hours are then locked to that invoice.
+                {t("@legalos.billing.dialog.description")}
               </Text>
               {options.length === 0 && !unbilled.loading ? (
-                <Text type="body">
-                  No matter has unbilled billable time right now.
-                </Text>
+                <Text type="body">{t("@legalos.billing.dialog.noneAvailable")}</Text>
               ) : (
                 <Selector
                   label={t("@legalos.billing.dialog.matterLabel")}
