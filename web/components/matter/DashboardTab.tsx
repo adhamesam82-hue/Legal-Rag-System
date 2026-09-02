@@ -1,12 +1,13 @@
 "use client";
 
 /**
- * The matter dashboard: money first, then who is on the file, what has been
- * checked for conflicts, and what has happened lately.
+ * The matter dashboard: the case file first, then who is on the file, what
+ * has been checked for conflicts, and what has happened lately.
  *
- * The financial strip leads because it is the question a partner opens a
- * matter to answer — what is unbilled, what is owed, and what of the client's
- * money we are holding.
+ * The money used to lead. It now sits in the page header as a compact strip
+ * (FinancialStrip) that stays on screen whatever tab is open, and the
+ * dashboard belongs to what the matter is about -- the question a lawyer
+ * preparing for a hearing opens it to answer.
  */
 
 import { useState } from "react";
@@ -20,7 +21,6 @@ import { Avatar } from "@astryxdesign/core/Avatar";
 import { List, ListItem } from "@astryxdesign/core/List";
 import { MetadataList, MetadataListItem } from "@astryxdesign/core/MetadataList";
 import { Link } from "@astryxdesign/core/Link";
-import { Divider } from "@astryxdesign/core/Divider";
 import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
 import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
 import { TextInput } from "@astryxdesign/core/TextInput";
@@ -42,14 +42,8 @@ import {
   type ConflictResult,
 } from "@/lib/practice";
 import { useFormat } from "@/lib/i18n/format";
-import {
-  Panel,
-  StatTile,
-  financialsOf,
-  lines,
-  useWrite,
-  type TabProps,
-} from "./shared";
+import { Panel, lines, useWrite, type TabProps } from "./shared";
+import { CaseFile } from "./CaseFile";
 
 const CONFLICT_VARIANT: Record<ConflictResult, "success" | "warning" | "error"> = {
   clear: "success",
@@ -57,137 +51,22 @@ const CONFLICT_VARIANT: Record<ConflictResult, "success" | "warning" | "error"> 
   conflict: "error",
 };
 
-export function DashboardTab({
-  data,
-  reload,
-  onError,
-  onQuickBill,
-  onAddTime,
-  onAddExpense,
-  onRecordDeposit,
-  onOpenBills,
-}: TabProps & {
-  onQuickBill: () => void;
-  onAddTime: () => void;
-  onAddExpense: () => void;
-  onRecordDeposit: () => void;
-  onOpenBills: () => void;
-}) {
+export function DashboardTab({ data, reload, onError }: TabProps) {
   const { formatDate, formatDateTime, formatEGP } = useFormat();
   const t = useTranslator();
   const enumLabel = useEnumLabel();
   const memberName = useMemberName();
-  const money = financialsOf(data);
   const { matter } = data;
+  // Only the budget line still needs a currency here.
+  const currency = data.invoices[0]?.currency ?? "EGP";
 
   const openTasks = data.tasks.filter((task) => task.status !== "done");
   const billRecipient = data.contacts.find((c) => c.is_bill_recipient);
 
   return (
     <VStack gap={6}>
-      {/* --- financial strip -------------------------------------------- */}
-      <Panel title={t("@legalos.matterWorkspace.financial.heading", { currency: money.currency })}>
-        <Grid columns={3} gap={4}>
-          <StatTile
-            label={t("@legalos.matterWorkspace.financial.workInProgress")}
-            value={formatEGP(money.workInProgress, money.currency)}
-            hint={t("@legalos.matterWorkspace.financial.workInProgress.hint")}
-            breakdown={[
-              {
-                label: t("@legalos.matterWorkspace.financial.unbilledTime"),
-                value: formatEGP(money.unbilledTime, money.currency),
-              },
-              {
-                label: t("@legalos.matterWorkspace.financial.unbilledExpenses"),
-                value: formatEGP(money.unbilledExpenses, money.currency),
-              },
-            ]}
-            action={
-              <Button
-                label={t("@legalos.matterWorkspace.financial.quickBill")}
-                variant="secondary"
-                size="sm"
-                isDisabled={money.workInProgress <= 0}
-                onClick={onQuickBill}
-              />
-            }
-          />
-          <StatTile
-            label={t("@legalos.matterWorkspace.financial.outstanding")}
-            value={formatEGP(money.outstanding, money.currency)}
-            hint={t("@legalos.matterWorkspace.financial.outstanding.hint")}
-            breakdown={
-              money.overdue > 0
-                ? [
-                    {
-                      label: t("@legalos.matterWorkspace.financial.overdue"),
-                      value: formatEGP(money.overdue, money.currency),
-                    },
-                  ]
-                : undefined
-            }
-            action={
-              <Button
-                label={t("@legalos.matterWorkspace.financial.viewBills")}
-                variant="secondary"
-                size="sm"
-                onClick={onOpenBills}
-              />
-            }
-          />
-          <StatTile
-            label={t("@legalos.matterWorkspace.financial.clientFunds")}
-            value={formatEGP(money.clientFunds, money.currency)}
-            hint={t("@legalos.matterWorkspace.financial.clientFunds.hint")}
-            action={
-              <Button
-                label={t("@legalos.matterWorkspace.financial.recordDeposit")}
-                variant="secondary"
-                size="sm"
-                onClick={onRecordDeposit}
-              />
-            }
-          />
-        </Grid>
-
-        <Divider />
-
-        <HStack gap={6} vAlign="center" wrap="wrap">
-          <HStack gap={2} vAlign="center">
-            <Text type="body" weight="semibold">
-              {t("@legalos.matterWorkspace.activities.filter.time")}
-            </Text>
-            <Text type="body" color="secondary">
-              {t("@legalos.matters.detail.hoursValue", {
-                hours: money.totalHours.toFixed(1),
-              })}
-            </Text>
-            <Button
-              label={t("@legalos.matterWorkspace.financial.addTime")}
-              variant="ghost"
-              size="sm"
-              onClick={onAddTime}
-            />
-          </HStack>
-          <HStack gap={2} vAlign="center">
-            <Text type="body" weight="semibold">
-              {t("@legalos.matterWorkspace.activities.filter.expenses")}
-            </Text>
-            <Text type="body" color="secondary">
-              {formatEGP(
-                data.expenses.reduce((sum, e) => sum + Number(e.amount), 0),
-                money.currency,
-              )}
-            </Text>
-            <Button
-              label={t("@legalos.matterWorkspace.financial.addExpense")}
-              variant="ghost"
-              size="sm"
-              onClick={onAddExpense}
-            />
-          </HStack>
-        </HStack>
-      </Panel>
+      {/* --- the case file proper: what this matter is about ------------ */}
+      <CaseFile data={data} reload={reload} onError={onError} />
 
       <Grid columns={3} gap={6}>
         <GridSpan columns={2}>
@@ -220,7 +99,7 @@ export function DashboardTab({
                   <MetadataListItem
                     label={t("@legalos.matters.detail.glance.budget")}
                   >
-                    {formatEGP(Number(matter.budget_amount), money.currency)}
+                    {formatEGP(Number(matter.budget_amount), currency)}
                     {matter.budget_is_estimate
                       ? t("@legalos.matters.detail.glance.estimateSuffix")
                       : ""}

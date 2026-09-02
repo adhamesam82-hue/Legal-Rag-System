@@ -208,6 +208,14 @@ export interface Hearing {
   next_hearing_date: string | null;
 }
 
+/** Enough of a related case to name it and link to it. */
+export interface CaseRef {
+  id: number;
+  case_number: string;
+  court: string;
+  litigation_degree: string;
+}
+
 export interface CaseRecord {
   id: number;
   organization_id: number;
@@ -222,6 +230,17 @@ export interface CaseRecord {
   filed_date: string;
   ai_summary: string | null;
   created_at: string;
+  /** The case file proper (migration 0022). Empty strings, never null. */
+  summary: string;
+  facts: string;
+  legal_basis: string;
+  defences: string;
+  procedural_posture: string;
+  client_narrative: string;
+  /** The same dispute before another court, one level deep. */
+  parent_case_id: number | null;
+  parent: CaseRef | null;
+  children: CaseRef[];
   timeline: CaseTimelineEvent[];
   deadlines: CaseDeadline[];
   evidence: Evidence[];
