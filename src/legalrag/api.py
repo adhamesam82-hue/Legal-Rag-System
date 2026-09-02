@@ -459,6 +459,9 @@ class OrganizationOut(BaseModel):
 
 class CreateOrganizationRequest(BaseModel):
     name: str = Field(min_length=1, max_length=200)
+    # Optional at creation; the rest of the firm's details live in Settings.
+    # Validated against MATTER_TYPES in orgs.py, same as the PATCH.
+    specialties: list[str] = Field(default_factory=list)
 
 
 class UpdateOrganizationRequest(BaseModel):
@@ -894,8 +897,13 @@ def post_create_organization(
     request: CreateOrganizationRequest,
     clerk_user_id: str = Depends(get_current_user_id),
 ):
-    with db() as conn:
-        org = create_organization(conn, request.name, clerk_user_id)
+    try:
+        with db() as conn:
+            org = create_organization(
+                conn, request.name, clerk_user_id, specialties=request.specialties
+            )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
     return OrganizationOut(id=org.id, name=org.name)
 
 

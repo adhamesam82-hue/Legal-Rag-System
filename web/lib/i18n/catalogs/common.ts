@@ -25,9 +25,10 @@ export const en: Catalog = {
   "@legalos.common.noOrg.firmNamePlaceholder": { defaultMessage: "Al-Sayed & Partners" },
   "@legalos.common.noOrg.creating": { defaultMessage: "Creating…" },
   "@legalos.common.noOrg.createFirm": { defaultMessage: "Create firm" },
-  "@legalos.common.noOrg.seedHint": {
-    defaultMessage:
-      "To take over the seeded sample firm instead, run: uv run python scripts/seed_demo_firm.py --reset --owner-clerk-id <your Clerk user id>",
+  "@legalos.common.noOrg.specialtiesLabel": { defaultMessage: "Practice areas" },
+  "@legalos.common.noOrg.specialtiesPlaceholder": { defaultMessage: "Choose what the firm handles" },
+  "@legalos.common.noOrg.specialtiesHint": {
+    defaultMessage: "Optional. They shape the matter types you see first; change them any time in Settings.",
   },
   "@legalos.common.noOrg.createFailed": { defaultMessage: "Could not create the firm." },
   "@legalos.common.noOrg.settingsHint": {
@@ -105,9 +106,10 @@ export const ar: Catalog = {
   "@legalos.common.noOrg.firmNamePlaceholder": { defaultMessage: "السيد وشركاه" },
   "@legalos.common.noOrg.creating": { defaultMessage: "جارٍ الإنشاء…" },
   "@legalos.common.noOrg.createFirm": { defaultMessage: "إنشاء المكتب" },
-  "@legalos.common.noOrg.seedHint": {
-    defaultMessage:
-      "لاستخدام المكتب التجريبي المُهيّأ مسبقاً بدلاً من ذلك، شغّل: uv run python scripts/seed_demo_firm.py --reset --owner-clerk-id <معرّف مستخدم Clerk الخاص بك>",
+  "@legalos.common.noOrg.specialtiesLabel": { defaultMessage: "مجالات الممارسة" },
+  "@legalos.common.noOrg.specialtiesPlaceholder": { defaultMessage: "اختر ما يتعامل معه المكتب" },
+  "@legalos.common.noOrg.specialtiesHint": {
+    defaultMessage: "اختياري. تحدّد أنواع القضايا التي تراها أولًا، وتغيّرها متى شئت من الإعدادات.",
   },
   "@legalos.common.noOrg.createFailed": { defaultMessage: "تعذّر إنشاء المكتب." },
   "@legalos.common.noOrg.settingsHint": {

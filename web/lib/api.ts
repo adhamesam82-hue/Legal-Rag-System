@@ -303,10 +303,10 @@ export const api = {
       { method: "POST", body: JSON.stringify({ language }) },
     ),
 
-  createOrganization: (name: string) =>
+  createOrganization: (name: string, specialties: MatterType[] = []) =>
     request<Organization>("/api/orgs", {
       method: "POST",
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, specialties }),
     }),
 
   myOrganizations: () => request<Membership[]>("/api/orgs/me"),
