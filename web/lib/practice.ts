@@ -18,13 +18,41 @@ export type { ISODateString };
 export type Role = "owner" | "lawyer" | "staff";
 export type ClientType = "company" | "individual";
 export type ClientStatus = "active" | "inactive";
+/** Mirrors MATTER_TYPES in the API. "legacy_litigation" is read-only: rows
+ *  that were "litigation" before migration 0021, awaiting reclassification. */
 export type MatterType =
-  | "litigation"
+  | "civil"
+  | "criminal"
+  | "commercial"
   | "corporate"
-  | "tax"
+  | "real_estate"
+  | "intellectual_property"
+  | "administrative"
+  | "family_personal_status"
   | "labour"
-  | "family_probate"
-  | "contract_review";
+  | "tax"
+  | "arbitration"
+  | "execution"
+  | "advisory"
+  | "other"
+  | "legacy_litigation";
+/** The values a matter may be created with -- everything but the legacy marker. */
+export const MATTER_TYPES: MatterType[] = [
+  "civil",
+  "criminal",
+  "commercial",
+  "corporate",
+  "real_estate",
+  "intellectual_property",
+  "administrative",
+  "family_personal_status",
+  "labour",
+  "tax",
+  "arbitration",
+  "execution",
+  "advisory",
+  "other",
+];
 export type MatterStatus = "active" | "on_hold" | "closed";
 export type BillingType = "hourly" | "fixed_fee" | "retainer";
 export type TaskStatus = "todo" | "in_progress" | "done";

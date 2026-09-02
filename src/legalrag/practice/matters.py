@@ -22,21 +22,30 @@ from legalrag.orgs import Membership
 from legalrag.practice import NotFoundError, fetch_all, fetch_one
 from legalrag.practice.scope import UNRESTRICTED, matter_visibility
 
+# The fourteen subject areas a matter can be filed under, shared with
+# organizations.specialties (migration 0021). Must stay in step with the CHECK
+# constraints there -- a value this tuple rejects never reaches the database
+# to be checked, and one it accepts that the database does not is a 500.
 MATTER_TYPES = (
-    "litigation",
-    "corporate",
-    "tax",
-    "labour",
-    "family_probate",
-    "contract_review",
-    # Added with migration 0010: an Egyptian practice has these and the list
-    # did not. Must stay in step with the CHECK constraint there -- a value
-    # this tuple rejects never reaches the database to be checked.
+    "civil",
     "criminal",
+    "commercial",
+    "corporate",
+    "real_estate",
+    "intellectual_property",
     "administrative",
-    "execution",
+    "family_personal_status",
+    "labour",
+    "tax",
     "arbitration",
+    "execution",
+    "advisory",
+    "other",
 )
+# Readable but never writable. Rows that were "litigation" before 0021 carry
+# this until the firm says which of civil / criminal / commercial they were;
+# the migration explains why it did not guess.
+LEGACY_MATTER_TYPES = ("legacy_litigation",)
 MATTER_STATUSES = ("active", "on_hold", "closed")
 BILLING_TYPES = ("hourly", "fixed_fee", "retainer")
 

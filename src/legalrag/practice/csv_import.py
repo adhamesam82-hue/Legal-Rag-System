@@ -238,7 +238,9 @@ def preview_matters(
             )
             continue
 
-        matter_type = _pick(row, mapping, "matter_type") or "litigation"
+        # A row with no type is filed as "other", the classification that
+        # says nothing, rather than guessed into a subject area.
+        matter_type = _pick(row, mapping, "matter_type") or "other"
         if matter_type not in MATTER_TYPES:
             problems.append(RowProblem(index, f"unknown case type: {matter_type}", row))
             continue

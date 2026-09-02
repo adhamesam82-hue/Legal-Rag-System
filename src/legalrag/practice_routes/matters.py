@@ -86,6 +86,11 @@ def patch_matter(
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Matter not found")
+    except ValueError as exc:
+        # MatterPatch types matter_type/status/billing_type as plain strings,
+        # so an out-of-list value reaches update_matter's validation. That
+        # used to surface as a 500; it is the caller's mistake, so 422.
+        raise HTTPException(status_code=422, detail=str(exc))
     except UniqueViolation:
         conn.rollback()
         raise HTTPException(

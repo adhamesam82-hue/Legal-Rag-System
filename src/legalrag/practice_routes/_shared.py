@@ -111,8 +111,14 @@ class MatterIn(BaseModel):
     name: str = Field(min_length=1, max_length=300)
     # Omitted means "give it the next number in the firm's series".
     matter_number: str | None = Field(default=None, max_length=80)
+    # Kept as a Literal so the OpenAPI schema lists the values; validated
+    # again in practice.matters against the same tuple, which is the one the
+    # database is checked against. Before 0021 this Literal had drifted to six
+    # values while the database accepted ten, so four real types were 422s.
     matter_type: Literal[
-        "litigation", "corporate", "tax", "labour", "family_probate", "contract_review"
+        "civil", "criminal", "commercial", "corporate", "real_estate",
+        "intellectual_property", "administrative", "family_personal_status",
+        "labour", "tax", "arbitration", "execution", "advisory", "other",
     ]
     billing_type: Literal["hourly", "fixed_fee", "retainer"]
     responsible_user: str

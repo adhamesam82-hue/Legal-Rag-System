@@ -448,6 +448,8 @@ class OrganizationOut(BaseModel):
     phone: str | None = None
     address: str | None = None
     logo_url: str | None = None
+    # Values from the shared matter-type list (practice.matters.MATTER_TYPES).
+    specialties: list[str] = Field(default_factory=list)
 
 
 class CreateOrganizationRequest(BaseModel):
@@ -467,6 +469,9 @@ class UpdateOrganizationRequest(BaseModel):
     phone: str | None = Field(default=None, max_length=60)
     address: str | None = Field(default=None, max_length=500)
     logo_url: str | None = Field(default=None, max_length=1000)
+    # The whole list, replaced as one: a firm with three specialties that
+    # unticks one sends two. Validated against MATTER_TYPES in orgs.py.
+    specialties: list[str] | None = None
 
 
 class MembershipOut(BaseModel):
@@ -928,6 +933,7 @@ def get_organization_detail(
         phone=org.phone,
         address=org.address,
         logo_url=org.logo_url,
+        specialties=list(org.specialties),
     )
 
 
@@ -939,10 +945,13 @@ def patch_organization(
 ):
     """Edits the firm's details. Owner only -- the firm name reaches every
     client on every invoice, so it is not a per-lawyer preference."""
-    with db() as conn:
-        org = update_organization(
-            conn, organization_id, **request.model_dump(exclude_unset=True)
-        )
+    try:
+        with db() as conn:
+            org = update_organization(
+                conn, organization_id, **request.model_dump(exclude_unset=True)
+            )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
     if org is None:
         raise HTTPException(status_code=404, detail="Organization not found")
     return OrganizationOut(
@@ -952,6 +961,7 @@ def patch_organization(
         phone=org.phone,
         address=org.address,
         logo_url=org.logo_url,
+        specialties=list(org.specialties),
     )
 
 
