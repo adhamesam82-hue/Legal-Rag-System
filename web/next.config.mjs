@@ -32,14 +32,29 @@ const nextConfig = {
   async rewrites() {
     return {
       beforeFiles: [
-        { source: "/", destination: "/landing/index.html" },
-        // The Arabic page is a real URL with its own hreflang, not a toggle.
-        { source: "/ar", destination: "/landing/ar/index.html" },
-        { source: "/ar/", destination: "/landing/ar/index.html" },
+        // Arabic is the default (T-036): the product is Egyptian and the
+        // default visitor reads Arabic, so the root does not guess from the
+        // browser. The file layout is unchanged -- index.html stays the
+        // English source that ar/index.html is generated from -- only the
+        // URLs move.
+        { source: "/", destination: "/landing/ar/index.html" },
+        // The English page is a real URL with its own hreflang, not a toggle.
+        // "/en/" never reaches here: Next answers it with its own 308 to
+        // "/en" before rewrites run, so one entry covers both spellings.
+        { source: "/en", destination: "/landing/index.html" },
       ],
       afterFiles: [],
       fallback: [],
     };
+  },
+  // The Arabic page used to live at /ar. Those links are shared and indexed;
+  // a permanent redirect carries their ranking to the new address, a
+  // temporary one would not. statusCode rather than `permanent: true`
+  // because Next spells "permanent" as 308, and the ticket -- and every
+  // SEO checklist a reviewer will reach for -- expects the classic 301.
+  // "/ar/" is normalised to "/ar" by Next's own 308 first, then lands here.
+  async redirects() {
+    return [{ source: "/ar", destination: "/", statusCode: 301 }];
   },
 };
 export default nextConfig;
