@@ -1,29 +1,47 @@
-// LegalOS theme: a near-neutral surface set with one accent, layered on
-// Astryx's neutral base rather than replacing it.
+// LegalOS theme: the "Stamp" identity (T-043), carried over from the
+// marketing site rather than invented here.
 //
-// The brief's palette (PRODUCT.md) named deep navy #0F172A as the primary and
-// emerald #10B981 as the accent. Navy is no longer painted on the nav rail:
-// two large colour fields (navy rail, white content) made the screen read as
-// two applications side by side, and colour on permanent chrome is colour that
-// can never mean anything. The greys below are untinted, so the only colour on
-// a screen is the accent on the one thing you are meant to act on, plus the
-// status hues where the colour *is* the information (overdue, conflict
-// flagged). Emerald stays that accent, one step deeper so it holds its
-// contrast against white as a fill.
+// This theme used to follow PRODUCT.md's original brief -- navy #0F172A and
+// emerald #10B981 -- independently of the marketing page. Marketing has since
+// been rebuilt around a documented identity (marketing/assets/css/tokens.css:
+// "The Stamp") -- Ink #12161C, Seal #A6301F, Paper #F6F3EE, Newsreader for
+// display, Archivo for text -- and a visitor who signs up met a second,
+// unrelated visual language the moment the app loaded. This theme now carries
+// the same three colours and two faces, translated into Astryx's tokens
+// rather than copied as raw CSS.
 //
-// Purple (Astryx's built-in --color-*-purple roles) is still reserved for
-// AI-surfaced UI only, never used as a general accent.
+// Kept from the emerald-era reasoning below, because both still apply:
+// colour stays off permanent chrome (the nav rail is neutral, not Seal) so it
+// keeps meaning something on the one thing you are meant to act on, plus the
+// status hues where colour *is* the information. Purple stays reserved for
+// AI-surfaced UI only.
+//
+// Dark mode has no equivalent in the source: the Stamp identity
+// (tokens.css) is light-only by its author's own account ("previously a dark
+// violet-and-brass system; what survives is structure, not palette"). Rather
+// than design a dark Stamp from nothing, only the light side of every token
+// below moves; the dark side is untouched from the emerald theme, which
+// already works and is a defensible dark posture on its own.
 import { defineTheme } from "@astryxdesign/core/theme";
 import { neutralTheme } from "@astryxdesign/theme-neutral";
+
+// The identity's Arabic counterparts to Archivo/Newsreader (marketing pairs
+// Latin and Arabic faces in the same stack via @font-face unicode-range, so
+// the browser resolves per character rather than per language -- see
+// app/globals.css, where these families are loaded and where [dir="rtl"]
+// gets the Arabic-first pairing for the whole app).
+const ARABIC_UI = "'Tajawal', 'Noto Naskh Arabic'";
 
 export const legalosTheme = defineTheme({
   name: "legalos",
   extends: neutralTheme,
   color: {
-    accent: "#047857",
-    // Untinted: the previous "cool" neutrals carried a blue cast that read as
-    // a second colour once the navy left.
-    neutralStyle: "neutral",
+    accent: "#A6301F",
+    // The identity's Paper (#F6F3EE) is a warm off-white, not the untinted
+    // grey the emerald era deliberately chose. "warm" is Astryx's generated
+    // match for it -- the neutral ramp derives from the accent and this knob,
+    // not from a separately hand-picked grey.
+    neutralStyle: "warm",
     contrast: "standard",
   },
   typography: {
@@ -31,17 +49,19 @@ export const legalosTheme = defineTheme({
     // the rungs the app actually reads are pinned explicitly in `tokens` below.
     scale: { base: 15, ratio: 1.2 },
     body: {
-      family: "Inter",
-      fallbacks:
-        '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      family: "Archivo",
+      fallbacks: `${ARABIC_UI}, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`,
     },
     heading: {
-      family: "Inter",
-      fallbacks:
-        '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      // Newsreader is a display serif with no Arabic coverage of its own;
+      // an Arabic heading falls through to the Arabic pairing exactly as
+      // marketing's own headings do when they carry Arabic (matter names,
+      // firm names).
+      family: "Newsreader",
+      fallbacks: `${ARABIC_UI}, Georgia, serif`,
     },
   },
-  radius: { base: 4, multiplier: 1.25 },
+  radius: { base: 4, multiplier: 0.35 },
   tokens: {
     // Type scale. A geometric progression off a 15px base gave a marketing
     // ladder (body 15, section headings 18, page titles 22) inside a tool where
@@ -69,40 +89,46 @@ export const legalosTheme = defineTheme({
     "--text-heading-4-size": "0.875rem",
     "--text-label-size": "0.875rem",
 
-    // Surfaces. Two steps only -- the wash the app sits on and the surface
-    // content sits on -- and both untinted, so nothing on screen competes with
-    // the accent. Dark mode is a true dark grey rather than the old navy.
-    "--color-background-body": ["#FAFAFA", "#0C0C0D"],
+    // Surfaces. Light side is the identity's Paper/paper-lit (#F6F3EE ground,
+    // white card); dark side is untouched -- the emerald theme's dark grey,
+    // kept because the Stamp identity defines no dark mode of its own (see
+    // the file header). Two steps only, same reasoning as before: nothing on
+    // screen competes with the accent.
+    "--color-background-body": ["#F6F3EE", "#0C0C0D"],
     "--color-background-surface": ["#FFFFFF", "#151516"],
     "--color-background-card": ["#FFFFFF", "#151516"],
     "--color-background-popover": ["#FFFFFF", "#1C1C1E"],
-    "--color-background-inverted": ["#18181B", "#FAFAFA"],
+    "--color-background-inverted": ["#12161C", "#FAFAFA"],
 
-    // Borders do the separating that shadows used to. They are hairlines: at
-    // this weight a card reads as an area rather than an object, which is the
-    // whole point of dropping the elevation.
-    "--color-border": ["#18181B14", "#FFFFFF14"],
-    "--color-border-emphasized": ["#18181B26", "#FFFFFF26"],
+    // Borders do the separating that shadows used to. Light side is the
+    // identity's --hairline/--hairline-strong (Ink at 12%/20% alpha,
+    // tokens.css:48-49); dark side unchanged.
+    "--color-border": ["#12161C1F", "#FFFFFF14"],
+    "--color-border-emphasized": ["#12161C33", "#FFFFFF26"],
 
-    // Text: near-black rather than black, and a secondary that is legibly
-    // quieter without going pale.
-    "--color-text-primary": ["#18181B", "#EDEDED"],
-    "--color-text-secondary": ["#71717A", "#A1A1AA"],
-    "--color-text-disabled": ["#A1A1AA", "#71717A"],
+    // Text: the identity's Ink and its two legible tints (tokens.css:59-61,
+    // each ratio measured against Paper, not estimated -- see that file's
+    // comment for the method). Dark side unchanged.
+    "--color-text-primary": ["#12161C", "#EDEDED"],
+    "--color-text-secondary": ["#565D66", "#A1A1AA"],
+    "--color-text-disabled": ["#656B72", "#71717A"],
 
-    // Elevation is gone from the resting state. The tokens stay non-empty for
-    // the things that genuinely float above the page -- menus, dialogs, the
-    // toolbar pill -- but even those are a single soft shadow rather than the
-    // stacked three-layer set.
-    "--shadow-low": "0 1px 2px light-dark(oklch(0 0 0 / 6%), oklch(0 0 0 / 40%))",
-    "--shadow-med": "0 2px 8px light-dark(oklch(0 0 0 / 8%), oklch(0 0 0 / 50%))",
-    "--shadow-high": "0 8px 24px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 60%))",
+    // Elevation is gone from the resting state, as before. Light side is the
+    // identity's contact-shadow pair (tokens.css:115-116: a tight dark line
+    // where a sheet meets the page, a soft one under it) rather than a flat
+    // black at increasing opacity; dark side unchanged.
+    "--shadow-low": "0 1px 2px light-dark(rgba(18, 22, 28, 0.06), oklch(0 0 0 / 40%))",
+    "--shadow-med": "0 2px 5px light-dark(rgba(18, 22, 28, 0.07), oklch(0 0 0 / 50%))",
+    "--shadow-high": "0 14px 30px -14px light-dark(rgba(18, 22, 28, 0.22), oklch(0 0 0 / 60%))",
 
-    // Corners: enough to look drawn on purpose, not enough to be a style.
-    "--radius-inner": "4px",
-    "--radius-element": "6px",
-    "--radius-container": "8px",
-    "--radius-page": "16px",
+    // Corners: the identity's own scale (tokens.css:95-98), and its own
+    // reasoning -- "a printed identity: filings, letterhead, a punch struck
+    // into paper -- none of that is round." Same four steps as before, same
+    // relative order, now near-flat instead of "drawn on purpose."
+    "--radius-inner": "2px",
+    "--radius-element": "3px",
+    "--radius-container": "4px",
+    "--radius-page": "5px",
   },
   components: {
     // The shell is the app's outer boundary: it is exactly one viewport tall,
