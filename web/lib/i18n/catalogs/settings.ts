@@ -37,6 +37,7 @@ export const en: Catalog = {
   "@legalos.settings.firm.logoHint": {
     defaultMessage: "PNG, JPG, or SVG. Recommended 512×512px, up to 2MB.",
   },
+  "@legalos.settings.firm.logoFailed": { defaultMessage: "Could not upload the logo." },
   "@legalos.settings.firm.logoUnavailable": {
     defaultMessage:
       "Uploading a logo is not available yet — there is nowhere to store it. Until then the firm's initials are used.",
@@ -238,6 +239,7 @@ export const ar: Catalog = {
   "@legalos.settings.firm.logoHint": {
     defaultMessage: "PNG أو JPG أو SVG. يُفضَّل 512×512 بكسل، وبحد أقصى 2 ميجابايت.",
   },
+  "@legalos.settings.firm.logoFailed": { defaultMessage: "تعذّر رفع الشعار." },
   "@legalos.settings.firm.logoUnavailable": {
     defaultMessage:
       "رفع الشعار غير متاح بعد — لا يوجد مكان لتخزينه. وحتى ذلك الحين تُستخدَم الأحرف الأولى من اسم المكتب.",

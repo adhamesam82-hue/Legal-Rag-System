@@ -152,3 +152,42 @@ async def read_capped(file, limit: int) -> bytes:
             raise UploadTooLarge(limit)
         chunks.append(chunk)
     return b"".join(chunks)
+
+
+# --- logos --------------------------------------------------------------------
+#
+# A logo is narrower than a document: only an image, only small, and the type
+# is decided by the bytes rather than the name. content_type_for() trusts the
+# extension because a document's format is the firm's business and an
+# unrecognised one is served as an opaque download anyway. A logo is served
+# inline as an image on this origin, so a file called logo.png whose bytes are
+# HTML must never get that far -- that is the stored-XSS class T-003 closed.
+#
+# SVG is refused, not sanitised. It can carry <script> and the safe-serving
+# headers for a document (download, nosniff) are exactly the ones a logo
+# cannot have, since the point of a logo is to render in place.
+
+LOGO_MAX_BYTES = 2 * 1024 * 1024
+
+# Magic bytes -> (content type, extension). WebP is RIFF....WEBP.
+_IMAGE_SIGNATURES = (
+    (b"\x89PNG\r\n\x1a\n", "image/png", ".png"),
+    (b"\xff\xd8\xff", "image/jpeg", ".jpg"),
+)
+
+
+class LogoRejected(Exception):
+    """The upload is not an image this system will serve as a logo."""
+
+
+def sniff_image(content: bytes) -> tuple[str, str]:
+    """(content type, extension) from the file's own bytes, or LogoRejected.
+
+    Deliberately blind to the filename and to any client-supplied type.
+    """
+    for magic, content_type, suffix in _IMAGE_SIGNATURES:
+        if content.startswith(magic):
+            return content_type, suffix
+    if len(content) >= 12 and content[:4] == b"RIFF" and content[8:12] == b"WEBP":
+        return "image/webp", ".webp"
+    raise LogoRejected("not a PNG, JPEG or WebP image")

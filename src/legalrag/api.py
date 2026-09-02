@@ -13,6 +13,9 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
+import uuid
+from pathlib import Path
 
 import httpx
 from collections.abc import AsyncIterator, Iterator
@@ -20,7 +23,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Literal
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -40,7 +43,9 @@ from legalrag.config import (
     get_app_base_url,
     get_cors_origins,
     get_dev_auth_user,
+    get_document_root,
 )
+from legalrag.practice import uploads
 from legalrag.conversations import (
     Conversation,
     Message,
@@ -962,6 +967,93 @@ def patch_organization(
         address=org.address,
         logo_url=org.logo_url,
         specialties=list(org.specialties),
+    )
+
+
+# --- firm logo ----------------------------------------------------------------
+#
+# Stored under <document root>/logos/ as <org>-<uuid><ext>, and served from a
+# public route by that name. Public because the browser loads it with a plain
+# <img src>, which carries no bearer token -- and a logo is not a secret: it is
+# printed on every invoice the firm sends. The uuid keeps the name unguessable
+# all the same, and the route serves nothing outside that one directory.
+
+_LOGO_DIR = "logos"
+_LOGO_NAME = re.compile(r"^[0-9]+-[0-9a-f]{32}\.(png|jpg|webp)$")
+_LOGO_MEDIA = {".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp"}
+
+
+def _logo_dir() -> Path:
+    path = get_document_root() / _LOGO_DIR
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+@app.post("/api/orgs/{organization_id}/logo", response_model=OrganizationOut)
+async def post_organization_logo(
+    organization_id: int,
+    file: UploadFile,
+    owner: Membership = Depends(require_owner),
+):
+    """Replaces the firm's logo. Owner only, like the rest of the firm's
+    details. The type comes from the bytes, never from the name or the
+    client's header; see uploads.sniff_image."""
+    try:
+        content = await uploads.read_capped(file, uploads.LOGO_MAX_BYTES)
+    except uploads.UploadTooLarge:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Logo is larger than the {uploads.LOGO_MAX_BYTES // (1024 * 1024)}MB limit",
+        )
+    try:
+        _content_type, suffix = uploads.sniff_image(content)
+    except uploads.LogoRejected as exc:
+        raise HTTPException(status_code=415, detail=str(exc))
+
+    filename = f"{organization_id}-{uuid.uuid4().hex}{suffix}"
+    (_logo_dir() / filename).write_bytes(content)
+
+    with db() as conn:
+        previous = get_organization(conn, organization_id)
+        org = update_organization(conn, organization_id, logo_url=f"/api/logos/{filename}")
+    if org is None:
+        (_logo_dir() / filename).unlink(missing_ok=True)
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    # The old file goes only after the row points at the new one, so a failed
+    # write never leaves the firm with a logo_url and no bytes behind it.
+    if previous and previous.logo_url and previous.logo_url.startswith("/api/logos/"):
+        old_name = previous.logo_url.removeprefix("/api/logos/")
+        if _LOGO_NAME.match(old_name) and old_name != filename:
+            (_logo_dir() / old_name).unlink(missing_ok=True)
+
+    return OrganizationOut(
+        id=org.id,
+        name=org.name,
+        registration_number=org.registration_number,
+        phone=org.phone,
+        address=org.address,
+        logo_url=org.logo_url,
+        specialties=list(org.specialties),
+    )
+
+
+@app.get("/api/logos/{filename}")
+def get_logo(filename: str):
+    # The pattern is the whole access control: it admits exactly the names
+    # this server generates, so ".." and friends never reach the filesystem.
+    if not _LOGO_NAME.match(filename):
+        raise HTTPException(status_code=404, detail="Not found")
+    path = _logo_dir() / filename
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Not found")
+    return Response(
+        content=path.read_bytes(),
+        media_type=_LOGO_MEDIA[path.suffix],
+        headers={
+            "X-Content-Type-Options": "nosniff",
+            "Cache-Control": "public, max-age=86400",
+        },
     )
 
 
