@@ -63,6 +63,7 @@ import { DocumentCard, fileIcon, type CardDocument } from "@/components/document
 import { TagsDialog, TagToken } from "@/components/documents/TagsDialog";
 import { DocTypeDialog } from "@/components/documents/DocTypeDialog";
 import { ManageTagsDialog } from "@/components/documents/ManageTagsDialog";
+import { MatterTypeIcon } from "@/components/Distinction";
 
 const STATUS_VARIANT: Record<
   DocumentStatus,
@@ -282,6 +283,9 @@ export default function DocumentsPage() {
     .map((node) => ({
       id: `m${node.matter.id}`,
       label: `${node.matter.name} (${node.n})`,
+      // Same glyph and hue the matters list gives this type, so a file's
+      // branch in the tree is recognisable as the same matter.
+      startContent: <MatterTypeIcon type={node.matter.matter_type} />,
       isSelected: filters.matterId === node.matter.id,
       onClick: () => set({ matterId: filters.matterId === node.matter.id ? null : node.matter.id }),
     }));

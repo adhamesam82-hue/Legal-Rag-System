@@ -42,10 +42,8 @@ import { useRouter } from "next/navigation";
 import { ApiError } from "@/lib/api";
 import { memberLabel, useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
-import {
-  daysUntil,
-  type MatterStatus,
-} from "@/lib/practice";
+import { MatterStatusMark, MatterTypeBadge } from "@/components/Distinction";
+import { daysUntil } from "@/lib/practice";
 import { useFormat } from "@/lib/i18n/format";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 import {
@@ -87,12 +85,6 @@ const OVERFLOW_TABS = [
   { value: "transactions", labelKey: "@legalos.matterWorkspace.tab.transactions" },
   { value: "timeline", labelKey: "@legalos.matters.detail.tab.timeline" },
 ] as const;
-
-const STATUS_VARIANT: Record<MatterStatus, "success" | "warning" | "neutral"> = {
-  active: "success",
-  on_hold: "warning",
-  closed: "neutral",
-};
 
 export default function MatterWorkspacePage({
   params,
@@ -264,10 +256,8 @@ export default function MatterWorkspacePage({
                       <HStack gap={3} vAlign="center" wrap="wrap">
                         {/* The number leads, the way a firm refers to the file. */}
                         <Heading level={2}>{matter.matter_number}</Heading>
-                        <Badge
-                          variant={STATUS_VARIANT[matter.status]}
-                          label={enumLabel(matter.status)}
-                        />
+                        <MatterTypeBadge type={matter.matter_type} />
+                        <MatterStatusMark status={matter.status} />
                       </HStack>
                       <Text type="body" color="secondary">
                         {matter.name}
@@ -276,8 +266,7 @@ export default function MatterWorkspacePage({
                           {matter.client_name}
                         </Link>
                         {" · "}
-                        {t("@legalos.matters.detail.subtitle", {
-                          type: enumLabel(matter.matter_type),
+                        {t("@legalos.distinction.matters.openedOn", {
                           date: formatDate(matter.opened_date),
                         })}
                       </Text>

@@ -5,6 +5,7 @@ import * as auth from "./catalogs/auth";
 import * as clients from "./catalogs/clients";
 import * as common from "./catalogs/common";
 import * as crm from "./catalogs/crm";
+import * as distinction from "./catalogs/distinction";
 import * as documents from "./catalogs/documents";
 import * as enums from "./catalogs/enums";
 import * as financeA from "./catalogs/finance-a";
@@ -25,7 +26,7 @@ import * as team from "./catalogs/team";
 // `astryx` is not a domain of this app: it is the Arabic for the design
 // system's own built-in strings, which resolve through this same provider and
 // otherwise fall back to the package's shipped English inside an Arabic page.
-const domains = [ai, astryx, auth, clients, common, crm, documents, enums, financeA, financeB, knowledgeBase, matters, matterWorkspace, overview, practice, settings, shell, team];
+const domains = [ai, astryx, auth, clients, common, crm, distinction, documents, enums, financeA, financeB, knowledgeBase, matters, matterWorkspace, overview, practice, settings, shell, team];
 
 function mergeCatalogs(catalogs: Catalog[]): Catalog {
   return Object.assign({}, ...catalogs);

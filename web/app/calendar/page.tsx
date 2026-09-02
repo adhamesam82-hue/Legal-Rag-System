@@ -23,12 +23,14 @@ import { DateInput } from "@astryxdesign/core/DateInput";
 import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
 import {
   PlusIcon,
+  CalendarDaysIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ScaleIcon,
   ClockIcon,
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
+import { ProximityBadge } from "@/components/Distinction";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { memberLabel, useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
@@ -382,8 +384,9 @@ export default function CalendarPage() {
                   <Heading level={4}>{formatDate(selectedDate)}</Heading>
                   {selectedEvents.length === 0 ? (
                     <EmptyState
+                      icon={<Icon icon={CalendarDaysIcon} size="lg" color="secondary" />}
                       title={t("@legalos.calendar.nothingScheduledTitle")}
-                      description={t("@legalos.calendar.nothingScheduledDescription")}
+                      description={t("@legalos.distinction.calendar.emptyDescription")}
                     />
                   ) : (
                     <List hasDividers density="compact">
@@ -460,9 +463,12 @@ export default function CalendarPage() {
                             />
                           }
                           endContent={
-                            <Text type="supporting" color="secondary">
-                              {event.date.slice(5)}
-                            </Text>
+                            <HStack gap={2} vAlign="center">
+                              <ProximityBadge date={event.date} />
+                              <Text type="supporting" color="secondary">
+                                {event.date.slice(5)}
+                              </Text>
+                            </HStack>
                           }
                         />
                       ))}

@@ -43,6 +43,7 @@ import {
 } from "@/lib/practice";
 import { useFormat } from "@/lib/i18n/format";
 import { Panel, lines, useWrite, type TabProps } from "./shared";
+import { MatterTypeBadge } from "@/components/Distinction";
 import { CaseFile } from "./CaseFile";
 import { ParentLine, PrimaryBadge } from "./SubCases";
 
@@ -85,7 +86,7 @@ export function DashboardTab({ data, reload, onError }: TabProps) {
                   {matter.matter_number}
                 </MetadataListItem>
                 <MetadataListItem label={t("@legalos.matters.field.type")}>
-                  {enumLabel(matter.matter_type)}
+                  <MatterTypeBadge type={matter.matter_type} />
                 </MetadataListItem>
                 <MetadataListItem label={t("@legalos.matters.field.responsible")}>
                   {memberName(matter.responsible_user)}

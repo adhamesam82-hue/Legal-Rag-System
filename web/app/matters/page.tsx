@@ -7,7 +7,6 @@ import { Heading, Text } from "@astryxdesign/core/Text";
 import { Button } from "@astryxdesign/core/Button";
 import { Icon } from "@astryxdesign/core/Icon";
 import { Badge } from "@astryxdesign/core/Badge";
-import { StatusDot } from "@astryxdesign/core/StatusDot";
 import { Avatar } from "@astryxdesign/core/Avatar";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { TextArea } from "@astryxdesign/core/TextArea";
@@ -23,6 +22,7 @@ import { PlusIcon, MagnifyingGlassIcon, BriefcaseIcon } from "@heroicons/react/2
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { memberLabel, useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
+import { MatterStatusMark, MatterTypeBadge } from "@/components/Distinction";
 import {
   daysUntil,
   todayIso,
@@ -45,20 +45,15 @@ interface MatterRow extends Record<string, unknown> {
 }
 
 
-const STATUS_VARIANT: Record<MatterStatus, "success" | "warning" | "neutral"> = {
-  active: "success",
-  on_hold: "warning",
-  closed: "neutral",
-};
-
 const MATTER_STATUS_KEY: Record<MatterStatus, string> = {
   active: "@legalos.matters.status.active",
   on_hold: "@legalos.matters.status.onHold",
   closed: "@legalos.matters.status.closed",
 };
 
-// One label per value, from the enum catalog, so the fourteen types read the
-// same here as on every other screen that shows one.
+// One label per value, from the enum catalog, for the type pickers (the
+// filter and the new-matter dialog). Rendered types go through
+// MatterTypeBadge instead, which adds the hue and glyph.
 const MATTER_TYPE_KEY = (type: MatterType) => `@legalos.enum.${type}`;
 
 export default function MattersPage() {
@@ -106,6 +101,8 @@ export default function MattersPage() {
     [resource.data, memberName],
   );
 
+  const anyFilter = query !== "" || typeFilter !== "all" || statusFilter !== "all";
+
   const columns: TableColumn<MatterRow>[] = [
     {
       key: "name",
@@ -132,8 +129,11 @@ export default function MattersPage() {
     {
       key: "matter_type",
       header: t("@legalos.matters.field.type"),
-      width: pixel(140),
-      renderCell: (row) => <Text type="body">{t(MATTER_TYPE_KEY(row.matter_type))}</Text>,
+      // Wide enough for the longest Arabic type name ("ملكية فكرية") with its
+      // glyph in front; the badge is the same element the matter file and the
+      // client card show, from the one table in lib/distinction.ts.
+      width: pixel(180),
+      renderCell: (row) => <MatterTypeBadge type={row.matter_type} />,
     },
     {
       key: "responsibleName",
@@ -193,21 +193,12 @@ export default function MattersPage() {
     {
       key: "status",
       header: t("@legalos.matters.field.status"),
-      width: pixel(110),
+      width: pixel(130),
       // A pill on every row makes the column a block of colour and says
-      // nothing: a dot plus the word is the same information at a whisper,
-      // and it lines up with the other text columns instead of floating.
-      renderCell: (row) => (
-        <HStack gap={1.5} vAlign="center">
-          <StatusDot
-            variant={STATUS_VARIANT[row.status]}
-            label={t(MATTER_STATUS_KEY[row.status])}
-          />
-          <Text type="body" color="secondary">
-            {t(MATTER_STATUS_KEY[row.status])}
-          </Text>
-        </HStack>
-      ),
+      // nothing: a dot plus the glyph plus the word is the same information
+      // at a whisper, and it lines up with the other text columns instead of
+      // floating. Active is the emphasised one.
+      renderCell: (row) => <MatterStatusMark status={row.status} form="dot" />,
     },
   ];
 
@@ -285,18 +276,39 @@ export default function MattersPage() {
                 ) : (
                   <EmptyState
                     icon={<Icon icon={BriefcaseIcon} size="lg" color="secondary" />}
-                    title={t("@legalos.matters.list.emptyTitle")}
-                    description={t("@legalos.matters.list.emptyDescription")}
+                    // Two different situations wore one message: a firm that
+                    // has never opened a matter was told nothing "matched its
+                    // filters". Untouched filters mean the list itself is
+                    // empty, and that screen says what goes here.
+                    title={t(
+                      anyFilter
+                        ? "@legalos.matters.list.emptyTitle"
+                        : "@legalos.distinction.matters.emptyTitle",
+                    )}
+                    description={t(
+                      anyFilter
+                        ? "@legalos.matters.list.emptyDescription"
+                        : "@legalos.distinction.matters.emptyDescription",
+                    )}
                     actions={
-                      <Button
-                        label={t("@legalos.matters.list.clearFilters")}
-                        variant="secondary"
-                        onClick={() => {
-                          setQuery("");
-                          setTypeFilter("all");
-                          setStatusFilter("all");
-                        }}
-                      />
+                      anyFilter ? (
+                        <Button
+                          label={t("@legalos.matters.list.clearFilters")}
+                          variant="secondary"
+                          onClick={() => {
+                            setQuery("");
+                            setTypeFilter("all");
+                            setStatusFilter("all");
+                          }}
+                        />
+                      ) : (
+                        <Button
+                          label={t("@legalos.distinction.matters.openFirst")}
+                          variant="primary"
+                          icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
+                          onClick={() => setIsCreating(true)}
+                        />
+                      )
                     }
                   />
                 )

@@ -24,6 +24,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useMemberName } from "@/lib/org";
 import { daysUntil } from "@/lib/practice";
+import { ProximityBadge } from "@/components/Distinction";
 import { useFormat } from "@/lib/i18n/format";
 import { Panel, type TabProps } from "./shared";
 
@@ -133,7 +134,6 @@ function EventList({
     <List hasDividers density="compact">
       {events.map((event) => {
         const days = daysUntil(event.date);
-        const overdue = !isPast && days < 0;
         return (
           <ListItem
             key={event.key}
@@ -152,23 +152,16 @@ function EventList({
                   variant="neutral"
                   label={t(`@legalos.matterWorkspace.calendar.kind.${event.kind}`)}
                 />
-                {overdue && (
-                  <Badge
-                    variant="error"
-                    label={t("@legalos.matterWorkspace.calendar.overdue")}
-                  />
-                )}
+                {/* Overdue > today > this week, from the shared table; a
+                  * done or past event has nothing left to warn about. */}
+                {!isPast && !event.done && <ProximityBadge date={event.date} />}
                 <VStack gap={0} hAlign="end">
                   <Text type="supporting" color="secondary">
                     {formatDate(event.date)}
                   </Text>
-                  {!isPast && !event.done && days >= 0 && (
+                  {!isPast && !event.done && days > 0 && (
                     <Text type="supporting" color="secondary">
-                      {days === 0
-                        ? t("@legalos.matterWorkspace.calendar.today")
-                        : t("@legalos.matterWorkspace.calendar.inDays", {
-                            count: days,
-                          })}
+                      {t("@legalos.matterWorkspace.calendar.inDays", { count: days })}
                     </Text>
                   )}
                 </VStack>
