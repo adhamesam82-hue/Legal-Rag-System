@@ -8,7 +8,7 @@ filename do not collide.
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
@@ -21,10 +21,29 @@ from legalrag.practice.scope import UNRESTRICTED, nullable_matter_visibility
 
 STATUSES = ("draft", "under_review", "signed", "filed", "final")
 
+# What a document IS, not what format it is in -- content_type holds that.
+# Must stay in step with the CHECK in migration 0023. Anything a firm typed
+# before 0023 is in doc_type_legacy.
+DOC_TYPES = (
+    "brief",
+    "judgment",
+    "contract",
+    "poa",
+    "evidence",
+    "police_report",
+    "identity",
+    "receipt",
+    "correspondence",
+    "form",
+    "other",
+)
+
 _COLUMNS = """
     d.id, d.organization_id, d.matter_id, m.name AS matter_name, d.name,
     d.doc_type, d.status, d.size_bytes, d.content_type, d.storage_key,
-    d.uploaded_by, d.uploaded_at, d.visible_to_client
+    d.uploaded_by, d.uploaded_at, d.visible_to_client, d.doc_type_legacy,
+    coalesce((SELECT array_agg(l.tag_id ORDER BY l.tag_id)
+                FROM document_tag_links l WHERE l.document_id = d.id), '{}') AS tag_ids
 """
 
 
@@ -46,6 +65,12 @@ class Document:
     # Read here as well as written by the portal route, because a firm that
     # cannot see which documents it has shared cannot tell that it shared one.
     visible_to_client: bool = False
+    # What the firm had typed into doc_type before 0023 made it a list.
+    # Empty for anything created since.
+    doc_type_legacy: str = ""
+    # Ids from document_tags, ascending. Read with the row so a list of a
+    # hundred documents does not become a hundred more queries.
+    tag_ids: list[int] = field(default_factory=list)
 
     @property
     def has_file(self) -> bool:
@@ -59,6 +84,9 @@ def list_documents(
     matter_id: int | None = None,
     status: str | None = None,
     query: str | None = None,
+    doc_type: str | None = None,
+    client_id: int | None = None,
+    tag_ids: list[int] | None = None,
     viewer: Membership | None = None,
 ) -> list[Document]:
     visible, visible_params = (
@@ -72,9 +100,25 @@ def list_documents(
     if matter_id is not None:
         sql += " AND d.matter_id = %s"
         params.append(matter_id)
+    if client_id is not None:
+        # Documents reach a client through the matter they are filed on.
+        sql += " AND m.client_id = %s"
+        params.append(client_id)
     if status:
         sql += " AND d.status = %s"
         params.append(status)
+    if doc_type:
+        sql += " AND d.doc_type = %s"
+        params.append(doc_type)
+    if tag_ids:
+        # Every tag, not any: "urgent AND for review" is the question a lawyer
+        # asks; a document must carry each id in the list.
+        wanted = sorted(set(tag_ids))
+        sql += (
+            " AND (SELECT count(*) FROM document_tag_links l "
+            "WHERE l.document_id = d.id AND l.tag_id = ANY(%s)) = %s"
+        )
+        params.extend([wanted, len(wanted)])
     if query:
         sql += " AND d.name ILIKE %s"
         params.append(f"%{query}%")
@@ -110,7 +154,7 @@ def create_document(
     name: str,
     uploaded_by: str,
     matter_id: int | None = None,
-    doc_type: str = "",
+    doc_type: str = "other",
     status: str = "draft",
     content: bytes | None = None,
     content_type: str = "application/octet-stream",
@@ -118,6 +162,8 @@ def create_document(
     """Creates a document row, writing `content` to disk when bytes are given."""
     if status not in STATUSES:
         raise ValueError(f"invalid status {status!r}")
+    if doc_type not in DOC_TYPES:
+        raise ValueError(f"invalid doc_type {doc_type!r}; one of {', '.join(DOC_TYPES)}")
 
     storage_key: str | None = None
     size_bytes = 0
@@ -179,6 +225,8 @@ def update_document(
     fields = {k: v for k, v in changes.items() if k in _UPDATABLE and v is not None}
     if "status" in fields and fields["status"] not in STATUSES:
         raise ValueError(f"invalid status {fields['status']!r}")
+    if "doc_type" in fields and fields["doc_type"] not in DOC_TYPES:
+        raise ValueError(f"invalid doc_type {fields['doc_type']!r}")
     if fields:
         assignments = ", ".join(f"{name} = %s" for name in fields)
         with conn.cursor() as cur:

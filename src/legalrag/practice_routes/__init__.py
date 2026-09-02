@@ -12,6 +12,7 @@ from legalrag.practice_routes import matters  # noqa: F401
 from legalrag.practice_routes import cases  # noqa: F401
 from legalrag.practice_routes import hearings  # noqa: F401
 from legalrag.practice_routes import documents  # noqa: F401
+from legalrag.practice_routes import document_tags  # noqa: F401
 from legalrag.practice_routes import powers_of_attorney  # noqa: F401
 from legalrag.practice_routes import tasks  # noqa: F401
 from legalrag.practice_routes import time_tracking  # noqa: F401
