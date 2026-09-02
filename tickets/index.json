@@ -646,5 +646,128 @@
       "web/public/landing/"
     ],
     "source": "docs/ui-upgrade-spec.ar.md"
+  },
+  {
+    "id": "T-037",
+    "title": "باب إنشاء الحساب: من صفحة الهبوط ومن شاشة الدخول",
+    "batch": "onboarding",
+    "owner": "frontend",
+    "est": "3س",
+    "labels": [
+      "frontend",
+      "حرج",
+      "تبنّي"
+    ],
+    "deps": [],
+    "files": [
+      "marketing/",
+      "web/app/sign-in/",
+      "web/app/sign-up/"
+    ],
+    "source": "onboarding review 2026-09-02"
+  },
+  {
+    "id": "T-038",
+    "title": "استعادة كلمة المرور",
+    "batch": "onboarding",
+    "owner": "frontend",
+    "est": "1ي",
+    "labels": [
+      "frontend",
+      "حرج"
+    ],
+    "deps": [
+      "T-037"
+    ],
+    "files": [
+      "web/app/sign-in/"
+    ],
+    "source": "onboarding review 2026-09-02"
+  },
+  {
+    "id": "T-039",
+    "title": "شاشات الدخول والتسجيل والدعوة إلى كتالوج الترجمة",
+    "batch": "onboarding",
+    "owner": "frontend",
+    "est": "3س",
+    "labels": [
+      "frontend",
+      "i18n"
+    ],
+    "deps": [
+      "T-037",
+      "T-038"
+    ],
+    "files": [
+      "web/app/sign-in/",
+      "web/app/sign-up/",
+      "web/app/invite/",
+      "web/lib/i18n/catalogs/auth.ts"
+    ],
+    "source": "onboarding review 2026-09-02"
+  },
+  {
+    "id": "T-040",
+    "title": "شاشة إنشاء المكتب: إزالة أمر المطوّر وجمع ما يعرّف المكتب",
+    "batch": "onboarding",
+    "owner": "frontend",
+    "est": "3س",
+    "labels": [
+      "frontend",
+      "تبنّي"
+    ],
+    "deps": [],
+    "files": [
+      "web/components/DataState.tsx",
+      "web/lib/i18n/catalogs/common.ts"
+    ],
+    "source": "onboarding review 2026-09-02"
+  },
+  {
+    "id": "T-041",
+    "title": "الباقات والتجربة المجانية وبوابة الدفع — هيكل صادق قبل القرار",
+    "batch": "onboarding",
+    "owner": "fullstack",
+    "est": "1.5ي",
+    "labels": [
+      "backend",
+      "frontend",
+      "ميزة"
+    ],
+    "deps": [
+      "T-040",
+      "T-027"
+    ],
+    "files": [
+      "migrations/0026_subscription.sql",
+      "src/legalrag/orgs.py",
+      "web/app/plans/",
+      "web/app/subscribe/",
+      "web/components/Shell.tsx"
+    ],
+    "source": "onboarding review 2026-09-02"
+  },
+  {
+    "id": "T-042",
+    "title": "أكواد الخصم وقسم العروض في صفحة الهبوط",
+    "batch": "onboarding",
+    "owner": "fullstack",
+    "est": "1ي",
+    "labels": [
+      "backend",
+      "frontend",
+      "ميزة"
+    ],
+    "deps": [
+      "T-041",
+      "T-037"
+    ],
+    "files": [
+      "migrations/0027_discount_codes.sql",
+      "src/legalrag/orgs.py",
+      "web/app/plans/",
+      "marketing/"
+    ],
+    "source": "onboarding review 2026-09-02"
   }
 ]
