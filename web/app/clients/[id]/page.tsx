@@ -17,22 +17,17 @@ import {
   ArrowLeftIcon,
   BriefcaseIcon,
   BanknotesIcon,
-  ScaleIcon,
 } from "@heroicons/react/24/outline";
 import { useMemberName, useResource } from "@/lib/org";
 import { DataView } from "@/components/DataState";
 import {
-  type MatterStatus,
-} from "@/lib/practice";
+  InvoiceStatusMark,
+  MatterStatusMark,
+  MatterTypeIcon,
+} from "@/components/Distinction";
 import { useFormat } from "@/lib/i18n/format";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
-
-const STATUS_VARIANT: Record<MatterStatus, "success" | "warning" | "neutral"> = {
-  active: "success",
-  on_hold: "warning",
-  closed: "neutral",
-};
 
 export default function ClientDetailPage({
   params,
@@ -158,21 +153,12 @@ export default function ClientDetailPage({
                                     description={`${enumLabel(matter.matter_type)} · ${memberName(
                                       matter.responsible_user,
                                     )}`}
-                                    startContent={
-                                      <Icon
-                                        icon={
-                                          matter.case_id ? ScaleIcon : BriefcaseIcon
-                                        }
-                                        size="sm"
-                                        color="secondary"
-                                      />
-                                    }
-                                    endContent={
-                                      <Badge
-                                        variant={STATUS_VARIANT[matter.status]}
-                                        label={enumLabel(matter.status)}
-                                      />
-                                    }
+                                    // The type's glyph on its hue leads the
+                                    // row; the type name is in the description
+                                    // beside it, so the colour never stands
+                                    // alone.
+                                    startContent={<MatterTypeIcon type={matter.matter_type} />}
+                                    endContent={<MatterStatusMark status={matter.status} />}
                                   />
                                 ))}
                               </List>
@@ -216,16 +202,7 @@ export default function ClientDetailPage({
                                             invoice.currency,
                                           )}
                                         </Text>
-                                        <Badge
-                                          variant={
-                                            invoice.status === "paid"
-                                              ? "success"
-                                              : invoice.status === "overdue"
-                                                ? "error"
-                                                : "neutral"
-                                          }
-                                          label={enumLabel(invoice.status)}
-                                        />
+                                        <InvoiceStatusMark status={invoice.status} />
                                       </HStack>
                                     }
                                   />

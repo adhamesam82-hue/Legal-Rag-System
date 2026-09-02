@@ -19,7 +19,7 @@ import { Selector } from "@astryxdesign/core/Selector";
 import { DateInput } from "@astryxdesign/core/DateInput";
 import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
 import { SegmentedControl, SegmentedControlItem } from "@astryxdesign/core/SegmentedControl";
-import { PlusIcon } from "@heroicons/react/24/outline";
+import { ClipboardDocumentCheckIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { memberLabel, useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import {
@@ -165,6 +165,7 @@ export default function TasksPage() {
                       </Heading>
                       {visible.length === 0 ? (
                         <EmptyState
+                          icon={<Icon icon={ClipboardDocumentCheckIcon} size="lg" color="secondary" />}
                           title={
                             filter === "overdue"
                               ? t("@legalos.tasks.empty.overdueTitle")
@@ -173,7 +174,7 @@ export default function TasksPage() {
                           description={
                             filter === "overdue"
                               ? t("@legalos.tasks.empty.overdueDescription")
-                              : t("@legalos.tasks.empty.noneDescription")
+                              : t("@legalos.distinction.tasks.emptyDescription")
                           }
                         />
                       ) : (

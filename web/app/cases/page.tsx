@@ -39,6 +39,7 @@ import { useOrg, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 import { useFormat } from "@/lib/i18n/format";
+import { ProximityBadge } from "@/components/Distinction";
 import { HEARING_OUTCOMES, todayIso, type Hearing, type HearingOutcome } from "@/lib/practice";
 
 const ANY = "any";
@@ -55,6 +56,9 @@ function outcomeVariant(outcome: string | null): "success" | "warning" | "neutra
 interface Row extends Record<string, unknown> {
   id: number;
   date: string;
+  /** The raw hearing date, for the proximity band; `date` is already formatted. */
+  dateIso: string;
+  nextIso: string | null;
   time: string;
   matter: string;
   court: string;
@@ -235,11 +239,17 @@ export default function HearingsPage() {
     {
       key: "date",
       header: t("@legalos.hearings.column.date"),
-      width: pixel(130),
+      width: pixel(160),
+      // The date, then the warning band under it: overdue > today > this
+      // week, nothing further out. The band comes from lib/distinction.ts so
+      // it reads the same as on the dashboard and the matter calendar.
       renderCell: (row) => (
-        <Text type="body" weight="semibold">
-          {row.date}
-        </Text>
+        <VStack gap={1}>
+          <Text type="body" weight="semibold">
+            {row.date}
+          </Text>
+          <ProximityBadge date={row.dateIso} />
+        </VStack>
       ),
     },
     { key: "matter", header: t("@legalos.hearings.column.matter"), width: proportional(2) },
@@ -268,9 +278,12 @@ export default function HearingsPage() {
       header: t("@legalos.hearings.column.next"),
       width: pixel(120),
       renderCell: (row) => (
-        <Text type="body" color={row.next ? "primary" : "secondary"}>
-          {row.next ?? "—"}
-        </Text>
+        <VStack gap={1}>
+          <Text type="body" color={row.next ? "primary" : "secondary"}>
+            {row.next ?? "—"}
+          </Text>
+          <ProximityBadge date={row.nextIso} />
+        </VStack>
       ),
     },
   ];
@@ -373,6 +386,8 @@ export default function HearingsPage() {
               const data: Row[] = rows.map((h) => ({
                 id: h.id,
                 date: formatDate(h.hearing_date) + (h.hearing_time ? ` · ${h.hearing_time}` : ""),
+                dateIso: h.hearing_date,
+                nextIso: h.next_hearing_date,
                 time: h.hearing_time,
                 matter: h.matter_name ?? "—",
                 court: h.court || "—",

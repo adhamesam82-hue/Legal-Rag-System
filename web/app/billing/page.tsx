@@ -18,7 +18,6 @@ import { Heading, Text } from "@astryxdesign/core/Text";
 import { Card } from "@astryxdesign/core/Card";
 import { Button } from "@astryxdesign/core/Button";
 import { Icon } from "@astryxdesign/core/Icon";
-import { StatusDot } from "@astryxdesign/core/StatusDot";
 import { Link } from "@astryxdesign/core/Link";
 import { Selector } from "@astryxdesign/core/Selector";
 import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
@@ -34,6 +33,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useOrg, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
+import { InvoiceStatusMark } from "@/components/Distinction";
 import { type InvoiceStatus } from "@/lib/practice";
 import { useFormat } from "@/lib/i18n/format";
 import { useTranslator } from "@astryxdesign/core/i18n";
@@ -55,13 +55,6 @@ interface InvoiceRow extends Record<string, unknown> {
   issued: string;
   due: string;
 }
-
-const STATUS_VARIANT: Record<InvoiceStatus, "neutral" | "accent" | "success" | "error"> = {
-  draft: "neutral",
-  sent: "accent",
-  paid: "success",
-  overdue: "error",
-};
 
 export default function BillingPage() {
   const { formatDate, formatEGP, intlLocale, formatEGPCompact } = useFormat();
@@ -237,12 +230,7 @@ export default function BillingPage() {
       width: pixel(210),
       renderCell: (row) => (
         <HStack gap={2} vAlign="center">
-          <HStack gap={1.5} vAlign="center">
-            <StatusDot variant={STATUS_VARIANT[row.status]} label={enumLabel(row.status)} />
-            <Text type="body" color="secondary">
-              {enumLabel(row.status)}
-            </Text>
-          </HStack>
+          <InvoiceStatusMark status={row.status} form="dot" />
           {row.status === "draft" && (
             <Button
               label={t("@legalos.billing.action.send")}

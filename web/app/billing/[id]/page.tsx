@@ -8,7 +8,6 @@ import { Heading, Text } from "@astryxdesign/core/Text";
 import { Card } from "@astryxdesign/core/Card";
 import { Button } from "@astryxdesign/core/Button";
 import { Icon } from "@astryxdesign/core/Icon";
-import { Badge } from "@astryxdesign/core/Badge";
 import { Divider } from "@astryxdesign/core/Divider";
 import { Link } from "@astryxdesign/core/Link";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
@@ -28,6 +27,7 @@ import { API_BASE, ApiError } from "@/lib/api";
 import { useLocale } from "@/lib/i18n/provider";
 import { useOrg, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
+import { InvoiceStatusMark } from "@/components/Distinction";
 import {
   type InvoiceStatus,
 } from "@/lib/practice";
@@ -40,20 +40,6 @@ interface LineRow extends Record<string, unknown> {
   amount: number;
   tax: number;
 }
-
-const STATUS_VARIANT: Record<InvoiceStatus, "neutral" | "info" | "success" | "error"> = {
-  draft: "neutral",
-  sent: "info",
-  paid: "success",
-  overdue: "error",
-};
-
-const STATUS_LABEL_KEY: Record<InvoiceStatus, string> = {
-  draft: "@legalos.billingDetail.status.draft",
-  sent: "@legalos.billingDetail.status.sent",
-  paid: "@legalos.billingDetail.status.paid",
-  overdue: "@legalos.billingDetail.status.overdue",
-};
 
 export default function InvoiceDetailPage({
   params,
@@ -200,10 +186,7 @@ export default function InvoiceDetailPage({
                     <VStack gap={1}>
                       <HStack gap={3} vAlign="center">
                         <Heading level={2}>{loaded.number}</Heading>
-                        <Badge
-                          variant={STATUS_VARIANT[loaded.status]}
-                          label={t(STATUS_LABEL_KEY[loaded.status])}
-                        />
+                        <InvoiceStatusMark status={loaded.status} />
                       </HStack>
                       <Text type="body" color="secondary">
                         {loaded.client_name}

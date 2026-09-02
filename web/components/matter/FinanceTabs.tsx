@@ -37,19 +37,11 @@ import { useEnumLabel } from "@/lib/i18n/enum-label";
 import {
   todayIso,
   type ISODateString,
-  type InvoiceStatus,
   type TrustKind,
 } from "@/lib/practice";
 import { useFormat } from "@/lib/i18n/format";
 import { Panel, StatTile, financialsOf, useWrite, type TabProps } from "./shared";
-
-const INVOICE_VARIANT: Record<InvoiceStatus, "neutral" | "info" | "success" | "error"> =
-  {
-    draft: "neutral",
-    sent: "info",
-    paid: "success",
-    overdue: "error",
-  };
+import { InvoiceStatusMark } from "@/components/Distinction";
 
 const KINDS: TrustKind[] = ["deposit", "withdrawal", "invoice_payment", "refund"];
 // Everything that is not a deposit takes money out, so it renders as an outflow.
@@ -115,10 +107,7 @@ export function BillsTab({
                 }
                 endContent={
                   <HStack gap={3} vAlign="center">
-                    <Badge
-                      variant={INVOICE_VARIANT[invoice.status]}
-                      label={enumLabel(invoice.status)}
-                    />
+                    <InvoiceStatusMark status={invoice.status} />
                     <Text type="body" weight="semibold">
                       {formatEGP(Number(invoice.amount), invoice.currency)}
                     </Text>

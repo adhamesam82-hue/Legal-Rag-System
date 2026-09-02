@@ -23,6 +23,7 @@ import { Link } from "@astryxdesign/core/Link";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import {
   BriefcaseIcon,
+  CalendarDaysIcon,
   CheckCircleIcon,
   BanknotesIcon,
   ClockIcon,
@@ -30,6 +31,7 @@ import {
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView } from "@/components/DataState";
+import { ProximityBadge } from "@/components/Distinction";
 import {
   daysUntil,
   todayIso,
@@ -195,6 +197,7 @@ export default function DashboardPage() {
                             </HStack>
                             {board.upcoming.length === 0 ? (
                               <EmptyState
+                                icon={<Icon icon={CalendarDaysIcon} size="lg" color="secondary" />}
                                 title={t("@legalos.dashboard.next30.empty.title")}
                                 description={t("@legalos.dashboard.next30.empty.description")}
                               />
@@ -217,35 +220,29 @@ export default function DashboardPage() {
                                           <Text type="supporting" color="secondary">
                                             {enumLabel(item.kind)}
                                           </Text>
-                                          {/* Only what is already late gets a
-                                            * badge. Marking everything inside
-                                            * three days meant seven of the
-                                            * eight rows carried one, so the
-                                            * mark stopped meaning "look at
-                                            * this" and became the row style;
-                                            * the countdown alone says the
-                                            * same thing in plain text. */}
-                                          {days < 0 ? (
-                                            <Badge
-                                              variant="error"
-                                              label={t(
-                                                "@legalos.matters.list.deadlineBadgeOverdue",
-                                                {
+                                          {/* The warning band from the shared
+                                            * table (T-035): overdue > today >
+                                            * this week, and nothing beyond a
+                                            * week -- so a 30-day list is not
+                                            * a wall of badges, which is what
+                                            * an earlier "inside three days"
+                                            * rule turned it into. The
+                                            * countdown stays in plain text
+                                            * beside it. */}
+                                          <ProximityBadge date={item.due_date} />
+                                          <Text type="supporting" color="secondary">
+                                            {days < 0
+                                              ? t("@legalos.matters.list.deadlineBadgeOverdue", {
                                                   date: formatDate(item.due_date),
                                                   days: Math.abs(days),
-                                                },
-                                              )}
-                                            />
-                                          ) : (
-                                            <Text type="supporting" color="secondary">
-                                              {days <= 3
+                                                })
+                                              : days <= 3
                                                 ? t("@legalos.matters.list.deadlineBadge", {
                                                     date: formatDate(item.due_date),
                                                     days,
                                                   })
                                                 : formatDate(item.due_date)}
-                                            </Text>
-                                          )}
+                                          </Text>
                                         </HStack>
                                       }
                                     />
