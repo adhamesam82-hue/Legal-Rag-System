@@ -553,6 +553,29 @@ export const en: Catalog = {
   "@legalos.matterWorkspace.errors.duplicate": {
     defaultMessage: "Could not duplicate this matter.",
   },
+
+  // components/matter/CaseFile.tsx -- the case file proper (T-029)
+  "@legalos.matterWorkspace.caseFile.heading": { defaultMessage: "Case file" },
+  "@legalos.matterWorkspace.caseFile.noCase": {
+    defaultMessage:
+      "This matter has no litigation case yet, so there is nowhere to write its file. Create the case first; the file lives on it.",
+  },
+  "@legalos.matterWorkspace.caseFile.noCase.link": { defaultMessage: "Go to cases" },
+  "@legalos.matterWorkspace.caseFile.empty": { defaultMessage: "Empty — {hint}" },
+  "@legalos.matterWorkspace.caseFile.write": { defaultMessage: "Write" },
+  "@legalos.matterWorkspace.caseFile.saveFailed": { defaultMessage: "Could not save. Your text is still here." },
+  "@legalos.matterWorkspace.caseFile.summary": { defaultMessage: "Summary" },
+  "@legalos.matterWorkspace.caseFile.summary.placeholder": { defaultMessage: "the case in one paragraph" },
+  "@legalos.matterWorkspace.caseFile.facts": { defaultMessage: "Facts" },
+  "@legalos.matterWorkspace.caseFile.facts.placeholder": { defaultMessage: "the full statement of facts" },
+  "@legalos.matterWorkspace.caseFile.legal_basis": { defaultMessage: "Legal basis" },
+  "@legalos.matterWorkspace.caseFile.legal_basis.placeholder": { defaultMessage: "the articles and statutes relied on" },
+  "@legalos.matterWorkspace.caseFile.defences": { defaultMessage: "Defences" },
+  "@legalos.matterWorkspace.caseFile.defences.placeholder": { defaultMessage: "the defences raised" },
+  "@legalos.matterWorkspace.caseFile.procedural_posture": { defaultMessage: "Procedural posture" },
+  "@legalos.matterWorkspace.caseFile.procedural_posture.placeholder": { defaultMessage: "the current stage and what came before it" },
+  "@legalos.matterWorkspace.caseFile.client_narrative": { defaultMessage: "Client's account" },
+  "@legalos.matterWorkspace.caseFile.client_narrative.placeholder": { defaultMessage: "the client's own account, as given" },
 };
 
 export const ar: Catalog = {
@@ -962,4 +985,27 @@ export const ar: Catalog = {
   },
   "@legalos.matterWorkspace.errors.bill": { defaultMessage: "تعذّر إنشاء هذه الفاتورة." },
   "@legalos.matterWorkspace.errors.duplicate": { defaultMessage: "تعذّر نسخ هذه القضية." },
+
+  // components/matter/CaseFile.tsx -- ملف القضية الموضوعي (T-029)
+  "@legalos.matterWorkspace.caseFile.heading": { defaultMessage: "ملف القضية" },
+  "@legalos.matterWorkspace.caseFile.noCase": {
+    defaultMessage:
+      "لا سجلّ قضائي لهذا الملف بعد، فلا مكان لكتابة ملفه. أنشئ القضية أولًا؛ الملف يُكتب عليها.",
+  },
+  "@legalos.matterWorkspace.caseFile.noCase.link": { defaultMessage: "الذهاب إلى القضايا" },
+  "@legalos.matterWorkspace.caseFile.empty": { defaultMessage: "فارغ — {hint}" },
+  "@legalos.matterWorkspace.caseFile.write": { defaultMessage: "كتابة" },
+  "@legalos.matterWorkspace.caseFile.saveFailed": { defaultMessage: "تعذّر الحفظ. نصّك ما زال هنا." },
+  "@legalos.matterWorkspace.caseFile.summary": { defaultMessage: "ملخّص القضية" },
+  "@legalos.matterWorkspace.caseFile.summary.placeholder": { defaultMessage: "خلاصة القضية في فقرة" },
+  "@legalos.matterWorkspace.caseFile.facts": { defaultMessage: "الوقائع" },
+  "@legalos.matterWorkspace.caseFile.facts.placeholder": { defaultMessage: "السرد الكامل للوقائع" },
+  "@legalos.matterWorkspace.caseFile.legal_basis": { defaultMessage: "الأساس القانوني" },
+  "@legalos.matterWorkspace.caseFile.legal_basis.placeholder": { defaultMessage: "المواد والقوانين المستنَد إليها" },
+  "@legalos.matterWorkspace.caseFile.defences": { defaultMessage: "الدفوع" },
+  "@legalos.matterWorkspace.caseFile.defences.placeholder": { defaultMessage: "الدفوع المُثارة" },
+  "@legalos.matterWorkspace.caseFile.procedural_posture": { defaultMessage: "الموقف الإجرائي" },
+  "@legalos.matterWorkspace.caseFile.procedural_posture.placeholder": { defaultMessage: "المرحلة الحالية والإجراءات السابقة" },
+  "@legalos.matterWorkspace.caseFile.client_narrative": { defaultMessage: "سرد العميل" },
+  "@legalos.matterWorkspace.caseFile.client_narrative.placeholder": { defaultMessage: "رواية الموكّل كما أدلى بها" },
 };

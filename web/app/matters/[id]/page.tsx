@@ -54,6 +54,7 @@ import {
   type WorkspaceData,
 } from "@/components/matter/shared";
 import { DashboardTab } from "@/components/matter/DashboardTab";
+import { FinancialStrip } from "@/components/matter/FinancialStrip";
 import { ActivitiesTab } from "@/components/matter/ActivitiesTab";
 import { CalendarTab } from "@/components/matter/CalendarTab";
 import { CommunicationsTab } from "@/components/matter/CommunicationsTab";
@@ -322,6 +323,20 @@ export default function MatterWorkspacePage({
                     </HStack>
                   </HStack>
 
+                  {/* Stays on screen whatever tab is open (spec §2, س-٢). */}
+                  <FinancialStrip
+                    data={data}
+                    onQuickBill={() => {
+                      setTab("bills");
+                      setQuickBillOpen(true);
+                    }}
+                    onOpenBills={() => setTab("bills")}
+                    onRecordDeposit={() => {
+                      setTab("transactions");
+                      setRecordFundsOpen(true);
+                    }}
+                  />
+
                   <TabList value={tab} onChange={setTab} hasDivider>
                     {TABS.map((tabDef) => (
                       <Tab
@@ -356,32 +371,7 @@ export default function MatterWorkspacePage({
                 <VStack gap={6}>
                   <InlineError message={error} onDismiss={() => setError(null)} />
 
-                  {tab === "dashboard" && (
-                    <DashboardTab
-                      {...tabProps}
-                      // Each quick action's dialog is owned by the tab that
-                      // owns the data, so the action navigates there and opens
-                      // it — otherwise the button would do nothing until the
-                      // user had already gone to that tab themselves.
-                      onQuickBill={() => {
-                        setTab("bills");
-                        setQuickBillOpen(true);
-                      }}
-                      onAddTime={() => {
-                        setTab("activities");
-                        setAddTimeOpen(true);
-                      }}
-                      onAddExpense={() => {
-                        setTab("activities");
-                        setAddExpenseOpen(true);
-                      }}
-                      onRecordDeposit={() => {
-                        setTab("transactions");
-                        setRecordFundsOpen(true);
-                      }}
-                      onOpenBills={() => setTab("bills")}
-                    />
-                  )}
+                  {tab === "dashboard" && <DashboardTab {...tabProps} />}
 
                   {tab === "customFields" && <CustomFieldsTab {...tabProps} />}
 
