@@ -11,6 +11,26 @@ from __future__ import annotations
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _fresh_rate_limits():
+    """Every test starts with an empty rate limiter.
+
+    The limiter (legalrag.ratelimit) is in-process and allows 300 requests per
+    caller per fixed 60-second window. Every route test shares one caller --
+    the TestClient's host -- and on CI the whole suite finishes inside one
+    window, so the counter is cumulative across files: once enough tests had
+    been added, POST /api/orgs started answering 429 midway through
+    test_orgs_api.py and every test after it failed on a missing "id". A
+    limit that trips depending on how many tests run before yours is not a
+    thing a test should be able to observe.
+    """
+    from legalrag.ratelimit import reset_limits
+
+    reset_limits()
+    yield
+    reset_limits()
+
+
 def connect_or_skip():
     try:
         from legalrag.db import get_connection
