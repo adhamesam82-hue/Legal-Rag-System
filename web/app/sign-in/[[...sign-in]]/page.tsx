@@ -3,13 +3,13 @@
 import { Suspense, useState } from "react";
 import { useSignIn } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Card } from "@astryxdesign/core/Card";
-import { Heading } from "@astryxdesign/core/Heading";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import { Text } from "@astryxdesign/core/Text";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { Button } from "@astryxdesign/core/Button";
 import { Banner } from "@astryxdesign/core/Banner";
 import { Link } from "@astryxdesign/core/Link";
+import { AuthFrame } from "@/components/AuthFrame";
 import { RedirectIfSignedIn } from "@/components/RedirectIfSignedIn";
 import { withRedirect } from "@/lib/redirect-url";
 
@@ -47,7 +47,16 @@ type Step = "password" | "clientTrust" | "resetEmail" | "resetCode" | "resetPass
 // addresses are clients of the firm. Every other error is shown as received.
 const IDENTIFIER_NOT_FOUND = "form_identifier_not_found";
 
+const HEADING_KEY: Record<Step, string> = {
+  password: "@legalos.auth.signIn.title",
+  clientTrust: "@legalos.auth.signIn.title",
+  resetEmail: "@legalos.auth.reset.title",
+  resetCode: "@legalos.auth.reset.title",
+  resetPassword: "@legalos.auth.reset.newPasswordTitle",
+};
+
 function SignInForm() {
+  const t = useTranslator();
   const { signIn, errors, fetchStatus } = useSignIn();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -73,8 +82,7 @@ function SignInForm() {
   async function finalizeAndRedirect() {
     // The middleware redirects a signed-out visitor here with a redirect_url
     // -- honor it so they land back where they were going. "/" is the
-    // standalone legal-research chat, not organization-aware; /dashboard is
-    // where a firm member actually lands.
+    // landing page; /dashboard is where a firm member actually lands.
     const destination = searchParams.get("redirect_url") || "/dashboard";
     await signIn.finalize({
       navigate: ({ decorateUrl }) => {
@@ -130,9 +138,7 @@ function SignInForm() {
 
     // needs_protect_check etc. -- real Clerk states this page has no flow
     // for. Say so rather than leaving the form inert.
-    setGlobalError(
-      "يتطلب هذا الحساب خطوة تحقق إضافية غير مدعومة هنا حاليًا. يرجى التواصل مع الدعم.",
-    );
+    setGlobalError(t("@legalos.auth.signIn.unsupportedStep"));
   }
 
   // --------------------------------------------------------- client trust
@@ -161,7 +167,7 @@ function SignInForm() {
     if (signIn.status === "complete") {
       await finalizeAndRedirect();
     } else {
-      setGlobalError("تعذر إكمال تسجيل الدخول. يرجى المحاولة مرة أخرى.");
+      setGlobalError(t("@legalos.auth.signIn.incomplete"));
     }
   }
 
@@ -221,7 +227,7 @@ function SignInForm() {
       setNewPassword("");
       go("resetPassword");
     } else {
-      setGlobalError("تعذر التحقق من الرمز. يرجى المحاولة مرة أخرى.");
+      setGlobalError(t("@legalos.auth.reset.verifyFailed"));
     }
   }
 
@@ -242,210 +248,221 @@ function SignInForm() {
     if (signIn.status === "complete") {
       await finalizeAndRedirect();
     } else {
-      setGlobalError("تعذر حفظ كلمة المرور الجديدة. يرجى المحاولة مرة أخرى.");
+      setGlobalError(t("@legalos.auth.reset.saveFailed"));
     }
   }
 
   // ---------------------------------------------------------------- render
 
-  const heading: Record<Step, string> = {
-    password: "تسجيل الدخول",
-    clientTrust: "تسجيل الدخول",
-    resetEmail: "استعادة كلمة المرور",
-    resetCode: "استعادة كلمة المرور",
-    resetPassword: "كلمة مرور جديدة",
-  };
-
   const codeField = (
     <>
-      <TextInput label="رمز التحقق" value={code} onChange={setCode} />
+      <TextInput label={t("@legalos.auth.code.label")} value={code} onChange={setCode} />
       {errors?.fields?.code && (
-        <Banner status="error" title="رمز التحقق" description={errors.fields.code.message} />
+        <Banner
+          status="error"
+          title={t("@legalos.auth.code.label")}
+          description={errors.fields.code.message}
+        />
       )}
     </>
   );
 
+  const emailField = (
+    <>
+      <TextInput
+        label={t("@legalos.auth.signIn.email")}
+        type="email"
+        value={email}
+        onChange={setEmail}
+      />
+      {errors?.fields?.identifier && (
+        <Banner
+          status="error"
+          title={t("@legalos.auth.signIn.email")}
+          description={errors.fields.identifier.message}
+        />
+      )}
+    </>
+  );
+
+  const form = { display: "grid", gap: 14 } as const;
+
   return (
-    <div
-      dir="rtl"
-      style={{
-        maxWidth: 420,
-        margin: "64px auto",
-        padding: "0 20px",
-      }}
-    >
-      <Heading level={1}>{heading[step]}</Heading>
-      <div style={{ marginBlockStart: 20 }}>
-        <Card padding={4}>
-          {step === "password" && (
-            <form onSubmit={handleSubmit} style={{ display: "grid", gap: 14 }}>
-              {globalError && (
-                <Banner status="error" title="تعذر تسجيل الدخول" description={globalError} />
-              )}
-              <TextInput
-                label="البريد الإلكتروني"
-                type="email"
-                value={email}
-                onChange={setEmail}
-              />
-              {errors?.fields?.identifier && (
-                <Banner
-                  status="error"
-                  title="البريد الإلكتروني"
-                  description={errors.fields.identifier.message}
-                />
-              )}
-              <TextInput
-                label="كلمة المرور"
-                type="password"
-                value={password}
-                onChange={setPassword}
-              />
-              {errors?.fields?.password && (
-                <Banner
-                  status="error"
-                  title="كلمة المرور"
-                  description={errors.fields.password.message}
-                />
-              )}
-              <Button
-                type="submit"
-                label="تسجيل الدخول"
-                variant="primary"
-                isLoading={busy}
-              />
-              <Button
-                type="button"
-                label="نسيت كلمة المرور؟"
-                variant="ghost"
-                onClick={() => go("resetEmail")}
-              />
-              {/* The only door to sign-up from inside the app. redirect_url
-                  travels with it: someone who arrived from an invitation link
-                  and turns out not to have an account must come back to that
-                  invitation after signing up, not land on "create your firm"
-                  for a firm that already exists. */}
-              <Text type="supporting">
-                ليس لديك حساب؟{" "}
-                <Link href={withRedirect("/sign-up", searchParams.get("redirect_url"))}>
-                  أنشئ حساب مكتبك
-                </Link>
-              </Text>
-            </form>
+    <AuthFrame title={t(HEADING_KEY[step])}>
+      {step === "password" && (
+        <form onSubmit={handleSubmit} style={form}>
+          {globalError && (
+            <Banner
+              status="error"
+              title={t("@legalos.auth.signIn.errorTitle")}
+              description={globalError}
+            />
           )}
+          {emailField}
+          <TextInput
+            label={t("@legalos.auth.signIn.password")}
+            type="password"
+            value={password}
+            onChange={setPassword}
+          />
+          {errors?.fields?.password && (
+            <Banner
+              status="error"
+              title={t("@legalos.auth.signIn.password")}
+              description={errors.fields.password.message}
+            />
+          )}
+          <Button
+            type="submit"
+            label={t("@legalos.auth.signIn.submit")}
+            variant="primary"
+            isLoading={busy}
+          />
+          <Button
+            type="button"
+            label={t("@legalos.auth.signIn.forgot")}
+            variant="ghost"
+            onClick={() => go("resetEmail")}
+          />
+          {/* The only door to sign-up from inside the app. redirect_url
+              travels with it: someone who arrived from an invitation link
+              and turns out not to have an account must come back to that
+              invitation after signing up, not land on "create your firm"
+              for a firm that already exists. */}
+          <Text type="supporting">
+            {t("@legalos.auth.signIn.noAccount")}{" "}
+            <Link href={withRedirect("/sign-up", searchParams.get("redirect_url"))}>
+              {t("@legalos.auth.signIn.createFirm")}
+            </Link>
+          </Text>
+        </form>
+      )}
 
-          {step === "clientTrust" && (
-            <form onSubmit={handleVerifyTrustCode} style={{ display: "grid", gap: 14 }}>
-              <Text type="supporting">
-                {`جهاز أو متصفح جديد -- أرسلنا رمزًا إلى ${email} لتأكيد هويتك.`}
-              </Text>
-              {globalError && (
-                <Banner status="error" title="تعذر التحقق" description={globalError} />
-              )}
-              {resent && !globalError && <Banner status="info" title="تم إرسال رمز جديد" />}
-              {codeField}
-              <Button type="submit" label="تحقق" variant="primary" isLoading={busy} />
-              <Button
-                type="button"
-                label="إعادة إرسال الرمز"
-                variant="ghost"
-                onClick={handleResendTrustCode}
-                isLoading={busy}
-              />
-            </form>
+      {step === "clientTrust" && (
+        <form onSubmit={handleVerifyTrustCode} style={form}>
+          <Text type="supporting">{t("@legalos.auth.trust.intro", { email })}</Text>
+          {globalError && (
+            <Banner
+              status="error"
+              title={t("@legalos.auth.code.errorTitle")}
+              description={globalError}
+            />
           )}
+          {resent && !globalError && (
+            <Banner status="info" title={t("@legalos.auth.code.resent")} />
+          )}
+          {codeField}
+          <Button
+            type="submit"
+            label={t("@legalos.auth.code.verify")}
+            variant="primary"
+            isLoading={busy}
+          />
+          <Button
+            type="button"
+            label={t("@legalos.auth.code.resend")}
+            variant="ghost"
+            onClick={handleResendTrustCode}
+            isLoading={busy}
+          />
+        </form>
+      )}
 
-          {step === "resetEmail" && (
-            <form onSubmit={handleRequestReset} style={{ display: "grid", gap: 14 }}>
-              <Text type="supporting">
-                أدخل بريدك الإلكتروني وسنرسل إليه رمزًا لتعيين كلمة مرور جديدة.
-              </Text>
-              {globalError && (
-                <Banner status="error" title="تعذر إرسال الرمز" description={globalError} />
-              )}
-              <TextInput
-                label="البريد الإلكتروني"
-                type="email"
-                value={email}
-                onChange={setEmail}
-              />
-              {errors?.fields?.identifier && (
-                <Banner
-                  status="error"
-                  title="البريد الإلكتروني"
-                  description={errors.fields.identifier.message}
-                />
-              )}
-              <Button type="submit" label="إرسال الرمز" variant="primary" isLoading={busy} />
-              <Button
-                type="button"
-                label="العودة إلى تسجيل الدخول"
-                variant="ghost"
-                onClick={() => go("password")}
-              />
-            </form>
+      {step === "resetEmail" && (
+        <form onSubmit={handleRequestReset} style={form}>
+          <Text type="supporting">{t("@legalos.auth.reset.intro")}</Text>
+          {globalError && (
+            <Banner
+              status="error"
+              title={t("@legalos.auth.reset.sendErrorTitle")}
+              description={globalError}
+            />
           )}
+          {emailField}
+          <Button
+            type="submit"
+            label={t("@legalos.auth.reset.sendCode")}
+            variant="primary"
+            isLoading={busy}
+          />
+          <Button
+            type="button"
+            label={t("@legalos.auth.reset.backToSignIn")}
+            variant="ghost"
+            onClick={() => go("password")}
+          />
+        </form>
+      )}
 
-          {step === "resetCode" && (
-            <form onSubmit={handleVerifyResetCode} style={{ display: "grid", gap: 14 }}>
-              {/* Deliberately the same sentence whether or not the address
-                  exists. See sendResetCode(). */}
-              <Text type="supporting">
-                {`إن كان ${email} مسجّلًا لدينا فقد أرسلنا إليه رمزًا. أدخله أدناه.`}
-              </Text>
-              {globalError && (
-                <Banner status="error" title="تعذر التحقق" description={globalError} />
-              )}
-              {resent && !globalError && <Banner status="info" title="تم إرسال رمز جديد" />}
-              {codeField}
-              <Button type="submit" label="تحقق" variant="primary" isLoading={busy} />
-              <Button
-                type="button"
-                label="إعادة إرسال الرمز"
-                variant="ghost"
-                onClick={handleResendResetCode}
-                isLoading={busy}
-              />
-              <Button
-                type="button"
-                label="تغيير البريد الإلكتروني"
-                variant="ghost"
-                onClick={() => go("resetEmail")}
-              />
-            </form>
+      {step === "resetCode" && (
+        <form onSubmit={handleVerifyResetCode} style={form}>
+          {/* Deliberately the same sentence whether or not the address
+              exists. See sendResetCode(). */}
+          <Text type="supporting">{t("@legalos.auth.reset.sentIntro", { email })}</Text>
+          {globalError && (
+            <Banner
+              status="error"
+              title={t("@legalos.auth.code.errorTitle")}
+              description={globalError}
+            />
           )}
+          {resent && !globalError && (
+            <Banner status="info" title={t("@legalos.auth.code.resent")} />
+          )}
+          {codeField}
+          <Button
+            type="submit"
+            label={t("@legalos.auth.code.verify")}
+            variant="primary"
+            isLoading={busy}
+          />
+          <Button
+            type="button"
+            label={t("@legalos.auth.code.resend")}
+            variant="ghost"
+            onClick={handleResendResetCode}
+            isLoading={busy}
+          />
+          <Button
+            type="button"
+            label={t("@legalos.auth.reset.changeEmail")}
+            variant="ghost"
+            onClick={() => go("resetEmail")}
+          />
+        </form>
+      )}
 
-          {step === "resetPassword" && (
-            <form onSubmit={handleSubmitNewPassword} style={{ display: "grid", gap: 14 }}>
-              <Text type="supporting">
-                اختر كلمة مرور جديدة. ستُغلق الجلسات المفتوحة على الأجهزة الأخرى.
-              </Text>
-              {globalError && (
-                <Banner status="error" title="تعذر حفظ كلمة المرور" description={globalError} />
-              )}
-              <TextInput
-                label="كلمة المرور الجديدة"
-                type="password"
-                value={newPassword}
-                onChange={setNewPassword}
-              />
-              {errors?.fields?.password && (
-                <Banner
-                  status="error"
-                  title="كلمة المرور"
-                  description={errors.fields.password.message}
-                />
-              )}
-              <Button
-                type="submit"
-                label="حفظ والدخول"
-                variant="primary"
-                isLoading={busy}
-              />
-            </form>
+      {step === "resetPassword" && (
+        <form onSubmit={handleSubmitNewPassword} style={form}>
+          <Text type="supporting">{t("@legalos.auth.reset.newPasswordIntro")}</Text>
+          {globalError && (
+            <Banner
+              status="error"
+              title={t("@legalos.auth.reset.saveErrorTitle")}
+              description={globalError}
+            />
           )}
-        </Card>
-      </div>
-    </div>
+          <TextInput
+            label={t("@legalos.auth.reset.newPassword")}
+            type="password"
+            value={newPassword}
+            onChange={setNewPassword}
+          />
+          {errors?.fields?.password && (
+            <Banner
+              status="error"
+              title={t("@legalos.auth.reset.newPassword")}
+              description={errors.fields.password.message}
+            />
+          )}
+          <Button
+            type="submit"
+            label={t("@legalos.auth.reset.save")}
+            variant="primary"
+            isLoading={busy}
+          />
+        </form>
+      )}
+    </AuthFrame>
   );
 }

@@ -24,33 +24,33 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
-import { Card } from "@astryxdesign/core/Card";
-import { Heading } from "@astryxdesign/core/Heading";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import { Text } from "@astryxdesign/core/Text";
 import { Button } from "@astryxdesign/core/Button";
 import { Banner } from "@astryxdesign/core/Banner";
+import { AuthFrame } from "@/components/AuthFrame";
 import { api, ApiError, type InvitationPreview } from "@/lib/api";
 import { useOrg } from "@/lib/org";
 import { usingClerk } from "@/lib/auth-mode";
 
-const ROLE_AR: Record<InvitationPreview["role"], string> = {
-  lawyer: "محامٍ",
-  staff: "سكرتير",
+const ROLE_KEY: Record<InvitationPreview["role"], string> = {
+  lawyer: "@legalos.auth.invite.role.lawyer",
+  staff: "@legalos.auth.invite.role.staff",
 };
 
 /** Each spent state says what actually happened and what to do about it. */
-const SPENT_AR: Record<string, { title: string; body: string }> = {
+const SPENT_KEY: Record<string, { title: string; body: string }> = {
   accepted: {
-    title: "هذه الدعوة مُستخدَمة بالفعل",
-    body: "انضممت إلى المكتب من قبل. سجّل الدخول للمتابعة.",
+    title: "@legalos.auth.invite.accepted.title",
+    body: "@legalos.auth.invite.accepted.body",
   },
   expired: {
-    title: "انتهت صلاحية هذه الدعوة",
-    body: "تنتهي الدعوة بعد سبعة أيام. اطلب من صاحب المكتب إرسال دعوة جديدة.",
+    title: "@legalos.auth.invite.expired.title",
+    body: "@legalos.auth.invite.expired.body",
   },
   revoked: {
-    title: "أُلغيت هذه الدعوة",
-    body: "لم تعد هذه الدعوة صالحة. تواصل مع صاحب المكتب.",
+    title: "@legalos.auth.invite.revoked.title",
+    body: "@legalos.auth.invite.revoked.body",
   },
 };
 
@@ -69,6 +69,7 @@ function ClerkInvite() {
 }
 
 function Invite({ isSignedIn }: { isSignedIn: boolean }) {
+  const t = useTranslator();
   const params = useParams<{ token: string }>();
   const token = params?.token ?? "";
   const router = useRouter();
@@ -91,14 +92,14 @@ function Invite({ isSignedIn }: { isSignedIn: boolean }) {
         if (cancelled) return;
         setLoadError(
           cause instanceof ApiError && cause.status === 404
-            ? "هذا الرابط غير صحيح أو لم يعد موجودًا."
-            : "تعذّر تحميل الدعوة. تحقّق من اتصالك ثم أعد المحاولة.",
+            ? t("@legalos.auth.invite.notFound")
+            : t("@legalos.auth.invite.loadFailed"),
         );
       });
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, t]);
 
   const accept = useCallback(async () => {
     setAccepting(true);
@@ -115,31 +116,24 @@ function Invite({ isSignedIn }: { isSignedIn: boolean }) {
       router.push("/dashboard");
     } catch (cause) {
       setAcceptError(
-        cause instanceof ApiError
-          ? cause.message
-          : "تعذّر قبول الدعوة. حاول مرة أخرى.",
+        cause instanceof ApiError ? cause.message : t("@legalos.auth.invite.acceptFailed"),
       );
       setAccepting(false);
     }
-  }, [token, router, setOrganizationId, reloadOrganizations]);
+  }, [token, router, setOrganizationId, reloadOrganizations, t]);
 
   return (
-    <div dir="rtl" style={{ maxWidth: 460, margin: "64px auto", padding: "0 20px" }}>
-      <Heading level={1}>دعوة للانضمام</Heading>
-      <div style={{ marginBlockStart: 20 }}>
-        <Card padding={4}>
-          <Body
-            preview={preview}
-            loadError={loadError}
-            isSignedIn={isSignedIn}
-            token={token}
-            accept={accept}
-            accepting={accepting}
-            acceptError={acceptError}
-          />
-        </Card>
-      </div>
-    </div>
+    <AuthFrame title={t("@legalos.auth.invite.title")} width={460}>
+      <Body
+        preview={preview}
+        loadError={loadError}
+        isSignedIn={isSignedIn}
+        token={token}
+        accept={accept}
+        accepting={accepting}
+        acceptError={acceptError}
+      />
+    </AuthFrame>
   );
 }
 
@@ -160,23 +154,31 @@ function Body({
   accepting: boolean;
   acceptError: string | null;
 }) {
+  const t = useTranslator();
+
   if (loadError) {
-    return <Banner status="error" title="تعذّر فتح الدعوة" description={loadError} />;
+    return (
+      <Banner
+        status="error"
+        title={t("@legalos.auth.invite.loadErrorTitle")}
+        description={loadError}
+      />
+    );
   }
   if (!preview) {
-    return <Text type="supporting">جارٍ التحميل…</Text>;
+    return <Text type="supporting">{t("@legalos.auth.invite.loading")}</Text>;
   }
 
   if (preview.status !== "pending") {
-    const spent = SPENT_AR[preview.status] ?? {
-      title: "هذه الدعوة غير صالحة",
-      body: "تواصل مع صاحب المكتب للحصول على دعوة جديدة.",
+    const spent = SPENT_KEY[preview.status] ?? {
+      title: "@legalos.auth.invite.invalid.title",
+      body: "@legalos.auth.invite.invalid.body",
     };
     return (
       <div style={{ display: "grid", gap: 14 }}>
-        <Banner status="info" title={spent.title} description={spent.body} />
+        <Banner status="info" title={t(spent.title)} description={t(spent.body)} />
         <Button
-          label="الذهاب إلى تسجيل الدخول"
+          label={t("@legalos.auth.invite.goToSignIn")}
           variant="secondary"
           onClick={() => {
             window.location.href = "/sign-in";
@@ -186,30 +188,30 @@ function Body({
     );
   }
 
+  const role = ROLE_KEY[preview.role] ? t(ROLE_KEY[preview.role]) : preview.role;
+
   return (
     <div style={{ display: "grid", gap: 14 }}>
-      <Text>
-        {`تمت دعوتك للانضمام إلى ${preview.organization_name} بصفة ${
-          ROLE_AR[preview.role] ?? preview.role
-        }.`}
-      </Text>
+      <Text>{t("@legalos.auth.invite.invited", { firm: preview.organization_name, role })}</Text>
       {acceptError && (
-        <Banner status="error" title="تعذّر قبول الدعوة" description={acceptError} />
+        <Banner
+          status="error"
+          title={t("@legalos.auth.invite.acceptErrorTitle")}
+          description={acceptError}
+        />
       )}
       {isSignedIn ? (
         <Button
-          label="قبول الدعوة"
+          label={t("@legalos.auth.invite.accept")}
           variant="primary"
           onClick={accept}
           isLoading={accepting}
         />
       ) : (
         <>
-          <Text type="supporting">
-            سجّل الدخول بالحساب المرتبط بهذا البريد لقبول الدعوة.
-          </Text>
+          <Text type="supporting">{t("@legalos.auth.invite.signInHint")}</Text>
           <Button
-            label="تسجيل الدخول للقبول"
+            label={t("@legalos.auth.invite.signInToAccept")}
             variant="primary"
             onClick={() => {
               // Back to this page after signing in -- the sign-in screen reads
@@ -225,4 +227,3 @@ function Body({
     </div>
   );
 }
-
