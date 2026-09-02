@@ -33,6 +33,7 @@ import { PreferencesSection } from "@/components/settings/PreferencesSection";
 import { BillingSection } from "@/components/settings/BillingSection";
 import { RequiredFieldsSection } from "@/components/settings/RequiredFieldsSection";
 import { NotificationsSection } from "@/components/settings/NotificationsSection";
+import { PlanSection } from "@/components/settings/PlanSection";
 
 export default function FirmSettingsPage() {
   const { organizationId, role, reloadOrganizations } = useOrg();
@@ -87,6 +88,9 @@ export default function FirmSettingsPage() {
               canEdit={canEdit}
               onSaved={onSaved}
             />
+            {/* Read-only summary; the only way to change plan_intent is
+              * /plans (T-041). Shown to every role, like the trial bar. */}
+            <PlanSection firm={loaded} />
             {/* Not gated by canEdit -- a personal channel preference, not a
               * firm setting. Every member, any role, sets their own. */}
             <NotificationsSection />

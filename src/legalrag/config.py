@@ -236,6 +236,33 @@ def get_max_upload_bytes() -> int:
     return value
 
 
+DEFAULT_TRIAL_DAYS = 14
+
+
+def get_trial_days() -> int:
+    """How long a new firm's free trial runs, in days (T-041).
+
+    A deployment setting rather than a constant: the owner decided on 14 and
+    wants to be able to make it 7 later. Reading it here means that change is
+    an environment variable and a restart -- no migration, no image build.
+
+    Read on every call, not cached at import, so a test (or a restart) sees
+    the current value. Only NEW firms are affected: an existing firm keeps
+    the trial_ends_at it was given, which is what "the change does not touch
+    existing firms" means in the ticket.
+    """
+    raw = os.environ.get("LEGALOS_TRIAL_DAYS")
+    if not raw:
+        return DEFAULT_TRIAL_DAYS
+    try:
+        value = int(raw)
+    except ValueError:
+        raise RuntimeError(f"LEGALOS_TRIAL_DAYS must be an integer, got {raw!r}") from None
+    if value <= 0:
+        raise RuntimeError("LEGALOS_TRIAL_DAYS must be positive")
+    return value
+
+
 def get_model_spec(stage: str) -> ModelSpec:
     """Resolve `LEGALRAG_<STAGE>_MODEL` into a provider and model id."""
     if stage not in DEFAULT_MODELS:

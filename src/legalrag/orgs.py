@@ -8,13 +8,26 @@ from __future__ import annotations
 
 import string
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 import psycopg
 from psycopg.types.json import Jsonb
 
+from legalrag.config import get_trial_days
+
 ROLES = ("owner", "lawyer", "staff")
+
+# --- subscription (0026, T-041) -----------------------------------------------
+# 'trial' is the only plan anything writes today. The paid names are
+# PROVISIONAL placeholders -- the owner has not decided the plans, their
+# prices or their limits -- and nothing sets them until a payment gateway
+# exists. Renaming them is a migration of the CHECK in 0026 plus this tuple.
+PLANS = ("trial", "basic", "pro", "enterprise")
+# What an owner may record as an intent on /plans. An intent, not a
+# subscription: it changes nothing about what the firm can do.
+PAID_PLANS = ("basic", "pro", "enterprise")
 
 # --- the settings' closed lists (0025) ---------------------------------------
 # Each is CHECKed in the database too; these are the API's copy, so a bad
@@ -79,6 +92,18 @@ class Organization:
     default_payment_terms_days: int = 30
     # {"matter": [...], "client": [...]} over REQUIRED_FIELD_CHOICES.
     required_fields: dict[str, list[str]] = field(default_factory=dict)
+    # --- 0026 (T-041). The trial is real; the paid plans are not yet.
+    plan: str = "trial"
+    # Set at creation from LEGALOS_TRIAL_DAYS; NOT NULL in the database. None
+    # only on an Organization built without it, never on one read back.
+    trial_ends_at: datetime | None = None
+    # The owner's choice on /plans before payment exists. Not a subscription.
+    plan_intent: str | None = None
+
+    @property
+    def trial_expired(self) -> bool:
+        """A signal, not a lock: nothing refuses a write because of this."""
+        return self.trial_ends_at is not None and self.trial_ends_at <= datetime.now(UTC)
 
 
 # One list, used for the SELECT and for mapping the row back by name, so a
@@ -91,6 +116,7 @@ _ORG_FIELDS = (
     "locale", "timezone", "date_format", "default_currency",
     "invoice_number_pattern", "default_tax_rate", "default_payment_terms_days",
     "required_fields",
+    "plan", "trial_ends_at", "plan_intent",
 )
 _ORG_COLUMNS = ", ".join(_ORG_FIELDS)
 
@@ -135,13 +161,19 @@ def create_organization(
     something. Validated against the same list as the settings PATCH.
     """
     chosen = validate_specialties(specialties or [])
+    # The trial clock starts now, for the configured number of days. Read at
+    # each creation, not at import: changing LEGALOS_TRIAL_DAYS and restarting
+    # gives the NEXT firm the new length and leaves every existing firm on the
+    # end date it was given.
+    trial_days = get_trial_days()
     with conn.cursor() as cur:
         cur.execute(
-            "INSERT INTO organizations (name, created_by, specialties) "
-            "VALUES (%s, %s, %s) RETURNING id",
-            (name, creator_clerk_user_id, chosen),
+            "INSERT INTO organizations (name, created_by, specialties, trial_ends_at) "
+            "VALUES (%s, %s, %s, now() + make_interval(days => %s)) "
+            "RETURNING id, trial_ends_at",
+            (name, creator_clerk_user_id, chosen, trial_days),
         )
-        org_id = cur.fetchone()[0]
+        org_id, trial_ends_at = cur.fetchone()
         cur.execute(
             "INSERT INTO memberships (organization_id, clerk_user_id, role) "
             "VALUES (%s, %s, 'owner')",
@@ -155,8 +187,35 @@ def create_organization(
     seed_default_tags(conn, org_id)
     conn.commit()
     return Organization(
-        id=org_id, name=name, created_by=creator_clerk_user_id, specialties=tuple(chosen)
+        id=org_id,
+        name=name,
+        created_by=creator_clerk_user_id,
+        specialties=tuple(chosen),
+        trial_ends_at=trial_ends_at,
     )
+
+
+def set_plan_intent(
+    conn: psycopg.Connection, organization_id: int, plan: str
+) -> Organization | None:
+    """Records which paid plan the firm wants, before payment exists (T-041).
+
+    An intent, not a subscription: `plan` stays 'trial', nothing is unlocked
+    or locked, and the trial keeps its end date. Kept apart from
+    update_organization on purpose -- that PATCH is the settings form, and
+    a plan choice arriving as one more optional field there would let a
+    client set it without meaning to.
+    """
+    _one_of("plan", plan, PAID_PLANS)
+    with conn.cursor() as cur:
+        cur.execute(
+            "UPDATE organizations SET plan_intent = %s, updated_at = now() WHERE id = %s",
+            (plan, organization_id),
+        )
+        if cur.rowcount == 0:
+            return None
+    conn.commit()
+    return get_organization(conn, organization_id)
 
 
 def get_organization(

@@ -7,7 +7,7 @@
  * table when the API is actually down.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { VStack, HStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
@@ -22,7 +22,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { MultiSelector } from "@astryxdesign/core/MultiSelector";
-import { api } from "@/lib/api";
+import { api, type Plans } from "@/lib/api";
 import { useOrg } from "@/lib/org";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 import { MATTER_TYPES, type MatterType } from "@/lib/practice";
@@ -121,6 +121,19 @@ export function NoOrganizationState() {
   const { reloadOrganizations } = useOrg();
   const t = useTranslator();
   const enumLabel = useEnumLabel();
+  // The trial length is a deployment setting (LEGALOS_TRIAL_DAYS), not a
+  // number baked into this screen -- see api.plans() and T-041. Fetched
+  // directly rather than through useResource: that hook only runs once an
+  // organization is bound, and this screen exists precisely because one
+  // isn't yet.
+  const [plans, setPlans] = useState<Plans | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    api.plans().then((result) => !cancelled && setPlans(result)).catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [name, setName] = useState("");
   const [specialties, setSpecialties] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -174,6 +187,11 @@ export function NoOrganizationState() {
           isDisabled={saving || !name.trim()}
           onClick={createFirm}
         />
+        {plans && (
+          <Text type="supporting" color="secondary">
+            {t("@legalos.common.noOrg.trialLine", { days: plans.trial_days })}
+          </Text>
+        )}
         <Text type="supporting" color="secondary">
           {t("@legalos.common.noOrg.settingsHint")}
         </Text>

@@ -48,11 +48,13 @@ import {
   MoonIcon,
   SunIcon,
 } from "@heroicons/react/24/outline";
+import { Banner } from "@astryxdesign/core/Banner";
 import { useMediaQuery } from "@astryxdesign/core/hooks";
 import { useTranslator, type TranslatorFn } from "@astryxdesign/core/i18n";
 import { PrefetchedNavLink, useThemeMode } from "@/app/providers";
 import { useLocale } from "@/lib/i18n/provider";
 import { useOrg } from "@/lib/org";
+import { useFormat } from "@/lib/i18n/format";
 import type { PracticeApi } from "@/lib/practice";
 import { isPathEnabled } from "@/lib/features";
 import { Alsigil, AlsigilPunch } from "@/components/brand/Alsigil";
@@ -391,6 +393,53 @@ function UtilityControls({ onSearch }: { onSearch: () => void }) {
   );
 }
 
+/**
+ * "تجربتك المجانية تنتهي بعد ١٢ يومًا" (T-041) -- days left in the current
+ * organization's trial, real from `trial_ends_at`, never a placeholder. It
+ * shows for every role: a lawyer or staff member cannot record a plan
+ * choice, but they still work inside the trial and should see it end.
+ *
+ * Absent once the firm has a paid plan (`plan !== "trial"`) -- a lock-free
+ * trial signal has nothing to say to a firm no longer on one. `status`
+ * strengthens to warning at 3 days or fewer, matching the acceptance
+ * criterion, and to error once it has actually passed.
+ */
+function TrialBar() {
+  const { memberships, organizationId } = useOrg();
+  const t = useTranslator();
+  const { formatDate } = useFormat();
+  const active = memberships.find((m) => m.organization_id === organizationId);
+  if (!active || active.plan !== "trial") return null;
+
+  const daysLeft = Math.ceil(
+    (new Date(active.trial_ends_at).getTime() - Date.now()) / 86_400_000,
+  );
+
+  return (
+    <Banner
+      container="section"
+      status={active.trial_expired ? "error" : daysLeft <= 3 ? "warning" : "info"}
+      title={
+        active.trial_expired
+          ? t("@legalos.plans.trialBar.expired")
+          : t("@legalos.plans.trialBar.daysLeft", { days: Math.max(daysLeft, 0) })
+      }
+      description={t("@legalos.plans.trialBar.until", { date: formatDate(active.trial_ends_at) })}
+      endContent={
+        <Button
+          label={t("@legalos.plans.trialBar.viewPlans")}
+          variant="secondary"
+          size="sm"
+          as={PrefetchedNavLink}
+          href="/plans"
+        >
+          {t("@legalos.plans.trialBar.viewPlans")}
+        </Button>
+      }
+    />
+  );
+}
+
 /** Routes rendered without app chrome — a signed-out visitor has no firm,
  *  no matters and nothing to navigate to, so the nav would be dead links. */
 const BARE_ROUTES = ["/sign-in", "/sign-up", "/invite"];
@@ -509,7 +558,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <AppShell topNav={topNav} sideNav={sideNav} contentPadding={6}>
+      <AppShell topNav={topNav} sideNav={sideNav} contentPadding={6} banner={<TrialBar />}>
         {children}
       </AppShell>
       {/* Floating, not docked: the content region owns the whole viewport

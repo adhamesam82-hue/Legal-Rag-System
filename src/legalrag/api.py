@@ -45,6 +45,7 @@ from legalrag.config import (
     get_cors_origins,
     get_dev_auth_user,
     get_document_root,
+    get_trial_days,
 )
 from legalrag.practice import uploads
 from legalrag.conversations import (
@@ -93,6 +94,7 @@ from legalrag.orgs import (
     list_org_members,
     remove_membership,
     set_notification_preferences,
+    set_plan_intent,
     update_organization,
 )
 from legalrag.push import push_is_configured
@@ -478,6 +480,13 @@ class OrganizationOut(BaseModel):
     default_tax_rate: Decimal = Decimal(0)
     default_payment_terms_days: int = 30
     required_fields: dict[str, list[str]] = Field(default_factory=dict)
+    # --- 0026 (T-041). `trial_expired` is a signal the screens show, not a
+    # lock anything enforces; see the migration for why.
+    plan: str = "trial"
+    trial_ends_at: datetime | None = None
+    trial_expired: bool = False
+    # The owner's choice on /plans before payment exists. Not a subscription.
+    plan_intent: str | None = None
 
 
 def _org_out(org: Organization) -> OrganizationOut:
@@ -508,6 +517,10 @@ def _org_out(org: Organization) -> OrganizationOut:
         default_tax_rate=org.default_tax_rate,
         default_payment_terms_days=org.default_payment_terms_days,
         required_fields=dict(org.required_fields),
+        plan=org.plan,
+        trial_ends_at=org.trial_ends_at,
+        trial_expired=org.trial_expired,
+        plan_intent=org.plan_intent,
     )
 
 
@@ -561,6 +574,33 @@ class MembershipOut(BaseModel):
     organization_id: int
     organization_name: str
     role: str
+    # The trial, on the list every screen already reads (T-041): the shell's
+    # trial bar needs the days left on every page, and a second request per
+    # page for three fields is not worth it. Defaulted so the invitation
+    # acceptance response, which builds this shape without a firm row in
+    # hand, keeps working; /api/orgs/me always fills them.
+    plan: str = "trial"
+    trial_ends_at: datetime | None = None
+    # A signal, not a lock. Nothing refuses a write because of it.
+    trial_expired: bool = False
+
+
+class PlansOut(BaseModel):
+    """What is decided about plans, for screens that have no firm yet.
+
+    The create-firm screen says how long the trial is; that number comes
+    from here rather than from a string in the catalog, so changing
+    LEGALOS_TRIAL_DAYS changes what the screen says. `payment_available` is
+    false until a gateway is chosen and built (its own ticket); the
+    subscribe page shows that state plainly instead of a card field.
+    """
+
+    trial_days: int
+    payment_available: bool
+
+
+class PlanIntentRequest(BaseModel):
+    plan: Literal["basic", "pro", "enterprise"]
 
 
 class OrgMemberOut(BaseModel):
@@ -990,17 +1030,45 @@ def get_my_organizations(clerk_user_id: str = Depends(get_current_user_id)):
         for m in memberships:
             with conn.cursor() as cur:
                 cur.execute(
-                    "SELECT name FROM organizations WHERE id = %s", (m.organization_id,)
+                    "SELECT name, plan, trial_ends_at, trial_ends_at <= now() "
+                    "FROM organizations WHERE id = %s",
+                    (m.organization_id,),
                 )
-                org_name = cur.fetchone()[0]
+                org_name, plan, trial_ends_at, trial_expired = cur.fetchone()
             result.append(
                 MembershipOut(
                     organization_id=m.organization_id,
                     organization_name=org_name,
                     role=m.role,
+                    plan=plan,
+                    trial_ends_at=trial_ends_at,
+                    trial_expired=trial_expired,
                 )
             )
     return result
+
+
+@app.get("/api/plans", response_model=PlansOut)
+def get_plans(clerk_user_id: str = Depends(get_current_user_id)):
+    """The decided facts about plans (T-041). Needs a session, not a firm:
+    the create-firm screen reads it before any organization exists."""
+    return PlansOut(trial_days=get_trial_days(), payment_available=False)
+
+
+@app.post("/api/orgs/{organization_id}/plan-intent", response_model=OrganizationOut)
+def post_plan_intent(
+    organization_id: int,
+    request: PlanIntentRequest,
+    owner: Membership = Depends(require_owner),
+):
+    """Records the plan the firm wants, before payment exists. Owner only:
+    a lawyer or staff member cannot commit the firm to a plan, and the
+    screen says so rather than hiding the button."""
+    with db() as conn:
+        org = set_plan_intent(conn, organization_id, request.plan)
+    if org is None:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    return _org_out(org)
 
 
 @app.get("/api/orgs/{organization_id}", response_model=OrganizationOut)
