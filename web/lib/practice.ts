@@ -11,7 +11,7 @@
 // -----------------------------------------------------------------------------
 
 import type { ISODateString } from "@astryxdesign/core/Calendar";
-import { request } from "@/lib/api";
+import { fetchBlob, request } from "@/lib/api";
 
 export type { ISODateString };
 
@@ -923,6 +923,8 @@ export function practiceApi(organizationId: number) {
         });
       },
       contentUrl: (id: number) => `${base}/documents/${id}/content`,
+      /** The stored bytes, with auth; for an in-page thumbnail. */
+      contentBlob: (id: number) => fetchBlob(`${base}/documents/${id}/content`),
     },
 
     documentTags: {

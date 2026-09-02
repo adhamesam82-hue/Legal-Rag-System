@@ -28,7 +28,9 @@ import {
 } from "@/lib/practice";
 import { useFormat } from "@/lib/i18n/format";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { useEnumLabel } from "@/lib/i18n/enum-label";
+import { useDocTypeLabel, useEnumLabel } from "@/lib/i18n/enum-label";
+import { TagsDialog, TagToken } from "@/components/documents/TagsDialog";
+import { DocTypeDialog } from "@/components/documents/DocTypeDialog";
 
 // Version history and comment threads were in the UI concept but have no
 // backend; this page shows the document's real stored state and the actions
@@ -52,16 +54,23 @@ export default function DocumentDetailPage({
   const t = useTranslator();
   const documentId = Number(id);
   const enumLabel = useEnumLabel();
+  const docTypeLabel = useDocTypeLabel();
   const router = useRouter();
   const { practice, organizationId } = useOrg();
   const memberName = useMemberName();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tagsOpen, setTagsOpen] = useState(false);
+  const [typeOpen, setTypeOpen] = useState(false);
 
   const resource = useResource(
     (api) => api.documents.get(documentId),
     [documentId],
   );
+  // The firm's tags, to show this document's by name and colour.
+  const tagList = useResource((api) => api.documentTags.list(), []);
+  const tags = tagList.data ?? [];
+  const tagById = new Map(tags.map((tag) => [tag.id, tag]));
 
   async function setStatus(status: string | null) {
     if (!practice || !status) return;
@@ -165,6 +174,7 @@ export default function DocumentDetailPage({
 
                 <Grid columns={3} gap={6}>
                   <GridSpan columns={2}>
+                    <VStack gap={6}>
                     <Card>
                       <VStack gap={4}>
                         <Heading level={4}>{t("@legalos.documents.detail.fileHeading")}</Heading>
@@ -190,6 +200,35 @@ export default function DocumentDetailPage({
                         )}
                       </VStack>
                     </Card>
+
+                    {/* --- tags: by name and colour, edited from here too --- */}
+                    <Card>
+                      <VStack gap={4}>
+                        <HStack hAlign="between" vAlign="center">
+                          <Heading level={4}>{t("@legalos.documents.detail.tagsHeading")}</Heading>
+                          <Button
+                            label={t("@legalos.documents.detail.editTags")}
+                            variant="secondary"
+                            size="sm"
+                            isDisabled={pending}
+                            onClick={() => setTagsOpen(true)}
+                          />
+                        </HStack>
+                        {doc.tag_ids.length === 0 ? (
+                          <Text type="body" color="secondary">
+                            {t("@legalos.documents.detail.noTags")}
+                          </Text>
+                        ) : (
+                          <HStack gap={1} wrap="wrap">
+                            {doc.tag_ids.map((id) => {
+                              const tag = tagById.get(id);
+                              return tag ? <TagToken key={id} tag={tag} size="md" /> : null;
+                            })}
+                          </HStack>
+                        )}
+                      </VStack>
+                    </Card>
+                    </VStack>
                   </GridSpan>
 
                   <Card>
@@ -205,8 +244,21 @@ export default function DocumentDetailPage({
                           * beside a card that reads "no file stored" made the
                           * page contradict itself, describing a file that is
                           * not there as though it were. */}
+                        {/* doc_type is what the document IS (a brief, a
+                          * judgment), not its file format, so it shows whether
+                          * or not bytes are stored; the format is in the file
+                          * card. Changed from a dialog, never prompt(). */}
                         <MetadataListItem label={t("@legalos.documents.field.type")}>
-                          {(doc.storage_key && doc.doc_type) || "—"}
+                          <HStack gap={2} vAlign="center" wrap="wrap">
+                            <span>{docTypeLabel(doc.doc_type)}</span>
+                            <Button
+                              label={t("@legalos.documents.type.change")}
+                              variant="ghost"
+                              size="sm"
+                              isDisabled={pending}
+                              onClick={() => setTypeOpen(true)}
+                            />
+                          </HStack>
                         </MetadataListItem>
                         <MetadataListItem label={t("@legalos.documents.field.size")}>
                           {doc.storage_key && doc.size_bytes
@@ -223,6 +275,26 @@ export default function DocumentDetailPage({
                     </VStack>
                   </Card>
                 </Grid>
+                <TagsDialog
+                  isOpen={tagsOpen}
+                  onOpenChange={setTagsOpen}
+                  documentId={doc.id}
+                  documentName={doc.name}
+                  tags={tags}
+                  selected={doc.tag_ids}
+                  onSaved={() => {
+                    resource.reload();
+                    tagList.reload();
+                  }}
+                />
+                <DocTypeDialog
+                  isOpen={typeOpen}
+                  onOpenChange={setTypeOpen}
+                  documentId={doc.id}
+                  documentName={doc.name}
+                  current={doc.doc_type}
+                  onSaved={resource.reload}
+                />
               </VStack>
             )}
           </DataView>

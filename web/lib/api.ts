@@ -245,6 +245,21 @@ export function request<T>(path: string, init?: RequestInit): Promise<T> {
   return value;
 }
 
+/**
+ * The raw bytes of a file the API serves, fetched with the bearer token.
+ * A bare <img src> reaches the API with no Authorization header; this is
+ * how a thumbnail gets its bytes. Never cached: the caller holds the Blob.
+ */
+export async function fetchBlob(path: string): Promise<Blob> {
+  const token = await getAuthToken();
+  const response = await fetch(`${API_BASE}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    cache: "no-store",
+  });
+  if (!response.ok) throw new ApiError(response.status, `HTTP ${response.status}`);
+  return response.blob();
+}
+
 async function send<T>(path: string, init?: RequestInit): Promise<T> {
   const token = await getAuthToken();
   // A FormData body must set its own content-type: the browser appends the
