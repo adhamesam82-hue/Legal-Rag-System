@@ -99,6 +99,14 @@ class Organization:
     trial_ends_at: datetime | None = None
     # The owner's choice on /plans before payment exists. Not a subscription.
     plan_intent: str | None = None
+    # --- 0027 (T-042). discount_code_id is the firm's own column; the kind
+    # and value are the code's, joined in on every read (they can change if
+    # the code itself is later edited, which is deliberate: a firm sees what
+    # the code IS, not a snapshot from the moment it was applied).
+    discount_code_id: int | None = None
+    discount_applied_at: datetime | None = None
+    discount_kind: str | None = None
+    discount_value: Decimal | None = None
 
     @property
     def trial_expired(self) -> bool:
@@ -107,7 +115,9 @@ class Organization:
 
 
 # One list, used for the SELECT and for mapping the row back by name, so a
-# column added in one place cannot be forgotten in the other.
+# column added in one place cannot be forgotten in the other. Plain
+# organizations columns only -- discount_kind/discount_value come from the
+# joined discount_codes row and are appended separately below.
 _ORG_FIELDS = (
     "id", "name", "created_by", "registration_number", "phone", "address",
     "logo_url", "specialties",
@@ -117,12 +127,19 @@ _ORG_FIELDS = (
     "invoice_number_pattern", "default_tax_rate", "default_payment_terms_days",
     "required_fields",
     "plan", "trial_ends_at", "plan_intent",
+    "discount_code_id", "discount_applied_at",
 )
-_ORG_COLUMNS = ", ".join(_ORG_FIELDS)
+_ORG_COLUMNS = ", ".join(f"o.{name}" for name in _ORG_FIELDS)
+_ORG_DISCOUNT_COLUMNS = "dc.kind AS discount_kind, dc.value AS discount_value"
+_ORG_SELECT_SQL = (
+    f"SELECT {_ORG_COLUMNS}, {_ORG_DISCOUNT_COLUMNS} "
+    "FROM organizations o LEFT JOIN discount_codes dc ON dc.id = o.discount_code_id"
+)
+_ORG_ROW_FIELDS = _ORG_FIELDS + ("discount_kind", "discount_value")
 
 
 def _row_to_organization(row) -> Organization:
-    values = dict(zip(_ORG_FIELDS, row))
+    values = dict(zip(_ORG_ROW_FIELDS, row))
     values["specialties"] = tuple(values["specialties"] or ())
     values["required_fields"] = dict(values["required_fields"] or {})
     return Organization(**values)
@@ -218,14 +235,123 @@ def set_plan_intent(
     return get_organization(conn, organization_id)
 
 
+# --- discount codes (0027, T-042) --------------------------------------------
+#
+# Three kinds because one of them works today. `extra_trial_days` extends
+# `trial_ends_at` immediately -- it is the only kind with a real effect
+# before a payment gateway exists. `percent` and `fixed` are recorded on the
+# firm and shown as "will apply once billing is enabled"; the arithmetic
+# happens in the payment ticket, in Decimal, against a real price.
+#
+# validate_discount_code is deliberately silent about WHY a code fails: a
+# code that does not exist, one that has expired and one that is exhausted
+# all read back as the same "not valid" from the API, because a route that
+# tells the three apart is a code-guessing oracle. apply_discount_code is
+# the only place that touches the database, and it is what a valid code
+# actually becomes real through.
+
+
+class InvalidDiscountCode(Exception):
+    """A code that does not exist, is inactive, is outside its window, or has
+    used up its max_uses. Deliberately one exception for all four -- see the
+    module note on why the reason is never surfaced."""
+
+
+class DiscountAlreadyApplied(Exception):
+    """This organization already has a code. One per firm."""
+
+
+def validate_discount_code(conn: psycopg.Connection, code: str) -> bool:
+    """Whether `code` could be applied right now. Read-only -- unlike
+    apply_discount_code, this never increments uses_count, so checking a
+    code does not spend one of its uses. Backs the public, session-less
+    POST /api/discount-codes/validate the landing page calls."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT 1 FROM discount_codes WHERE lower(code) = lower(%s) AND is_active "
+            "AND (starts_at IS NULL OR starts_at <= now()) "
+            "AND (ends_at IS NULL OR ends_at > now()) "
+            "AND (max_uses IS NULL OR uses_count < max_uses)",
+            (code,),
+        )
+        return cur.fetchone() is not None
+
+
+def apply_discount_code(
+    conn: psycopg.Connection, organization_id: int, code: str
+) -> Organization:
+    """Claims `code` for `organization_id`, atomically, and applies it if its
+    kind has an effect today.
+
+    Two things have to be race-safe, and are handled by ordinary row locking
+    rather than an application-level lock:
+
+    * `max_uses` -- the UPDATE ... WHERE uses_count < max_uses ... RETURNING
+      below takes Postgres's row lock on the discount_codes row. Two firms
+      racing to claim the last use serialise on that lock: the first commits
+      its increment, the second's WHERE re-evaluates against the now-current
+      uses_count and finds no row, so only one caller ever gets a `claimed`
+      row back.
+    * one code per firm -- `SELECT ... FOR UPDATE` on the organizations row
+      first means a second concurrent call for the SAME firm blocks until
+      the first commits or rolls back, rather than both reading
+      discount_code_id as NULL and both trying to set it.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT discount_code_id FROM organizations WHERE id = %s FOR UPDATE",
+            (organization_id,),
+        )
+        row = cur.fetchone()
+        if row is None:
+            conn.rollback()
+            raise LookupError(f"no organization {organization_id}")
+        if row[0] is not None:
+            conn.rollback()
+            raise DiscountAlreadyApplied()
+
+        cur.execute(
+            "UPDATE discount_codes SET uses_count = uses_count + 1 "
+            "WHERE lower(code) = lower(%s) AND is_active "
+            "AND (starts_at IS NULL OR starts_at <= now()) "
+            "AND (ends_at IS NULL OR ends_at > now()) "
+            "AND (max_uses IS NULL OR uses_count < max_uses) "
+            "RETURNING id, kind, value",
+            (code,),
+        )
+        claimed = cur.fetchone()
+        if claimed is None:
+            conn.rollback()
+            raise InvalidDiscountCode()
+        discount_id, kind, value = claimed
+
+        if kind == "extra_trial_days":
+            # Whole days; the column is an integer count by construction
+            # (see the CHECK in 0027 and the units documented there).
+            cur.execute(
+                "UPDATE organizations SET "
+                "trial_ends_at = trial_ends_at + make_interval(days => %s), "
+                "discount_code_id = %s, discount_applied_at = now() "
+                "WHERE id = %s",
+                (int(value), discount_id, organization_id),
+            )
+        else:
+            cur.execute(
+                "UPDATE organizations SET discount_code_id = %s, discount_applied_at = now() "
+                "WHERE id = %s",
+                (discount_id, organization_id),
+            )
+    conn.commit()
+    org = get_organization(conn, organization_id)
+    assert org is not None
+    return org
+
+
 def get_organization(
     conn: psycopg.Connection, organization_id: int
 ) -> Organization | None:
     with conn.cursor() as cur:
-        cur.execute(
-            f"SELECT {_ORG_COLUMNS} FROM organizations WHERE id = %s",
-            (organization_id,),
-        )
+        cur.execute(f"{_ORG_SELECT_SQL} WHERE o.id = %s", (organization_id,))
         row = cur.fetchone()
         return _row_to_organization(row) if row else None
 
