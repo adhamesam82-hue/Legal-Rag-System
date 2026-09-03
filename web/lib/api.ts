@@ -85,6 +85,26 @@ export interface Organization {
   default_payment_terms_days: number;
   /** Which optional form fields this firm makes mandatory. */
   required_fields: { matter?: string[]; client?: string[] };
+  // --- migration 0026 (T-041). The paid plan names are provisional -- the
+  // owner has not decided them. `plan` stays "trial" until a payment gateway
+  // exists; `plan_intent` is what the owner picked on /plans, not a
+  // subscription.
+  plan: Plan;
+  trial_ends_at: string;
+  /** A signal the UI shows, not a lock anything enforces. */
+  trial_expired: boolean;
+  plan_intent: PaidPlan | null;
+}
+
+export const PAID_PLANS = ["basic", "pro", "enterprise"] as const;
+export type PaidPlan = (typeof PAID_PLANS)[number];
+export type Plan = "trial" | PaidPlan;
+
+/** What is decided about plans, for a screen with no firm bound yet (T-041). */
+export interface Plans {
+  trial_days: number;
+  /** False until a payment gateway is chosen and built. */
+  payment_available: boolean;
 }
 
 export const FIRM_SIZES = ["solo", "small", "medium", "large"] as const;
@@ -114,6 +134,11 @@ export interface Membership {
   organization_id: number;
   organization_name: string;
   role: "owner" | "lawyer" | "staff";
+  // Carried here (T-041) so the shell's trial bar has it on every page
+  // without a second request; see Organization for what each field means.
+  plan: Plan;
+  trial_ends_at: string;
+  trial_expired: boolean;
 }
 
 export interface Invitation {
@@ -365,6 +390,18 @@ export const api = {
     }),
 
   myOrganizations: () => request<Membership[]>("/api/orgs/me"),
+
+  /** What is decided about plans (T-041). Needs a session, not a firm --
+   *  the create-firm screen reads it before any organization exists. */
+  plans: () => request<Plans>("/api/plans"),
+
+  /** Records which paid plan the firm wants, before payment exists. Owner
+   *  only, server-side; an intent, not a subscription. */
+  setPlanIntent: (organizationId: number, plan: PaidPlan) =>
+    request<Organization>(`/api/orgs/${organizationId}/plan-intent`, {
+      method: "POST",
+      body: JSON.stringify({ plan }),
+    }),
 
   organization: (organizationId: number) =>
     request<Organization>(`/api/orgs/${organizationId}`),
