@@ -91,7 +91,7 @@ const ALL_NAV_SECTIONS: { titleKey: string; items: NavItem[] }[] = [
     titleKey: "@legalos.shell.nav.section.practice",
     items: [
       { href: "/matters", labelKey: "@legalos.shell.nav.matters", icon: BriefcaseIcon },
-      { href: "/cases", labelKey: "@legalos.shell.nav.cases", icon: ScaleIcon },
+      { href: "/hearings", labelKey: "@legalos.shell.nav.hearings", icon: ScaleIcon },
       { href: "/calendar", labelKey: "@legalos.shell.nav.calendar", icon: CalendarDaysIcon },
       { href: "/tasks", labelKey: "@legalos.shell.nav.tasks", icon: CheckCircleIcon },
     ],

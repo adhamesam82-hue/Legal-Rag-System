@@ -54,7 +54,10 @@ const nextConfig = {
   // SEO checklist a reviewer will reach for -- expects the classic 301.
   // "/ar/" is normalised to "/ar" by Next's own 308 first, then lands here.
   async redirects() {
-    return [{ source: "/ar", destination: "/", statusCode: 301 }];
+    return [
+      { source: "/ar", destination: "/", statusCode: 301 },
+      { source: "/cases", destination: "/hearings", statusCode: 301 },
+    ];
   },
 };
 export default nextConfig;

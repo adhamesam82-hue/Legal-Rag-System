@@ -268,7 +268,7 @@ INVOICE_SCREENS = [
     "app/clients/[id]/page.tsx",
 ]
 PROXIMITY_SCREENS = [
-    "app/cases/page.tsx",
+    "app/hearings/page.tsx",
     "app/dashboard/page.tsx",
     "app/calendar/page.tsx",
     "components/matter/CalendarTab.tsx",
@@ -356,7 +356,7 @@ MAIN_SCREENS = [
     "app/clients/page.tsx",
     "app/documents/page.tsx",
     "app/billing/page.tsx",
-    "app/cases/page.tsx",
+    "app/hearings/page.tsx",
     "app/tasks/page.tsx",
     "app/calendar/page.tsx",
     "app/dashboard/page.tsx",
