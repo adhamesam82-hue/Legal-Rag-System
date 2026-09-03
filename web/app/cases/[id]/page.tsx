@@ -69,7 +69,7 @@ export default function CaseDetailPage({
           <DataView resource={resource} loadingLabel={t("@legalos.cases.detail.loading")}>
             {(record) => (
               <VStack gap={6}>
-                <Link href="/cases">
+                <Link href={`/matters/${record.matter_id}`}>
                   <HStack gap={1.5} vAlign="center">
                     <Icon icon={BackIcon} size="sm" color="secondary" />
                     <Text type="body" color="secondary">

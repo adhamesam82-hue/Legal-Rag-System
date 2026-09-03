@@ -69,7 +69,7 @@ export const en: Catalog = {
   // --- Case detail -----------------------------------------------------------
   "@legalos.cases.detail.loading": { defaultMessage: "Loading case…" },
   "@legalos.cases.detail.unfiledHeading": { defaultMessage: "Unfiled case" },
-  "@legalos.cases.detail.backLink": { defaultMessage: "Cases" },
+  "@legalos.cases.detail.backLink": { defaultMessage: "Matter" },
   "@legalos.cases.detail.summaryHeading": { defaultMessage: "Case summary" },
   "@legalos.cases.detail.summaryDisclaimer": {
     defaultMessage: "A starting point for review, not final legal advice.",
@@ -280,7 +280,7 @@ export const ar: Catalog = {
   // --- Case detail -----------------------------------------------------------
   "@legalos.cases.detail.loading": { defaultMessage: "جارٍ تحميل الجلسة…" },
   "@legalos.cases.detail.unfiledHeading": { defaultMessage: "دعوى غير مقيّدة" },
-  "@legalos.cases.detail.backLink": { defaultMessage: "الجلسات" },
+  "@legalos.cases.detail.backLink": { defaultMessage: "الملف" },
   "@legalos.cases.detail.summaryHeading": { defaultMessage: "ملخص الجلسة" },
   "@legalos.cases.detail.summaryDisclaimer": {
     defaultMessage: "نقطة انطلاق للمراجعة، وليست رأياً قانونياً نهائياً.",
