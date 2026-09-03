@@ -152,11 +152,11 @@ jobs:
           docker compose -f docker-compose.prod.yml pull
           # A discrete step so a failed migration aborts the promotion instead
           # of leaving a container crash-looping against a half-applied schema.
-          # stdin is redirected because this whole script is piped into bash over
-          # ssh: `compose run` attaches stdin and would otherwise read the rest
-          # of the script as the container's input, swallowing the `up -d`
-          # below. bash then reaches EOF and exits 0, so the step reports
-          # success having never swapped the image.
+          # stdin is redirected because this whole script is piped into bash
+          # over ssh: `compose run` attaches stdin and would otherwise read the
+          # rest of the script as the container's input, swallowing the swap
+          # below it. bash then reaches EOF and exits 0, so the step reports
+          # success having never replaced the running image.
           docker compose -f docker-compose.prod.yml run --rm -T api \
             python scripts/migrate.py </dev/null
           docker compose -f docker-compose.prod.yml up -d
