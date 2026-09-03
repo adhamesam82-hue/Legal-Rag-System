@@ -80,7 +80,7 @@ export default function CaseDetailPage({
 
                 <VStack gap={1}>
                   <HStack gap={3} vAlign="center" wrap="wrap">
-                    <Heading level={2}>{record.case_number}</Heading>
+                    <Heading level={2}>{record.case_number || t("@legalos.cases.detail.unfiledHeading")}</Heading>
                     {record.status && (
                       <Badge
                         variant={statusVariant(record.status)}

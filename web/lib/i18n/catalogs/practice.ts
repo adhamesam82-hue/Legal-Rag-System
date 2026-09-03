@@ -68,6 +68,7 @@ export const en: Catalog = {
 
   // --- Case detail -----------------------------------------------------------
   "@legalos.cases.detail.loading": { defaultMessage: "Loading case…" },
+  "@legalos.cases.detail.unfiledHeading": { defaultMessage: "Unfiled case" },
   "@legalos.cases.detail.backLink": { defaultMessage: "Cases" },
   "@legalos.cases.detail.summaryHeading": { defaultMessage: "Case summary" },
   "@legalos.cases.detail.summaryDisclaimer": {
@@ -182,6 +183,7 @@ export const en: Catalog = {
   // Related cases: sub-cases and the primary case (T-030). Shared by the case
   // file section, the case page header and the matter dashboard card.
   "@legalos.cases.related.heading": { defaultMessage: "Related cases" },
+  "@legalos.cases.related.unfiledCase": { defaultMessage: "Unfiled case" },
   "@legalos.cases.related.primary": { defaultMessage: "Primary" },
   "@legalos.cases.related.subCaseOf": { defaultMessage: "Sub-case of" },
   "@legalos.cases.related.empty": {
@@ -277,6 +279,7 @@ export const ar: Catalog = {
 
   // --- Case detail -----------------------------------------------------------
   "@legalos.cases.detail.loading": { defaultMessage: "جارٍ تحميل الجلسة…" },
+  "@legalos.cases.detail.unfiledHeading": { defaultMessage: "دعوى غير مقيّدة" },
   "@legalos.cases.detail.backLink": { defaultMessage: "الجلسات" },
   "@legalos.cases.detail.summaryHeading": { defaultMessage: "ملخص الجلسة" },
   "@legalos.cases.detail.summaryDisclaimer": {
@@ -391,6 +394,7 @@ export const ar: Catalog = {
 
   // القضايا المرتبطة: الفروع والقضية الرئيسية (T-030)
   "@legalos.cases.related.heading": { defaultMessage: "القضايا الفرعية" },
+  "@legalos.cases.related.unfiledCase": { defaultMessage: "دعوى غير مقيّدة" },
   "@legalos.cases.related.primary": { defaultMessage: "رئيسية" },
   "@legalos.cases.related.subCaseOf": { defaultMessage: "فرع من القضية" },
   "@legalos.cases.related.empty": {
