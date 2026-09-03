@@ -165,15 +165,15 @@ LitigationDegree = Literal["first_instance", "appeal", "cassation"]
 
 class CaseIn(BaseModel):
     matter_id: int
-    court: str = Field(min_length=1)
+    court: str = ""
     # The number on its own. The judicial year and the court category are
     # separate fields now -- see migration 0010 for why one string could not
     # hold all three.
-    case_number: str = Field(min_length=1)
+    case_number: str = ""
     judicial_year: int | None = Field(default=None, ge=1900, le=2100)
     case_category: str = ""
     litigation_degree: LitigationDegree = "first_instance"
-    filed_date: date
+    filed_date: date | None = None
     judge: str = ""
     status: str = ""
     opposing_party: str = ""

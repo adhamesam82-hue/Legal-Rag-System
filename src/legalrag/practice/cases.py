@@ -128,7 +128,7 @@ class Case:
     status: str
     opposing_party: str
     opposing_counsel: str | None
-    filed_date: date
+    filed_date: date | None
     ai_summary: str | None
     created_at: datetime
     # The case file proper (0022): what it is about, in the lawyer's words.
@@ -168,7 +168,7 @@ def _load_children(conn: psycopg.Connection, case: Case) -> Case:
         conn,
         CaseRef,
         f"SELECT {_REF_COLUMNS} FROM cases c "
-        "WHERE c.organization_id = %s AND c.parent_case_id = %s ORDER BY c.filed_date, c.id",
+        "WHERE c.organization_id = %s AND c.parent_case_id = %s ORDER BY c.filed_date NULLS LAST, c.id",
         (case.organization_id, case.id),
     )
     case.timeline = fetch_all(
@@ -224,7 +224,7 @@ def list_cases(conn: psycopg.Connection, organization_id: int) -> list[Case]:
         conn,
         Case,
         f"SELECT {_COLUMNS} FROM cases c JOIN matters m ON m.id = c.matter_id "
-        "WHERE c.organization_id = %s ORDER BY c.filed_date DESC",
+        "WHERE c.organization_id = %s ORDER BY c.filed_date DESC NULLS LAST, c.id DESC",
         (organization_id,),
     )
 
@@ -260,9 +260,9 @@ def create_case(
     organization_id: int,
     *,
     matter_id: int,
-    court: str,
-    case_number: str,
-    filed_date: date,
+    court: str = "",
+    case_number: str = "",
+    filed_date: date | None = None,
     judicial_year: int | None = None,
     case_category: str = "",
     litigation_degree: str = "first_instance",

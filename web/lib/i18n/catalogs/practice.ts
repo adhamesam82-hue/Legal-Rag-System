@@ -64,6 +64,7 @@ export const en: Catalog = {
   "@legalos.cases.field.nextHearing": { defaultMessage: "Next hearing" },
   "@legalos.cases.field.status": { defaultMessage: "Status" },
   "@legalos.cases.field.filed": { defaultMessage: "Filed" },
+  "@legalos.cases.field.notFiled": { defaultMessage: "Not filed yet" },
 
   // --- Case detail -----------------------------------------------------------
   "@legalos.cases.detail.loading": { defaultMessage: "Loading case…" },
@@ -272,6 +273,7 @@ export const ar: Catalog = {
   "@legalos.cases.field.nextHearing": { defaultMessage: "الجلسة القادمة" },
   "@legalos.cases.field.status": { defaultMessage: "الحالة" },
   "@legalos.cases.field.filed": { defaultMessage: "تاريخ القيد" },
+  "@legalos.cases.field.notFiled": { defaultMessage: "لم تُقيَّد بعد" },
 
   // --- Case detail -----------------------------------------------------------
   "@legalos.cases.detail.loading": { defaultMessage: "جارٍ تحميل الجلسة…" },

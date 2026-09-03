@@ -237,7 +237,7 @@ export default function CaseDetailPage({
                             {record.judge || "—"}
                           </MetadataListItem>
                           <MetadataListItem label={t("@legalos.cases.field.filed")}>
-                            {formatDate(record.filed_date)}
+                            {record.filed_date ? formatDate(record.filed_date) : t("@legalos.cases.field.notFiled")}
                           </MetadataListItem>
                           <MetadataListItem label={t("@legalos.cases.field.opposingParty")}>
                             {record.opposing_party || "—"}

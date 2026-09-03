@@ -228,10 +228,12 @@ export interface CaseRecord {
   litigation_degree: string;
   judge: string;
   case_number: string;
+  judicial_year?: number | null;
+  case_category?: string;
   status: string;
   opposing_party: string;
   opposing_counsel: string | null;
-  filed_date: string;
+  filed_date: string | null;
   ai_summary: string | null;
   created_at: string;
   /** The case file proper (migration 0022). Empty strings, never null. */
