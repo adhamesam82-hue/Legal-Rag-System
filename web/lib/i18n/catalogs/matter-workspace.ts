@@ -554,13 +554,26 @@ export const en: Catalog = {
     defaultMessage: "Could not duplicate this matter.",
   },
 
-  // components/matter/CaseFile.tsx -- the case file proper (T-029)
+  // components/matter/CaseFile.tsx -- the case file proper (T-029, T-044)
   "@legalos.matterWorkspace.caseFile.heading": { defaultMessage: "Case file" },
   "@legalos.matterWorkspace.caseFile.noCase": {
     defaultMessage:
-      "This matter has no litigation case yet, so there is nowhere to write its file. Create the case first; the file lives on it.",
+      "A litigation record holds the court, case number, facts, legal basis, and defences for this matter. You can create the record now and write the facts today, even before the case is formally filed.",
   },
-  "@legalos.matterWorkspace.caseFile.noCase.link": { defaultMessage: "Go to cases" },
+  "@legalos.matterWorkspace.caseFile.createCase": { defaultMessage: "Create litigation record" },
+  "@legalos.matterWorkspace.caseFile.dialog.heading": { defaultMessage: "Create litigation record" },
+  "@legalos.matterWorkspace.caseFile.dialog.hint": {
+    defaultMessage: "You can leave the number and court blank until the case is filed.",
+  },
+  "@legalos.matterWorkspace.caseFile.dialog.court": { defaultMessage: "Court" },
+  "@legalos.matterWorkspace.caseFile.dialog.caseNumber": { defaultMessage: "Case number" },
+  "@legalos.matterWorkspace.caseFile.dialog.judicialYear": { defaultMessage: "Judicial year" },
+  "@legalos.matterWorkspace.caseFile.dialog.litigationDegree": { defaultMessage: "Litigation degree" },
+  "@legalos.matterWorkspace.caseFile.dialog.filedDate": { defaultMessage: "Filing date" },
+  "@legalos.matterWorkspace.caseFile.dialog.opposingParty": { defaultMessage: "Opposing party" },
+  "@legalos.matterWorkspace.caseFile.dialog.alreadyExists": {
+    defaultMessage: "This matter already has a litigation record.",
+  },
   "@legalos.matterWorkspace.caseFile.empty": { defaultMessage: "Empty — {hint}" },
   "@legalos.matterWorkspace.caseFile.write": { defaultMessage: "Write" },
   "@legalos.matterWorkspace.caseFile.saveFailed": { defaultMessage: "Could not save. Your text is still here." },
@@ -986,13 +999,26 @@ export const ar: Catalog = {
   "@legalos.matterWorkspace.errors.bill": { defaultMessage: "تعذّر إنشاء هذه الفاتورة." },
   "@legalos.matterWorkspace.errors.duplicate": { defaultMessage: "تعذّر نسخ هذه القضية." },
 
-  // components/matter/CaseFile.tsx -- ملف القضية الموضوعي (T-029)
+  // components/matter/CaseFile.tsx -- ملف القضية الموضوعي (T-029, T-044)
   "@legalos.matterWorkspace.caseFile.heading": { defaultMessage: "ملف القضية" },
   "@legalos.matterWorkspace.caseFile.noCase": {
     defaultMessage:
-      "لا سجلّ قضائي لهذا الملف بعد، فلا مكان لكتابة ملفه. أنشئ القضية أولًا؛ الملف يُكتب عليها.",
+      "السجل القضائي يحمل المحكمة ورقم الدعوى والوقائع والأساس القانوني والدفوع الخاصة بهذا الملف. يمكنك إنشاء السجل الآن وتدوين الوقائع من اليوم، حتى قبل قيد الدعوى رسميًا.",
   },
-  "@legalos.matterWorkspace.caseFile.noCase.link": { defaultMessage: "الذهاب إلى القضايا" },
+  "@legalos.matterWorkspace.caseFile.createCase": { defaultMessage: "إنشاء السجل القضائي" },
+  "@legalos.matterWorkspace.caseFile.dialog.heading": { defaultMessage: "إنشاء السجل القضائي" },
+  "@legalos.matterWorkspace.caseFile.dialog.hint": {
+    defaultMessage: "يمكن ترك الرقم والمحكمة فارغين حتى تُقيَّد الدعوى.",
+  },
+  "@legalos.matterWorkspace.caseFile.dialog.court": { defaultMessage: "المحكمة" },
+  "@legalos.matterWorkspace.caseFile.dialog.caseNumber": { defaultMessage: "رقم الدعوى" },
+  "@legalos.matterWorkspace.caseFile.dialog.judicialYear": { defaultMessage: "السنة القضائية" },
+  "@legalos.matterWorkspace.caseFile.dialog.litigationDegree": { defaultMessage: "درجة التقاضي" },
+  "@legalos.matterWorkspace.caseFile.dialog.filedDate": { defaultMessage: "تاريخ القيد" },
+  "@legalos.matterWorkspace.caseFile.dialog.opposingParty": { defaultMessage: "الخصم" },
+  "@legalos.matterWorkspace.caseFile.dialog.alreadyExists": {
+    defaultMessage: "يوجد سجل قضائي مسجل لهذا الملف بالفعل.",
+  },
   "@legalos.matterWorkspace.caseFile.empty": { defaultMessage: "فارغ — {hint}" },
   "@legalos.matterWorkspace.caseFile.write": { defaultMessage: "كتابة" },
   "@legalos.matterWorkspace.caseFile.saveFailed": { defaultMessage: "تعذّر الحفظ. نصّك ما زال هنا." },

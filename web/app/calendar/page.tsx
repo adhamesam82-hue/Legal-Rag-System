@@ -160,7 +160,7 @@ export default function CalendarPage() {
           id: `deadline-${deadline.id}`,
           date: deadline.due_date,
           title: deadline.label,
-          detail: `${record.case_number} · ${record.matter_name}`,
+          detail: [record.case_number, record.matter_name].filter(Boolean).join(" · "),
           kind: "deadline",
           owner: matterById.get(record.matter_id)?.responsible_user ?? "",
           matterId: record.matter_id,

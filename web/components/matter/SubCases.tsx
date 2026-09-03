@@ -47,19 +47,22 @@ export function PrimaryBadge({ record }: { record: Pick<CaseRecord, "children"> 
 export function ParentLine({ record }: { record: Pick<CaseRecord, "parent"> }) {
   const t = useTranslator();
   if (!record.parent) return null;
+  const label = record.parent.case_number || t("@legalos.cases.related.unfiledCase");
   return (
     <HStack gap={1} vAlign="center" wrap="wrap">
       <Text type="body" color="secondary">
         {t("@legalos.cases.related.subCaseOf")}
       </Text>
-      <Link href={`/cases/${record.parent.id}`}>{record.parent.case_number}</Link>
+      <Link href={`/cases/${record.parent.id}`}>{label}</Link>
     </HStack>
   );
 }
 
 /** One related case as a row: number (linked), court · degree · status. */
 export function CaseRefItem({ ref, endContent }: { ref: CaseRef; endContent?: React.ReactNode }) {
+  const t = useTranslator();
   const enumLabel = useEnumLabel();
+  const label = ref.case_number || t("@legalos.cases.related.unfiledCase");
   const description = [ref.court, enumLabel(ref.litigation_degree), ref.status]
     .filter(Boolean)
     .join(" · ");
@@ -67,7 +70,7 @@ export function CaseRefItem({ ref, endContent }: { ref: CaseRef; endContent?: Re
     <ListItem
       // The link is the label rather than the row, so the unlink button
       // beside it is not a button inside an anchor.
-      label={<Link href={`/cases/${ref.id}`}>{ref.case_number}</Link>}
+      label={<Link href={`/cases/${ref.id}`}>{label}</Link>}
       description={description || undefined}
       endContent={endContent}
     />
@@ -270,7 +273,7 @@ function LinkCaseDialog({
                   {shown.map((c) => (
                     <ListItem
                       key={c.id}
-                      label={c.case_number}
+                      label={c.case_number || t("@legalos.cases.related.unfiledCase")}
                       description={[c.matter_name, c.court, enumLabel(c.litigation_degree)]
                         .filter(Boolean)
                         .join(" · ")}

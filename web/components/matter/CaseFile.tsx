@@ -22,11 +22,11 @@ import { Heading, Text } from "@astryxdesign/core/Text";
 import { Button } from "@astryxdesign/core/Button";
 import { TextArea } from "@astryxdesign/core/TextArea";
 import { Collapsible } from "@astryxdesign/core/Collapsible";
-import { Link } from "@astryxdesign/core/Link";
 import { useOrg } from "@/lib/org";
 import type { CaseRecord } from "@/lib/practice";
 import { Panel, useWrite, type TabProps } from "./shared";
 import { SubCases } from "./SubCases";
+import { CreateCaseDialog } from "./CreateCaseDialog";
 
 /** The six fields, in reading order. Keys match the API columns. */
 export const CASE_FILE_FIELDS = [
@@ -90,15 +90,26 @@ function useOpenSections(matterId: number) {
 export function CaseFile({ data, reload, onError }: TabProps) {
   const t = useTranslator();
   const linkedCase = data.linkedCase;
+  const [createOpen, setCreateOpen] = useState(false);
 
   if (!linkedCase) {
     return (
       <Panel title={t("@legalos.matterWorkspace.caseFile.heading")}>
-        <VStack gap={2}>
+        <VStack gap={4} hAlign="start">
           <Text type="body" color="secondary">
             {t("@legalos.matterWorkspace.caseFile.noCase")}
           </Text>
-          <Link href="/cases">{t("@legalos.matterWorkspace.caseFile.noCase.link")}</Link>
+          <Button
+            label={t("@legalos.matterWorkspace.caseFile.createCase")}
+            variant="primary"
+            onClick={() => setCreateOpen(true)}
+          />
+          <CreateCaseDialog
+            matterId={data.matter.id}
+            isOpen={createOpen}
+            onOpenChange={setCreateOpen}
+            onCreated={reload}
+          />
         </VStack>
       </Panel>
     );
