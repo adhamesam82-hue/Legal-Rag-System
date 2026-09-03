@@ -18,6 +18,7 @@ import { Divider } from "@astryxdesign/core/Divider";
 import { useFormat } from "@/lib/i18n/format";
 import { PrefetchedNavLink } from "@/app/providers";
 import type { Organization } from "@/lib/api";
+import { AppliedDiscount } from "@/components/DiscountCodeField";
 
 export function PlanSection({ firm }: { firm: Organization }) {
   const t = useTranslator();
@@ -65,6 +66,10 @@ export function PlanSection({ firm }: { firm: Organization }) {
             </Text>
           </VStack>
         </HStack>
+
+        {firm.discount_kind && (
+          <AppliedDiscount kind={firm.discount_kind} value={firm.discount_value!} />
+        )}
 
         <HStack hAlign="end">
           <Button

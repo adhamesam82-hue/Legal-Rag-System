@@ -69,6 +69,23 @@ export const en: Catalog = {
   "@legalos.common.noOrg.trialLine": {
     defaultMessage: "{days, plural, one {Your free trial is # day with every feature.} other {Your free trial is # days with every feature.}}",
   },
+
+  "@legalos.discount.haveACode": { defaultMessage: "Have a discount code?" },
+  "@legalos.discount.codePlaceholder": { defaultMessage: "Enter a code" },
+  "@legalos.discount.apply": { defaultMessage: "Apply" },
+  "@legalos.discount.applying": { defaultMessage: "Applying…" },
+  "@legalos.discount.applyFailed": { defaultMessage: "Could not apply this code." },
+  "@legalos.discount.appliedTrialDays": {
+    defaultMessage: "{days, plural, one {A discount code added # day to your free trial.} other {A discount code added # days to your free trial.}}",
+  },
+  "@legalos.discount.appliedFuture": {
+    defaultMessage: "A discount code is saved on your firm: {amount} off will apply once billing is enabled.",
+  },
+  "@legalos.discount.percent": { defaultMessage: "{value}%" },
+  "@legalos.discount.firmCreatedCodeFailed": {
+    defaultMessage: "Your firm was created. The discount code could not be applied.",
+  },
+  "@legalos.discount.continueWithoutCode": { defaultMessage: "Continue to the product" },
 };
 
 export const ar: Catalog = {
@@ -132,4 +149,21 @@ export const ar: Catalog = {
   "@legalos.common.noOrg.trialLine": {
     defaultMessage: "{days, plural, one {تجربتك المجانية يوم واحد بكل الميزات.} two {تجربتك المجانية يومان بكل الميزات.} few {تجربتك المجانية # أيام بكل الميزات.} many {تجربتك المجانية # يومًا بكل الميزات.} other {تجربتك المجانية # يوم بكل الميزات.}}",
   },
+
+  "@legalos.discount.haveACode": { defaultMessage: "لديك كود خصم؟" },
+  "@legalos.discount.codePlaceholder": { defaultMessage: "أدخل الكود" },
+  "@legalos.discount.apply": { defaultMessage: "تطبيق" },
+  "@legalos.discount.applying": { defaultMessage: "جارٍ التطبيق…" },
+  "@legalos.discount.applyFailed": { defaultMessage: "تعذّر تطبيق هذا الكود." },
+  "@legalos.discount.appliedTrialDays": {
+    defaultMessage: "{days, plural, one {كود خصم أضاف يومًا واحدًا إلى تجربتك المجانية.} two {كود خصم أضاف يومين إلى تجربتك المجانية.} few {كود خصم أضاف # أيام إلى تجربتك المجانية.} many {كود خصم أضاف # يومًا إلى تجربتك المجانية.} other {كود خصم أضاف # يوم إلى تجربتك المجانية.}}",
+  },
+  "@legalos.discount.appliedFuture": {
+    defaultMessage: "كود خصم محفوظ على مكتبك: سيُطبَّق خصم {amount} حين يُفعَّل الاشتراك.",
+  },
+  "@legalos.discount.percent": { defaultMessage: "{value}٪" },
+  "@legalos.discount.firmCreatedCodeFailed": {
+    defaultMessage: "أُنشئ مكتبك. لم نستطع تطبيق كود الخصم.",
+  },
+  "@legalos.discount.continueWithoutCode": { defaultMessage: "المتابعة إلى المنتج" },
 };

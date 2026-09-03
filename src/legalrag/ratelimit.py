@@ -40,6 +40,12 @@ WINDOW_SECONDS = 60
 PAID_PREFIXES = (
     "/api/ask",
     "/api/search",
+    # Public, session-less (T-042): the caller is counted by IP, and the
+    # normal 300/minute ceiling is exactly what a code-guessing script wants.
+    # This is not a paid provider call; it borrows the paid tier's lower
+    # ceiling because the "attacker" cost model, not the compute cost, is
+    # what has to be small here.
+    "/api/discount-codes/validate",
 )
 # Suffix rule for the per-article explain route, whose id sits mid-path.
 PAID_SUFFIXES = ("/explain",)
