@@ -410,6 +410,12 @@
     "MS": "م ص",
     "KH": "ك ح",
     "NA": "ن ا",
-    "tm-plate-en::Nour El Nadi": "Nour El Nadi"
+    "tm-plate-en::Nour El Nadi": "Nour El Nadi",
+
+    "Offers": "العروض",
+    "What's live today": "المتاح اليوم فعلاً",
+    "Pricing isn't public yet, so this is the one number we can put in writing: every firm starts on a full free trial, no card required. A launch discount code will appear here the day one exists — not before.": "الأسعار لم تُعلَن بعد، فهذا هو الرقم الوحيد الذي نستطيع كتابته بثقة: كل مكتب يبدأ بتجربة مجانية كاملة، بلا بطاقة. وسيظهر هنا كود خصم الإطلاق يوم يوجد فعلاً — لا قبل ذلك.",
+    "14-day free trial": "تجربة مجانية لمدة ١٤ يومًا",
+    "Every feature unlocked from the first sign-in. Ends on its own; nothing is charged.": "كل ميزة متاحة من أول تسجيل دخول. تنتهي من تلقاء نفسها، ولا يُخصم شيء."
   }
 }

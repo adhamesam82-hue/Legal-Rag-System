@@ -28,6 +28,7 @@ import { useOrg, useResource } from "@/lib/org";
 import { useFormat } from "@/lib/i18n/format";
 import { api, ApiError, PAID_PLANS, type PaidPlan } from "@/lib/api";
 import { DataView, InlineError } from "@/components/DataState";
+import { AppliedDiscount, DiscountCodeField } from "@/components/DiscountCodeField";
 
 const SALES_EMAIL = "hello@legalos.com";
 
@@ -90,6 +91,20 @@ export default function PlansPage() {
                 title={t("@legalos.plans.thanksTitle")}
                 description={t("@legalos.plans.thanksBody", { date: formatDate(loaded.trial_ends_at) })}
               />
+            )}
+
+            {loaded.discount_kind ? (
+              <AppliedDiscount kind={loaded.discount_kind} value={loaded.discount_value!} />
+            ) : (
+              canChoose && (
+                <DiscountCodeField
+                  onApply={async (code) => {
+                    await api.applyDiscountCode(loaded.id, code);
+                    firm.reload();
+                    reloadOrganizations();
+                  }}
+                />
+              )
             )}
           </>
         )}

@@ -22,7 +22,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import { MultiSelector } from "@astryxdesign/core/MultiSelector";
-import { api, type Plans } from "@/lib/api";
+import { ApiError, api, type Plans } from "@/lib/api";
 import { useOrg } from "@/lib/org";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 import { MATTER_TYPES, type MatterType } from "@/lib/practice";
@@ -136,15 +136,31 @@ export function NoOrganizationState() {
   }, []);
   const [name, setName] = useState("");
   const [specialties, setSpecialties] = useState<string[]>([]);
+  const [discountCode, setDiscountCode] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Set only when the firm was created but its discount code was not (T-042):
+  // the reload is held back so the owner sees why and chooses to continue,
+  // rather than a code that might have been real disappearing silently.
+  const [pendingOrgId, setPendingOrgId] = useState<number | null>(null);
+  const [discountError, setDiscountError] = useState<string | null>(null);
 
   async function createFirm() {
     if (!name.trim()) return;
     setSaving(true);
     setError(null);
     try {
-      await api.createOrganization(name.trim(), specialties as MatterType[]);
+      const org = await api.createOrganization(name.trim(), specialties as MatterType[]);
+      if (discountCode.trim()) {
+        try {
+          await api.applyDiscountCode(org.id, discountCode.trim());
+        } catch (exc) {
+          setPendingOrgId(org.id);
+          setDiscountError(exc instanceof ApiError ? exc.message : t("@legalos.discount.applyFailed"));
+          setSaving(false);
+          return;
+        }
+      }
       // The creator becomes the Owner server-side; refetch so every screen
       // picks the new firm up.
       reloadOrganizations();
@@ -152,6 +168,26 @@ export function NoOrganizationState() {
       setError(exc instanceof Error ? exc.message : t("@legalos.common.noOrg.createFailed"));
       setSaving(false);
     }
+  }
+
+  if (pendingOrgId !== null) {
+    return (
+      <VStack gap={5} padding={8} hAlign="center">
+        <EmptyState
+          icon={<Icon icon={BuildingOffice2Icon} size="lg" color="secondary" />}
+          title={t("@legalos.common.noOrg.title")}
+          description={t("@legalos.discount.firmCreatedCodeFailed")}
+        />
+        <VStack gap={3} width={360}>
+          <InlineError message={discountError} onDismiss={() => setDiscountError(null)} />
+          <Button
+            label={t("@legalos.discount.continueWithoutCode")}
+            variant="primary"
+            onClick={reloadOrganizations}
+          />
+        </VStack>
+      </VStack>
+    );
   }
 
   return (
@@ -180,6 +216,13 @@ export function NoOrganizationState() {
           options={MATTER_TYPES.map((value) => ({ value, label: enumLabel(value) }))}
           hasSearch
           maxBadges={3}
+        />
+        <TextInput
+          label={t("@legalos.discount.haveACode")}
+          value={discountCode}
+          onChange={setDiscountCode}
+          placeholder={t("@legalos.discount.codePlaceholder")}
+          isOptional
         />
         <Button
           label={saving ? t("@legalos.common.noOrg.creating") : t("@legalos.common.noOrg.createFirm")}

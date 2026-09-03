@@ -82,10 +82,13 @@ from legalrag.library import (
     list_instruments,
 )
 from legalrag.orgs import (
+    DiscountAlreadyApplied,
+    InvalidDiscountCode,
     LastOwnerError,
     set_matter_scope,
     Membership,
     add_membership,
+    apply_discount_code,
     create_organization,
     get_membership,
     get_notification_preferences,
@@ -96,6 +99,7 @@ from legalrag.orgs import (
     set_notification_preferences,
     set_plan_intent,
     update_organization,
+    validate_discount_code,
 )
 from legalrag.push import push_is_configured
 from legalrag.pipeline import ask, ask_stream, retrieve_for
@@ -487,6 +491,13 @@ class OrganizationOut(BaseModel):
     trial_expired: bool = False
     # The owner's choice on /plans before payment exists. Not a subscription.
     plan_intent: str | None = None
+    # --- 0027 (T-042). discount_kind/discount_value describe the code
+    # itself (null when none is applied); only "extra_trial_days" has
+    # already taken effect (trial_ends_at reflects it). A percent or fixed
+    # code is a promise the payment ticket keeps, not a number applied here.
+    discount_kind: str | None = None
+    discount_value: Decimal | None = None
+    discount_applied_at: datetime | None = None
 
 
 def _org_out(org: Organization) -> OrganizationOut:
@@ -521,6 +532,9 @@ def _org_out(org: Organization) -> OrganizationOut:
         trial_ends_at=org.trial_ends_at,
         trial_expired=org.trial_expired,
         plan_intent=org.plan_intent,
+        discount_kind=org.discount_kind,
+        discount_value=org.discount_value,
+        discount_applied_at=org.discount_applied_at,
     )
 
 
@@ -1068,6 +1082,63 @@ def post_plan_intent(
         org = set_plan_intent(conn, organization_id, request.plan)
     if org is None:
         raise HTTPException(status_code=404, detail="Organization not found")
+    return _org_out(org)
+
+
+# --- discount codes (T-042) --------------------------------------------------
+#
+# validate is public and session-less: the landing page and the create-firm
+# screen both need to check a code before anyone has signed in. It answers
+# `valid` alone -- a code that does not exist, one that has expired and one
+# that is exhausted all read back the same, because a route that tells the
+# three apart is a code-guessing oracle. It is also rate-limited far below
+# the normal ceiling (see ratelimit.PAID_PREFIXES) for the same reason.
+#
+# apply is the opposite: authenticated, owner-only, and the only place a
+# code's use is actually spent -- see orgs.apply_discount_code for the
+# locking that keeps max_uses correct under concurrent applies.
+
+_INVALID_DISCOUNT_MESSAGE = "This code is not valid."
+
+
+class DiscountCodeValidateRequest(BaseModel):
+    code: str = Field(min_length=1, max_length=40)
+
+
+class DiscountCodeValidateOut(BaseModel):
+    valid: bool
+
+
+class DiscountCodeApplyRequest(BaseModel):
+    code: str = Field(min_length=1, max_length=40)
+
+
+@app.post("/api/discount-codes/validate", response_model=DiscountCodeValidateOut)
+def post_validate_discount_code(request: DiscountCodeValidateRequest):
+    with db() as conn:
+        return DiscountCodeValidateOut(valid=validate_discount_code(conn, request.code))
+
+
+@app.post("/api/orgs/{organization_id}/discount-code", response_model=OrganizationOut)
+def post_apply_discount_code(
+    organization_id: int,
+    request: DiscountCodeApplyRequest,
+    owner: Membership = Depends(require_owner),
+):
+    """Applies a code to the firm. Owner only, once per firm -- see
+    orgs.apply_discount_code for why an extra-trial-days code takes effect
+    immediately while a percent or fixed code only gets recorded."""
+    with db() as conn:
+        try:
+            org = apply_discount_code(conn, organization_id, request.code)
+        except InvalidDiscountCode:
+            raise HTTPException(status_code=422, detail=_INVALID_DISCOUNT_MESSAGE) from None
+        except DiscountAlreadyApplied:
+            raise HTTPException(
+                status_code=409, detail="This firm has already applied a discount code."
+            ) from None
+        except LookupError:
+            raise HTTPException(status_code=404, detail="Organization not found") from None
     return _org_out(org)
 
 

@@ -94,7 +94,19 @@ export interface Organization {
   /** A signal the UI shows, not a lock anything enforces. */
   trial_expired: boolean;
   plan_intent: PaidPlan | null;
+  // --- migration 0027 (T-042). Null until a code is applied. Only
+  // "extra_trial_days" has already taken effect -- trial_ends_at reflects
+  // it. A percent/fixed code is a promise the payment ticket keeps, not a
+  // number computed anywhere yet.
+  discount_kind: DiscountKind | null;
+  /** A JSON string ("7.00"), not a number -- the API keeps Decimal
+   *  precision this way, same as default_tax_rate. Coerce with Number()
+   *  before doing arithmetic or handing it to an ICU plural. */
+  discount_value: string | null;
+  discount_applied_at: string | null;
 }
+
+export type DiscountKind = "percent" | "fixed" | "extra_trial_days";
 
 export const PAID_PLANS = ["basic", "pro", "enterprise"] as const;
 export type PaidPlan = (typeof PAID_PLANS)[number];
@@ -401,6 +413,22 @@ export const api = {
     request<Organization>(`/api/orgs/${organizationId}/plan-intent`, {
       method: "POST",
       body: JSON.stringify({ plan }),
+    }),
+
+  /** Public, no session -- whether `code` could be applied right now.
+   *  Never says why not; see the API route for why. Checking a code does
+   *  not spend one of its uses. */
+  validateDiscountCode: (code: string) =>
+    request<{ valid: boolean }>("/api/discount-codes/validate", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    }),
+
+  /** Applies a code to the firm. Owner only, server-side; once per firm. */
+  applyDiscountCode: (organizationId: number, code: string) =>
+    request<Organization>(`/api/orgs/${organizationId}/discount-code`, {
+      method: "POST",
+      body: JSON.stringify({ code }),
     }),
 
   organization: (organizationId: number) =>
