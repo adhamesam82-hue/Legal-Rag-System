@@ -99,7 +99,10 @@ export interface Organization {
   // it. A percent/fixed code is a promise the payment ticket keeps, not a
   // number computed anywhere yet.
   discount_kind: DiscountKind | null;
-  discount_value: number | null;
+  /** A JSON string ("7.00"), not a number -- the API keeps Decimal
+   *  precision this way, same as default_tax_rate. Coerce with Number()
+   *  before doing arithmetic or handing it to an ICU plural. */
+  discount_value: string | null;
   discount_applied_at: string | null;
 }
 

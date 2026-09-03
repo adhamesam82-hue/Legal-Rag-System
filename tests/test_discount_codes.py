@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import threading
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 
 import pytest
 from conftest import drop_organizations_after
@@ -162,7 +163,7 @@ class TestApplyExtraTrialDays:
         after = datetime.fromisoformat(body["trial_ends_at"])
         assert (after - before) >= timedelta(days=6, hours=23)
         assert body["discount_kind"] == "extra_trial_days"
-        assert body["discount_value"] == 7
+        assert Decimal(body["discount_value"]) == 7
 
         with conn.cursor() as cur:
             cur.execute("SELECT trial_ends_at FROM organizations WHERE id = %s", (firm["id"],))
@@ -182,13 +183,13 @@ class TestApplyPercentOrFixed:
         assert response.status_code == 200, response.text
         body = response.json()
         assert body["discount_kind"] == "percent"
-        assert body["discount_value"] == 30
+        assert Decimal(body["discount_value"]) == 30
         # Not the trial-extension kind: nothing about the trial moved.
         assert body["trial_ends_at"] == trial_before
 
         settings = client.get(f"/api/orgs/{firm['id']}").json()
         assert settings["discount_kind"] == "percent"
-        assert settings["discount_value"] == 30
+        assert Decimal(settings["discount_value"]) == 30
 
 
 class TestApplyRejections:

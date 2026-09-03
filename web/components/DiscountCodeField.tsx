@@ -24,17 +24,25 @@ export function AppliedDiscount({
   value,
 }: {
   kind: DiscountKind;
-  value: number;
+  // The API serialises Decimal fields as JSON strings (e.g. "7.00") to keep
+  // their precision, not as numbers -- see api.py's OrganizationOut. The
+  // ICU plural in appliedTrialDays needs a real number to pick a category,
+  // so this coerces once here rather than trusting every call site to.
+  value: number | string;
 }) {
   const t = useTranslator();
+  const numericValue = Number(value);
   return (
     <Banner
       status="success"
       title={
         kind === "extra_trial_days"
-          ? t("@legalos.discount.appliedTrialDays", { days: value })
+          ? t("@legalos.discount.appliedTrialDays", { days: numericValue })
           : t("@legalos.discount.appliedFuture", {
-              amount: kind === "percent" ? t("@legalos.discount.percent", { value }) : value,
+              amount:
+                kind === "percent"
+                  ? t("@legalos.discount.percent", { value: numericValue })
+                  : numericValue,
             })
       }
     />
