@@ -1,0 +1,125 @@
+{
+  "$schema": "execution-contract/v1",
+  "component": {
+    "name": "legal-rag-system",
+    "name_ar": "السجلّ (LegalOS)",
+    "type": "backend",
+    "repo": "adhamesam82-hue/Legal-Rag-System",
+    "main_branch": "main",
+    "ticket_prefix": "T"
+  },
+  "source_of_truth": {
+    "mode": "github_issues",
+    "id_pattern": "(?:T-\\d{3}|E-\\d+)",
+    "issue_label_prefix": "status:",
+    "epic_label": "epic"
+  },
+  "statuses": {
+    "not_started": {
+      "marker": "🔴",
+      "name": "لم تبدأ",
+      "label": "status:not-started"
+    },
+    "in_progress": {
+      "marker": "🟡",
+      "name": "قيد التنفيذ",
+      "label": "status:in-progress"
+    },
+    "awaiting_review": {
+      "marker": "🔵",
+      "name": "بانتظار المراجعة",
+      "label": "status:awaiting-review"
+    },
+    "approved": {
+      "marker": "🟢",
+      "name": "معتمدة",
+      "label": "status:approved"
+    },
+    "rejected": {
+      "marker": "🟠",
+      "name": "مرفوضة",
+      "label": "status:rejected"
+    }
+  },
+  "sections": {
+    "acceptance_criteria": "معايير القبول",
+    "definition_of_done": "تعريف الإنجاز",
+    "human_verification": "التحقق البشري",
+    "implementation_notes": "ملاحظات التنفيذ",
+    "review_log": "سجل المراجعة",
+    "depends_on": "يعتمد على",
+    "technical_description": "المشكلة — مقيسة",
+    "target_files": "ملفات متوقعة"
+  },
+  "fields": {
+    "status": "الحالة",
+    "issue": "رابط Pull Request",
+    "assignee": "المسند إليه",
+    "reviewer": "المراجع المسؤول",
+    "blocked_by": "يعتمد على",
+    "blocks": "يحجب",
+    "epic": "الملحمة"
+  },
+  "commands": {
+    "test": "uv run pytest tests/ -q",
+    "lint": null,
+    "type_check": "npx --prefix web tsc --noEmit",
+    "build": null
+  },
+  "quality_gates": {
+    "i18n": {
+      "enabled": true,
+      "framework": "custom"
+    },
+    "rtl": {
+      "enabled": true
+    },
+    "accessibility": {
+      "enabled": false
+    },
+    "security_scan_patterns": [
+      "api_key",
+      "secret",
+      "password",
+      "token=",
+      "DATABASE_URL",
+      "CLERK_SECRET_KEY"
+    ],
+    "no_dead_code": true,
+    "no_debug_output": true,
+    "resource_efficiency_check": true,
+    "coverage_expectation": "happy_path_plus_edge_cases"
+  },
+  "commit_policy": {
+    "one_commit_per_ticket": true,
+    "message_template": "<ticket_id> · <title>\n\n<summary>\n\nTicket: <path>\nAC: <n>/<total> · DoD: <n>/<total>",
+    "branch_template": "feature/<ticket_id>",
+    "allow_amend_by_reviewer": true
+  },
+  "sync": {
+    "enabled": true,
+    "script": "ados sync",
+    "github_token_env": "GITHUB_TOKEN"
+  },
+  "pull_request": {
+    "open_as_draft": true,
+    "mark_draft_command": [
+      "gh",
+      "pr",
+      "ready",
+      "--undo",
+      "{pr}"
+    ],
+    "announce_ready_command": [
+      "gh",
+      "pr",
+      "ready",
+      "{pr}"
+    ]
+  },
+  "approval_points": {
+    "before_next_ticket": true,
+    "before_push": true,
+    "before_pr": true
+  }
+}
