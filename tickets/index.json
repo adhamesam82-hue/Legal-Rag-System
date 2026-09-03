@@ -769,5 +769,64 @@
       "marketing/"
     ],
     "source": "onboarding review 2026-09-02"
+  },
+  {
+    "id": "T-044",
+    "title": "إنشاء السجل القضائي من داخل الملف — لا باب له اليوم",
+    "batch": "case-file",
+    "owner": "fullstack",
+    "est": "4س",
+    "labels": [
+      "backend",
+      "frontend",
+      "حرج"
+    ],
+    "deps": [],
+    "files": [
+      "migrations/0028_case_filed_date_optional.sql",
+      "src/legalrag/practice_routes/_shared.py",
+      "src/legalrag/practice/cases.py",
+      "web/components/matter/CaseFile.tsx",
+      "web/components/matter/CreateCaseDialog.tsx",
+      "web/app/cases/[id]/page.tsx"
+    ],
+    "source": "owner walkthrough 2026-09-03"
+  },
+  {
+    "id": "T-045",
+    "title": "مسار /cases اسمه «قضايا» ومحتواه «جلسات» — يُسمّى باسمه",
+    "batch": "case-file",
+    "owner": "frontend",
+    "est": "2س",
+    "labels": [
+      "frontend",
+      "i18n"
+    ],
+    "deps": [],
+    "files": [
+      "web/app/hearings/page.tsx",
+      "web/next.config.mjs",
+      "web/components/Shell.tsx",
+      "web/app/cases/[id]/page.tsx",
+      "web/lib/i18n/catalogs/shell.ts",
+      "web/lib/i18n/catalogs/practice.ts"
+    ],
+    "source": "owner walkthrough 2026-09-03"
+  },
+  {
+    "id": "T-046",
+    "title": "قرار مؤجَّل: أين تعيش الحقول الستة — على السجل القضائي أم على الملف؟",
+    "batch": "case-file",
+    "owner": "owner",
+    "est": "—",
+    "labels": [
+      "قرار",
+      "محجوب"
+    ],
+    "deps": [
+      "T-044"
+    ],
+    "files": [],
+    "source": "owner walkthrough 2026-09-03"
   }
 ]
