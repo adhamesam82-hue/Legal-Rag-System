@@ -828,5 +828,201 @@
     ],
     "files": [],
     "source": "owner walkthrough 2026-09-03"
+  },
+  {
+    "id": "T-047",
+    "title": "عزل المستأجرين في قاعدة البيانات نفسها (RLS)",
+    "batch": "case-file",
+    "owner": "backend",
+    "est": "1ي",
+    "labels": [
+      "أمان",
+      "حرج",
+      "backend"
+    ],
+    "deps": [],
+    "files": [
+      "migrations/0029_tenant_rls.sql",
+      "src/legalrag/db.py",
+      "src/legalrag/reminders.py",
+      "tests/test_tenant_isolation.py"
+    ]
+  },
+  {
+    "id": "T-048",
+    "title": "لوحة رموز القالب داخل Astryx",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "1ي",
+    "labels": [
+      "frontend",
+      "تصميم",
+      "مانع"
+    ],
+    "deps": [],
+    "files": [
+      "web/lib/theme.ts",
+      "web/lib/legalos.css",
+      "web/app/globals.css"
+    ],
+    "source": "owner decision 2026-09-05"
+  },
+  {
+    "id": "T-049",
+    "title": "IBM Plex Sans Arabic بديلًا عن أربعة وجوه",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "4س",
+    "labels": [
+      "frontend",
+      "تصميم"
+    ],
+    "deps": [
+      "T-048"
+    ],
+    "files": [
+      "web/app/globals.css",
+      "web/lib/theme.ts",
+      "marketing/assets/css/tokens.css",
+      "marketing/assets/fonts/"
+    ],
+    "source": "owner decision 2026-09-05"
+  },
+  {
+    "id": "T-050",
+    "title": "«السِّجل» علامةً — حذف ختم alsigil",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "4س",
+    "labels": [
+      "frontend",
+      "تصميم",
+      "هوية"
+    ],
+    "deps": [
+      "T-048"
+    ],
+    "files": [
+      "web/components/brand/Alsigil.tsx",
+      "web/lib/brand/geometry.ts",
+      "web/lib/brand/marks.ts",
+      "web/scripts/brand/build-marks.py",
+      "web/app/layout.tsx",
+      "web/app/providers.tsx",
+      "web/components/Shell.tsx"
+    ],
+    "source": "owner decision 2026-09-05"
+  },
+  {
+    "id": "T-051",
+    "title": "قشرة التطبيق: الشريط الجانبي والعلوي",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "1ي",
+    "labels": [
+      "frontend",
+      "تصميم"
+    ],
+    "deps": [
+      "T-048",
+      "T-050"
+    ],
+    "files": [
+      "web/components/Shell.tsx",
+      "web/lib/i18n/catalogs/shell.ts",
+      "web/lib/features.ts"
+    ],
+    "source": "owner decision 2026-09-05"
+  },
+  {
+    "id": "T-052",
+    "title": "مكتبة المكونات من مصفوفة الحالات",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "1ي",
+    "labels": [
+      "frontend",
+      "تصميم"
+    ],
+    "deps": [
+      "T-048"
+    ],
+    "files": [
+      "web/components/ui/"
+    ],
+    "source": "owner decision 2026-09-05"
+  },
+  {
+    "id": "T-053",
+    "title": "إعادة رسم الشاشات على المكتبة",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "3ي",
+    "labels": [
+      "frontend",
+      "تصميم"
+    ],
+    "deps": [
+      "T-051",
+      "T-052"
+    ],
+    "files": [
+      "web/app/matters/page.tsx",
+      "web/app/matters/[id]/page.tsx",
+      "web/app/clients/page.tsx",
+      "web/app/documents/page.tsx",
+      "web/app/time-tracking/page.tsx",
+      "web/app/calendar/page.tsx",
+      "web/app/dashboard/page.tsx",
+      "web/app/hearings/page.tsx",
+      "web/app/tasks/page.tsx",
+      "web/app/billing/page.tsx"
+    ],
+    "source": "owner decision 2026-09-05"
+  },
+  {
+    "id": "T-054",
+    "title": "إعدادات العرض والثيمات",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "6س",
+    "labels": [
+      "frontend",
+      "تصميم"
+    ],
+    "deps": [
+      "T-048",
+      "T-051"
+    ],
+    "files": [
+      "web/app/settings/page.tsx",
+      "web/components/Shell.tsx"
+    ],
+    "source": "owner request 2026-09-05"
+  },
+  {
+    "id": "T-055",
+    "title": "الموقع التسويقي على هوية «السِّجل»",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "1ي",
+    "labels": [
+      "frontend",
+      "تصميم",
+      "هوية"
+    ],
+    "deps": [
+      "T-048",
+      "T-050"
+    ],
+    "files": [
+      "marketing/assets/css/tokens.css",
+      "marketing/assets/css/sections.css",
+      "marketing/DESIGN.md",
+      "marketing/README.md",
+      "marketing/scripts/build-ar.py",
+      "web/public/landing/assets/css/"
+    ],
+    "source": "owner decision 2026-09-05"
   }
 ]
