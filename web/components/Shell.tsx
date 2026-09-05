@@ -1,22 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { AppShell, useAppShellMobile } from "@astryxdesign/core/AppShell";
-import { TopNav, TopNavHeading } from "@astryxdesign/core/TopNav";
-import {
-  SideNav,
-  SideNavCollapseButton,
-  SideNavHeading,
-  SideNavItem,
-  SideNavSection,
-  useSideNavCollapse,
-} from "@astryxdesign/core/SideNav";
-import { NavHeadingMenu, NavHeadingMenuItem } from "@astryxdesign/core/NavMenu";
+import { PrefetchedNavLink, useThemeMode } from "@/app/providers";
+import { useLocale } from "@/lib/i18n/provider";
+import { useTranslator, type TranslatorFn } from "@astryxdesign/core/i18n";
+import { useOrg } from "@/lib/org";
+import { useFormat } from "@/lib/i18n/format";
+import type { PracticeApi } from "@/lib/practice";
+import { isPathEnabled, featureForPath } from "@/lib/features";
+import { Icon } from "@/components/ui/Icon";
+import { Banner } from "@astryxdesign/core/Banner";
 import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Avatar } from "@astryxdesign/core/Avatar";
-import { DropdownMenu } from "@astryxdesign/core/DropdownMenu";
 import {
   CommandPalette,
   CommandPaletteFooter,
@@ -24,101 +19,142 @@ import {
 } from "@astryxdesign/core/CommandPalette";
 import { Kbd } from "@astryxdesign/core/Kbd";
 import { HStack } from "@astryxdesign/core/Stack";
-import {
-  ScaleIcon,
-  Squares2X2Icon,
-  UserGroupIcon,
-  BuildingOffice2Icon,
-  BriefcaseIcon,
-  CalendarDaysIcon,
-  CheckCircleIcon,
-  FolderIcon,
-  SparklesIcon,
-  BookOpenIcon,
-  BuildingLibraryIcon,
-  DocumentMagnifyingGlassIcon,
-  ClockIcon,
-  CreditCardIcon,
-  BanknotesIcon,
-  ChartBarIcon,
-  LightBulbIcon,
-  ChatBubbleLeftRightIcon,
-  BoltIcon,
-  ArrowRightOnRectangleIcon,
-  MoonIcon,
-  SunIcon,
-} from "@heroicons/react/24/outline";
-import { Banner } from "@astryxdesign/core/Banner";
-import { useMediaQuery } from "@astryxdesign/core/hooks";
-import { useTranslator, type TranslatorFn } from "@astryxdesign/core/i18n";
-import { PrefetchedNavLink, useThemeMode } from "@/app/providers";
-import { useLocale } from "@/lib/i18n/provider";
-import { useOrg } from "@/lib/org";
-import { useFormat } from "@/lib/i18n/format";
-import type { PracticeApi } from "@/lib/practice";
-import { isPathEnabled } from "@/lib/features";
 
-// stylex.create() isn't compiled by this app's build (see globals.css); AI
-// accent color goes through the Tailwind token bridge instead.
-const AI_ICON_CLASS = "text-purple-vivid";
+/**
+ * الأنماط الأربعة المدعومة في نظام السجل (T-051 / E-5):
+ * - light: واجهة وقائمة فاتحتان
+ * - dark: واجهة وقائمة داكنتان
+ * - mixed: واجهة فاتحة وقائمة جانبية داكنة
+ * - mixed-inv: واجهة داكنة وقائمة جانبية فاتحة
+ */
+export type ShellThemeMode = "light" | "dark" | "mixed" | "mixed-inv";
 
-type NavItem = {
+const THEME_MODE_KEY = "legalos-theme-mode";
+const SIDENAV_COLLAPSED_KEY = "sidebarCollapsed";
+const SIDENAV_COLLAPSED_LEGACY_KEY = "legalos-sidenav-collapsed";
+
+interface NavItemDef {
   href: string;
   labelKey: string;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  iconName: string;
   ai?: boolean;
-  /** Extra path prefixes that belong to this item. Article pages live at
-   *  /article/:id rather than under /library, but they are reached from the
-   *  library and from every citation, so the rail should still point there
-   *  instead of showing nothing selected. */
   alsoMatch?: string[];
-};
+}
 
-const ALL_NAV_SECTIONS: { titleKey: string; items: NavItem[] }[] = [
+interface NavSectionDef {
+  titleKey: string;
+  items: NavItemDef[];
+}
+
+/**
+ * تنظيم المجموعات السبع للشريط الجانبي وفقاً لقرار المالك وقالب السجل (T-051 / E-5):
+ * 1. عام (لوحة التحكم)
+ * 2. الموكّلون (الموكّلون، إدارة العلاقات 🔒)
+ * 3. الممارسة القانونية (القضايا، يوميّة الجلسات، التقويم، المهام)
+ * 4. المحتوى والمدوّنة (المستندات، مكتبة القوانين 🔒، النماذج والقوالب 🔒)
+ * 5. الذكاء الاصطناعي (السؤال القانوني، المساعد الذكي 🔒، البحث القانوني 🔒، مراجعة العقود 🔒)
+ * 6. الشؤون المالية (تتبّع الوقت، الفوترة، المحاسبة 🔒، التقارير 🔒)
+ * 7. الفريق والنظام (الرسائل 🔒، الأتمتة 🔒، الإعدادات)
+ */
+export const SHELL_NAV_SECTIONS: NavSectionDef[] = [
   {
     titleKey: "@legalos.shell.nav.section.overview",
-    items: [{ href: "/dashboard", labelKey: "@legalos.shell.nav.dashboard", icon: Squares2X2Icon }],
+    items: [
+      {
+        href: "/dashboard",
+        labelKey: "@legalos.shell.nav.dashboard",
+        iconName: "space_dashboard",
+      },
+    ],
   },
   {
     titleKey: "@legalos.shell.nav.section.clients",
     items: [
-      { href: "/crm", labelKey: "@legalos.shell.nav.crm", icon: UserGroupIcon },
-      { href: "/clients", labelKey: "@legalos.shell.nav.clients", icon: BuildingOffice2Icon },
+      {
+        href: "/clients",
+        labelKey: "@legalos.shell.nav.clients",
+        iconName: "groups",
+      },
+      {
+        href: "/crm",
+        labelKey: "@legalos.shell.nav.crm",
+        iconName: "hub",
+      },
     ],
   },
   {
     titleKey: "@legalos.shell.nav.section.practice",
     items: [
-      { href: "/matters", labelKey: "@legalos.shell.nav.matters", icon: BriefcaseIcon },
-      { href: "/hearings", labelKey: "@legalos.shell.nav.hearings", icon: ScaleIcon },
-      { href: "/calendar", labelKey: "@legalos.shell.nav.calendar", icon: CalendarDaysIcon },
-      { href: "/tasks", labelKey: "@legalos.shell.nav.tasks", icon: CheckCircleIcon },
+      {
+        href: "/matters",
+        labelKey: "@legalos.shell.nav.matters",
+        iconName: "folder_open",
+        alsoMatch: ["/cases"],
+      },
+      {
+        href: "/hearings",
+        labelKey: "@legalos.shell.nav.hearings",
+        iconName: "gavel",
+      },
+      {
+        href: "/calendar",
+        labelKey: "@legalos.shell.nav.calendar",
+        iconName: "calendar_month",
+      },
+      {
+        href: "/tasks",
+        labelKey: "@legalos.shell.nav.tasks",
+        iconName: "task_alt",
+      },
     ],
   },
   {
     titleKey: "@legalos.shell.nav.section.content",
     items: [
-      { href: "/documents", labelKey: "@legalos.shell.nav.documents", icon: FolderIcon },
       {
-        // The statute corpus itself — the source every AI citation resolves
-        // to. Distinct from Knowledge Base, which is the firm's own material.
+        href: "/documents",
+        labelKey: "@legalos.shell.nav.documents",
+        iconName: "description",
+      },
+      {
         href: "/library",
         labelKey: "@legalos.shell.nav.lawLibrary",
-        icon: BuildingLibraryIcon,
+        iconName: "menu_book",
         alsoMatch: ["/article"],
       },
-      { href: "/knowledge-base", labelKey: "@legalos.shell.nav.knowledgeBase", icon: LightBulbIcon },
+      {
+        href: "/knowledge-base",
+        labelKey: "@legalos.shell.nav.knowledgeBase",
+        iconName: "content_paste",
+      },
     ],
   },
   {
     titleKey: "@legalos.shell.nav.section.ai",
     items: [
-      { href: "/ai-assistant", labelKey: "@legalos.shell.nav.aiAssistant", icon: SparklesIcon, ai: true },
-      { href: "/legal-research", labelKey: "@legalos.shell.nav.legalResearch", icon: BookOpenIcon, ai: true },
+      {
+        href: "/ai-assistant",
+        labelKey: "@legalos.shell.nav.legalQuestion",
+        iconName: "psychology",
+        ai: true,
+      },
+      {
+        href: "/ai-assistant",
+        labelKey: "@legalos.shell.nav.aiAssistant",
+        iconName: "smart_toy",
+        ai: true,
+      },
+      {
+        href: "/legal-research",
+        labelKey: "@legalos.shell.nav.legalResearch",
+        iconName: "travel_explore",
+        ai: true,
+        alsoMatch: ["/search"],
+      },
       {
         href: "/contract-review",
         labelKey: "@legalos.shell.nav.contractReview",
-        icon: DocumentMagnifyingGlassIcon,
+        iconName: "rule",
         ai: true,
       },
     ],
@@ -126,141 +162,61 @@ const ALL_NAV_SECTIONS: { titleKey: string; items: NavItem[] }[] = [
   {
     titleKey: "@legalos.shell.nav.section.finance",
     items: [
-      { href: "/time-tracking", labelKey: "@legalos.shell.nav.timeTracking", icon: ClockIcon },
-      { href: "/billing", labelKey: "@legalos.shell.nav.billing", icon: CreditCardIcon },
-      { href: "/accounting", labelKey: "@legalos.shell.nav.accounting", icon: BanknotesIcon },
-      { href: "/reports", labelKey: "@legalos.shell.nav.reports", icon: ChartBarIcon },
+      {
+        href: "/time-tracking",
+        labelKey: "@legalos.shell.nav.timeTracking",
+        iconName: "timer",
+      },
+      {
+        href: "/billing",
+        labelKey: "@legalos.shell.nav.billing",
+        iconName: "receipt_long",
+      },
+      {
+        href: "/accounting",
+        labelKey: "@legalos.shell.nav.accounting",
+        iconName: "account_balance",
+      },
+      {
+        href: "/reports",
+        labelKey: "@legalos.shell.nav.reports",
+        iconName: "monitoring",
+      },
     ],
   },
   {
     titleKey: "@legalos.shell.nav.section.team",
     items: [
-      { href: "/messages", labelKey: "@legalos.shell.nav.messages", icon: ChatBubbleLeftRightIcon },
-      { href: "/automation", labelKey: "@legalos.shell.nav.automation", icon: BoltIcon },
+      {
+        href: "/messages",
+        labelKey: "@legalos.shell.nav.messages",
+        iconName: "forum",
+      },
+      {
+        href: "/automation",
+        labelKey: "@legalos.shell.nav.automation",
+        iconName: "bolt",
+      },
+      {
+        href: "/settings",
+        labelKey: "@legalos.shell.nav.settings",
+        iconName: "settings",
+      },
     ],
   },
 ];
 
-// Hidden screens leave the nav here and the router in middleware.ts; see
-// lib/features.ts for what is off and why. A section whose every item is gated
-// off disappears with them rather than leaving an empty heading.
-//
-// Filtered on first use and cached, NOT at module scope. The enabled set is no
-// longer fixed when the bundle is built: it arrives from the server-rendered
-// layout and Providers publishes it during render. Module-scope work runs at
-// import time, before that -- so this list would have been built from the
-// shipped set, and every staging-only screen would stay missing from the nav
-// even though its route now answers.
-let navSectionsCache: { titleKey: string; items: NavItem[] }[] | null = null;
-
-function navSections(): { titleKey: string; items: NavItem[] }[] {
-  if (navSectionsCache === null) {
-    navSectionsCache = ALL_NAV_SECTIONS.map((section) => ({
-      ...section,
-      items: section.items.filter((item) => isPathEnabled(item.href)),
-    })).filter((section) => section.items.length > 0);
-  }
-  return navSectionsCache;
-}
-
-const FIRMS = [
-  { id: "al-sayed", nameKey: "@legalos.shell.firm.alSayed" },
-  { id: "cairo-legal", nameKey: "@legalos.shell.firm.cairoLegal" },
-];
-
-/** How many rows of each kind the palette shows before it stops listing. */
-const SEARCH_LIMIT = 5;
-
-/** Below this a query matches most of the practice, so it stays local to the
- *  nav rather than sending three requests per keystroke. */
-const MIN_QUERY = 2;
-
-type CommandItem = {
-  id: string;
-  label: string;
-  auxiliaryData: { group: string; href: string };
-};
-
 /**
- * What the command palette searches.
- *
- * It used to search the navigation headings and nothing else, under a button
- * that said "search LegalOS": typing a client's name — a client who was in
- * the database, with a matter open — returned "No results". The nav is still
- * matched, because "take me to Billing" is a real use of this box, but the
- * firm's own records are the point of it.
- *
- * Records are fetched per query rather than pre-loaded: the server already
- * has a `q` filter on each of these lists, and a practice with three years of
- * files is not something to hold in a palette's memory.
+ * دالة استرجاع أقسام التنقل بعد معالجة الميزات وقت التشغيل.
+ * يتم استدعاؤها أثناء التصيير (Render-time) وليس في نطاق الموديول الثابت،
+ * لضمان وصول قيم الميزات من المزود (Providers) بدلاً من تجميدها وقت البناء.
  */
-function useCommandSource(t: TranslatorFn, practice: PracticeApi | null) {
-  return useMemo(() => {
-    const navItems: CommandItem[] = navSections().flatMap((section) =>
-      section.items.map((item) => ({
-        id: item.href,
-        label: t(item.labelKey),
-        auxiliaryData: {
-          group: t("@legalos.shell.search.group.navigation"),
-          href: item.href,
-        },
-      })),
-    );
-
-    const rows = (
-      items: { id: number; label: string }[],
-      path: string,
-      groupKey: string,
-    ): CommandItem[] =>
-      items.slice(0, SEARCH_LIMIT).map((item) => ({
-        id: `${path}/${item.id}`,
-        label: item.label,
-        auxiliaryData: { group: t(groupKey), href: `${path}/${item.id}` },
-      }));
-
-    return {
-      bootstrap: () => navItems,
-      async search(query: string): Promise<CommandItem[]> {
-        const q = query.trim();
-        const folded = q.toLowerCase();
-        const nav = navItems.filter((item) =>
-          item.label.toLowerCase().includes(folded),
-        );
-        if (!practice || q.length < MIN_QUERY) return nav;
-
-        // One slow or failing list must not empty the whole palette, so each
-        // falls back to no rows of its own kind.
-        const [clients, matters, documents] = await Promise.all([
-          practice.clients.list({ q }).catch(() => []),
-          practice.matters.list({ q }).catch(() => []),
-          practice.documents.list({ q }).catch(() => []),
-        ]);
-
-        return [
-          ...nav,
-          ...rows(
-            matters.map((m) => ({ id: m.id, label: m.name })),
-            "/matters",
-            "@legalos.shell.search.group.matters",
-          ),
-          ...rows(
-            clients.map((c) => ({ id: c.id, label: c.name })),
-            "/clients",
-            "@legalos.shell.search.group.clients",
-          ),
-          ...rows(
-            documents.map((d) => ({ id: d.id, label: d.name })),
-            "/documents",
-            "@legalos.shell.search.group.documents",
-          ),
-        ];
-      },
-    };
-  }, [t, practice]);
+export function navSections(): NavSectionDef[] {
+  return SHELL_NAV_SECTIONS;
 }
 
-/** أيقونة المطرقة القضائية (gavel) للعلامة الرسمية. */
-function GavelIcon({ size = 20, className }: { size?: number; className?: string }) {
+/** أيقونة المطرقة القضائية للعلامة الرسمية */
+function GavelIcon({ size = 20 }: { size?: number }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -269,61 +225,35 @@ function GavelIcon({ size = 20, className }: { size?: number; className?: string
       height={size}
       fill="currentColor"
       aria-hidden="true"
-      className={className}
     >
       <path d="M1 21h12v2H1v-2zM5.245 8.05l2.83-2.83 9.9 9.9-2.83 2.83-9.9-9.9zM12.317 3.808l2.828-2.829 5.657 5.657-2.828 2.829-5.657-5.657zM3.832 12.293l2.829-2.828 5.656 5.657-2.828 2.828-5.657-5.657z" />
     </svg>
   );
 }
 
-/** علامة «السِّجل» النصية والأيقونية: أيقونة gavel داخل مربع بزوايا --rs ولون --primary،
- *  بجوارها «السِّجل» بوزن ثقيل وتحتها السطر الوصفي بـ --text3 («إدارة مكاتب المحاماة»).
- *  تنكمش للأيقونة وحدها حين يُطوى الشريط الجانبي. */
-function SijilBrand({
-  collapsed = false,
-  compact = false,
-}: {
-  collapsed?: boolean;
-  compact?: boolean;
-}) {
+/**
+ * علامة «السِّجل» الرسمية:
+ * مربع بزوايا --rs وخلفية --primary مع أيقونة gavel،
+ * وبجوارها نص «السِّجل» بخط عريض والسطر الوصفي بـ --text3.
+ * تنكمش للأيقونة وحدها عند طي الشريط.
+ */
+function SijilBrand({ collapsed = false }: { collapsed?: boolean }) {
   const t = useTranslator();
   const brandName = t("@legalos.shell.brand");
   const brandTagline = t("@legalos.shell.brandTagline");
-  const fullBrandLabel = `${brandName} — ${brandTagline}`;
-  const boxSize = compact ? "30px" : "34px";
-  const iconSize = compact ? 18 : 20;
-
-  if (collapsed) {
-    return (
-      <div
-        role="img"
-        aria-label={fullBrandLabel}
-        className="grid place-items-center flex-none"
-        style={{
-          width: boxSize,
-          height: boxSize,
-          borderRadius: "var(--rs, 10px)",
-          background: "var(--primary)",
-          color: "var(--primary-fg)",
-          boxShadow: "var(--shadow)",
-        }}
-      >
-        <GavelIcon size={iconSize} />
-      </div>
-    );
-  }
+  const fullLabel = `${brandName} — ${brandTagline}`;
 
   return (
     <div
       role="img"
-      aria-label={fullBrandLabel}
+      aria-label={fullLabel}
       className="flex items-center gap-2.5 overflow-hidden text-start"
     >
       <div
         className="grid place-items-center flex-none"
         style={{
-          width: boxSize,
-          height: boxSize,
+          width: "34px",
+          height: "34px",
           borderRadius: "var(--rs, 10px)",
           background: "var(--primary)",
           color: "var(--primary-fg)",
@@ -331,158 +261,27 @@ function SijilBrand({
         }}
         aria-hidden="true"
       >
-        <GavelIcon size={iconSize} />
+        <GavelIcon size={20} />
       </div>
-      <div className="flex flex-col gap-0.5 min-w-0">
-        <span
-          className={`${
-            compact ? "text-[14px]" : "text-[15px]"
-          } font-bold text-[var(--text)] whitespace-nowrap leading-tight`}
-        >
-          {brandName}
-        </span>
-        <span
-          className={`${
-            compact ? "text-[10px]" : "text-[10.5px]"
-          } font-medium text-[var(--text3)] whitespace-nowrap leading-tight`}
-          style={{ letterSpacing: "0.2px" }}
-        >
-          {brandTagline}
-        </span>
-      </div>
+      {!collapsed && (
+        <div className="flex flex-col gap-0.5 min-w-0">
+          <span className="text-[15px] font-bold text-[var(--text)] whitespace-nowrap leading-tight">
+            {brandName}
+          </span>
+          <span
+            className="text-[10.5px] font-medium text-[var(--text3)] whitespace-nowrap leading-tight"
+            style={{ letterSpacing: "0.2px" }}
+          >
+            {brandTagline}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
 
-/** العلامة في شق العلامة بالشريط الجانبي.
- *  تنكمش إلى الأيقونة وحدها عند طيّ الشريط. */
-function SideNavBrand() {
-  const { isCollapsed } = useSideNavCollapse();
-  return <SijilBrand collapsed={isCollapsed} />;
-}
-
-function ThemeToggle() {
-  const { mode, setMode } = useThemeMode();
-  const t = useTranslator();
-  const isDark = mode === "dark";
-  return (
-    <Button
-      label={t(isDark ? "@legalos.shell.themeToggle.toLight" : "@legalos.shell.themeToggle.toDark")}
-      variant="ghost"
-      isIconOnly
-      icon={<Icon icon={isDark ? SunIcon : MoonIcon} size="sm" />}
-      onClick={() => setMode(isDark ? "light" : "dark")}
-    />
-  );
-}
-
-/** Switches the whole app between English and Arabic, which also flips the
- *  page between LTR and RTL. Shown as the target language's own endonym
- *  ("العربية" / "EN") rather than an icon: a globe glyph says a language
- *  menu exists but not which language you would get, and with only two
- *  locales the direct swap is one click instead of two. */
-function LanguageToggle() {
-  const { locale, setLocale } = useLocale();
-  const t = useTranslator();
-  const toArabic = locale === "en";
-  return (
-    <Button
-      label={t(
-        toArabic
-          ? "@legalos.shell.languageToggle.toArabic"
-          : "@legalos.shell.languageToggle.toEnglish",
-      )}
-      variant="ghost"
-      size="sm"
-      onClick={() => setLocale(toArabic ? "ar" : "en")}
-    >
-      {toArabic ? "العربية" : "EN"}
-    </Button>
-  );
-}
-
-/** The brand lives in one place: the workspace switcher at the top of the
- *  sidebar. Below AppShell's mobile breakpoint the sidebar becomes a drawer
- *  and that switcher goes off-screen, so the mark reappears in the top bar —
- *  the only case where two brand elements can't both be visible at once. */
-function TopNavBrand() {
-  const { isMobile } = useAppShellMobile();
-  const t = useTranslator();
-  if (!isMobile) return null;
-  return (
-    <TopNavHeading
-      logo={<SijilBrand compact />}
-      logoLabel={t("@legalos.shell.brand")}
-      headingHref="/dashboard"
-    />
-  );
-}
-
-/** Search, language, appearance, notifications, account — the controls that
- *  belong to the app rather than to any screen. Rendered floating over the
- *  content on desktop and inside the mobile bar below the breakpoint, so
- *  there is one definition of them either way. */
-function UtilityControls({ onSearch }: { onSearch: () => void }) {
-  const t = useTranslator();
-  const router = useRouter();
-  return (
-    <HStack gap={0.5} vAlign="center">
-      <Button
-        label={t("@legalos.shell.search.ariaLabel")}
-        variant="ghost"
-        size="sm"
-        icon={<Icon icon="search" color="inherit" />}
-        onClick={onSearch}
-      >
-        {t("@legalos.shell.search.button")}
-      </Button>
-      <LanguageToggle />
-      <ThemeToggle />
-      {/* The bell used to open three fixed notifications — a hearing reminder,
-        * an accepted invite, a finished contract review — none of them from
-        * any API, because there is no notifications table yet (phase 1). They
-        * named real seeded people and a real seeded case, so they read as
-        * genuine, and a lawyer who trusts a reminder that was never generated
-        * is worse off than one who has no bell at all. It comes back when
-        * something is behind it. */}
-      <DropdownMenu
-        button={{
-          label: t("@legalos.shell.account.menuAriaLabel"),
-          variant: "ghost",
-          isIconOnly: true,
-          icon: <Avatar name="أحمد السيد" size="sm" tooltip={false} />,
-        }}
-        hasChevron={false}
-        items={[
-          {
-            type: "section",
-            items: [
-              { label: t("@legalos.shell.account.profile"), onClick: () => router.push("/settings/profile") },
-              { label: t("@legalos.shell.account.firmSettings"), onClick: () => router.push("/settings") },
-            ],
-          },
-          { type: "divider" },
-          {
-            label: t("@legalos.shell.account.signOut"),
-            icon: <Icon icon={ArrowRightOnRectangleIcon} size="sm" />,
-            onClick: () => {},
-          },
-        ]}
-      />
-    </HStack>
-  );
-}
-
 /**
- * "تجربتك المجانية تنتهي بعد ١٢ يومًا" (T-041) -- days left in the current
- * organization's trial, real from `trial_ends_at`, never a placeholder. It
- * shows for every role: a lawyer or staff member cannot record a plan
- * choice, but they still work inside the trial and should see it end.
- *
- * Absent once the firm has a paid plan (`plan !== "trial"`) -- a lock-free
- * trial signal has nothing to say to a firm no longer on one. `status`
- * strengthens to warning at 3 days or fewer, matching the acceptance
- * criterion, and to error once it has actually passed.
+ * شريط التنبيه بانتهاء الفترة التجريبية (T-041)
  */
 function TrialBar() {
   const { memberships, organizationId } = useOrg();
@@ -520,141 +319,673 @@ function TrialBar() {
   );
 }
 
-/** Routes rendered without app chrome — a signed-out visitor has no firm,
- *  no matters and nothing to navigate to, so the nav would be dead links. */
+const SEARCH_LIMIT = 5;
+const MIN_QUERY = 2;
+
+type CommandItem = {
+  id: string;
+  label: string;
+  auxiliaryData: { group: string; href: string };
+};
+
+function useCommandSource(t: TranslatorFn, practice: PracticeApi | null) {
+  return useMemo(() => {
+    const navItems: CommandItem[] = SHELL_NAV_SECTIONS.flatMap((section) =>
+      section.items
+        .filter((item) => isPathEnabled(item.href))
+        .map((item) => ({
+          id: item.href,
+          label: t(item.labelKey),
+          auxiliaryData: {
+            group: t("@legalos.shell.search.group.navigation"),
+            href: item.href,
+          },
+        })),
+    );
+
+    const rows = (
+      items: { id: number; label: string }[],
+      path: string,
+      groupKey: string,
+    ): CommandItem[] =>
+      items.slice(0, SEARCH_LIMIT).map((item) => ({
+        id: `${path}/${item.id}`,
+        label: item.label,
+        auxiliaryData: { group: t(groupKey), href: `${path}/${item.id}` },
+      }));
+
+    return {
+      bootstrap: () => navItems,
+      async search(query: string): Promise<CommandItem[]> {
+        const q = query.trim();
+        const folded = q.toLowerCase();
+        const nav = navItems.filter((item) =>
+          item.label.toLowerCase().includes(folded),
+        );
+        if (!practice || q.length < MIN_QUERY) return nav;
+
+        const [clients, matters, documents] = await Promise.all([
+          practice.clients.list({ q }).catch(() => []),
+          practice.matters.list({ q }).catch(() => []),
+          practice.documents.list({ q }).catch(() => []),
+        ]);
+
+        return [
+          ...nav,
+          ...rows(
+            matters.map((m) => ({ id: m.id, label: m.name })),
+            "/matters",
+            "@legalos.shell.search.group.matters",
+          ),
+          ...rows(
+            clients.map((c) => ({ id: c.id, label: c.name })),
+            "/clients",
+            "@legalos.shell.search.group.clients",
+          ),
+          ...rows(
+            documents.map((d) => ({ id: d.id, label: d.name })),
+            "/documents",
+            "@legalos.shell.search.group.documents",
+          ),
+        ];
+      },
+    };
+  }, [t, practice]);
+}
+
+/** المسارات التي لا تظهر فيها القشرة للمستخدمين غير المسجلين */
 const BARE_ROUTES = ["/sign-in", "/sign-up", "/invite"];
-
-const SIDENAV_COLLAPSED_KEY = "legalos-sidenav-collapsed";
-
-/** 1280×720 is the layout floor every screen is designed to hold. Under it the
- *  rail gives its 248px back to the content rather than letting the screens
- *  compress: at 1024 a calendar month cell is otherwise about 50px wide. The
- *  saved preference is left untouched, so widening the window restores whatever
- *  the user last chose. */
-const BELOW_FLOOR_QUERY = "(max-width: 1279px)";
-
-/** AppShell's own default breakpoint, below which the sidebar becomes a drawer
- *  and a docked top bar is the only place left for the brand and the
- *  hamburger. Kept in step with AppShell's `md` by hand — the component reads
- *  it from its own constant, and exposes it only through context. */
-const MOBILE_BAR_QUERY = "(max-width: 768px)";
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const t = useTranslator();
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isSideNavCollapsed, setIsSideNavCollapsed] = useState(false);
-  const isBelowFloor = useMediaQuery(BELOW_FLOOR_QUERY);
-  const isMobileBar = useMediaQuery(MOBILE_BAR_QUERY);
-  const { practice } = useOrg();
-  const commandSource = useCommandSource(t, practice);
+  const { locale, setLocale } = useLocale();
+  const { mode: parentMode, setMode: setParentMode } = useThemeMode();
+  const { practice, organizationName } = useOrg();
 
-  // Read the saved preference after mount rather than lazily in useState, so
-  // server and first client render agree (no localStorage on the server) and
-  // React doesn't flag a hydration mismatch.
+  // حالة طي الشريط الجانبي المستمرة في localStorage (T-051)
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+
+  // حالة الأنماط الأربعة المستمرة (light, dark, mixed, mixed-inv)
+  const [themeMode, setThemeMode] = useState<ShellThemeMode>("light");
+
+  // استرجاع الإعدادات من التخزين المحلي بعد التحميل لتفادي أخطاء الـ hydration
   useEffect(() => {
-    setIsSideNavCollapsed(window.localStorage.getItem(SIDENAV_COLLAPSED_KEY) === "1");
+    try {
+      const savedCollapsed =
+        window.localStorage.getItem(SIDENAV_COLLAPSED_KEY) ??
+        window.localStorage.getItem(SIDENAV_COLLAPSED_LEGACY_KEY);
+      if (savedCollapsed === "true" || savedCollapsed === "1") {
+        setIsCollapsed(true);
+      }
+
+      const savedTheme = window.localStorage.getItem(THEME_MODE_KEY) as ShellThemeMode | null;
+      if (savedTheme && ["light", "dark", "mixed", "mixed-inv"].includes(savedTheme)) {
+        setThemeMode(savedTheme);
+        const targetShellTheme = savedTheme === "dark" || savedTheme === "mixed-inv" ? "dark" : "light";
+        setParentMode(targetShellTheme);
+      } else if (parentMode === "dark") {
+        setThemeMode("dark");
+      }
+    } catch {
+      // التخزين المحلي قد يكون محجوباً في بيئات خاصة
+    }
+  }, [parentMode, setParentMode]);
+
+  // حفظ حالة الطي في localStorage
+  const handleToggleCollapse = useCallback(() => {
+    setIsCollapsed((prev) => {
+      const next = !prev;
+      try {
+        window.localStorage.setItem(SIDENAV_COLLAPSED_KEY, String(next));
+        window.localStorage.setItem(SIDENAV_COLLAPSED_LEGACY_KEY, next ? "1" : "0");
+      } catch {
+        // تجاهل أخطاء التخزين
+      }
+      return next;
+    });
   }, []);
 
-  const handleCollapsedChange = (collapsed: boolean) => {
-    setIsSideNavCollapsed(collapsed);
-    window.localStorage.setItem(SIDENAV_COLLAPSED_KEY, collapsed ? "1" : "0");
-  };
+  // تبديل النمط وحفظه ومزامنته مع سياق الثيم العام في الأوضاع الأربعة
+  const handleThemeChange = useCallback(
+    (newMode: ShellThemeMode) => {
+      setThemeMode(newMode);
+      try {
+        window.localStorage.setItem(THEME_MODE_KEY, newMode);
+      } catch {
+        // تجاهل أخطاء التخزين
+      }
+      const targetShellTheme = newMode === "dark" || newMode === "mixed-inv" ? "dark" : "light";
+      setParentMode(targetShellTheme);
+    },
+    [setParentMode],
+  );
+
+  const commandSource = useCommandSource(t, practice);
+
+  // إغلاق قائمة الجوال عند تغيير المسار
+  useEffect(() => {
+    setIsMobileOpen(false);
+    setIsAccountMenuOpen(false);
+  }, [pathname]);
 
   if (BARE_ROUTES.some((route) => pathname.startsWith(route))) {
     return <>{children}</>;
   }
 
-  // The rail follows the app's own light/dark mode rather than being forced
-  // dark for the brand navy. A permanently dark column against a white content
-  // area split the screen into two planes and spent the strongest contrast on
-  // the part of the interface nobody is reading; on the wash background it
-  // recedes, and the only marked item is the selected one.
-  const sideNav = (
-    <SideNav
-      resizable={{ defaultWidth: 248, minWidth: 220, maxWidth: 320, autoSaveId: "legalos-sidenav" }}
-      collapsible={{
-        isCollapsed: isSideNavCollapsed || isBelowFloor,
-        onCollapsedChange: handleCollapsedChange,
-        hasButton: false,
-      }}
-      footerIcons={
-        <SideNavCollapseButton
-          label={isSideNavCollapsed ? undefined : t("@legalos.shell.collapse")}
-        />
-      }
-      header={
-        <SideNavHeading
-          heading=""
-          icon={<SideNavBrand />}
-          menu={
-            <NavHeadingMenu size="lg">
-              {FIRMS.map((firm) => (
-                <NavHeadingMenuItem key={firm.id} label={t(firm.nameKey)} href="#" />
-              ))}
-            </NavHeadingMenu>
-          }
-        />
-      }
-    >
-      {navSections().map((section) => (
-        <SideNavSection key={section.titleKey} title={t(section.titleKey)}>
-          {section.items.map((item) => {
-            const isSelected = [item.href, ...(item.alsoMatch ?? [])].some((prefix) =>
-              pathname.startsWith(prefix),
-            );
-            return (
-              <SideNavItem
-                key={item.href}
-                label={t(item.labelKey)}
-                href={item.href}
-                // Warms the whole route payload so a click does not pay for
-                // one; see PrefetchedNavLink for why the default prefetch cannot.
-                // Scoped to the sidebar rather than set on LinkProvider: these
-                // are a bounded, known set, where a table's row links are not.
-                as={PrefetchedNavLink}
-                isSelected={isSelected}
-                icon={<Icon icon={item.icon} size="sm" className={item.ai ? AI_ICON_CLASS : undefined} />}
-              />
-            );
-          })}
-        </SideNavSection>
-      ))}
-    </SideNav>
-  );
+  // حساب ثيم القشرة وثيم الشريط الجانبي المستقلين لدعم الأوضاع الأربعة
+  const shellTheme = themeMode === "dark" || themeMode === "mixed-inv" ? "dark" : "light";
+  const navTheme = themeMode === "dark" || themeMode === "mixed" ? "dark" : "light";
 
-  // The top bar is a row in the shell grid only where it has to be. Below the
-  // breakpoint the sidebar is a drawer, so that row carries the brand and the
-  // hamburger and earns its 48px; above it, the controls float over the
-  // content instead (see below) and the content region gets the full height.
-  const topNav = isMobileBar ? (
-    <TopNav
-      label={t("@legalos.shell.mainNavAriaLabel")}
-      heading={<TopNavBrand />}
-      endContent={<UtilityControls onSearch={() => setIsSearchOpen(true)} />}
-    />
-  ) : undefined;
+  const isRtl = locale === "ar";
 
   return (
-    <>
-      <AppShell topNav={topNav} sideNav={sideNav} contentPadding={6} banner={<TrialBar />}>
-        {children}
-      </AppShell>
-      {/* Floating, not docked: the content region owns the whole viewport
-       *  height and scrolls underneath this, which is why the pill is
-       *  translucent and blurred rather than opaque. #astryx-app-shell-main
-       *  keeps a matching top inset (globals.css) so the first screenful of a
-       *  page starts below it instead of under it. */}
-      {!isMobileBar && (
-        <HStack
-          gap={0.5}
-          vAlign="center"
-          className="fixed top-2 end-3 z-40 rounded-full border border-border bg-surface/75 px-1 py-0.5 backdrop-blur-md"
-        >
-          <UtilityControls onSearch={() => setIsSearchOpen(true)} />
-        </HStack>
+    <div
+      dir={isRtl ? "rtl" : "ltr"}
+      data-theme={shellTheme}
+      className="flex min-h-screen w-full"
+      style={{
+        backgroundColor: "var(--bg)",
+        color: "var(--text)",
+        fontFamily: "var(--font-family-body)",
+      }}
+    >
+      {/* خلفية معتمة للجوال عند فتح القائمة */}
+      {isMobileOpen && (
+        <div
+          role="presentation"
+          aria-hidden="true"
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={() => setIsMobileOpen(false)}
+        />
       )}
+
+      {/* الشريط الجانبي (Aside Navigation) */}
+      <aside
+        data-theme={navTheme}
+        aria-label={t("@legalos.shell.mainNavAriaLabel")}
+        className={`fixed inset-y-0 start-0 z-50 flex flex-col transition-all duration-200 ease-in-out md:sticky md:top-0 md:h-screen ${
+          isMobileOpen
+            ? "translate-x-0"
+            : isRtl
+            ? "translate-x-full md:translate-x-0"
+            : "-translate-x-full md:translate-x-0"
+        }`}
+        style={{
+          width: isCollapsed ? "66px" : "248px",
+          backgroundColor: "var(--surface)",
+          borderInlineEnd: "1px solid var(--border)",
+          color: "var(--text)",
+        }}
+      >
+        {/* ترويسة الشريط الجانبي: العلامة وزر الإغلاق في الجوال */}
+        <div
+          className="flex flex-none items-center justify-between gap-2 px-4"
+          style={{
+            height: "66px",
+            borderBottom: "1px solid var(--border)",
+          }}
+        >
+          <SijilBrand collapsed={isCollapsed} />
+          {/* زر إغلاق القائمة في الشاشات الصغيرة */}
+          <button
+            type="button"
+            aria-label="Close"
+            className="flex h-8 w-8 items-center justify-center rounded-md md:hidden"
+            style={{
+              color: "var(--text2)",
+              backgroundColor: "transparent",
+            }}
+            onClick={() => setIsMobileOpen(false)}
+          >
+            <Icon name="close" size={20} />
+          </button>
+        </div>
+
+        {/* قائمة المجموعات والبنود السبعة */}
+        <nav
+          className="flex-1 overflow-y-auto px-2.5 py-3.5 space-y-1"
+          style={{
+            scrollbarWidth: "thin",
+          }}
+        >
+          {SHELL_NAV_SECTIONS.map((section) => (
+            <div key={section.titleKey} className="pt-2">
+              {!isCollapsed && (
+                <div
+                  className="px-3 pb-1 pt-2.5 text-[10px] font-bold uppercase tracking-wider text-start"
+                  style={{ color: "var(--text3)" }}
+                >
+                  {t(section.titleKey)}
+                </div>
+              )}
+              <div className="space-y-0.5">
+                {section.items.map((item) => {
+                  const isLocked = !isPathEnabled(item.href);
+                  const feature = featureForPath(item.href);
+                  const isSelected =
+                    !isLocked &&
+                    ([item.href, ...(item.alsoMatch ?? [])].some((prefix) =>
+                      prefix === "/dashboard"
+                        ? pathname === "/dashboard"
+                        : pathname === prefix || pathname.startsWith(`${prefix}/`),
+                    ));
+
+                  const label = t(item.labelKey);
+                  const lockedTitle = isLocked
+                    ? `${item.href} — محجوبة بمفتاح ${feature ?? ""}`
+                    : label;
+
+                  // حالة البند المقفول
+                  if (isLocked) {
+                    return (
+                      <div
+                        key={`${item.href}-${item.labelKey}`}
+                        title={lockedTitle}
+                        role="link"
+                        aria-disabled="true"
+                        className="group relative flex w-full items-center gap-3 rounded-[var(--rs,10px)] px-3 py-2 text-start text-[13px] font-medium transition-colors"
+                        style={{
+                          backgroundColor: "transparent",
+                          color: "var(--text3)",
+                          cursor: "not-allowed",
+                          opacity: 0.72,
+                        }}
+                      >
+                        <Icon
+                          name={item.iconName}
+                          size={20}
+                          className="flex-none opacity-80"
+                        />
+                        {!isCollapsed && (
+                          <>
+                            <span className="min-w-0 flex-1 truncate">{label}</span>
+                            <Icon
+                              name="lock"
+                              size={15}
+                              className="flex-none opacity-70"
+                            />
+                          </>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  // حالة البند النشط والمفتوح
+                  return (
+                    <PrefetchedNavLink
+                      key={`${item.href}-${item.labelKey}`}
+                      href={item.href}
+                      title={label}
+                      className="group relative flex w-full items-center gap-3 rounded-[var(--rs,10px)] px-3 py-2 text-start text-[13px] font-medium transition-colors"
+                      style={{
+                        backgroundColor: isSelected ? "var(--surface2)" : "transparent",
+                        color: isSelected ? "var(--text)" : "var(--text2)",
+                        fontWeight: isSelected ? 600 : 500,
+                      }}
+                    >
+                      <Icon
+                        name={item.iconName}
+                        size={20}
+                        className={`flex-none ${
+                          item.ai ? "text-[var(--accent)]" : ""
+                        }`}
+                        style={{
+                          color: isSelected
+                            ? "var(--primary)"
+                            : item.ai
+                            ? "var(--accent)"
+                            : "currentColor",
+                        }}
+                      />
+                      {!isCollapsed && (
+                        <span className="min-w-0 flex-1 truncate">{label}</span>
+                      )}
+
+                      {/* شريط الإشارة للبند النشط في نهاية العنصر كما في القالب */}
+                      {isSelected && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute rounded-full"
+                          style={{
+                            insetInlineEnd: "6px",
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            width: "3px",
+                            height: "18px",
+                            backgroundColor: "var(--accent)",
+                          }}
+                        />
+                      )}
+                    </PrefetchedNavLink>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        {/* تذييل الشريط الجانبي: زر الطي والتوسيع المستمر */}
+        <div
+          className="flex flex-none items-center justify-between p-2.5"
+          style={{
+            borderTop: "1px solid var(--border)",
+          }}
+        >
+          <button
+            type="button"
+            onClick={handleToggleCollapse}
+            title={isCollapsed ? t("@legalos.shell.expand") : t("@legalos.shell.collapse")}
+            aria-label={isCollapsed ? t("@legalos.shell.expand") : t("@legalos.shell.collapse")}
+            className="flex w-full items-center justify-center gap-2 rounded-[var(--rs,10px)] px-3 py-2 text-[12px] font-medium transition-colors hover:bg-[var(--surface2)]"
+            style={{
+              color: "var(--text2)",
+            }}
+          >
+            <Icon
+              name={
+                isCollapsed
+                  ? isRtl
+                    ? "keyboard_double_arrow_left"
+                    : "keyboard_double_arrow_right"
+                  : isRtl
+                  ? "keyboard_double_arrow_right"
+                  : "keyboard_double_arrow_left"
+              }
+              size={18}
+            />
+            {!isCollapsed && <span>{t("@legalos.shell.collapse")}</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* منطقة المحتوى الرئيسي والشريط العلوي */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* الشريط العلوي الملتصق (Sticky Header) */}
+        <header
+          className="sticky top-0 z-30 flex min-h-[66px] flex-none flex-wrap items-center gap-3 px-5 py-2.5 backdrop-blur-md"
+          style={{
+            backgroundColor: "color-mix(in oklab, var(--surface) 88%, transparent)",
+            borderBottom: "1px solid var(--border)",
+          }}
+        >
+          {/* زر فتح القائمة في الشاشات الصغيرة */}
+          <button
+            type="button"
+            onClick={() => setIsMobileOpen(true)}
+            aria-label="Open Navigation"
+            className="flex h-9 w-9 flex-none items-center justify-center rounded-[var(--rs,10px)] border md:hidden"
+            style={{
+              borderColor: "var(--border)",
+              backgroundColor: "var(--surface)",
+              color: "var(--text2)",
+            }}
+          >
+            <Icon name="menu" size={20} />
+          </button>
+
+          {/* زر طي القائمة في سطح المكتب كما في القالب */}
+          <button
+            type="button"
+            onClick={handleToggleCollapse}
+            title={isCollapsed ? t("@legalos.shell.expand") : t("@legalos.shell.collapse")}
+            className="hidden h-9 w-9 flex-none items-center justify-center rounded-[var(--rs,10px)] border md:flex"
+            style={{
+              borderColor: "var(--border)",
+              backgroundColor: "var(--surface)",
+              color: "var(--text2)",
+            }}
+          >
+            <Icon name={isCollapsed ? "menu" : "menu_open"} size={20} />
+          </button>
+
+          {/* حقل البحث السريع مع زر Ctrl K */}
+          <div className="relative flex flex-1 items-center max-w-md min-w-[180px]">
+            <span
+              className="pointer-events-none absolute start-3 flex items-center justify-center"
+              style={{ color: "var(--text3)" }}
+            >
+              <Icon name="search" size={18} />
+            </span>
+            <input
+              type="text"
+              readOnly
+              onClick={() => setIsSearchOpen(true)}
+              placeholder={t("@legalos.shell.search.placeholder")}
+              className="w-full cursor-pointer rounded-full border py-1.5 pe-16 ps-9 text-[13px] outline-none transition-all"
+              style={{
+                borderColor: "var(--border)",
+                backgroundColor: "var(--surface2)",
+                color: "var(--text)",
+              }}
+            />
+            <span
+              onClick={() => setIsSearchOpen(true)}
+              className="absolute end-2.5 cursor-pointer rounded-md border px-1.5 py-0.5 text-[10.5px]"
+              style={{
+                borderColor: "var(--border)",
+                backgroundColor: "var(--surface)",
+                color: "var(--text3)",
+              }}
+            >
+              Ctrl K
+            </span>
+          </div>
+
+          <div className="flex-1" />
+
+          {/* أزرار تبديل الأنماط الأربعة كما في القالب (T-051 / E-5) */}
+          <div
+            className="flex flex-none items-center gap-0.5 rounded-full border p-0.5"
+            style={{
+              borderColor: "var(--border)",
+              backgroundColor: "var(--surface2)",
+            }}
+          >
+            {/* فاتح */}
+            <button
+              type="button"
+              onClick={() => handleThemeChange("light")}
+              title={t("@legalos.shell.theme.light")}
+              aria-label={t("@legalos.shell.theme.light")}
+              className="flex h-7 w-8 items-center justify-center rounded-full transition-all"
+              style={{
+                backgroundColor: themeMode === "light" ? "var(--surface)" : "transparent",
+                color: themeMode === "light" ? "var(--primary)" : "var(--text3)",
+                boxShadow: themeMode === "light" ? "var(--shadow)" : "none",
+              }}
+            >
+              <Icon name="light_mode" size={16} />
+            </button>
+
+            {/* داكن */}
+            <button
+              type="button"
+              onClick={() => handleThemeChange("dark")}
+              title={t("@legalos.shell.theme.dark")}
+              aria-label={t("@legalos.shell.theme.dark")}
+              className="flex h-7 w-8 items-center justify-center rounded-full transition-all"
+              style={{
+                backgroundColor: themeMode === "dark" ? "var(--surface)" : "transparent",
+                color: themeMode === "dark" ? "var(--primary)" : "var(--text3)",
+                boxShadow: themeMode === "dark" ? "var(--shadow)" : "none",
+              }}
+            >
+              <Icon name="dark_mode" size={16} />
+            </button>
+
+            {/* مختلط: قائمة داكنة */}
+            <button
+              type="button"
+              onClick={() => handleThemeChange("mixed")}
+              title={t("@legalos.shell.theme.mixed")}
+              aria-label={t("@legalos.shell.theme.mixed")}
+              className="flex h-7 w-8 items-center justify-center rounded-full transition-all"
+              style={{
+                backgroundColor: themeMode === "mixed" ? "var(--surface)" : "transparent",
+                color: themeMode === "mixed" ? "var(--primary)" : "var(--text3)",
+                boxShadow: themeMode === "mixed" ? "var(--shadow)" : "none",
+              }}
+            >
+              <Icon name="contrast" size={16} />
+            </button>
+
+            {/* مختلط عكسي: قائمة فاتحة */}
+            <button
+              type="button"
+              onClick={() => handleThemeChange("mixed-inv")}
+              title={t("@legalos.shell.theme.mixedInv")}
+              aria-label={t("@legalos.shell.theme.mixedInv")}
+              className="flex h-7 w-8 items-center justify-center rounded-full transition-all"
+              style={{
+                backgroundColor: themeMode === "mixed-inv" ? "var(--surface)" : "transparent",
+                color: themeMode === "mixed-inv" ? "var(--primary)" : "var(--text3)",
+                boxShadow: themeMode === "mixed-inv" ? "var(--shadow)" : "none",
+              }}
+            >
+              <Icon name="invert_colors" size={16} />
+            </button>
+          </div>
+
+          {/* زر تبديل اللغة */}
+          <button
+            type="button"
+            onClick={() => setLocale(locale === "ar" ? "en" : "ar")}
+            className="flex h-8.5 flex-none items-center gap-1.5 rounded-[var(--rs,10px)] border px-3 text-[12px] font-semibold transition-colors hover:bg-[var(--surface2)]"
+            style={{
+              borderColor: "var(--border)",
+              backgroundColor: "var(--surface)",
+              color: "var(--text2)",
+            }}
+          >
+            <Icon name="translate" size={16} />
+            <span>{locale === "ar" ? "EN" : "العربية"}</span>
+          </button>
+
+          {/* زر الإشعارات */}
+          <button
+            type="button"
+            aria-label="Notifications"
+            className="relative flex h-9 w-9 flex-none items-center justify-center rounded-[var(--rs,10px)] border transition-colors hover:bg-[var(--surface2)]"
+            style={{
+              borderColor: "var(--border)",
+              backgroundColor: "var(--surface)",
+              color: "var(--text2)",
+            }}
+          >
+            <Icon name="notifications" size={20} />
+            <span
+              className="absolute top-1.5 end-1.5 h-2 w-2 rounded-full"
+              style={{
+                backgroundColor: "var(--danger)",
+                boxShadow: "0 0 0 2px var(--surface)",
+              }}
+            />
+          </button>
+
+          {/* خط فاصل صغير */}
+          <div
+            className="h-6 w-[1px] flex-none"
+            style={{ backgroundColor: "var(--border)" }}
+          />
+
+          {/* زر وقائمة المستخدم */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsAccountMenuOpen((prev) => !prev)}
+              aria-label={t("@legalos.shell.account.menuAriaLabel")}
+              aria-expanded={isAccountMenuOpen}
+              className="flex items-center gap-2 rounded-full p-1 text-start transition-colors hover:bg-[var(--surface2)]"
+            >
+              <div
+                className="grid h-8 w-8 flex-none place-items-center rounded-full text-[12px] font-bold"
+                style={{
+                  backgroundColor: "var(--accent-soft)",
+                  color: "var(--accent)",
+                }}
+              >
+                أح
+              </div>
+              <div className="hidden flex-col md:flex">
+                <span className="text-[12.5px] font-semibold leading-tight text-[var(--text)]">
+                  {organizationName ?? "أ. أحمد الحسيني"}
+                </span>
+                <span className="text-[10.5px] text-[var(--text3)] leading-tight">
+                  شريك مؤسس
+                </span>
+              </div>
+              <Icon name="expand_more" size={16} className="text-[var(--text3)]" />
+            </button>
+
+            {/* القائمة المنسدلة للحساب */}
+            {isAccountMenuOpen && (
+              <div
+                className="absolute end-0 top-full mt-2 w-48 rounded-[var(--r,14px)] border p-1 shadow-lg z-50"
+                style={{
+                  borderColor: "var(--border)",
+                  backgroundColor: "var(--surface)",
+                  color: "var(--text)",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAccountMenuOpen(false);
+                    router.push("/settings/profile");
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-[13px] hover:bg-[var(--surface2)]"
+                >
+                  <Icon name="person" size={16} />
+                  <span>{t("@legalos.shell.account.profile")}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAccountMenuOpen(false);
+                    router.push("/settings");
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-[13px] hover:bg-[var(--surface2)]"
+                >
+                  <Icon name="settings" size={16} />
+                  <span>{t("@legalos.shell.account.firmSettings")}</span>
+                </button>
+                <div
+                  className="my-1 h-[1px] w-full"
+                  style={{ backgroundColor: "var(--border)" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsAccountMenuOpen(false)}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-[13px] text-[var(--danger)] hover:bg-[var(--danger-soft)]"
+                >
+                  <Icon name="logout" size={16} />
+                  <span>{t("@legalos.shell.account.signOut")}</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </header>
+
+        {/* شريط الأيام المتبقية في الفترة التجريبية */}
+        <TrialBar />
+
+        {/* جسم الصفحة الرئيسي */}
+        <main
+          className="flex-1 p-6"
+          style={{
+            backgroundColor: "var(--bg)",
+          }}
+        >
+          {children}
+        </main>
+      </div>
+
+      {/* لوحة الأوامر والبحث (Command Palette) */}
       <CommandPalette
         isOpen={isSearchOpen}
         onOpenChange={setIsSearchOpen}
@@ -662,10 +993,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
         label={t("@legalos.shell.search.ariaLabel")}
         emptyBootstrapText={t("@legalos.shell.search.emptyBootstrap")}
         emptySearchText={t("@legalos.shell.search.empty")}
-        // The input's own placeholder and the footer's hints are the two
-        // strings the design system hardcodes in English rather than
-        // resolving through the catalog (see lib/i18n/catalogs/astryx.ts for
-        // everything that does resolve), so both slots are passed explicitly.
         input={
           <CommandPaletteInput
             placeholder={t("@legalos.shell.search.placeholder")}
@@ -691,15 +1018,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
             </HStack>
           </CommandPaletteFooter>
         }
-        // Every id IS the route to open, records included, so the palette no
-        // longer has to find the value in the nav list to act on it.
         onValueChange={(value) => {
           if (!value) return;
           router.push(value);
           setIsSearchOpen(false);
         }}
       />
-    </>
+    </div>
   );
 }
-
