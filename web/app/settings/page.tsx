@@ -26,7 +26,6 @@
 import { useOrg, useResource } from "@/lib/org";
 import { api } from "@/lib/api";
 import { DataView } from "@/components/DataState";
-import { VStack } from "@astryxdesign/core/Stack";
 import { ProfileSection } from "@/components/settings/ProfileSection";
 import { IdentitySection } from "@/components/settings/IdentitySection";
 import { PreferencesSection } from "@/components/settings/PreferencesSection";
@@ -57,7 +56,7 @@ export default function FirmSettingsPage() {
         }
 
         return (
-          <VStack gap={6} key={loaded.id}>
+          <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full py-6 px-4" key={loaded.id}>
             <ProfileSection
               firm={loaded}
               organizationId={loaded.id}
@@ -94,7 +93,7 @@ export default function FirmSettingsPage() {
             {/* Not gated by canEdit -- a personal channel preference, not a
               * firm setting. Every member, any role, sets their own. */}
             <NotificationsSection />
-          </VStack>
+          </div>
         );
       }}
     </DataView>

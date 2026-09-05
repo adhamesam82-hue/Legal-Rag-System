@@ -10,13 +10,9 @@
 
 import { useEffect, useState } from "react";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Text } from "@astryxdesign/core/Text";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { Selector } from "@astryxdesign/core/Selector";
-import { FileInput } from "@astryxdesign/core/FileInput";
-import { Avatar } from "@astryxdesign/core/Avatar";
-import { Token } from "@astryxdesign/core/Token";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Icon } from "@/components/ui/Icon";
 import { API_BASE, api, ApiError, type Organization, type BrandColor } from "@/lib/api";
 import { SettingsSection } from "./shared";
 
@@ -93,8 +89,7 @@ export function IdentitySection({
     }
   }
 
-  async function uploadLogo(files: File | File[] | null) {
-    const file = Array.isArray(files) ? files[0] : files;
+  async function uploadLogo(file: File | null) {
     if (!file) return;
     setUploadingLogo(true);
     setError(null);
@@ -124,84 +119,117 @@ export function IdentitySection({
       onCancel={discard}
       onSave={save}
     >
-      <VStack gap={4}>
-        <HStack gap={4} vAlign="center">
-          <Avatar
-            name={firm.name}
-            size="lg"
-            tooltip={false}
-            src={firm.logo_url ? `${API_BASE}${firm.logo_url}` : undefined}
-          />
-          <VStack gap={0.5}>
-            <Text type="label" weight="semibold">
+      <div className="flex flex-col gap-5">
+        {/* الشعار */}
+        <div className="flex items-center gap-4">
+          <div
+            className="w-14 h-14 rounded-lg flex items-center justify-center font-bold text-lg overflow-hidden border"
+            style={{
+              borderRadius: "var(--r)",
+              backgroundColor: "var(--surface2)",
+              borderColor: "var(--border)",
+              color: "var(--primary)",
+            }}
+          >
+            {firm.logo_url ? (
+              <img
+                src={`${API_BASE}${firm.logo_url}`}
+                alt={firm.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              firm.name.charAt(0).toUpperCase()
+            )}
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>
               {t("@legalos.settings.firm.logoHeading")}
-            </Text>
-            <Text type="supporting" color="secondary">
+            </span>
+            <span className="text-xs" style={{ color: "var(--text2)" }}>
               {t("@legalos.settings.firm.logoDescription")}
-            </Text>
-          </VStack>
-        </HStack>
-        <FileInput
-          label={t("@legalos.settings.firm.uploadLogo")}
-          isLabelHidden
-          value={null}
-          onChange={uploadLogo}
-          accept="image/png,image/jpeg,image/webp"
-          mode="dropzone"
-          isDisabled={!canEdit || uploadingLogo}
-          placeholder={t("@legalos.settings.firm.logoPlaceholder")}
-          description={t("@legalos.settings.firm.logoHint")}
-        />
+            </span>
+          </div>
+        </div>
 
-        <TextInput
+        {/* رفع الشعار */}
+        <div
+          className="border-2 border-dashed p-4 rounded-lg flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors hover:bg-[var(--surface2)]"
+          style={{
+            borderColor: "var(--border)",
+            borderRadius: "var(--r)",
+            backgroundColor: "var(--surface)",
+          }}
+        >
+          <label
+            htmlFor="logo-upload"
+            className="flex flex-col items-center justify-center gap-1 cursor-pointer w-full text-center"
+          >
+            <Icon name="upload_file" size={24} />
+            <span className="text-xs font-semibold" style={{ color: "var(--text)" }}>
+              {uploadingLogo
+                ? t("@legalos.settings.firm.saving")
+                : t("@legalos.settings.firm.uploadLogo")}
+            </span>
+            <span className="text-[11px]" style={{ color: "var(--text3)" }}>
+              {t("@legalos.settings.firm.logoHint")}
+            </span>
+            <input
+              id="logo-upload"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={(e) => uploadLogo(e.target.files?.[0] ?? null)}
+              disabled={!canEdit || uploadingLogo}
+              className="sr-only"
+            />
+          </label>
+        </div>
+
+        <Input
           label={t("@legalos.settings.identity.legalNameLabel")}
           value={legalName}
-          onChange={setLegalName}
-          isDisabled={!canEdit || saving}
-          description={t("@legalos.settings.identity.legalNameHint")}
+          onChange={(e) => setLegalName(e.target.value)}
+          disabled={!canEdit || saving}
+          helperText={t("@legalos.settings.identity.legalNameHint")}
         />
-        <HStack gap={3} wrap="wrap">
-          <TextInput
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Input
             label={t("@legalos.settings.identity.taxIdLabel")}
             value={taxId}
-            onChange={setTaxId}
-            isDisabled={!canEdit || saving}
-            width={220}
+            onChange={(e) => setTaxId(e.target.value)}
+            disabled={!canEdit || saving}
           />
-          <TextInput
+          <Input
             label={t("@legalos.settings.identity.barNumberLabel")}
             value={barNumber}
-            onChange={setBarNumber}
-            isDisabled={!canEdit || saving}
-            width={220}
+            onChange={(e) => setBarNumber(e.target.value)}
+            disabled={!canEdit || saving}
           />
-        </HStack>
-        <TextInput
+        </div>
+
+        <Input
           label={t("@legalos.settings.identity.websiteLabel")}
           value={website}
-          onChange={setWebsite}
-          isDisabled={!canEdit || saving}
+          onChange={(e) => setWebsite(e.target.value)}
+          disabled={!canEdit || saving}
           placeholder="https://"
         />
-        <Selector
+
+        <Select
           label={t("@legalos.settings.identity.brandColorLabel")}
-          description={t("@legalos.settings.identity.brandColorHint")}
-          hasClear
-          value={brandColor}
-          onChange={setBrandColor}
-          isDisabled={!canEdit || saving}
-          width={260}
-          options={BRAND_COLORS.map((color) => ({
-            value: color,
-            label: t(`@legalos.documents.tags.color.${color}`),
-          }))}
-          renderOption={(option) => (
-            <HStack gap={2} vAlign="center">
-              <Token label={option.label ?? option.value} size="sm" color={option.value as BrandColor} />
-            </HStack>
-          )}
+          value={brandColor ?? ""}
+          onChange={(e) => setBrandColor(e.target.value || null)}
+          disabled={!canEdit || saving}
+          helperText={t("@legalos.settings.identity.brandColorHint")}
+          options={[
+            { value: "", label: "— الافتراضي —" },
+            ...BRAND_COLORS.map((color) => ({
+              value: color,
+              label: t(`@legalos.documents.tags.color.${color}`),
+            })),
+          ]}
         />
-      </VStack>
+      </div>
     </SettingsSection>
   );
 }

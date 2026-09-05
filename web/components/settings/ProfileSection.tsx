@@ -9,11 +9,10 @@
 
 import { useEffect, useState } from "react";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { TextArea } from "@astryxdesign/core/TextArea";
-import { Selector } from "@astryxdesign/core/Selector";
-import { MultiSelector } from "@astryxdesign/core/MultiSelector";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Badge } from "@/components/ui/Badge";
+import { Icon } from "@/components/ui/Icon";
 import { api, ApiError, type Organization, type OrganizationUpdate } from "@/lib/api";
 import { MATTER_TYPES, type MatterType } from "@/lib/practice";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
@@ -73,6 +72,14 @@ export function ProfileSection({
     mainCourt !== (firm.main_court ?? "") ||
     firmSize !== firm.firm_size ||
     clientKind !== firm.client_kind;
+
+  function toggleSpecialty(value: string) {
+    if (specialties.includes(value)) {
+      setSpecialties(specialties.filter((s) => s !== value));
+    } else {
+      setSpecialties([...specialties, value]);
+    }
+  }
 
   function discard() {
     setName(firm.name);
@@ -134,89 +141,126 @@ export function ProfileSection({
       onCancel={discard}
       onSave={save}
     >
-      <VStack gap={4}>
-        <TextInput
+      <div className="flex flex-col gap-4">
+        <Input
           label={t("@legalos.settings.firm.nameLabel")}
           value={name}
-          onChange={setName}
-          isDisabled={!canEdit || saving}
-          isRequired
+          onChange={(e) => setName(e.target.value)}
+          disabled={!canEdit || saving}
+          required
         />
-        <TextInput
+        <Input
           label={t("@legalos.settings.firm.registrationLabel")}
           value={registrationNumber}
-          onChange={setRegistrationNumber}
-          isDisabled={!canEdit || saving}
-          description={t("@legalos.settings.firm.registrationHint")}
+          onChange={(e) => setRegistrationNumber(e.target.value)}
+          disabled={!canEdit || saving}
+          helperText={t("@legalos.settings.firm.registrationHint")}
         />
-        <TextInput
+        <Input
           label={t("@legalos.settings.firm.phoneLabel")}
           value={phone}
-          onChange={setPhone}
-          isDisabled={!canEdit || saving}
+          onChange={(e) => setPhone(e.target.value)}
+          disabled={!canEdit || saving}
         />
-        <TextArea
-          label={t("@legalos.settings.firm.addressLabel")}
-          value={address}
-          onChange={setAddress}
-          isDisabled={!canEdit || saving}
-          rows={3}
-        />
-        <MultiSelector
-          label={t("@legalos.settings.firm.specialtiesLabel")}
-          description={t("@legalos.settings.firm.specialtiesHint")}
-          isOptional
-          value={specialties}
-          onChange={setSpecialties}
-          isDisabled={!canEdit || saving}
-          placeholder={t("@legalos.settings.firm.specialtiesPlaceholder")}
-          options={MATTER_TYPES.map((value) => ({ value, label: enumLabel(value) }))}
-          hasSearch
-          maxBadges={3}
-        />
-        <HStack gap={3} wrap="wrap">
-          <TextInput
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-semibold" style={{ color: "var(--text2)" }}>
+            {t("@legalos.settings.firm.addressLabel")}
+          </label>
+          <textarea
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            disabled={!canEdit || saving}
+            rows={3}
+            className="w-full p-3 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+            style={{
+              borderRadius: "var(--rs)",
+              backgroundColor: "var(--surface2)",
+              borderColor: "var(--border)",
+              color: "var(--text)",
+            }}
+          />
+        </div>
+
+        {/* التخصصات مع دعم الاختيار المتعدد عبر الشارات */}
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold" style={{ color: "var(--text2)" }}>
+            {t("@legalos.settings.firm.specialtiesLabel")}
+          </label>
+          <p className="text-[11px]" style={{ color: "var(--text3)" }}>
+            {t("@legalos.settings.firm.specialtiesHint")}
+          </p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {MATTER_TYPES.map((type) => {
+              const selected = specialties.includes(type);
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => canEdit && !saving && toggleSpecialty(type)}
+                  disabled={!canEdit || saving}
+                  className="cursor-pointer transition-all"
+                  style={{ background: "transparent", border: "none", padding: 0 }}
+                >
+                  <Badge
+                    color={selected ? "primary" : "neutral"}
+                    variant={selected ? "solid" : "soft"}
+                  >
+                    <span className="flex items-center gap-1">
+                      {enumLabel(type)}
+                      {selected && <Icon name="check" size={12} />}
+                    </span>
+                  </Badge>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Input
             label={t("@legalos.settings.firm.governorateLabel")}
             value={governorate}
-            onChange={setGovernorate}
-            isDisabled={!canEdit || saving}
-            width={240}
+            onChange={(e) => setGovernorate(e.target.value)}
+            disabled={!canEdit || saving}
           />
-          <TextInput
+          <Input
             label={t("@legalos.settings.firm.mainCourtLabel")}
             value={mainCourt}
-            onChange={setMainCourt}
-            isDisabled={!canEdit || saving}
-            width={280}
+            onChange={(e) => setMainCourt(e.target.value)}
+            disabled={!canEdit || saving}
           />
-        </HStack>
-        <HStack gap={3} wrap="wrap">
-          <Selector
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Select
             label={t("@legalos.settings.firm.firmSizeLabel")}
-            hasClear
-            value={firmSize}
-            onChange={setFirmSize}
-            isDisabled={!canEdit || saving}
-            width={220}
-            options={FIRM_SIZES.map((value) => ({
-              value,
-              label: t(`@legalos.settings.firm.firmSize.${value}`),
-            }))}
+            value={firmSize ?? ""}
+            onChange={(e) => setFirmSize(e.target.value || null)}
+            disabled={!canEdit || saving}
+            options={[
+              { value: "", label: "— غير محدد —" },
+              ...FIRM_SIZES.map((value) => ({
+                value,
+                label: t(`@legalos.settings.firm.firmSize.${value}`),
+              })),
+            ]}
           />
-          <Selector
+          <Select
             label={t("@legalos.settings.firm.clientKindLabel")}
-            hasClear
-            value={clientKind}
-            onChange={setClientKind}
-            isDisabled={!canEdit || saving}
-            width={220}
-            options={CLIENT_KINDS.map((value) => ({
-              value,
-              label: t(`@legalos.settings.firm.clientKind.${value}`),
-            }))}
+            value={clientKind ?? ""}
+            onChange={(e) => setClientKind(e.target.value || null)}
+            disabled={!canEdit || saving}
+            options={[
+              { value: "", label: "— غير محدد —" },
+              ...CLIENT_KINDS.map((value) => ({
+                value,
+                label: t(`@legalos.settings.firm.clientKind.${value}`),
+              })),
+            ]}
           />
-        </HStack>
-      </VStack>
+        </div>
+      </div>
     </SettingsSection>
   );
 }

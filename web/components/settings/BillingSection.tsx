@@ -10,9 +10,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { NumberInput } from "@astryxdesign/core/NumberInput";
+import { Input } from "@/components/ui/Input";
 import { api, ApiError, type Organization } from "@/lib/api";
 import { SettingsSection } from "./shared";
 
@@ -112,55 +110,56 @@ export function BillingSection({
       onCancel={discard}
       onSave={save}
     >
-      <VStack gap={4}>
-        <TextInput
+      <div className="flex flex-col gap-4">
+        <Input
           label={t("@legalos.settings.billing.patternLabel")}
           value={pattern}
-          onChange={setPattern}
-          isDisabled={!canEdit || saving}
+          onChange={(e) => setPattern(e.target.value)}
+          disabled={!canEdit || saving}
           placeholder="INV-{year}-{seq}"
-          description={t("@legalos.settings.billing.patternHint")}
-          status={
+          helperText={t("@legalos.settings.billing.patternHint")}
+          errorMessage={
             patternIssue
-              ? {
-                  type: "error",
-                  message: t(`@legalos.settings.billing.patternError.${patternIssue}`),
-                }
+              ? t(`@legalos.settings.billing.patternError.${patternIssue}`)
               : undefined
           }
         />
-        <HStack gap={3} wrap="wrap">
-          <NumberInput
-            label={t("@legalos.settings.billing.taxRateLabel")}
-            value={taxPercent}
-            onChange={(value) => setTaxPercent(value ?? 0)}
-            isDisabled={!canEdit || saving}
-            min={0}
-            max={100}
-            step={0.5}
-            width={160}
-            description={t("@legalos.settings.billing.taxRateHint")}
-            status={
-              !taxValid
-                ? { type: "error", message: t("@legalos.settings.billing.taxRateInvalid") }
-                : undefined
-            }
-          />
-          <NumberInput
-            label={t("@legalos.settings.billing.termsLabel")}
-            value={terms}
-            onChange={(value) => setTerms(value ?? 0)}
-            isDisabled={!canEdit || saving}
-            min={0}
-            width={160}
-            status={
-              !termsValid
-                ? { type: "error", message: t("@legalos.settings.billing.termsInvalid") }
-                : undefined
-            }
-          />
-        </HStack>
-      </VStack>
+        <div className="flex flex-wrap gap-4">
+          <div className="w-full sm:w-48">
+            <Input
+              type="number"
+              label={t("@legalos.settings.billing.taxRateLabel")}
+              value={taxPercent}
+              onChange={(e) => setTaxPercent(parseFloat(e.target.value) || 0)}
+              disabled={!canEdit || saving}
+              min={0}
+              max={100}
+              step={0.5}
+              helperText={t("@legalos.settings.billing.taxRateHint")}
+              errorMessage={
+                !taxValid
+                  ? t("@legalos.settings.billing.taxRateInvalid")
+                  : undefined
+              }
+            />
+          </div>
+          <div className="w-full sm:w-48">
+            <Input
+              type="number"
+              label={t("@legalos.settings.billing.termsLabel")}
+              value={terms}
+              onChange={(e) => setTerms(parseInt(e.target.value, 10) || 0)}
+              disabled={!canEdit || saving}
+              min={0}
+              errorMessage={
+                !termsValid
+                  ? t("@legalos.settings.billing.termsInvalid")
+                  : undefined
+              }
+            />
+          </div>
+        </div>
+      </div>
     </SettingsSection>
   );
 }

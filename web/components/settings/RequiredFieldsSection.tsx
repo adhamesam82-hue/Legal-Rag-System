@@ -11,9 +11,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Text } from "@astryxdesign/core/Text";
-import { CheckboxList, CheckboxListItem } from "@astryxdesign/core/CheckboxList";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { api, ApiError, type Organization } from "@/lib/api";
 import { SettingsSection } from "./shared";
 
@@ -53,6 +51,18 @@ export function RequiredFieldsSection({
   const dirty =
     !sameSet(matterFields, firm.required_fields.matter ?? []) ||
     !sameSet(clientFields, firm.required_fields.client ?? []);
+
+  function toggleMatterField(field: string, checked: boolean) {
+    setMatterFields((prev) =>
+      checked ? [...prev, field] : prev.filter((f) => f !== field)
+    );
+  }
+
+  function toggleClientField(field: string, checked: boolean) {
+    setClientFields((prev) =>
+      checked ? [...prev, field] : prev.filter((f) => f !== field)
+    );
+  }
 
   function discard() {
     setMatterFields(firm.required_fields.matter ?? []);
@@ -94,45 +104,63 @@ export function RequiredFieldsSection({
       onCancel={discard}
       onSave={save}
     >
-      <VStack gap={5}>
-        <Text type="supporting" color="secondary">
+      <div className="flex flex-col gap-6">
+        <p className="text-xs" style={{ color: "var(--text2)" }}>
           {t("@legalos.settings.requiredFields.notEnforcedYet")}
-        </Text>
-        <HStack gap={6} wrap="wrap" vAlign="start">
-          <CheckboxList
-            label={t("@legalos.settings.requiredFields.matterGroup")}
-            value={matterFields}
-            onChange={setMatterFields}
-            isDisabled={!canEdit || saving}
-            density="compact"
-            width={260}
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+          {/* حقول القضايا */}
+          <div
+            className="flex flex-col gap-3 p-4 border rounded-lg"
+            style={{
+              borderColor: "var(--border)",
+              borderRadius: "var(--rs)",
+              backgroundColor: "var(--surface2)",
+            }}
           >
-            {MATTER_FIELDS.map((field) => (
-              <CheckboxListItem
-                key={field}
-                value={field}
-                label={t(`@legalos.settings.requiredFields.matter.${field}`)}
-              />
-            ))}
-          </CheckboxList>
-          <CheckboxList
-            label={t("@legalos.settings.requiredFields.clientGroup")}
-            value={clientFields}
-            onChange={setClientFields}
-            isDisabled={!canEdit || saving}
-            density="compact"
-            width={260}
+            <span className="text-xs font-bold" style={{ color: "var(--text)" }}>
+              {t("@legalos.settings.requiredFields.matterGroup")}
+            </span>
+            <div className="flex flex-col gap-2.5">
+              {MATTER_FIELDS.map((field) => (
+                <Checkbox
+                  key={field}
+                  label={t(`@legalos.settings.requiredFields.matter.${field}`)}
+                  checked={matterFields.includes(field)}
+                  onChange={(e) => toggleMatterField(field, e.target.checked)}
+                  disabled={!canEdit || saving}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* حقول الموكلين */}
+          <div
+            className="flex flex-col gap-3 p-4 border rounded-lg"
+            style={{
+              borderColor: "var(--border)",
+              borderRadius: "var(--rs)",
+              backgroundColor: "var(--surface2)",
+            }}
           >
-            {CLIENT_FIELDS.map((field) => (
-              <CheckboxListItem
-                key={field}
-                value={field}
-                label={t(`@legalos.settings.requiredFields.client.${field}`)}
-              />
-            ))}
-          </CheckboxList>
-        </HStack>
-      </VStack>
+            <span className="text-xs font-bold" style={{ color: "var(--text)" }}>
+              {t("@legalos.settings.requiredFields.clientGroup")}
+            </span>
+            <div className="flex flex-col gap-2.5">
+              {CLIENT_FIELDS.map((field) => (
+                <Checkbox
+                  key={field}
+                  label={t(`@legalos.settings.requiredFields.client.${field}`)}
+                  checked={clientFields.includes(field)}
+                  onChange={(e) => toggleClientField(field, e.target.checked)}
+                  disabled={!canEdit || saving}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </SettingsSection>
   );
 }

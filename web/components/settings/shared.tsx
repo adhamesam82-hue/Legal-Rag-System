@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Shared chrome for the settings screen's sections (T-034).
+ * Shared chrome for the settings screen's sections (T-034 / E-5).
  *
  * Each section saves independently -- a single button for fifty fields
  * across seven sections would make every save a gamble that some unrelated
@@ -11,13 +11,11 @@
  * in its own PATCH body.
  */
 
+import React from "react";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Card } from "@astryxdesign/core/Card";
-import { Banner } from "@astryxdesign/core/Banner";
-import { Button } from "@astryxdesign/core/Button";
-import { Divider } from "@astryxdesign/core/Divider";
+import { Card } from "@/components/ui/Card";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 import { InlineError } from "@/components/DataState";
 
 export function SettingsSection({
@@ -65,51 +63,67 @@ export function SettingsSection({
 }) {
   const t = useTranslator();
   return (
-    <Card>
-      <VStack gap={4}>
-        <VStack gap={1}>
-          <Heading level={5}>{title}</Heading>
+    <Card padding="24px" bordered shadow className="w-full">
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>
+            {title}
+          </h2>
           {description && (
-            <Text type="body" color="secondary">
+            <p className="text-xs" style={{ color: "var(--text2)" }}>
               {description}
-            </Text>
+            </p>
           )}
-        </VStack>
+        </div>
 
         <InlineError message={error} onDismiss={onDismissError} />
         {saved && !dirty && (
-          <Banner
-            status="success"
+          <Alert
+            type="success"
             title={savedMessage}
-            isDismissable
-            onDismiss={onDismissSaved}
+            onClose={onDismissSaved}
           />
         )}
-        {!canEdit && readOnlyMessage && <Banner status="info" title={readOnlyMessage} />}
+        {!canEdit && readOnlyMessage && (
+          <Alert type="info" title={readOnlyMessage} />
+        )}
 
-        <Divider />
+        <div
+          className="w-full border-t"
+          style={{ borderColor: "var(--border)" }}
+        />
 
-        {children}
+        <div className="flex flex-col gap-4">
+          {children}
+        </div>
 
         {canEdit && (
-          <HStack gap={2} hAlign="end">
+          <div
+            className="flex items-center justify-end gap-3 pt-3 border-t"
+            style={{ borderColor: "var(--border)" }}
+          >
             <Button
-              label={t("@legalos.settings.action.cancel")}
               variant="secondary"
-              isDisabled={saving || !dirty}
+              size="sm"
+              disabled={saving || !dirty}
               onClick={onCancel}
-            />
+            >
+              {t("@legalos.settings.action.cancel")}
+            </Button>
             <Button
-              label={
-                saving ? t("@legalos.settings.firm.saving") : t("@legalos.settings.action.saveChanges")
-              }
               variant="primary"
-              isDisabled={saving || !(canSave ?? dirty)}
+              size="sm"
+              loading={saving}
+              disabled={saving || !(canSave ?? dirty)}
               onClick={onSave}
-            />
-          </HStack>
+            >
+              {saving
+                ? t("@legalos.settings.firm.saving")
+                : t("@legalos.settings.action.saveChanges")}
+            </Button>
+          </div>
         )}
-      </VStack>
+      </div>
     </Card>
   );
 }
