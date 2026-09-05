@@ -6,12 +6,12 @@ import {
   ChatLayout,
   ChatMessage,
   ChatMessageList,
-} from "@astryxdesign/core/Chat";
-import { Card } from "@astryxdesign/core/Card";
-import { Banner } from "@astryxdesign/core/Banner";
-import { Text } from "@astryxdesign/core/Text";
-import { Spinner } from "@astryxdesign/core/Spinner";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
+} from "@/components/ui/Chat";
+import { Card } from "@/components/ui/Card";
+import { Alert } from "@/components/ui/Alert";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { Icon } from "@/components/ui/Icon";
 import { GroundedAnswer } from "@/components/GroundedAnswer";
 import { api, ApiError, AskResponse, dirOf } from "@/lib/api";
 import { useCorpusStats } from "@/lib/corpus";
@@ -81,37 +81,45 @@ export default function ChatPage() {
     >
       {corpusEmpty && (
         <div style={{ paddingBlock: 12 }}>
-          <Banner
-            status="warning"
+          <Alert
+            type="warn"
             title={t("@legalos.home.emptyCorpus.title")}
-            description={t("@legalos.home.emptyCorpus.description")}
-          />
+          >
+            {t("@legalos.home.emptyCorpus.description")}
+          </Alert>
         </div>
       )}
       <ChatLayout
         emptyState={
-          <EmptyState
-            title={t("@legalos.home.empty.title")}
-            description={t("@legalos.home.empty.description")}
-            actions={
-              <div style={{ display: "grid", gap: 8, width: "100%" }}>
-                {SUGGESTION_KEYS.map((key) => {
-                  const s = t(key);
-                  return (
-                    <Card key={key} padding={2} variant="muted">
-                      <button
-                        onClick={() => send(s)}
-                        style={{ textAlign: "start", width: "100%" }}
-                        dir={dirOf(s)}
-                      >
-                        <Text type="label">{s}</Text>
-                      </button>
-                    </Card>
-                  );
-                })}
-              </div>
-            }
-          />
+          <div className="flex flex-col items-center justify-center py-10 w-full max-w-xl mx-auto">
+            <EmptyState
+              icon={<Icon name="chat" size={28} />}
+              title={t("@legalos.home.empty.title")}
+              description={t("@legalos.home.empty.description")}
+            />
+            <div className="grid gap-2.5 w-full mt-6">
+              {SUGGESTION_KEYS.map((key) => {
+                const s = t(key);
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => send(s)}
+                    className="p-3 text-start w-full border transition-all hover:bg-[var(--surface2)] hover:border-[var(--primary)] focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
+                    style={{
+                      borderRadius: "var(--rs)",
+                      backgroundColor: "var(--surface)",
+                      borderColor: "var(--border)",
+                      color: "var(--text)",
+                    }}
+                    dir={dirOf(s)}
+                  >
+                    <span className="text-xs font-medium">{s}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         }
         composer={
           <ChatComposer
@@ -124,28 +132,53 @@ export default function ChatPage() {
         {turns.length > 0 && (
           <ChatMessageList>
             {turns.map((turn, i) => (
-              <div key={i}>
+              <div key={i} className="flex flex-col gap-3 w-full">
                 <ChatMessage sender="user">
-                  <Card padding={3} variant="muted">
-                    <div dir={dirOf(turn.question)}>
-                      <Text type="body">{turn.question}</Text>
-                    </div>
-                  </Card>
+                  <div
+                    className="p-3.5 border shadow-xs"
+                    style={{
+                      borderRadius: "var(--r)",
+                      backgroundColor: "var(--surface2)",
+                      borderColor: "var(--border)",
+                      color: "var(--text)",
+                    }}
+                    dir={dirOf(turn.question)}
+                  >
+                    <p className="text-sm font-medium leading-relaxed">{turn.question}</p>
+                  </div>
                 </ChatMessage>
 
                 <ChatMessage sender="assistant">
                   {!turn.answer && !turn.error ? (
-                    <Spinner label={t("@legalos.ask.searching")} />
+                    <div
+                      role="status"
+                      aria-label={t("@legalos.ask.searching")}
+                      className="p-4 border flex flex-col gap-2.5 w-full"
+                      style={{
+                        borderRadius: "var(--r)",
+                        backgroundColor: "var(--surface)",
+                        borderColor: "var(--border)",
+                      }}
+                    >
+                      <div className="flex items-center gap-2 text-xs" style={{ color: "var(--text2)" }}>
+                        <Icon name="search" size={16} />
+                        <span>{t("@legalos.ask.searching")}</span>
+                      </div>
+                      <Skeleton width="95%" height="14px" />
+                      <Skeleton width="80%" height="14px" />
+                      <Skeleton width="50%" height="14px" />
+                    </div>
                   ) : turn.error ? (
-                    <Banner
-                      status={turn.error.isCredits ? "warning" : "error"}
+                    <Alert
+                      type={turn.error.isCredits ? "warn" : "danger"}
                       title={t(
                         turn.error.isCredits
                           ? "@legalos.ask.error.creditsTitle"
                           : "@legalos.ask.error.genericTitle",
                       )}
-                      description={turn.error.message}
-                    />
+                    >
+                      {turn.error.message}
+                    </Alert>
                   ) : (
                     <GroundedAnswer answer={turn.answer!} />
                   )}

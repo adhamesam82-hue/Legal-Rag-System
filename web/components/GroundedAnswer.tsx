@@ -1,11 +1,10 @@
 "use client";
 
-import { Banner } from "@astryxdesign/core/Banner";
-import { Card } from "@astryxdesign/core/Card";
-import { Collapsible } from "@astryxdesign/core/Collapsible";
-import { Badge } from "@astryxdesign/core/Badge";
-import { Text } from "@astryxdesign/core/Text";
-import { HStack, VStack } from "@astryxdesign/core/Stack";
+import { useState } from "react";
+import { Alert } from "@/components/ui/Alert";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Icon } from "@/components/ui/Icon";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { AnswerBody } from "@/components/AnswerBody";
 import { ArticleCard } from "@/components/ArticleCard";
@@ -36,74 +35,108 @@ export function GroundedAnswer({
   showSources?: boolean;
 }) {
   const t = useTranslator();
+  const [sourcesOpen, setSourcesOpen] = useState(false);
 
   return (
-    <VStack gap={3}>
+    <div className="flex flex-col gap-3 w-full">
       {answer.degraded.length > 0 && (
-        <Banner
-          status="warning"
+        <Alert
+          type="warn"
           title={t("@legalos.groundedAnswer.degradedTitle")}
-          description={t("@legalos.groundedAnswer.degradedDescription", {
+        >
+          {t("@legalos.groundedAnswer.degradedDescription", {
             reasons: answer.degraded.join("; "),
           })}
-        />
+        </Alert>
       )}
 
       {answer.blocked ? (
-        <Banner
-          status="error"
+        <Alert
+          type="danger"
           title={t("@legalos.groundedAnswer.blockedTitle")}
-          description={t("@legalos.groundedAnswer.blockedDescription", {
+        >
+          {t("@legalos.groundedAnswer.blockedDescription", {
             citations: answer.blocked_citations.join(", "),
           })}
-        />
+        </Alert>
       ) : answer.refused ? (
-        <Banner
-          status="info"
+        <Alert
+          type="info"
           title={t("@legalos.groundedAnswer.refusedTitle")}
-          description={t("@legalos.groundedAnswer.refusedDescription")}
-        />
+        >
+          {t("@legalos.groundedAnswer.refusedDescription")}
+        </Alert>
       ) : (
-        <Card padding={4}>
+        <Card padding="20px" bordered shadow>
           <AnswerBody text={answer.text} />
         </Card>
       )}
 
       {showSources && answer.articles.length > 0 && (
-        <Collapsible
-          defaultIsOpen={false}
-          trigger={
-            <Text type="label">
+        <div
+          className="border rounded-lg overflow-hidden"
+          style={{
+            borderColor: "var(--border)",
+            borderRadius: "var(--r)",
+            backgroundColor: "var(--surface)",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setSourcesOpen(!sourcesOpen)}
+            className="w-full flex items-center justify-between p-3 text-xs font-semibold hover:bg-[var(--surface2)] transition-colors"
+            style={{
+              color: "var(--text)",
+              textAlign: "start",
+            }}
+            aria-expanded={sourcesOpen}
+          >
+            <span className="flex items-center gap-1.5">
+              <Icon name="source" size={16} />
               {t("@legalos.groundedAnswer.sources", {
                 count: answer.articles.length,
                 strategy: answer.strategy.replace(/_/g, " "),
               })}
-            </Text>
-          }
-        >
-          <VStack gap={2} paddingBlock={2}>
-            {answer.articles.map((article, i) => (
-              <ArticleCard
-                key={article.id}
-                article={article}
-                rank={i + 1}
-                cited={answer.citations.includes(article.citation)}
-              />
-            ))}
-          </VStack>
-        </Collapsible>
+            </span>
+            <Icon
+              name={sourcesOpen ? "expand_less" : "expand_more"}
+              size={18}
+            />
+          </button>
+
+          {sourcesOpen && (
+            <div
+              className="p-3 border-t flex flex-col gap-2"
+              style={{
+                borderColor: "var(--border)",
+                backgroundColor: "var(--surface2)",
+              }}
+            >
+              {answer.articles.map((article, i) => (
+                <ArticleCard
+                  key={article.id}
+                  article={article}
+                  rank={i + 1}
+                  cited={answer.citations.includes(article.citation)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {answer.citations.length > 0 && (
-        <HStack gap={1.5} wrap="wrap" vAlign="center">
-          <Text type="supporting" color="secondary">
+        <div className="flex items-center gap-2 flex-wrap text-xs">
+          <span style={{ color: "var(--text2)" }}>
             {t("@legalos.groundedAnswer.citedLabel")}
-          </Text>
+          </span>
           {answer.citations.map((c) => (
-            <Badge key={c} variant="info" label={c} />
+            <Badge key={c} color="info" variant="soft">
+              {c}
+            </Badge>
           ))}
-        </HStack>
+        </div>
       )}
-    </VStack>
+    </div>
   );
 }
