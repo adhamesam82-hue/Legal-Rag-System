@@ -152,14 +152,12 @@ def localise_document(html: str) -> str:
         ('src="assets/', 'src="../assets/'),
         ('content="assets/', 'content="../assets/'),
         ('poster="assets/', 'poster="../assets/'),
-        # Preload what this page actually paints with. The Latin faces still
-        # load — the wordmark and every product code are Latin — but they are
-        # no longer the first thing the Arabic page waits on.
+        # Preload what this page actually paints with (IBM Plex Sans Arabic).
         # (runs after the path rewrite above, hence ../)
-        ('<link rel="preload" href="../assets/fonts/Archivo-400-700-latin.woff2" as="font" type="font/woff2" crossorigin>\n'
-         '<link rel="preload" href="../assets/fonts/Newsreader-400-latin.woff2" as="font" type="font/woff2" crossorigin>',
-         '<link rel="preload" href="../assets/fonts/Tajawal-400-arabic.woff2" as="font" type="font/woff2" crossorigin>\n'
-         '<link rel="preload" href="../assets/fonts/NotoNaskhArabic-400-700-arabic.woff2" as="font" type="font/woff2" crossorigin>'),
+        ('<link rel="preload" href="../assets/fonts/IBMPlexSansArabic-400.woff2" as="font" type="font/woff2" crossorigin>\n'
+         '<link rel="preload" href="../assets/fonts/IBMPlexSansArabic-600.woff2" as="font" type="font/woff2" crossorigin>',
+         '<link rel="preload" href="../assets/fonts/IBMPlexSansArabic-400.woff2" as="font" type="font/woff2" crossorigin>\n'
+         '<link rel="preload" href="../assets/fonts/IBMPlexSansArabic-600.woff2" as="font" type="font/woff2" crossorigin>'),
         # Every switcher points back at the page you are not on, and is written
         # in the language it leads to. Whole-element swaps rather than dictionary
         # entries: the label, the href, `lang` and the `ar` class all have to

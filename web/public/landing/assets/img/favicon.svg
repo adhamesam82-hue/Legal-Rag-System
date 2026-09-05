@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-<!-- The alsigil favicon. Outlined from Archivo 600 — see
+<!-- The alsigil favicon. Outlined vector mark — see
      scripts/brand/build-marks.py — and composed exactly as
      components/brand/Alsigil.tsx draws <AlsigilIcon> below its monogram floor, so the tab and the
      interface cannot drift apart. Not hand-editable: regenerate the outlines
