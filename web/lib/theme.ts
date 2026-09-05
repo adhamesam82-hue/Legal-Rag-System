@@ -17,9 +17,8 @@
 import { defineTheme, type TokenName, type TokenValue } from "@astryxdesign/core/theme";
 import { neutralTheme } from "@astryxdesign/theme-neutral";
 
-// الخطوط الحالية (Archivo للنص، وNewsreader للعناوين، وTajawal/Noto Naskh Arabic للعربية).
-// استبدال الخطوط بـ IBM Plex Sans Arabic واستضافتها ذاتياً محدد ومنقول بالكامل للتذكرة T-049.
-const ARABIC_UI = "'Tajawal', 'Noto Naskh Arabic'";
+// خط الواجهة المعتمد (IBM Plex Sans Arabic) المستضاف ذاتياً (T-049 / E-5).
+const FONT_FALLBACKS = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
 // الرموز المخصصة لقالب السِّجل (Sijil Admin) التي يتم توسيع منظومة الرموز بها
 type SijilCustomTokenName =
@@ -187,12 +186,12 @@ export const legalosTheme = defineTheme({
   typography: {
     scale: { base: 15, ratio: 1.2 },
     body: {
-      family: "Archivo",
-      fallbacks: `${ARABIC_UI}, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`,
+      family: "IBM Plex Sans Arabic",
+      fallbacks: FONT_FALLBACKS,
     },
     heading: {
-      family: "Newsreader",
-      fallbacks: `${ARABIC_UI}, Georgia, serif`,
+      family: "IBM Plex Sans Arabic",
+      fallbacks: FONT_FALLBACKS,
     },
   },
   radius: { base: 14, multiplier: 1 },

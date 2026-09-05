@@ -10,25 +10,51 @@
    ========================================================================== */
 
 /* --- Faces ---------------------------------------------------------------
-   Self-hosted, latin + arabic subsets only. Arabic is not a fallback here:
-   matter names, statute text and firm names on this page are real Arabic,
-   so the Arabic faces are part of the type system, not a polyfill.
-
-   Newsreader carries display, Archivo carries text, UI and the wordmark —
-   the identity's two faces, in the roles the identity sheet gives them.
-   Newsreader is the static 400 roman and a 300 italic rather than the
-   variable font: two optical-size axes cost 280KB and this page uses two
-   weights of it. Noto Naskh carries statute and document body (the naskh
-   style Egyptian legal text is set in), Tajawal carries Arabic UI labels so
-   it sits beside Archivo without a jolt.
+   Self-hosted, IBM Plex Sans Arabic for all typography roles and
+   Material Symbols Rounded for icons. No external CDN requests.
    -------------------------------------------------------------------------- */
-@font-face{font-family:'Archivo';font-style:normal;font-weight:400 700;font-display:swap;src:url(../fonts/Archivo-400-700-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
-@font-face{font-family:'Newsreader';font-style:normal;font-weight:400;font-display:swap;src:url(../fonts/Newsreader-400-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
-@font-face{font-family:'Newsreader';font-style:italic;font-weight:300;font-display:swap;src:url(../fonts/Newsreader-italic-300-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;}
-@font-face{font-family:'Noto Naskh Arabic';font-style:normal;font-weight:400 700;font-display:swap;src:url(../fonts/NotoNaskhArabic-400-700-arabic.woff2) format('woff2');unicode-range:U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;}
-@font-face{font-family:'Tajawal';font-style:normal;font-weight:400;font-display:swap;src:url(../fonts/Tajawal-400-arabic.woff2) format('woff2');unicode-range:U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;}
-@font-face{font-family:'Tajawal';font-style:normal;font-weight:500;font-display:swap;src:url(../fonts/Tajawal-500-arabic.woff2) format('woff2');unicode-range:U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;}
-@font-face{font-family:'Tajawal';font-style:normal;font-weight:700;font-display:swap;src:url(../fonts/Tajawal-700-arabic.woff2) format('woff2');unicode-range:U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;}
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(../fonts/IBMPlexSansArabic-300.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(../fonts/IBMPlexSansArabic-400.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(../fonts/IBMPlexSansArabic-500.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(../fonts/IBMPlexSansArabic-600.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(../fonts/IBMPlexSansArabic-700.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Material Symbols Rounded';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(../fonts/MaterialSymbolsRounded.woff2) format('woff2');
+}
 
 /* --- Tokens --------------------------------------------------------------- */
 :root {
@@ -77,16 +103,12 @@
   --warn: #8A5F0B;
   --risk: var(--seal);
 
-  /* The Arabic faces are inside the same two stacks rather than behind a
-     `[lang=ar]` override. Every @font-face here declares a unicode-range, so
-     the browser resolves per character: Latin in Newsreader/Archivo, Arabic in
-     Naskh/Tajawal, in the same paragraph if the paragraph mixes them — which
-     this page's product surfaces do constantly. Nothing has to know which
-     language it is in. */
-  --font-display: 'Newsreader', 'Noto Naskh Arabic', 'Iowan Old Style', Georgia, serif;
-  --font-text: 'Archivo', 'Tajawal', ui-sans-serif, system-ui, sans-serif;
-  --font-ar-doc: 'Noto Naskh Arabic', 'Segoe UI', serif;
-  --font-ar-ui: 'Tajawal', 'Noto Naskh Arabic', sans-serif;
+  /* IBM Plex Sans Arabic carries all type roles across Latin and Arabic scripts.
+     Material Symbols Rounded carries icon glyphs. */
+  --font-display: 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif;
+  --font-text: 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif;
+  --font-ar-doc: 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif;
+  --font-ar-ui: 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif;
 
   /* Corners. The stamp identity is a printed one — filings, letterhead, a
      punch struck into paper — and none of that is round. The scale is kept
@@ -186,9 +208,7 @@ ul, ol { list-style: none; padding: 0; }
 }
 
 /* --- Type ----------------------------------------------------------------
-   Display is Newsreader at 400 — the only weight loaded, so nothing here may
-   ask for a bolder one or the browser will synthesise it. Weight is not how
-   this identity makes a heading loud; size is.
+   Display is set in IBM Plex Sans Arabic.
    -------------------------------------------------------------------------- */
 .display {
   font-family: var(--font-display);
@@ -211,7 +231,7 @@ ul, ol { list-style: none; padding: 0; }
 .body-2 { color: var(--ink-2); line-height: 1.65; max-width: 68ch; text-wrap: pretty; }
 .muted { color: var(--ink-3); }
 
-/* The identity's editorial voice: Newsreader italic, for the one line under a
+/* The identity's editorial voice: for the one line under a
    heading that is commentary rather than copy. */
 .aside-italic {
   font-family: var(--font-display);
@@ -221,8 +241,23 @@ ul, ol { list-style: none; padding: 0; }
   text-wrap: pretty;
 }
 
-/* Arabic set inline inside English copy. Kept at a larger optical size and a
-   looser leading — naskh needs both to stay legible next to Archivo.
+/* Material Symbols Rounded icon style */
+.ms {
+  font-family: 'Material Symbols Rounded';
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  white-space: nowrap;
+  unicode-bidi: isolate;
+  font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  display: inline-block;
+  user-select: none;
+  flex: none;
+}
+
+/* Arabic set inline inside English copy.
    These carry `unicode-bidi: isolate` but deliberately NOT `direction: rtl`:
    the bidi algorithm already runs the Arabic right-to-left inside its own box,
    while the box keeps the alignment of the row it sits in. A matter title in
@@ -455,18 +490,16 @@ ul, ol { list-style: none; padding: 0; }
 }
 
 /* --- Arabic ---------------------------------------------------------------
-   Naskh has a small x-height relative to its em and carries diacritics above
-   and below, so Latin's sizes and leading read cramped. This is the whole
-   adjustment for the Arabic page: no mirrored stylesheet, because the layout
-   is written in logical properties throughout and `dir="rtl"` on <html> flips
-   it on its own.
+   Typography adjustments for the Arabic page: no mirrored stylesheet, because
+   the layout is written in logical properties throughout and `dir="rtl"` on
+   <html> flips it on its own.
    -------------------------------------------------------------------------- */
 [lang="ar"] {
   line-height: 1.75;
 }
 [lang="ar"] .display {
   line-height: 1.32;
-  /* Tight tracking is a Latin device; naskh is already connected. */
+  /* Tight tracking is a Latin device; Arabic script is already connected. */
   letter-spacing: 0;
 }
 [lang="ar"] .display--hero { font-size: clamp(2.2rem, 5.2vw, 4.3rem); }

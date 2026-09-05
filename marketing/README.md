@@ -27,17 +27,16 @@ index.html                 the whole page, including the direction contract at t
 assets/css/tokens.css      faces, tokens, reset, and the primitives every section reuses
 assets/css/sections.css    section layout + the .ui product-surface system
 assets/js/site.js          reveal, nav, tabs/accordion, counters, carousel, lightbox, video, parallax
-assets/fonts/*.woff2       self-hosted Archivo, Newsreader, Noto Naskh Arabic, Tajawal (172 KB total)
+assets/fonts/*.woff2       self-hosted IBM Plex Sans Arabic (300, 400, 500, 600, 700) and Material Symbols Rounded
 ar/index.html              the Arabic page — GENERATED, do not edit
 i18n/ar.json               the Arabic copy, keyed by the English string
 scripts/build-ar.py        generates ar/index.html from the two above
 assets/img/                favicon, hero + tour posters, OG card
 ```
 
-Five faces, each with a job: **Newsreader** display, **Archivo** text, UI and the wordmark, **Noto
-Naskh Arabic** for statute and document text (the naskh style Egyptian legal
-material is actually set in), **Tajawal** for Arabic UI labels. Latin and Arabic
-subsets only.
+Typography: **IBM Plex Sans Arabic** carries all typography roles across Latin and Arabic
+scripts (display, headings, text, UI, and document body), self-hosted with no external CDN requests.
+**Material Symbols Rounded** carries UI icon glyphs.
 
 ## What you need to supply
 

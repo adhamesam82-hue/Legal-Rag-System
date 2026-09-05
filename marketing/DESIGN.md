@@ -42,79 +42,77 @@ colors:
   thumb-ops: "#E9EFEB"
   thumb-funds: "#EFEDE6"
 typography:
-  # Newsreader ships at one roman weight (400) and one italic (300). Nothing
-  # may ask it for more; a synthesised serif bold is visible at hero size.
   display:
-    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "clamp(2.65rem, 6.6vw, 5.5rem)"
     fontWeight: 400
     lineHeight: 1.03
     letterSpacing: "-0.015em"
   headline:
-    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "clamp(2.1rem, 4.2vw, 3.6rem)"
     fontWeight: 400
     lineHeight: 1.06
     letterSpacing: "-0.015em"
   title:
-    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "clamp(1.5rem, 2.4vw, 2.1rem)"
     fontWeight: 400
     lineHeight: 1.16
     letterSpacing: "-0.012em"
   lede:
-    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "clamp(1.05rem, 1.35vw, 1.2rem)"
     fontWeight: 400
     lineHeight: 1.65
   body:
-    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.6
   aside:
-    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "1.14rem"
     fontStyle: "italic"
     fontWeight: 300
     lineHeight: 1.5
   label:
-    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "0.7rem"
     fontWeight: 700
     letterSpacing: "0.16em"
   statute:
-    fontFamily: "Noto Naskh Arabic, Segoe UI, serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "1.08em"
     fontWeight: 400
     lineHeight: 2
   arabic-ui:
-    fontFamily: "Tajawal, Noto Naskh Arabic, sans-serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "1.06em"
     fontWeight: 500
   # One-off fluid display roles. Each is bespoke because it is the only thing
   # of its kind on the page and its endpoints are set by the composition it
   # sits in, not by a shared step.
   statement:
-    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "clamp(1.6rem, 3.35vw, 3rem)"
     fontWeight: 400
     lineHeight: 1.24
     letterSpacing: "-0.015em"
   stat:
-    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "clamp(3rem, 7vw, 5.4rem)"
     fontWeight: 400
     lineHeight: 1
     letterSpacing: "-0.018em"
   stat-callout:
-    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "clamp(2.6rem, 4vw, 3.5rem)"
     fontWeight: 400
     lineHeight: 1
     letterSpacing: "-0.018em"
   headline-narrow:
-    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "clamp(1.9rem, 3vw, 2.7rem)"
     fontWeight: 400
     lineHeight: 1.06
@@ -125,57 +123,55 @@ typography:
     fontFamily: "outlined SVG — web/lib/brand/marks.ts"
     fontSize: "106% of the footer width"
   surface-hero:
-    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "clamp(0.62rem, 0.82vw, 0.82rem)"
     fontWeight: 400
   # Sub-display ramp: card headings, pull-quotes, the mobile drawer, and the
-  # Arabic on the testimonial nameplate. Newsreader above 1.1rem, Archivo below.
+  # Arabic on the testimonial nameplate.
   card-title:
-    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "1.3rem"
     fontWeight: 400
     letterSpacing: "-0.014em"
   quote:
-    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "1.16rem"
     fontWeight: 400
     letterSpacing: "-0.012em"
   dialog-title:
-    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "1.35rem"
     fontWeight: 400
     letterSpacing: "-0.014em"
   drawer-link:
-    fontFamily: "Newsreader, Iowan Old Style, Georgia, serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "1.75rem"
     fontWeight: 400
     letterSpacing: "-0.015em"
   plate-arabic:
-    fontFamily: "Noto Naskh Arabic, Segoe UI, serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "1.75rem"
     lineHeight: 1.5
   # Working UI ramp. Chrome, controls, table furniture and the .ui product
-  # surfaces sit on this; it is finer-grained than the editorial scale above
-  # because a screenshot needs more steps than a page does. All Archivo —
-  # the editorial serif does not enter a product surface.
+  # surfaces sit on this.
   ui-lg:
-    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "0.98rem"
     fontWeight: 600
   ui:
-    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "0.94rem"
     fontWeight: 600
   ui-sm:
-    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "0.88rem"
     fontWeight: 600
   ui-xs:
-    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "0.82rem"
     fontWeight: 600
   micro:
-    fontFamily: "Archivo, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "IBM Plex Sans Arabic, system-ui, -apple-system, sans-serif"
     fontSize: "0.72rem"
     fontWeight: 800
     letterSpacing: "0.15em"
@@ -400,50 +396,19 @@ These three never appear in page chrome — only inside `.ui` screens, `.ui-tag`
 
 ## Typography
 
-**Display Font:** Newsreader (with `Iowan Old Style, Georgia, serif`)
-**Body / UI Font:** Archivo (with `ui-sans-serif, system-ui, sans-serif`)
-**Statute / document font:** Noto Naskh Arabic (with `Segoe UI, serif`)
-**Arabic UI font:** Tajawal (with `Noto Naskh Arabic, sans-serif`)
+**Primary Font:** IBM Plex Sans Arabic (with `system-ui, -apple-system, sans-serif`)
+**Icon Font:** Material Symbols Rounded
 
-**Character:** the identity's two faces, in the roles the identity sheet gives them.
-Newsreader is a screen-first text serif with a low, steady contrast — at 400 and
-`-0.015em` it reads as editorial and legal rather than as a tech company's grotesque, which
-is the whole point of the change from Sora. Archivo underneath it is a grotesque with a
-large x-height, so long legal prose stays readable at 1.6–1.65 line-height and UI labels
-stay crisp at `0.7rem`. The two Arabic faces are not fallbacks: Naskh is the style Egyptian
-legal text is actually set in and carries statute and document body; Tajawal is the UI
-companion that sits beside Archivo in labels and chips without a jolt in weight or colour.
+**Character:** IBM Plex Sans Arabic carries all typography roles across Latin and Arabic scripts.
+Self-hosted at weights 300, 400, 500, 600, 700 with `font-display: swap`.
+Material Symbols Rounded carries icon glyphs.
 
-**Newsreader ships at one weight.** The static 400 roman and a 300 italic, not the variable
-font — the two optical-size axes cost 280 KB and this page uses two cuts of it. Nothing may
-ask Newsreader for 500 or above or the browser will synthesise a bold, and a synthesised
-serif bold is visibly wrong at hero size. Weight is not how this identity makes a heading
-loud; size is.
-
-**Where each face goes.** Newsreader carries headings, pull-quotes, the mission statement
-and the stats-band figures. Archivo carries everything that is interface: tabs, nav, labels,
-firm names, nameplates, buttons, and **all ten product surfaces** — inside `.ui` the display
-face is Archivo, because the real app sets its figures in Archivo 600 and a marketing page's
-editorial serif has no business inside a screenshot of the product.
-
-**Both faces carry Arabic without a language switch.** The Arabic faces sit
-inside the same two stacks (`--font-display`, `--font-text`) rather than behind
-a `[lang="ar"]` override, and every `@font-face` declares a `unicode-range`, so
-the browser resolves per character: Latin in Newsreader/Archivo, Arabic in
-Naskh/Tajawal, in the same paragraph if the paragraph mixes them — which the
-product surfaces do constantly. The only thing `[lang="ar"]` adjusts is size and
-leading, because naskh at Latin's metrics reads cramped, plus the uppercase and
-tracked-out labels, which are Latin devices that do nothing for a script with no
-case and everything to break its joins.
-
-All five are self-hosted `woff2`, Latin **or** Arabic subset only, ~172 KB total. Archivo
-and Newsreader roman are `<link rel=preload>`ed; all faces are `font-display: swap`. Weight
-ranges: Archivo 400–700 variable, Newsreader 400 roman + 300 italic as two static files,
-Noto Naskh 400–700, Tajawal 400/500/700 as three files.
+All faces are self-hosted `woff2` with no external CDN requests.
+`IBMPlexSansArabic-400.woff2` and `IBMPlexSansArabic-600.woff2` are `<link rel=preload>`ed.
 
 ### The mark is not type
 
-The wordmark is outlined from Archivo 600 at −5% tracking and shipped as path data, not set
+The wordmark is outlined vector artwork at −5% tracking and shipped as path data, not set
 as live text. It is the same artwork the product app ships (`web/lib/brand/marks.ts`,
 generated by `web/scripts/brand/build-marks.py`), inlined here as SVG. Consequences worth
 knowing before touching it: there is no font for it to fail to load, no `text-transform`
@@ -454,22 +419,22 @@ in the nav and on Ink inside the CTA.
 
 ### Hierarchy
 
-- **Display / hero** (`.display--hero`, Newsreader 400, `clamp(2.65rem, 6.6vw, 5.5rem)`, 1.03, `-0.015em`, `text-wrap: balance`): the H1 only. Capped at `17ch` above 860px so it breaks into three lines by measure rather than by `<br>`.
-- **Headline / section** (`.display--section`, Newsreader 400, `clamp(2.1rem, 4.2vw, 3.6rem)`, 1.06): every `<h2>`. The security section overrides down to `clamp(1.9rem, 3vw, 2.7rem)` because it lives inside a pane.
-- **Title / sub** (`.display--sub`, Newsreader 400, `clamp(1.5rem, 2.4vw, 2.1rem)`, 1.16, `-0.012em`): panel and card `<h3>`.
-- **Statement** (`.mission-statement`, Newsreader 400, `clamp(1.6rem, 3.35vw, 3rem)`, 1.24, max `24ch`, `--ink-2` with `.mission-hi` lifting the operative clause to `--ink`): the mission paragraph, the one place display type is used for a run of prose. The pull-quote (`.tm-quote p`) uses the same register; the feature quotes (`.feat-quote p`) use the **italic 300**, which is the identity's commentary voice.
-- **Lede** (`.lede`, Archivo, `clamp(1.05rem, 1.35vw, 1.2rem)`, 1.65, `--ink-2`, max `62ch`, `text-wrap: pretty`).
-- **Body** (`.body-2`, Archivo 400, 1rem, 1.65, `--ink-2`, max `68ch`).
-- **Aside** (`.aside-italic`, Newsreader italic 300, `--ink-2`): the identity's editorial voice, for a line of commentary under a heading.
-- **Label / eyebrow** (`.eyebrow`, Archivo 700, `0.7rem`, `0.16em`, uppercase, `--ink-3`, with an 18×1px `--hairline-bright` lead rule): names the section's place in the product rather than restating the heading. Related label sizes: `.foot-h` and `.sol-tag` at `0.72rem`/`0.14–0.15em`, `.ins-cat` and `.tm-plate-role` at `0.68rem`/`0.15–0.18em`.
-- **Numerals** (`.stat-v`, Newsreader 400, `clamp(3rem, 7vw, 5.4rem)`, `-0.018em`, `font-variant-numeric: tabular-nums`): the stats band. Counters ease up over 1500ms with `1 - 2^(-10t)` — the JS mirror of the CSS easing.
+- **Display / hero** (`.display--hero`, IBM Plex Sans Arabic 400, `clamp(2.65rem, 6.6vw, 5.5rem)`, 1.03, `-0.015em`, `text-wrap: balance`): the H1 only. Capped at `17ch` above 860px so it breaks into three lines by measure rather than by `<br>`.
+- **Headline / section** (`.display--section`, IBM Plex Sans Arabic 400, `clamp(2.1rem, 4.2vw, 3.6rem)`, 1.06): every `<h2>`. The security section overrides down to `clamp(1.9rem, 3vw, 2.7rem)` because it lives inside a pane.
+- **Title / sub** (`.display--sub`, IBM Plex Sans Arabic 400, `clamp(1.5rem, 2.4vw, 2.1rem)`, 1.16, `-0.012em`): panel and card `<h3>`.
+- **Statement** (`.mission-statement`, IBM Plex Sans Arabic 400, `clamp(1.6rem, 3.35vw, 3rem)`, 1.24, max `24ch`, `--ink-2` with `.mission-hi` lifting the operative clause to `--ink`): the mission paragraph, the one place display type is used for a run of prose. The pull-quote (`.tm-quote p`) uses the same register; the feature quotes (`.feat-quote p`) use the **italic 300**, which is the identity's commentary voice.
+- **Lede** (`.lede`, IBM Plex Sans Arabic, `clamp(1.05rem, 1.35vw, 1.2rem)`, 1.65, `--ink-2`, max `62ch`, `text-wrap: pretty`).
+- **Body** (`.body-2`, IBM Plex Sans Arabic 400, 1rem, 1.65, `--ink-2`, max `68ch`).
+- **Aside** (`.aside-italic`, IBM Plex Sans Arabic italic 300, `--ink-2`): the identity's editorial voice, for a line of commentary under a heading.
+- **Label / eyebrow** (`.eyebrow`, IBM Plex Sans Arabic 700, `0.7rem`, `0.16em`, uppercase, `--ink-3`, with an 18×1px `--hairline-bright` lead rule): names the section's place in the product rather than restating the heading. Related label sizes: `.foot-h` and `.sol-tag` at `0.72rem`/`0.14–0.15em`, `.ins-cat` and `.tm-plate-role` at `0.68rem`/`0.15–0.18em`.
+- **Numerals** (`.stat-v`, IBM Plex Sans Arabic 400, `clamp(3rem, 7vw, 5.4rem)`, `-0.018em`, `font-variant-numeric: tabular-nums`): the stats band. Counters ease up over 1500ms with `1 - 2^(-10t)` — the JS mirror of the CSS easing.
 - **Code** (`.code`, `ui-monospace, "SF Mono", Menlo`, `0.78rem`, 1.75 on `rgba(18,22,28,0.04)`): the one API sample. Keywords `--seal-deep`, payload `--ink-3`.
 
 ### Named Rules
 
 **The Isolate-Don't-Flip Rule.** `.ar` and `.ar-doc` carry `unicode-bidi: isolate` but deliberately **not** `direction: rtl`. The bidi algorithm already runs the Arabic right-to-left inside its own box; the box keeps the alignment of the row it sits in, so an Arabic matter title in an LTR table starts where its English subtitle starts. Surfaces that are genuinely right-to-left — the client portal, a document pane, an AI review pane, a citation seal — declare `dir="rtl"` on the *container* and inherit the real thing. Never put `direction: rtl` on the inline class.
 
-**The Optical Size Rule.** Arabic set inline in English copy is scaled up and loosened: `.ar` at `1.06em`, `.ar-doc` at `1.08em` with `line-height: 2`. Naskh at Archivo's optical size looks broken; do not normalise them to `1em`.
+**The Optical Size Rule.** Arabic set inline in English copy is scaled up and loosened: `.ar` at `1.06em`, `.ar-doc` at `1.08em` with `line-height: 2`. Do not normalise them to `1em`.
 
 ## Layout
 
@@ -587,7 +552,7 @@ close (40px), status dots (3–6px).
 - **Solution card** (`.sol-card`): a pane with a 44px `12px`-radius icon tile — bordered `--hairline-strong` over `--surface-3`, glyph in `--ink-2`. **The tile is never Seal.**
 - **Solutions hero** (`.sol-hero`): a pane whose fill is overprinted with `linear-gradient(165deg, rgba(109,91,255,0.13), rgba(255,255,255,0.02) 46%)`, spanning two grid rows.
 - **Testimonial** (`.testimonial`): a pane with a navy overprint and a navy field inside it. The stacking fix is worth keeping: `.testimonial > *:not(.field)` gets `position: relative; z-index: 1`. Without `:not(.field)`, forcing the absolutely-positioned glow to `position: relative` would drop it back into the grid as a fourth 46rem track and blow the quote column out of the card.
-- **Portrait plate** (`.tm-plate`): an authored plate fallback, pressed rather than brass since the migration — Naskh name at `1.75rem`, Latin name in Archivo, a 2.6rem rule, an uppercase role, and an inset 1px frame at `0.55rem`. A real headshot at `assets/img/partner-portrait.jpg` covers it; `data-optional-img` hides the `<img>` on error so a missing file reveals the plate instead of a broken-image glyph.
+- **Portrait plate** (`.tm-plate`): an authored plate fallback, pressed rather than brass since the migration — Arabic name at `1.75rem`, Latin name, a 2.6rem rule, an uppercase role, and an inset 1px frame at `0.55rem`. A real headshot at `assets/img/partner-portrait.jpg` covers it; `data-optional-img` hides the `<img>` on error so a missing file reveals the plate instead of a broken-image glyph.
 
 ### Inputs
 
@@ -695,7 +660,7 @@ introduce a third.
 
 ### Don't:
 - **Don't** put Seal on eyebrows, ticks, icon tiles, headings or hover states. That was tried in the dark build with brass; it cost the citation seal its meaning and was reverted. The colour changed, the rule did not.
-- **Don't** ask Newsreader for a weight above 400, or set it in a product surface. One weight is loaded; `.ui` is Archivo.
+- **Don't** mix unapproved font faces; IBM Plex Sans Arabic carries the entire typography system.
 - **Don't** add `direction: rtl` to `.ar` or `.ar-doc`. `unicode-bidi: isolate` alone is the rule, so Arabic keeps the alignment of the row it sits in.
 - **Don't** use Seal as a border, divider or small fill in page chrome outside the citation seal. Fields are regions.
 - **Don't** introduce a new tinted hex for a surface, and don't add a second dark block. If a surface needs to invert, it re-scopes tokens the way `.cta` does.

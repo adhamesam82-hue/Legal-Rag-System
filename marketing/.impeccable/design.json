@@ -287,40 +287,27 @@
         "purpose": "Uppercase section label with an 18x1px lead rule. Names the section's place in the product, never restates the heading. Deliberately neutral \u2014 it wore brass once and cost the citation seal its meaning."
       },
       "statute": {
-        "displayName": "Statute / Document (Noto Naskh Arabic)",
-        "purpose": "Arabic statute and document body \u2014 the naskh style Egyptian legal text is actually set in. Carries unicode-bidi: isolate but NOT direction: rtl."
+        "displayName": "Statute / Document (IBM Plex Sans Arabic)",
+        "purpose": "Arabic statute and document body set in IBM Plex Sans Arabic. Carries unicode-bidi: isolate but NOT direction: rtl."
       },
       "arabic-ui": {
-        "displayName": "Arabic UI (Tajawal)",
-        "purpose": "Arabic UI labels, matter names, chips and citation seals, so Arabic sits beside Manrope without a jolt."
+        "displayName": "Arabic UI (IBM Plex Sans Arabic)",
+        "purpose": "Arabic UI labels, matter names, chips and citation seals, unified under IBM Plex Sans Arabic."
       }
     },
     "fonts": [
       {
-        "family": "Sora",
-        "weights": "400 700",
-        "subset": "latin",
-        "file": "assets/fonts/Sora-400-700-latin.woff2",
+        "family": "IBM Plex Sans Arabic",
+        "weights": "300 400 500 600 700",
+        "subset": "arabic, latin",
+        "file": "assets/fonts/IBMPlexSansArabic-{300,400,500,600,700}.woff2",
         "preloaded": true
       },
       {
-        "family": "Manrope",
-        "weights": "400 800",
-        "subset": "latin",
-        "file": "assets/fonts/Manrope-400-800-latin.woff2",
-        "preloaded": true
-      },
-      {
-        "family": "Noto Naskh Arabic",
-        "weights": "400 700",
-        "subset": "arabic",
-        "file": "assets/fonts/NotoNaskhArabic-400-700-arabic.woff2"
-      },
-      {
-        "family": "Tajawal",
-        "weights": "400, 500, 700 (three files)",
-        "subset": "arabic",
-        "file": "assets/fonts/Tajawal-{400,500,700}-arabic.woff2"
+        "family": "Material Symbols Rounded",
+        "weights": "400",
+        "subset": "icons",
+        "file": "assets/fonts/MaterialSymbolsRounded.woff2"
       }
     ],
     "shadows": [
@@ -499,7 +486,7 @@
       "refersTo": "cite-seal",
       "description": "The page's one recurring product mark and the only place brass is earned. Wraps rather than clips \u2014 an article reference running off the edge of its own panel is the opposite of what the mark is for.",
       "html": "<span class=\"ds-cite\" dir=\"rtl\"><svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 3.2 20 7.4v5.2c0 4.2-3.2 7.1-8 8.2-4.8-1.1-8-4-8-8.2V7.4z\"/><path d=\"M8.9 12.2 11 14.4l4.2-4.6\"/></svg>\u0642\u0627\u0646\u0648\u0646 \u0627\u0644\u0639\u0645\u0644 12/2003 \u2014 \u0645.122</span>",
-      "css": ".ds-cite { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.16rem 0.5rem 0.16rem 0.4rem; border-radius: 5px; border: 1px solid rgba(224, 164, 76, 0.42); background: rgba(224, 164, 76, 0.11); color: var(--brass-lit, #F0BE76); font-family: 'Tajawal', 'Noto Naskh Arabic', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.005em; white-space: normal; } .ds-cite svg { flex: none; }"
+      "css": ".ds-cite { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.16rem 0.5rem 0.16rem 0.4rem; border-radius: 5px; border: 1px solid rgba(224, 164, 76, 0.42); background: rgba(224, 164, 76, 0.11); color: var(--brass-lit, #F0BE76); font-family: 'IBM Plex Sans Arabic', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.005em; white-space: normal; } .ds-cite svg { flex: none; }"
     },
     {
       "name": "Glass Pane",
@@ -577,7 +564,7 @@
       },
       {
         "name": "The Optical Size Rule",
-        "body": "Arabic set inline in English copy is scaled up and loosened: .ar at 1.06em, .ar-doc at 1.08em with line-height: 2. Naskh at Manrope's optical size looks broken; do not normalise them to 1em.",
+        "body": "Arabic set inline in English copy is scaled up and loosened: .ar at 1.06em, .ar-doc at 1.08em with line-height: 2. Arabic at optical size looks broken; do not normalise them to 1em.",
         "section": "typography"
       },
       {
