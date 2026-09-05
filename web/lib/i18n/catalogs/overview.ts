@@ -149,6 +149,9 @@ export const en: Catalog = {
   "@legalos.dashboard.kpi.overdueDetail": {
     defaultMessage: "{count, plural, one {# overdue} other {# overdue}}",
   },
+  "@legalos.dashboard.kpi.dueThisWeekDetail": {
+    defaultMessage: "{count, plural, one {# due this week} other {# due this week}}",
+  },
   "@legalos.dashboard.kpi.noneOverdue": { defaultMessage: "None overdue" },
   "@legalos.dashboard.kpi.unbilledTime": { defaultMessage: "Unbilled Time" },
   "@legalos.dashboard.kpi.hoursLoggedDetail": {
@@ -312,6 +315,9 @@ export const ar: Catalog = {
   "@legalos.dashboard.kpi.openTasks": { defaultMessage: "المهام المفتوحة" },
   "@legalos.dashboard.kpi.overdueDetail": {
     defaultMessage: "{count, plural, one {مهمة واحدة متأخرة} two {مهمتان متأخرتان} few {# مهام متأخرة} other {# مهمة متأخرة}}",
+  },
+  "@legalos.dashboard.kpi.dueThisWeekDetail": {
+    defaultMessage: "{count, plural, one {مهمة واحدة مستحقة هذا الأسبوع} two {مهمتان مستحقتان هذا الأسبوع} few {# مهام مستحقة هذا الأسبوع} other {# مهمة مستحقة هذا الأسبوع}}",
   },
   "@legalos.dashboard.kpi.noneOverdue": { defaultMessage: "لا توجد مهام متأخرة" },
   "@legalos.dashboard.kpi.unbilledTime": { defaultMessage: "الوقت غير المفوتَر" },

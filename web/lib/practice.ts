@@ -637,6 +637,7 @@ export interface Dashboard {
   hours_this_month: number;
   upcoming: UpcomingItem[];
   recent_activity: ActivityEntry[];
+  tasks_due_this_week: number;
 }
 
 export interface Me {
