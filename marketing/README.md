@@ -1,6 +1,6 @@
-# alsigil — marketing site
+# Al-Sijil — marketing site
 
-A single-page landing page for alsigil, in the "The Stamp" identity: Paper, Ink and one Seal. Self-contained static HTML,
+A single-page landing page for Al-Sijil (السِّجل), built on the unified Sijil design system tokens (`sijil-tokens.css`, generated from `web/lib/theme.ts`). Self-contained static HTML,
 CSS and JavaScript: no build step, no dependencies, no runtime network calls.
 
 It lives outside `web/` on purpose. The product app is Clerk-gated, Arabic-first
@@ -135,12 +135,11 @@ do not exist yet.
   lightbox traps focus and restores it. Content is visible by default — the
   reveal class is added by script, so a JS failure shows the page rather than a
   blank one.
-- **Brass is not a decorative accent.** `#E0A44C` is spent only on material
-  that resolves to a source: citation seals, the clause an AI finding is
+- **Accent is purpose-driven.** Semantic tokens and accents are spent only on material
+  that resolves to a source: citations (`.cite`), the clause an AI finding is
   anchored to, the security attestation marks, and the three verifiable proof
-  points under the hero. Selection, status and emphasis are ink or neutral.
-  An earlier pass had the accent on every eyebrow, tick and icon tile, which cost
-  the citation seal its meaning. Keep it scarce.
+  points under the hero. Selection, status and emphasis follow the design system tokens.
+  Keep accents focused and meaningful.
 - **The direction contract** is the HTML comment at the top of `<body>`. It
   records what this page is committed to. Read it before changing the look.
 

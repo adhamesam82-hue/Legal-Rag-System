@@ -37,7 +37,7 @@
       },
       "brass": {
         "role": "primary",
-        "displayName": "Brass Seal",
+        "displayName": "Brass Accent",
         "canonical": "#E0A44C",
         "tonalRamp": [
           "#1E1405",
@@ -284,7 +284,7 @@
       },
       "label": {
         "displayName": "Eyebrow / Label",
-        "purpose": "Uppercase section label with an 18x1px lead rule. Names the section's place in the product, never restates the heading. Deliberately neutral \u2014 it wore brass once and cost the citation seal its meaning."
+        "purpose": "Uppercase section label with an 18x1px lead rule. Names the section's place in the product, never restates the heading. Deliberately neutral \u2014 it wore brass once and cost the citation badge its meaning."
       },
       "statute": {
         "displayName": "Statute / Document (IBM Plex Sans Arabic)",
@@ -292,7 +292,7 @@
       },
       "arabic-ui": {
         "displayName": "Arabic UI (IBM Plex Sans Arabic)",
-        "purpose": "Arabic UI labels, matter names, chips and citation seals, unified under IBM Plex Sans Arabic."
+        "purpose": "Arabic UI labels, matter names, chips and citation badges, unified under IBM Plex Sans Arabic."
       }
     },
     "fonts": [
@@ -481,9 +481,9 @@
       "css": ".ds-btn-violet { display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem; padding: 0.95rem 1.6rem; border-radius: 999px; font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; font-weight: 700; font-size: 0.94rem; text-decoration: none; cursor: pointer; background: linear-gradient(135deg, #7A66FF, #5B47E8); color: #fff; box-shadow: 0 1px 0 rgba(255,255,255,0.28) inset, 0 10px 30px -10px rgba(109,91,255,0.85); transition: box-shadow 0.4s cubic-bezier(0.16,1,0.3,1), transform 0.4s cubic-bezier(0.16,1,0.3,1); } .ds-btn-violet:hover { box-shadow: 0 1px 0 rgba(255,255,255,0.36) inset, 0 16px 40px -10px rgba(109,91,255,1); } .ds-btn-violet:focus-visible { outline: 2px solid var(--violet-lit, #8E7CFF); outline-offset: 3px; } .ds-btn-violet:active { transform: translateY(1px) scale(0.99); }"
     },
     {
-      "name": "Citation Seal",
+      "name": "Citation Badge",
       "kind": "custom",
-      "refersTo": "cite-seal",
+      "refersTo": "cite-badge",
       "description": "The page's one recurring product mark and the only place brass is earned. Wraps rather than clips \u2014 an article reference running off the edge of its own panel is the opposite of what the mark is for.",
       "html": "<span class=\"ds-cite\" dir=\"rtl\"><svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 3.2 20 7.4v5.2c0 4.2-3.2 7.1-8 8.2-4.8-1.1-8-4-8-8.2V7.4z\"/><path d=\"M8.9 12.2 11 14.4l4.2-4.6\"/></svg>\u0642\u0627\u0646\u0648\u0646 \u0627\u0644\u0639\u0645\u0644 12/2003 \u2014 \u0645.122</span>",
       "css": ".ds-cite { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.16rem 0.5rem 0.16rem 0.4rem; border-radius: 5px; border: 1px solid rgba(224, 164, 76, 0.42); background: rgba(224, 164, 76, 0.11); color: var(--brass-lit, #F0BE76); font-family: 'IBM Plex Sans Arabic', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.005em; white-space: normal; } .ds-cite svg { flex: none; }"
@@ -530,8 +530,8 @@
     }
   ],
   "narrative": {
-    "northStar": "The Sealed Instrument",
-    "overview": "A legal instrument is a document that carries its own proof \u2014 a seal, an article number, a signature that resolves to an authority. The page is built as one: a near-black room with weather in it, glass sheets holding real product surfaces, and a single brass mark that appears only where something on screen can be traced back to Egyptian statute. Nothing decorative is allowed to wear the seal. That restriction is the whole design; every other decision exists to keep it legible.\n\nThe density is editorial, not brochure. Sections breathe at clamp(6rem, 11vw, 11rem), copy is capped at 46rem for headings and 62\u201368ch for prose, and the visual weight lives in the product surfaces rather than in decoration. There is no stock photography, no icon-tile feature grid, and no raster screenshot anywhere on the page \u2014 every product screen is real markup. Colour is spent sparingly against a monochrome ground: violet is atmosphere and system state, brass is verification, and green/amber/red appear only inside product surfaces where they carry data meaning.\n\nMotion is one authored idea repeated: a citation resolving. The hero's ambient loop draws an Arabic clause, underlines it in brass, then lands the article reference beneath it; the document panels hold the same moment statically. Everything else is arrival, not performance \u2014 a single fade-up on one easing curve, and a nav that condenses without animating layout.",
+    "northStar": "The Legal Instrument",
+    "overview": "A legal instrument is a document that carries its own proof \u2014 an article number, a signature, a signature that resolves to an authority. The page is built as one: a near-black room with weather in it, glass sheets holding real product surfaces, and a single brass mark that appears only where something on screen can be traced back to Egyptian statute. Nothing decorative is allowed to wear the verification accent. That restriction is the whole design; every other decision exists to keep it legible.\n\nThe density is editorial, not brochure. Sections breathe at clamp(6rem, 11vw, 11rem), copy is capped at 46rem for headings and 62\u201368ch for prose, and the visual weight lives in the product surfaces rather than in decoration. There is no stock photography, no icon-tile feature grid, and no raster screenshot anywhere on the page \u2014 every product screen is real markup. Colour is spent sparingly against a monochrome ground: violet is atmosphere and system state, brass is verification, and green/amber/red appear only inside product surfaces where they carry data meaning.\n\nMotion is one authored idea repeated: a citation resolving. The hero's ambient loop draws an Arabic clause, underlines it in brass, then lands the article reference beneath it; the document panels hold the same moment statically. Everything else is arrival, not performance \u2014 a single fade-up on one easing curve, and a nav that condenses without animating layout.",
     "keyCharacteristics": [
       "Near-black ground (#08090B) with all surfaces as low-alpha white overlays, never separate hexes",
       "Navy\u2192violet fields: blurred radial regions sized in viewport units, sitting behind whole sections",
@@ -543,7 +543,7 @@
     ],
     "rules": [
       {
-        "name": "The Seal Rule",
+        "name": "The Citation Rule",
         "body": "Brass marks only material that resolves to a source. If a new element cannot be traced to an article of law or a verifiable figure, it is --ink-2, --ink-3, or --violet-lit. The audit test: count the brass elements in a viewport; if any of them is a decoration, a tick, an eyebrow or an icon tile, the rule is broken.",
         "section": "colors"
       },
@@ -600,7 +600,7 @@
       "Do let a missing asset reveal an authored fallback (the ambient loop, the nameplate, the lightbox panel) rather than a broken element."
     ],
     "donts": [
-      "Don't put brass on eyebrows, ticks, icon tiles, headings or hover states. That was tried; it cost the citation seal its meaning and was reverted.",
+      "Don't put brass on eyebrows, ticks, icon tiles, headings or hover states. That was tried; it cost the citation badge its meaning and was reverted.",
       "Don't add direction: rtl to .ar or .ar-doc. unicode-bidi: isolate alone is the rule, so Arabic keeps the alignment of the row it sits in.",
       "Don't use navy or violet as a border, divider or small fill in page chrome. They are fields.",
       "Don't introduce a new dark hex for a surface. If it needs to be darker, it needs less alpha or more blur.",
@@ -608,7 +608,7 @@
       "Don't add a third easing curve, or a second reveal gesture. One fade-up, one curve.",
       "Don't animate layout properties on scroll. The nav's condense is transform + opacity precisely so --nav-h and scroll-padding-top stay in agreement.",
       "Don't remove the :not(.field) in .testimonial > *:not(.field); it keeps the absolutely-positioned glow out of the grid.",
-      "Don't let the citation seal clip. white-space: normal on .cite is load-bearing.",
+      "Don't let the citation badge clip. white-space: normal on .cite is load-bearing.",
       "Don't fake a success state. The newsletter refuses rather than confirming an unrecorded subscription; hold that line for any form added here.",
       "Don't introduce raster screenshots. Every product surface on this page is markup, and the page's credibility rests on it staying that way.",
       "Don't carry these tokens into web/. That app is light-mode Astryx with an emerald/navy palette and Inter; this world stops at marketing/."

@@ -1,13 +1,11 @@
 /* ==========================================================================
-   alsigil — foundations
-   Ground, fields, type, and the primitives every section is built from.
-   Section layout lives in sections.css; nothing here knows about a section.
-
-   This page is set in the alsigil identity ("The Stamp"): three colours —
-   Ink #12161C, Seal #A6301F, Paper #F6F3EE — and two faces. It was previously
-   a dark violet-and-brass system; what survives that change is the structure,
-   the rhythm and the motion, not the palette or the type.
+   السِّجل — foundations
+   Design tokens, typography, and section primitives for Al-Sijil.
+   Single Source of Truth: palette tokens imported from sijil-tokens.css
+   (generated from web/lib/theme.ts).
    ========================================================================== */
+
+@import "./sijil-tokens.css";
 
 /* --- Faces ---------------------------------------------------------------
    Self-hosted, IBM Plex Sans Arabic for all typography roles and
@@ -58,50 +56,14 @@
 
 /* --- Tokens --------------------------------------------------------------- */
 :root {
-  /* Paper. Three steps: the sheet's own body wash for recessed bands, Paper
-     for the page, white for anything that has to read as a card lying on it.
-     Surfaces above the ground are white overlays rather than separate hexes,
-     so a pane over a tinted band picks the band up — the same rule the dark
-     system used, inverted. */
-  --paper: #F6F3EE;
-  --paper-deep: #E9E5DE;
-  --paper-lit: #FFFFFF;
-  --ground: var(--paper);
-  --ground-deep: var(--paper-deep);
-  --surface-1: rgba(255, 255, 255, 0.58);
-  --surface-2: rgba(255, 255, 255, 0.82);
-  --surface-3: #FFFFFF;
-  --hairline: rgba(18, 22, 28, 0.12);
-  --hairline-strong: rgba(18, 22, 28, 0.2);
-  --hairline-bright: rgba(18, 22, 28, 0.34);
+  /* Hairline and border compatibility hooks mapped to Sijil tokens */
+  --hairline: var(--border);
+  --hairline-strong: var(--border2);
+  --hairline-bright: oklch(0.7 0.015 var(--brand-h, 265));
 
-  /* Ink. The identity's one dark, and the two tints of it that stay legible
-     on Paper: --ink-2 at 6.0:1, --ink-3 at 4.9:1, both measured against
-     #F6F3EE rather than estimated. --ink-3 is the floor and it is a real
-     floor: the eyebrow sets it at 0.7rem/700, which is 11px and nowhere near
-     large enough for the 3:1 large-text allowance, so it has to clear 4.5:1
-     as body text does. The dark build's equivalent tint inverted to 3.8:1,
-     which is where this value came from. */
-  --ink: #12161C;
-  --ink-2: #565D66;
-  --ink-3: #656B72;
-
-  /* Seal is the one functional accent: it marks material the product has
-     verified against source law, and it is the colour of the mark itself.
-     Nothing decorative is allowed to wear it. --seal-deep is for text and
-     hover, where the flat Seal would sit too light against Paper. */
-  --seal: #A6301F;
-  --seal-deep: #7E2417;
-  --seal-wash: rgba(166, 48, 31, 0.09);
-  --seal-line: rgba(166, 48, 31, 0.34);
-
-  /* Semantic marks inside product surfaces, re-cut for Paper. Risk is Seal:
-     in this product the thing that is running out and the thing that has been
-     attested are the same red, which is how the identity sheet paints its own
-     "next deadline" figure. */
-  --ok: #1F6F4A;
-  --warn: #8A5F0B;
-  --risk: var(--seal);
+  /* Semantic status aliases mapped to Sijil template tokens */
+  --ok: var(--success);
+  --risk: var(--danger);
 
   /* IBM Plex Sans Arabic carries all type roles across Latin and Arabic scripts.
      Material Symbols Rounded carries icon glyphs. */
@@ -110,15 +72,12 @@
   --font-ar-doc: 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif;
   --font-ar-ui: 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif;
 
-  /* Corners. The stamp identity is a printed one — filings, letterhead, a
-     punch struck into paper — and none of that is round. The scale is kept
-     (four steps plus a pill) so nothing downstream has to change, but every
-     step is now a crisp edge rather than a soft one. */
-  --r-md: 2px;
-  --r-lg: 3px;
-  --r-xl: 4px;
-  --r-2xl: 5px;
-  --r-pill: 2px;
+  /* Corners mapped to Sijil template scale */
+  --r-md: var(--rs);
+  --r-lg: var(--rs);
+  --r-xl: var(--r);
+  --r-2xl: var(--r);
+  --r-pill: 9999px;
 
   /* One spacing rhythm. Sections breathe at --gap-section. */
   --gap-section: clamp(6rem, 11vw, 11rem);
@@ -131,11 +90,9 @@
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-soft: cubic-bezier(0.33, 0.9, 0.35, 1);
 
-  /* Paper shadows are contact shadows: a tight dark line where the sheet
-     meets the page, and a wide soft one under it. The dark system's near
-     -opaque blacks would read as soot here. */
-  --shadow-lift: 0 1px 2px rgba(18, 22, 28, 0.06), 0 14px 30px -14px rgba(18, 22, 28, 0.22);
-  --shadow-deep: 0 2px 5px rgba(18, 22, 28, 0.07), 0 44px 80px -34px rgba(18, 22, 28, 0.34);
+  /* Shadows mapped to Sijil template */
+  --shadow-lift: var(--shadow);
+  --shadow-deep: var(--shadow-lg);
 }
 
 /* --- Reset ---------------------------------------------------------------- */
@@ -149,8 +106,8 @@ html {
 }
 
 body {
-  background: var(--ground);
-  color: var(--ink);
+  background: var(--bg);
+  color: var(--text);
   font-family: var(--font-text);
   font-size: 1rem;
   line-height: 1.6;
@@ -168,12 +125,12 @@ a { color: inherit; text-decoration: none; }
 ul, ol { list-style: none; padding: 0; }
 
 :focus-visible {
-  outline: 2px solid var(--seal);
+  outline: 2px solid var(--primary);
   outline-offset: 3px;
-  border-radius: 2px;
+  border-radius: var(--rs);
 }
 
-::selection { background: rgba(166, 48, 31, 0.22); color: var(--ink); }
+::selection { background: var(--primary-soft); color: var(--text); }
 
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0;
@@ -183,7 +140,7 @@ ul, ol { list-style: none; padding: 0; }
 .skip-link {
   position: fixed; top: 12px; left: 12px; z-index: 999;
   padding: 0.7rem 1.1rem; border-radius: var(--r-pill);
-  background: var(--ink); color: var(--paper); font-weight: 700;
+  background: var(--text); color: var(--bg); font-weight: 700;
   transform: translateY(-160%);
   transition: transform 0.35s var(--ease);
 }
@@ -224,12 +181,12 @@ ul, ol { list-style: none; padding: 0; }
 .lede {
   font-size: clamp(1.05rem, 1.35vw, 1.2rem);
   line-height: 1.65;
-  color: var(--ink-2);
+  color: var(--text2);
   max-width: 62ch;
   text-wrap: pretty;
 }
-.body-2 { color: var(--ink-2); line-height: 1.65; max-width: 68ch; text-wrap: pretty; }
-.muted { color: var(--ink-3); }
+.body-2 { color: var(--text2); line-height: 1.65; max-width: 68ch; text-wrap: pretty; }
+.muted { color: var(--text3); }
 
 /* The identity's editorial voice: for the one line under a
    heading that is commentary rather than copy. */
@@ -237,7 +194,7 @@ ul, ol { list-style: none; padding: 0; }
   font-family: var(--font-display);
   font-style: italic;
   font-weight: 300;
-  color: var(--ink-2);
+  color: var(--text2);
   text-wrap: pretty;
 }
 
@@ -257,22 +214,14 @@ ul, ol { list-style: none; padding: 0; }
   flex: none;
 }
 
-/* Arabic set inline inside English copy.
-   These carry `unicode-bidi: isolate` but deliberately NOT `direction: rtl`:
-   the bidi algorithm already runs the Arabic right-to-left inside its own box,
-   while the box keeps the alignment of the row it sits in. A matter title in
-   an LTR table must start where its English subtitle starts. Surfaces that are
-   genuinely right-to-left — the client portal, a document pane — declare
-   `dir="rtl"` on their container and inherit the real thing. */
+/* Arabic set inline inside English copy. */
 .ar { font-family: var(--font-ar-ui); unicode-bidi: isolate; font-size: 1.06em; }
 .ar-doc { font-family: var(--font-ar-doc); unicode-bidi: isolate; font-size: 1.08em; line-height: 2; }
 [dir="rtl"] .ar, [dir="rtl"] .ar-doc { unicode-bidi: isolate; }
 
 /* --- Eyebrow -------------------------------------------------------------
    The section's place in the product, not a restatement of the heading below
-   it. Deliberately neutral: it wore the accent in an earlier pass, and nine
-   quiet labels in the accent colour cost the citation seal its meaning. Seal
-   is spent only where something resolves to a source.
+   it.
    -------------------------------------------------------------------------- */
 .eyebrow {
   display: inline-flex;
@@ -282,7 +231,7 @@ ul, ol { list-style: none; padding: 0; }
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--ink-3);
+  color: var(--text3);
   margin-bottom: 1.35rem;
 }
 .eyebrow::before {
@@ -299,17 +248,13 @@ ul, ol { list-style: none; padding: 0; }
 .section-head--center .lede { margin-inline: auto; }
 
 /* --- Panes ---------------------------------------------------------------
-   One pane recipe: a sheet of white lying on the page, held by a hairline and
-   a contact shadow. The dark system built this out of a translucent fill and
-   a lit top edge, because glass over a violet field was the material. The
-   material here is paper on paper, so what separates two sheets is the edge
-   and the shadow under it, not a highlight along the top.
+   One pane recipe: an elevated sheet held by a border and a subtle shadow.
    -------------------------------------------------------------------------- */
 .pane {
   position: relative;
   border: 1px solid var(--hairline);
   border-radius: var(--r-xl);
-  background: var(--surface-3);
+  background: var(--surface);
   overflow: hidden;
 }
 .pane--flush { overflow: visible; }
@@ -317,8 +262,7 @@ ul, ol { list-style: none; padding: 0; }
 
 .pane-pad { padding: clamp(1.5rem, 2.6vw, 2.4rem); }
 
-/* Interactive panes lift on hover; the edge darkens rather than the fill, so
-   the sheet reads as being picked up rather than changing colour. */
+/* Interactive panes lift on hover */
 .pane--action {
   transition: transform 0.5s var(--ease), border-color 0.5s var(--ease), box-shadow 0.5s var(--ease);
 }
@@ -328,15 +272,7 @@ ul, ol { list-style: none; padding: 0; }
   box-shadow: var(--shadow-lift);
 }
 
-/* --- Fields ---------------------------------------------------------------
-   What the navy-and-violet atmosphere becomes on paper.
-   A dark page can glow; a light one cannot — a blurred coloured disc on Paper
-   is a stain, not an atmosphere. So the regions that used to be lit are now
-   ruled: the identity sheet's own device, a 32px graph-paper grid, laid behind
-   whole sections at an alpha that reads as tooth rather than as a table. The
-   seal field is the one exception, a warm flush under the sections that carry
-   the mark.
-   -------------------------------------------------------------------------- */
+/* --- Fields --------------------------------------------------------------- */
 .field {
   position: absolute;
   pointer-events: none;
@@ -345,27 +281,22 @@ ul, ol { list-style: none; padding: 0; }
 }
 .field--grid {
   background-image:
-    repeating-linear-gradient(0deg, rgba(18,22,28,0.045) 0 1px, transparent 1px 32px),
-    repeating-linear-gradient(90deg, rgba(18,22,28,0.045) 0 1px, transparent 1px 32px);
+    repeating-linear-gradient(0deg, oklch(0.3 0.02 265 / 0.045) 0 1px, transparent 1px 32px),
+    repeating-linear-gradient(90deg, oklch(0.3 0.02 265 / 0.045) 0 1px, transparent 1px 32px);
   mask-image: radial-gradient(closest-side, #000 30%, transparent 100%);
   -webkit-mask-image: radial-gradient(closest-side, #000 30%, transparent 100%);
 }
-/* Kept low deliberately. On a narrow viewport a single field covers most of
-   the screen, and at the alpha that reads as a flush on a 1440px page it reads
-   as a colour cast on a phone — Paper with a pink tint rather than Paper. */
-.field--seal {
+.field--primary {
   border-radius: 50%;
   filter: blur(90px);
   opacity: 0.5;
-  background: radial-gradient(closest-side, rgba(166, 48, 31, 0.14), rgba(166, 48, 31, 0));
+  background: radial-gradient(closest-side, var(--primary-soft), transparent);
 }
 
-/* Fine grain over the whole page. On paper this is the tooth of the stock:
-   multiply rather than overlay, because it should darken into the sheet
-   rather than glow off it. */
+/* Fine grain over the whole page */
 .grain {
   position: fixed; inset: 0; z-index: 1; pointer-events: none;
-  opacity: 0.05;
+  opacity: 0.04;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
   mix-blend-mode: multiply;
 }
@@ -390,31 +321,35 @@ ul, ol { list-style: none; padding: 0; }
 }
 .btn:active { transform: translateY(1px) scale(0.99); }
 
-/* Ink on paper is the primary action. Seal is not a button colour: it belongs
-   to the mark and to attested material, and a page of red buttons would spend
-   it on the least meaningful thing on the screen. */
 .btn--solid {
-  background: var(--ink);
-  color: var(--paper);
-  box-shadow: 0 1px 2px rgba(18,22,28,0.18);
+  background: var(--primary);
+  color: var(--primary-fg);
+  box-shadow: var(--shadow);
 }
-.btn--solid:hover { background: #000; box-shadow: 0 2px 4px rgba(18,22,28,0.22), 0 10px 22px -10px rgba(18,22,28,0.4); }
+.btn--solid:hover {
+  background: var(--primary-h);
+  box-shadow: var(--shadow-lg);
+}
 
 .btn--ghost {
   background: transparent;
   border: 1px solid var(--hairline-strong);
-  color: var(--ink);
+  color: var(--text);
 }
-.btn--ghost:hover { background: rgba(18,22,28,0.04); border-color: var(--hairline-bright); }
+.btn--ghost:hover {
+  background: var(--surface2);
+  border-color: var(--primary);
+}
 
-/* The one filled accent button, for the single conversion point at the foot of
-   the page. Not a general variant. */
-.btn--seal {
-  background: var(--seal);
-  color: var(--paper-lit);
-  box-shadow: 0 1px 2px rgba(126,36,23,0.3);
+.btn--primary {
+  background: var(--primary);
+  color: var(--primary-fg);
+  box-shadow: var(--shadow);
 }
-.btn--seal:hover { background: var(--seal-deep); box-shadow: 0 2px 5px rgba(126,36,23,0.34), 0 12px 26px -12px rgba(126,36,23,0.5); }
+.btn--primary:hover {
+  background: var(--primary-h);
+  box-shadow: var(--shadow-lg);
+}
 
 .btn--sm { padding: 0.62rem 1.15rem; font-size: 0.85rem; }
 .btn--lg { padding: 1.1rem 2rem; font-size: 1rem; }
@@ -425,7 +360,7 @@ ul, ol { list-style: none; padding: 0; }
 /* Text link with an underline that draws from the leading edge. */
 .link-arrow {
   display: inline-flex; align-items: center; gap: 0.5rem;
-  font-weight: 600; font-size: 0.94rem; color: var(--ink);
+  font-weight: 600; font-size: 0.94rem; color: var(--text);
   position: relative; padding-bottom: 3px;
 }
 .link-arrow::after {
@@ -443,21 +378,20 @@ ul, ol { list-style: none; padding: 0; }
   padding: 0.42rem 0.9rem 0.42rem 0.75rem;
   border-radius: var(--r-pill);
   border: 1px solid var(--hairline-strong);
-  background: var(--surface-3);
+  background: var(--surface);
   font-size: 0.8rem; font-weight: 600; letter-spacing: 0.01em;
-  color: var(--ink-2);
+  color: var(--text2);
 }
 .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); flex: none; }
 
-/* The citation seal — the page's one recurring product mark, and the only
-   place besides the logo that Seal appears. */
+/* The citation badge — marks material grounded in statute text */
 .cite {
   display: inline-flex; align-items: center; gap: 0.35rem;
   padding: 0.16rem 0.5rem 0.16rem 0.4rem;
-  border-radius: 3px;
-  border: 1px solid var(--seal-line);
-  background: var(--seal-wash);
-  color: var(--seal-deep);
+  border-radius: var(--rs);
+  border: 1px solid var(--border2);
+  background: var(--primary-soft);
+  color: var(--primary);
   font-size: 0.72rem; font-weight: 700; letter-spacing: 0.005em;
   white-space: nowrap;
 }
@@ -490,16 +424,14 @@ ul, ol { list-style: none; padding: 0; }
 }
 
 /* --- Arabic ---------------------------------------------------------------
-   Typography adjustments for the Arabic page: no mirrored stylesheet, because
-   the layout is written in logical properties throughout and `dir="rtl"` on
-   <html> flips it on its own.
+   Typography adjustments for the Arabic page: layout uses logical properties
+   and `dir="rtl"` on <html> flips it cleanly.
    -------------------------------------------------------------------------- */
 [lang="ar"] {
   line-height: 1.75;
 }
 [lang="ar"] .display {
   line-height: 1.32;
-  /* Tight tracking is a Latin device; Arabic script is already connected. */
   letter-spacing: 0;
 }
 [lang="ar"] .display--hero { font-size: clamp(2.2rem, 5.2vw, 4.3rem); }
@@ -508,8 +440,6 @@ ul, ol { list-style: none; padding: 0; }
 [lang="ar"] .lede,
 [lang="ar"] .body-2 { line-height: 1.9; }
 [lang="ar"] .mission-statement { line-height: 1.6; letter-spacing: 0; }
-/* Uppercase and wide tracking do nothing for a script with no case and
-   everything to break its joins. */
 [lang="ar"] .eyebrow,
 [lang="ar"] .foot-h,
 [lang="ar"] .marquee-label,
@@ -530,6 +460,3 @@ ul, ol { list-style: none; padding: 0; }
   text-transform: none;
   letter-spacing: 0;
 }
-/* The mark stays Latin — the identity sheet has no Arabic wordmark — so the
-   one lockup on the page keeps its own direction inside an RTL document. */
-[lang="ar"] .wordmark { direction: ltr; }

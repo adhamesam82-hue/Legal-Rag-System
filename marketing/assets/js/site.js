@@ -429,7 +429,7 @@
       video.addEventListener('loadeddata', () => {
         if (fallback) fallback.hidden = true;
         const title = $('[data-tour-title]', box);
-        if (title) title.textContent = 'alsigil — the two-minute tour';
+        if (title) title.textContent = 'Al-Sijil — the two-minute tour';
         // The hero button names the film only now that one exists to play.
         $$('[data-tour-label]').forEach((el) => { el.textContent = 'Watch the 2-min tour'; });
       }, { once: true });
