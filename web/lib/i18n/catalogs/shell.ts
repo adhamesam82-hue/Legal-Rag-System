@@ -1,7 +1,8 @@
 import type { Catalog } from "@astryxdesign/core/i18n";
 
 export const en: Catalog = {
-  "@legalos.shell.brand": { defaultMessage: "alsigil" },
+  "@legalos.shell.brand": { defaultMessage: "Al-Sijil" },
+  "@legalos.shell.brandTagline": { defaultMessage: "Law Firm Management" },
   "@legalos.shell.mainNavAriaLabel": { defaultMessage: "Main navigation" },
   // Firm names are data, not chrome: a Cairo practice is called what it is
   // called on its letterhead, in either UI language. Same strings as the `ar`
@@ -70,7 +71,8 @@ export const en: Catalog = {
 };
 
 export const ar: Catalog = {
-  "@legalos.shell.brand": { defaultMessage: "alsigil" },
+  "@legalos.shell.brand": { defaultMessage: "السِّجل" },
+  "@legalos.shell.brandTagline": { defaultMessage: "إدارة مكاتب المحاماة" },
   "@legalos.shell.mainNavAriaLabel": { defaultMessage: "التنقل الرئيسي" },
   "@legalos.shell.firm.alSayed": { defaultMessage: "السيد وشركاه" },
   "@legalos.shell.firm.cairoLegal": { defaultMessage: "مجموعة القاهرة القانونية" },

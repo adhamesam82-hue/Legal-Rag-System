@@ -57,7 +57,6 @@ import { useOrg } from "@/lib/org";
 import { useFormat } from "@/lib/i18n/format";
 import type { PracticeApi } from "@/lib/practice";
 import { isPathEnabled } from "@/lib/features";
-import { Alsigil, AlsigilPunch } from "@/components/brand/Alsigil";
 
 // stylex.create() isn't compiled by this app's build (see globals.css); AI
 // accent color goes through the Tailwind token bridge instead.
@@ -260,23 +259,106 @@ function useCommandSource(t: TranslatorFn, practice: PracticeApi | null) {
   }, [t, practice]);
 }
 
-/** The mark in the rail's brand slot.
- *
- *  SideNavHeading renders its `heading` as interface text, which is the right
- *  treatment for a product name and the wrong one for a wordmark — the whole
- *  point of the sheet is that the word *is* the mark. So the mark goes in the
- *  icon slot and the heading is left empty; the anchor takes its accessible
- *  name from the mark's own `aria-label` either way.
- *
- *  Collapsed, the rail is far narrower than the lockup's 64px floor, so it
- *  gets the punch alone rather than a lockup squeezed under its minimum. */
+/** أيقونة المطرقة القضائية (gavel) للعلامة الرسمية. */
+function GavelIcon({ size = 20, className }: { size?: number; className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="currentColor"
+      aria-hidden="true"
+      className={className}
+    >
+      <path d="M1 21h12v2H1v-2zM5.245 8.05l2.83-2.83 9.9 9.9-2.83 2.83-9.9-9.9zM12.317 3.808l2.828-2.829 5.657 5.657-2.828 2.829-5.657-5.657zM3.832 12.293l2.829-2.828 5.656 5.657-2.828 2.828-5.657-5.657z" />
+    </svg>
+  );
+}
+
+/** علامة «السِّجل» النصية والأيقونية: أيقونة gavel داخل مربع بزوايا --rs ولون --primary،
+ *  بجوارها «السِّجل» بوزن ثقيل وتحتها السطر الوصفي بـ --text3 («إدارة مكاتب المحاماة»).
+ *  تنكمش للأيقونة وحدها حين يُطوى الشريط الجانبي. */
+function SijilBrand({
+  collapsed = false,
+  compact = false,
+}: {
+  collapsed?: boolean;
+  compact?: boolean;
+}) {
+  const t = useTranslator();
+  const brandName = t("@legalos.shell.brand");
+  const brandTagline = t("@legalos.shell.brandTagline");
+  const fullBrandLabel = `${brandName} — ${brandTagline}`;
+  const boxSize = compact ? "30px" : "34px";
+  const iconSize = compact ? 18 : 20;
+
+  if (collapsed) {
+    return (
+      <div
+        role="img"
+        aria-label={fullBrandLabel}
+        className="grid place-items-center flex-none"
+        style={{
+          width: boxSize,
+          height: boxSize,
+          borderRadius: "var(--rs, 10px)",
+          background: "var(--primary)",
+          color: "var(--primary-fg)",
+          boxShadow: "var(--shadow)",
+        }}
+      >
+        <GavelIcon size={iconSize} />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      role="img"
+      aria-label={fullBrandLabel}
+      className="flex items-center gap-2.5 overflow-hidden text-start"
+    >
+      <div
+        className="grid place-items-center flex-none"
+        style={{
+          width: boxSize,
+          height: boxSize,
+          borderRadius: "var(--rs, 10px)",
+          background: "var(--primary)",
+          color: "var(--primary-fg)",
+          boxShadow: "var(--shadow)",
+        }}
+        aria-hidden="true"
+      >
+        <GavelIcon size={iconSize} />
+      </div>
+      <div className="flex flex-col gap-0.5 min-w-0">
+        <span
+          className={`${
+            compact ? "text-[14px]" : "text-[15px]"
+          } font-bold text-[var(--text)] whitespace-nowrap leading-tight`}
+        >
+          {brandName}
+        </span>
+        <span
+          className={`${
+            compact ? "text-[10px]" : "text-[10.5px]"
+          } font-medium text-[var(--text3)] whitespace-nowrap leading-tight`}
+          style={{ letterSpacing: "0.2px" }}
+        >
+          {brandTagline}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** العلامة في شق العلامة بالشريط الجانبي.
+ *  تنكمش إلى الأيقونة وحدها عند طيّ الشريط. */
 function SideNavBrand() {
   const { isCollapsed } = useSideNavCollapse();
-  return isCollapsed ? (
-    <AlsigilPunch size={18} />
-  ) : (
-    <Alsigil width={112} tone="auto" />
-  );
+  return <SijilBrand collapsed={isCollapsed} />;
 }
 
 function ThemeToggle() {
@@ -327,11 +409,9 @@ function TopNavBrand() {
   const { isMobile } = useAppShellMobile();
   const t = useTranslator();
   if (!isMobile) return null;
-  // No `heading`: the wordmark is the heading. 96px is the sheet's recommended
-  // screen size for the lockup, and the bar has room for it.
   return (
     <TopNavHeading
-      logo={<Alsigil width={96} tone="auto" />}
+      logo={<SijilBrand compact />}
       logoLabel={t("@legalos.shell.brand")}
       headingHref="/dashboard"
     />
