@@ -13,6 +13,78 @@ export const en: Catalog = {
   "@legalos.settings.sectionsNavLabel": { defaultMessage: "Settings sections" },
   "@legalos.settings.group.myAccount": { defaultMessage: "My account" },
   "@legalos.settings.nav.profile": { defaultMessage: "Profile" },
+  "@legalos.settings.nav.appearance": { defaultMessage: "Appearance & display" },
+  "@legalos.settings.appearance.heading": { defaultMessage: "Appearance & display" },
+  "@legalos.settings.appearance.subtitle": {
+    defaultMessage: "Customise how Al-Sijil looks and feels on this device.",
+  },
+
+  "@legalos.settings.appearance.theme.heading": { defaultMessage: "Interface theme" },
+  "@legalos.settings.appearance.theme.description": {
+    defaultMessage: "Select from four curated visual modes for the app shell and sidebar.",
+  },
+  "@legalos.settings.appearance.theme.light": { defaultMessage: "Light" },
+  "@legalos.settings.appearance.theme.lightDesc": { defaultMessage: "Clean light surface and sidebar" },
+  "@legalos.settings.appearance.theme.dark": { defaultMessage: "Dark" },
+  "@legalos.settings.appearance.theme.darkDesc": { defaultMessage: "Deep dark surface and sidebar" },
+  "@legalos.settings.appearance.theme.mixed": { defaultMessage: "Mixed" },
+  "@legalos.settings.appearance.theme.mixedDesc": { defaultMessage: "Light surface with dark sidebar" },
+  "@legalos.settings.appearance.theme.mixedInv": { defaultMessage: "Inverted mixed" },
+  "@legalos.settings.appearance.theme.mixedInvDesc": { defaultMessage: "Dark surface with light sidebar" },
+
+  "@legalos.settings.appearance.density.heading": { defaultMessage: "Display density" },
+  "@legalos.settings.appearance.density.description": {
+    defaultMessage: "Controls vertical row padding across tables, lists, and form rows.",
+  },
+  "@legalos.settings.appearance.density.comfortable": { defaultMessage: "Comfortable" },
+  "@legalos.settings.appearance.density.comfortableBadge": { defaultMessage: "18px" },
+  "@legalos.settings.appearance.density.comfortableDesc": {
+    defaultMessage: "Spacious padding for relaxed scanning and touch devices",
+  },
+  "@legalos.settings.appearance.density.medium": { defaultMessage: "Medium" },
+  "@legalos.settings.appearance.density.mediumBadge": { defaultMessage: "14px" },
+  "@legalos.settings.appearance.density.mediumDesc": {
+    defaultMessage: "Default balanced density for daily legal workflows",
+  },
+  "@legalos.settings.appearance.density.compact": { defaultMessage: "Compact" },
+  "@legalos.settings.appearance.density.compactBadge": { defaultMessage: "10px" },
+  "@legalos.settings.appearance.density.compactDesc": {
+    defaultMessage: "Dense display maximizing data visibility on screen",
+  },
+
+  "@legalos.settings.appearance.radius.heading": { defaultMessage: "Corner radius" },
+  "@legalos.settings.appearance.radius.description": {
+    defaultMessage: "Adjust the roundness of cards, buttons, badges, and modals.",
+  },
+  "@legalos.settings.appearance.radius.sliderAria": { defaultMessage: "Corner radius in pixels" },
+  "@legalos.settings.appearance.radius.derivedNote": {
+    defaultMessage: "Inner components (--rs) automatically follow via max(4px, --r - 4px).",
+  },
+  "@legalos.settings.appearance.radius.previewHeading": { defaultMessage: "Live preview" },
+  "@legalos.settings.appearance.radius.previewCardTitle": { defaultMessage: "Contract drafting" },
+  "@legalos.settings.appearance.radius.previewBadge": { defaultMessage: "Active matter" },
+  "@legalos.settings.appearance.radius.previewButton": { defaultMessage: "Save matter" },
+
+  "@legalos.settings.appearance.sidebar.heading": { defaultMessage: "Sidebar behaviour" },
+  "@legalos.settings.appearance.sidebar.description": {
+    defaultMessage: "Keep the navigation sidebar collapsed to an icon rail by default.",
+  },
+  "@legalos.settings.appearance.sidebar.collapseLabel": {
+    defaultMessage: "Keep sidebar collapsed by default",
+  },
+
+  "@legalos.settings.appearance.reset.heading": { defaultMessage: "Reset appearance" },
+  "@legalos.settings.appearance.reset.description": {
+    defaultMessage: "Clear all local appearance customizations and restore default values.",
+  },
+  "@legalos.settings.appearance.reset.button": { defaultMessage: "Reset to defaults" },
+  "@legalos.settings.appearance.reset.confirm": {
+    defaultMessage: "Are you sure you want to reset all appearance settings to their defaults?",
+  },
+  "@legalos.settings.appearance.reset.done": {
+    defaultMessage: "Appearance settings restored to defaults.",
+  },
+
   "@legalos.settings.nav.firmSettings": { defaultMessage: "Firm settings" },
   "@legalos.settings.nav.users": { defaultMessage: "Users & permissions" },
   "@legalos.settings.nav.integrations": { defaultMessage: "Integrations" },
@@ -331,6 +403,78 @@ export const ar: Catalog = {
   "@legalos.settings.sectionsNavLabel": { defaultMessage: "أقسام الإعدادات" },
   "@legalos.settings.group.myAccount": { defaultMessage: "حسابي" },
   "@legalos.settings.nav.profile": { defaultMessage: "الملف الشخصي" },
+  "@legalos.settings.nav.appearance": { defaultMessage: "المظهر والعرض" },
+  "@legalos.settings.appearance.heading": { defaultMessage: "المظهر والعرض" },
+  "@legalos.settings.appearance.subtitle": {
+    defaultMessage: "تخصيص مظهر وشعور نظام السِّجل على هذا الجهاز.",
+  },
+
+  "@legalos.settings.appearance.theme.heading": { defaultMessage: "نمط الواجهة" },
+  "@legalos.settings.appearance.theme.description": {
+    defaultMessage: "اختر بين أربعة أنماط بصرية مدروسة للقشرة والشريط الجانبي.",
+  },
+  "@legalos.settings.appearance.theme.light": { defaultMessage: "فاتح" },
+  "@legalos.settings.appearance.theme.lightDesc": { defaultMessage: "واجهة فاتحة وشريط جانبي فاتح" },
+  "@legalos.settings.appearance.theme.dark": { defaultMessage: "داكن" },
+  "@legalos.settings.appearance.theme.darkDesc": { defaultMessage: "واجهة داكنة وشريط جانبي داكن" },
+  "@legalos.settings.appearance.theme.mixed": { defaultMessage: "مختلط" },
+  "@legalos.settings.appearance.theme.mixedDesc": { defaultMessage: "واجهة فاتحة مع شريط جانبي داكن" },
+  "@legalos.settings.appearance.theme.mixedInv": { defaultMessage: "مختلط عكسي" },
+  "@legalos.settings.appearance.theme.mixedInvDesc": { defaultMessage: "واجهة داكنة مع شريط جانبي فاتح" },
+
+  "@legalos.settings.appearance.density.heading": { defaultMessage: "كثافة العرض" },
+  "@legalos.settings.appearance.density.description": {
+    defaultMessage: "التحكم في التباعد الرأسي وهوامش الأسطر في الجداول والقوائم.",
+  },
+  "@legalos.settings.appearance.density.comfortable": { defaultMessage: "مريح" },
+  "@legalos.settings.appearance.density.comfortableBadge": { defaultMessage: "١٨ بكسل" },
+  "@legalos.settings.appearance.density.comfortableDesc": {
+    defaultMessage: "تباعد رحب لقراءة مريحة وتصفح سلس على مختلف الأجهزة",
+  },
+  "@legalos.settings.appearance.density.medium": { defaultMessage: "متوسط" },
+  "@legalos.settings.appearance.density.mediumBadge": { defaultMessage: "١٤ بكسل" },
+  "@legalos.settings.appearance.density.mediumDesc": {
+    defaultMessage: "الكثافة الافتراضية المتوازنة لبيئات العمل اليومية",
+  },
+  "@legalos.settings.appearance.density.compact": { defaultMessage: "مضغوط" },
+  "@legalos.settings.appearance.density.compactBadge": { defaultMessage: "١٠ بكسل" },
+  "@legalos.settings.appearance.density.compactDesc": {
+    defaultMessage: "عرض مكثف يزيد من كمية البيانات المرئية في الشاشة",
+  },
+
+  "@legalos.settings.appearance.radius.heading": { defaultMessage: "استدارة الحواف والزوايا" },
+  "@legalos.settings.appearance.radius.description": {
+    defaultMessage: "ضبط درجة استدارة البطاقات والأزرار والشارات والنوافذ المنبثقة.",
+  },
+  "@legalos.settings.appearance.radius.sliderAria": { defaultMessage: "درجة الاستدارة بالبكسل" },
+  "@legalos.settings.appearance.radius.derivedNote": {
+    defaultMessage: "العناصر الداخلية (--rs) تتبع تلقائياً باشتقاق max(4px, --r - 4px).",
+  },
+  "@legalos.settings.appearance.radius.previewHeading": { defaultMessage: "معاينة حية" },
+  "@legalos.settings.appearance.radius.previewCardTitle": { defaultMessage: "صياغة عقد تجاري" },
+  "@legalos.settings.appearance.radius.previewBadge": { defaultMessage: "قضية نشطة" },
+  "@legalos.settings.appearance.radius.previewButton": { defaultMessage: "حفظ القضية" },
+
+  "@legalos.settings.appearance.sidebar.heading": { defaultMessage: "سلوك الشريط الجانبي" },
+  "@legalos.settings.appearance.sidebar.description": {
+    defaultMessage: "إبقاء شريط التنقل الجانبي مطوياً في وضع الأيقونات افتراضياً.",
+  },
+  "@legalos.settings.appearance.sidebar.collapseLabel": {
+    defaultMessage: "إبقاء الشريط الجانبي مطوياً افتراضياً",
+  },
+
+  "@legalos.settings.appearance.reset.heading": { defaultMessage: "إعادة ضبط المظهر" },
+  "@legalos.settings.appearance.reset.description": {
+    defaultMessage: "مسح كافة تفضيلات المظهر المحفوظة واستعادة القيم الافتراضية الأصلية.",
+  },
+  "@legalos.settings.appearance.reset.button": { defaultMessage: "إعادة الضبط للافتراضيات" },
+  "@legalos.settings.appearance.reset.confirm": {
+    defaultMessage: "هل أنت متأكد من رغبتك في استعادة الإعدادات الافتراضية للمظهر؟",
+  },
+  "@legalos.settings.appearance.reset.done": {
+    defaultMessage: "تمت استعادة إعدادات المظهر الافتراضية بنجاح.",
+  },
+
   "@legalos.settings.nav.firmSettings": { defaultMessage: "إعدادات المكتب" },
   "@legalos.settings.nav.users": { defaultMessage: "المستخدمون والصلاحيات" },
   "@legalos.settings.nav.integrations": { defaultMessage: "التكاملات" },

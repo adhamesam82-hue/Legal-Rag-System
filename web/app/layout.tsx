@@ -9,6 +9,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { Shell } from "@/components/Shell";
 import { LOCALE_COOKIE, resolveLocale, type Locale } from "@/lib/i18n/locale";
+import { APPEARANCE_INLINE_SCRIPT } from "@/lib/appearance";
 
 // The tab title and the share preview are the first text a visitor reads, so
 // they follow the locale too — a static English `metadata` export would have
@@ -44,6 +45,12 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} dir={getLocaleDirection(locale)} suppressHydrationWarning>
+      <head>
+        <script
+          id="sijil-appearance-init"
+          dangerouslySetInnerHTML={{ __html: APPEARANCE_INLINE_SCRIPT }}
+        />
+      </head>
       <body>
         {/* Read here, on the server, on every request. NEXT_PUBLIC_* is
             inlined into the client bundle at build time, and this image is

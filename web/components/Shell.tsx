@@ -9,6 +9,7 @@ import { useOrg } from "@/lib/org";
 import { useFormat } from "@/lib/i18n/format";
 import type { PracticeApi } from "@/lib/practice";
 import { isPathEnabled, featureForPath } from "@/lib/features";
+import { useAppearance } from "@/lib/appearance";
 import { Icon } from "@/components/ui/Icon";
 import { Banner } from "@astryxdesign/core/Banner";
 import { Button } from "@astryxdesign/core/Button";
@@ -404,65 +405,53 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const { mode: parentMode, setMode: setParentMode } = useThemeMode();
   const { practice, organizationName } = useOrg();
 
-  // حالة طي الشريط الجانبي المستمرة في localStorage (T-051)
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  // ربط القشرة بكائن التخزين الموحد لإعدادات المظهر (T-054)
+  const { settings: appearance, updateSettings } = useAppearance();
+  const isCollapsed = appearance.sidebarCollapsed;
+  const themeMode = appearance.theme as ShellThemeMode;
+
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
-  // حالة الأنماط الأربعة المستمرة (light, dark, mixed, mixed-inv)
-  const [themeMode, setThemeMode] = useState<ShellThemeMode>("light");
+  // مزامنة نمط القشرة مع ثيم Astryx العام
+  useEffect(() => {
+    const targetShellTheme =
+      appearance.theme === "dark" || appearance.theme === "mixed-inv" ? "dark" : "light";
+    setParentMode(targetShellTheme);
+  }, [appearance.theme, setParentMode]);
 
-  // استرجاع الإعدادات من التخزين المحلي بعد التحميل لتفادي أخطاء الـ hydration
+  // التحقق والتوافق المباشر مع التخزين المحلي (T-051 / T-054)
   useEffect(() => {
     try {
-      const savedCollapsed =
-        window.localStorage.getItem(SIDENAV_COLLAPSED_KEY) ??
-        window.localStorage.getItem(SIDENAV_COLLAPSED_LEGACY_KEY);
-      if (savedCollapsed === "true" || savedCollapsed === "1") {
-        setIsCollapsed(true);
-      }
-
-      const savedTheme = window.localStorage.getItem(THEME_MODE_KEY) as ShellThemeMode | null;
-      if (savedTheme && ["light", "dark", "mixed", "mixed-inv"].includes(savedTheme)) {
-        setThemeMode(savedTheme);
-        const targetShellTheme = savedTheme === "dark" || savedTheme === "mixed-inv" ? "dark" : "light";
-        setParentMode(targetShellTheme);
-      } else if (parentMode === "dark") {
-        setThemeMode("dark");
+      const savedCollapsed = window.localStorage.getItem("sidebarCollapsed");
+      if (savedCollapsed === "true" && !appearance.sidebarCollapsed) {
+        updateSettings({ sidebarCollapsed: true });
       }
     } catch {
-      // التخزين المحلي قد يكون محجوباً في بيئات خاصة
+      // تجاهل أخطاء التخزين المحجوب
     }
-  }, [parentMode, setParentMode]);
+  }, [appearance.sidebarCollapsed, updateSettings]);
 
-  // حفظ حالة الطي في localStorage
+  // حفظ حالة الطي وتحديث كائن التخزين الموحد والتوافق العكسي المباشر
   const handleToggleCollapse = useCallback(() => {
-    setIsCollapsed((prev) => {
-      const next = !prev;
-      try {
-        window.localStorage.setItem(SIDENAV_COLLAPSED_KEY, String(next));
-        window.localStorage.setItem(SIDENAV_COLLAPSED_LEGACY_KEY, next ? "1" : "0");
-      } catch {
-        // تجاهل أخطاء التخزين
-      }
-      return next;
-    });
-  }, []);
+    const next = !appearance.sidebarCollapsed;
+    updateSettings({ sidebarCollapsed: next });
+    try {
+      window.localStorage.setItem("sidebarCollapsed", String(next));
+    } catch {
+      // تجاهل أخطاء التخزين
+    }
+  }, [appearance.sidebarCollapsed, updateSettings]);
 
-  // تبديل النمط وحفظه ومزامنته مع سياق الثيم العام في الأوضاع الأربعة
+  // تبديل النمط وحفظه ومزامنته مع كائن التخزين الموحد
   const handleThemeChange = useCallback(
     (newMode: ShellThemeMode) => {
-      setThemeMode(newMode);
-      try {
-        window.localStorage.setItem(THEME_MODE_KEY, newMode);
-      } catch {
-        // تجاهل أخطاء التخزين
-      }
+      updateSettings({ theme: newMode });
       const targetShellTheme = newMode === "dark" || newMode === "mixed-inv" ? "dark" : "light";
       setParentMode(targetShellTheme);
     },
-    [setParentMode],
+    [setParentMode, updateSettings],
   );
 
   const commandSource = useCommandSource(t, practice);
