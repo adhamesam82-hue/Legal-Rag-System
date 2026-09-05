@@ -12,12 +12,9 @@
 
 import { useState } from "react";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Card } from "@astryxdesign/core/Card";
-import { Switch } from "@astryxdesign/core/Switch";
-import { Divider } from "@astryxdesign/core/Divider";
-import { Banner } from "@astryxdesign/core/Banner";
+import { Card } from "@/components/ui/Card";
+import { Switch } from "@/components/ui/Switch";
+import { Alert } from "@/components/ui/Alert";
 import { useOrg, useResource } from "@/lib/org";
 import { api, ApiError } from "@/lib/api";
 import { DataView, InlineError } from "@/components/DataState";
@@ -93,62 +90,67 @@ function NotificationsForm({
   }
 
   return (
-    <Card>
-      <VStack gap={4}>
-        <VStack gap={1}>
-          <Heading level={5}>{t("@legalos.settings.notifications.heading")}</Heading>
-          <Text type="body" color="secondary">
+    <Card padding="24px" bordered shadow className="w-full">
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>
+            {t("@legalos.settings.notifications.heading")}
+          </h2>
+          <p className="text-xs" style={{ color: "var(--text2)" }}>
             {t("@legalos.settings.notifications.subtitle")}
-          </Text>
-        </VStack>
+          </p>
+        </div>
+
         <InlineError message={error} onDismiss={() => setError(null)} />
-        <Divider />
+
+        <div
+          className="w-full border-t"
+          style={{ borderColor: "var(--border)" }}
+        />
 
         {!emailAvailable && !pushAvailable ? (
-          <Banner status="info" title={t("@legalos.settings.notifications.noneAvailable")} />
+          <Alert type="info" title={t("@legalos.settings.notifications.noneAvailable")} />
         ) : (
-          <VStack gap={4}>
+          <div className="flex flex-col gap-4 divide-y" style={{ borderColor: "var(--border)" }}>
             {emailAvailable && (
-              <HStack hAlign="between" vAlign="center">
-                <VStack gap={0.5}>
-                  <Text type="body" weight="semibold">
+              <div className="flex items-center justify-between gap-4 pt-3 first:pt-0">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>
                     {t("@legalos.settings.notifications.emailLabel")}
-                  </Text>
-                  <Text type="supporting" color="secondary">
+                  </span>
+                  <span className="text-xs" style={{ color: "var(--text2)" }}>
                     {t("@legalos.settings.notifications.emailHint")}
-                  </Text>
-                </VStack>
+                  </span>
+                </div>
                 <Switch
                   label={t("@legalos.settings.notifications.emailLabel")}
-                  isLabelHidden
-                  value={wantsReminders}
+                  checked={wantsReminders}
                   onChange={toggleReminders}
-                  isDisabled={savingReminders}
+                  disabled={savingReminders}
                 />
-              </HStack>
+              </div>
             )}
             {pushAvailable && (
-              <HStack hAlign="between" vAlign="center">
-                <VStack gap={0.5}>
-                  <Text type="body" weight="semibold">
+              <div className="flex items-center justify-between gap-4 pt-3 first:pt-0">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>
                     {t("@legalos.settings.notifications.pushLabel")}
-                  </Text>
-                  <Text type="supporting" color="secondary">
+                  </span>
+                  <span className="text-xs" style={{ color: "var(--text2)" }}>
                     {t("@legalos.settings.notifications.pushHint")}
-                  </Text>
-                </VStack>
+                  </span>
+                </div>
                 <Switch
                   label={t("@legalos.settings.notifications.pushLabel")}
-                  isLabelHidden
-                  value={wantsPush}
+                  checked={wantsPush}
                   onChange={togglePush}
-                  isDisabled={savingPush}
+                  disabled={savingPush}
                 />
-              </HStack>
+              </div>
             )}
-          </VStack>
+          </div>
         )}
-      </VStack>
+      </div>
     </Card>
   );
 }

@@ -12,9 +12,8 @@
 
 import { useEffect, useState } from "react";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Selector } from "@astryxdesign/core/Selector";
-import { TextInput } from "@astryxdesign/core/TextInput";
+import { Select } from "@/components/ui/Select";
+import { Input } from "@/components/ui/Input";
 import { api, ApiError, type Organization, type DateFormat } from "@/lib/api";
 import { SettingsSection } from "./shared";
 
@@ -118,53 +117,49 @@ export function PreferencesSection({
       onCancel={discard}
       onSave={save}
     >
-      <VStack gap={4}>
-        <HStack gap={3} wrap="wrap">
-          <Selector
+      <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Select
             label={t("@legalos.settings.preferences.localeLabel")}
             value={locale}
-            onChange={(value) => setLocale(value as "ar" | "en")}
-            isDisabled={!canEdit || saving}
-            width={200}
+            onChange={(e) => setLocale(e.target.value as "ar" | "en")}
+            disabled={!canEdit || saving}
             options={[
               { value: "ar", label: t("@legalos.settings.preferences.locale.ar") },
               { value: "en", label: t("@legalos.settings.preferences.locale.en") },
             ]}
           />
-          <Selector
+          <Select
             label={t("@legalos.settings.preferences.timezoneLabel")}
             value={timezone}
-            onChange={(value) => value && setTimezone(value)}
-            isDisabled={!canEdit || saving}
-            hasSearch
-            width={220}
+            onChange={(e) => setTimezone(e.target.value)}
+            disabled={!canEdit || saving}
             options={TIMEZONES.map((zone) => ({ value: zone, label: zone }))}
           />
-        </HStack>
-        <HStack gap={3} wrap="wrap">
-          <Selector
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Select
             label={t("@legalos.settings.preferences.dateFormatLabel")}
             value={dateFormat}
-            onChange={(value) => value && setDateFormat(value as DateFormat)}
-            isDisabled={!canEdit || saving}
-            width={200}
+            onChange={(e) => setDateFormat(e.target.value as DateFormat)}
+            disabled={!canEdit || saving}
             options={DATE_FORMATS.map((format) => ({ value: format, label: format }))}
           />
-          <TextInput
+          <Input
             label={t("@legalos.settings.preferences.currencyLabel")}
             value={currency}
-            onChange={(value) => setCurrency(value.toUpperCase().slice(0, 3))}
-            isDisabled={!canEdit || saving}
-            width={140}
-            description={t("@legalos.settings.preferences.currencyHint")}
-            status={
+            onChange={(e) => setCurrency(e.target.value.toUpperCase().slice(0, 3))}
+            disabled={!canEdit || saving}
+            helperText={t("@legalos.settings.preferences.currencyHint")}
+            errorMessage={
               currency && !currencyValid
-                ? { type: "error", message: t("@legalos.settings.preferences.currencyInvalid") }
+                ? t("@legalos.settings.preferences.currencyInvalid")
                 : undefined
             }
           />
-        </HStack>
-      </VStack>
+        </div>
+      </div>
     </SettingsSection>
   );
 }
