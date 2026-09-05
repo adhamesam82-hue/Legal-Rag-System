@@ -14,6 +14,7 @@ import { Icon } from "@astryxdesign/core/Icon";
 import { List, ListItem } from "@astryxdesign/core/List";
 import {
   BuildingOffice2Icon,
+  PaintBrushIcon,
   UserCircleIcon,
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
@@ -34,6 +35,7 @@ const NAV_GROUPS: { titleKey?: string; items: NavItem[] }[] = [
     titleKey: "@legalos.settings.group.myAccount",
     items: [
       { href: "/settings/profile", labelKey: "@legalos.settings.nav.profile", icon: UserCircleIcon },
+      { href: "/settings/appearance", labelKey: "@legalos.settings.nav.appearance", icon: PaintBrushIcon },
     ],
   },
   {
