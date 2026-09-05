@@ -134,7 +134,7 @@ function InviteMemberDialog({
                     fontSize: 13,
                     padding: 10,
                     borderRadius: 6,
-                    background: "var(--color-background-neutral-subtle, #f4f4f5)",
+                    background: "var(--color-background-neutral-subtle, var(--surface2))",
                   }}
                   // LTR: a URL laid out right-to-left inside an Arabic dialog
                   // renders its segments in an order that cannot be copied by
