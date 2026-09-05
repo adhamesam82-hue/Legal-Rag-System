@@ -174,3 +174,26 @@ def test_zero_fixed_border_radius_in_ui_components():
 
     assert not violations, "عُثر على حواف ثابتة بالبكسل تخالف معيار T-054:\n" + "\n".join(violations)
 
+
+def test_single_api_convention_for_button_and_badge():
+    """
+    التحقق الصارم من توحيد واجهة المكونات (Single API Convention):
+    - اعتماد التركيب القياسي (React Composition) عبر children للمحتوى.
+    - اعتماد loading حصراً لحالة التحميل في Button.
+    - منع وجود الخصائص المزدوجة label أو isLoading في ButtonProps و BadgeProps منعاً لفتح واجهتين للمكون نفسه.
+    """
+    button_file = UI_DIR / "Button.tsx"
+    badge_file = UI_DIR / "Badge.tsx"
+
+    button_content = button_file.read_text(encoding="utf-8")
+    badge_content = badge_file.read_text(encoding="utf-8")
+
+    # فحص ButtonProps
+    assert "isLoading?:" not in button_content, "تم العثور على خاصية isLoading المزدوجة في Button.tsx"
+    assert "label?:" not in button_content, "تم العثور على خاصية label المزدوجة في Button.tsx"
+    assert "loading?:" in button_content, "يجب أن يحتوي ButtonProps على loading"
+
+    # فحص BadgeProps
+    assert "label?:" not in badge_content, "تم العثور على خاصية label المزدوجة في Badge.tsx"
+
+
