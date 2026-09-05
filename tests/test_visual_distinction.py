@@ -18,6 +18,7 @@ their head every time somebody adds a fifteenth matter type or nudges a hue:
 """
 from __future__ import annotations
 
+import math
 import re
 from pathlib import Path
 
@@ -74,32 +75,76 @@ def state_marks(name: str) -> dict[str, tuple[str, str]]:
     return {k: (tone, icon) for k, tone, icon in rows}
 
 
+def oklch_to_rgb(L: float, C: float, H: float) -> tuple[float, float, float]:
+    """Convert OKLCH coordinates to sRGB (0..1)."""
+    h_rad = math.radians(H)
+    a = C * math.cos(h_rad)
+    b = C * math.sin(h_rad)
+    l_ = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3
+    m_ = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3
+    s_ = (L - 0.0894841775 * a - 1.2914855480 * b) ** 3
+    r = +4.0767434721 * l_ - 3.3077115913 * m_ + 0.2309699292 * s_
+    g = -1.2684380046 * l_ + 2.6097574011 * m_ - 0.3413193965 * s_
+    b_ = -0.0041960863 * l_ - 0.7034186147 * m_ + 1.7076147010 * s_
+
+    def gamma(x: float) -> float:
+        x = max(0.0, min(1.0, x))
+        return x * 12.92 if x <= 0.0031308 else 1.055 * (x ** (1 / 2.4)) - 0.055
+
+    return gamma(r), gamma(g), gamma(b_)
+
+
 def css_token(name: str) -> tuple[str, str]:
-    """(light, dark) hex for a `--name: light-dark(a, b)` token in the theme."""
+    """(light, dark) color for a `--name: light-dark(a, b)` or `--name: val` token in the theme."""
     src = read(THEME_CSS)
-    m = re.search(rf"--{re.escape(name)}: light-dark\((.*)\);$", src, re.M)
+    m = re.search(rf"--{re.escape(name)}:\s*(?:light-dark\((.*?)\)|([^;]+));$", src, re.M)
     assert m, f"token --{name} not in legalos.css"
-    # Split on the first top-level comma: the dark half may itself be a var().
-    inner, depth, cut = m.group(1), 0, None
-    for i, ch in enumerate(inner):
-        depth += ch == "("
-        depth -= ch == ")"
-        if ch == "," and depth == 0:
-            cut = i
-            break
-    assert cut is not None, inner
-    return inner[:cut].strip(), inner[cut + 1 :].strip()
+    if m.group(1) is not None:
+        inner = m.group(1)
+        depth, cut = 0, None
+        for i, ch in enumerate(inner):
+            depth += ch == "("
+            depth -= ch == ")"
+            if ch == "," and depth == 0:
+                cut = i
+                break
+        assert cut is not None, inner
+        light, dark = inner[:cut].strip(), inner[cut + 1 :].strip()
+    else:
+        val = m.group(2).strip()
+        light, dark = val, val
+
+    if light.startswith("var(--"):
+        target = re.search(r"var\(--([a-zA-Z0-9_-]+)\)", light).group(1)
+        light = css_token(target)[0]
+    if dark.startswith("var(--"):
+        target = re.search(r"var\(--([a-zA-Z0-9_-]+)\)", dark).group(1)
+        dark = css_token(target)[1]
+    return light, dark
 
 
 # --- colour arithmetic (WCAG 2.x) -------------------------------------------
 
+def parse_color(value: str) -> tuple[float, float, float, float]:
+    """#RRGGBB, #RRGGBBAA, or oklch(...) -> (r, g, b, a) in 0..1."""
+    v = value.strip()
+    if v.startswith("#"):
+        v = v.lstrip("#")
+        assert len(v) in (6, 8), f"not a hex colour: {value}"
+        r, g, b = (int(v[i : i + 2], 16) / 255 for i in (0, 2, 4))
+        a = int(v[6:8], 16) / 255 if len(v) == 8 else 1.0
+        return r, g, b, a
+    m = re.match(r"oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*/\s*([\d.]+))?\s*\)", v)
+    if m:
+        L, C, H = float(m.group(1)), float(m.group(2)), float(m.group(3))
+        a = float(m.group(4)) if m.group(4) else 1.0
+        r, g, b = oklch_to_rgb(L, C, H)
+        return r, g, b, a
+    raise AssertionError(f"not a recognized colour format: {value}")
+
+
 def parse_hex(value: str) -> tuple[float, float, float, float]:
-    """#RRGGBB or #RRGGBBAA -> (r, g, b, a) in 0..1."""
-    v = value.lstrip("#")
-    assert len(v) in (6, 8), f"not a hex colour: {value}"
-    r, g, b = (int(v[i : i + 2], 16) / 255 for i in (0, 2, 4))
-    a = int(v[6:8], 16) / 255 if len(v) == 8 else 1.0
-    return r, g, b, a
+    return parse_color(value)
 
 
 def composite(fg: str, bg: tuple[float, float, float]) -> tuple[float, float, float]:
