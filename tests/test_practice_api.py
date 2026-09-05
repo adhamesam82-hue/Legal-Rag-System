@@ -6,6 +6,8 @@ is genuinely exercised rather than stubbed out.
 """
 from __future__ import annotations
 
+from datetime import date, timedelta
+
 import pytest
 from conftest import drop_organizations_after
 from fastapi.testclient import TestClient
@@ -394,6 +396,75 @@ class TestDashboard:
         assert board["open_tasks"] == 1
         assert board["active_clients"] == 1
         assert float(board["unbilled_amount"]) == 2000.0
+        assert board["tasks_due_this_week"] == 0
+
+    def test_tasks_due_this_week_boundaries(self, client, org):
+        """إثبات حدود tasks_due_this_week:
+        - مهمة بعد 7 أيام تُعدّ.
+        - مهمة بعد 8 أيام لا تُعدّ ضمن الأسبوع.
+        - مهمة متأخرة بالأمس تُعدّ في overdue_tasks ولا تظهر في tasks_due_this_week (لا تظهر في العدّين معاً).
+        """
+        today = date.today()
+        client_id = make_client(client, org)["id"]
+        matter = make_matter(client, org, client_id)
+
+        # 1. مهمة مستحقة بعد 7 أيام (يجب أن تُعدّ)
+        client.post(
+            f"/api/orgs/{org}/tasks",
+            json={
+                "title": "Due in 7 days",
+                "assignee": OWNER,
+                "matter_id": matter["id"],
+                "due_date": (today + timedelta(days=7)).isoformat(),
+            },
+        )
+
+        # 2. مهمة مستحقة بعد 8 أيام (لا تُعدّ)
+        client.post(
+            f"/api/orgs/{org}/tasks",
+            json={
+                "title": "Due in 8 days",
+                "assignee": OWNER,
+                "matter_id": matter["id"],
+                "due_date": (today + timedelta(days=8)).isoformat(),
+            },
+        )
+
+        # 3. مهمة متأخرة (تُعدّ في overdue_tasks ولا تظهر في tasks_due_this_week)
+        client.post(
+            f"/api/orgs/{org}/tasks",
+            json={
+                "title": "Overdue task",
+                "assignee": OWNER,
+                "matter_id": matter["id"],
+                "due_date": (today - timedelta(days=1)).isoformat(),
+            },
+        )
+
+        # 4. مهمة منتهية مستحقة بعد يومين (لا تُعدّ في أي عداد مهام مفتوحة)
+        done_task = client.post(
+            f"/api/orgs/{org}/tasks",
+            json={
+                "title": "Done task in week",
+                "assignee": OWNER,
+                "matter_id": matter["id"],
+                "due_date": (today + timedelta(days=2)).isoformat(),
+            },
+        ).json()
+        client.patch(
+            f"/api/orgs/{org}/tasks/{done_task['id']}",
+            json={"status": "done"},
+        )
+
+        board = client.get(f"/api/orgs/{org}/dashboard").json()
+
+        # التحقق الدقيق من الحدود:
+        # tasks_due_this_week تحسب فقط المهمة المستحقة بعد 7 أيام (المستحقة بعد 8 أيام والمهمة المتأخرة لا تحسبان فيها)
+        assert board["tasks_due_this_week"] == 1
+        # overdue_tasks تحسب فقط المهمة المتأخرة
+        assert board["overdue_tasks"] == 1
+        # المهام المفتوحة الإجمالية: 3 مهام مفتوحة (7 أيام + 8 أيام + المتأخرة)
+        assert board["open_tasks"] == 3
 
 
 class TestTenantIsolation:

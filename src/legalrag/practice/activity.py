@@ -107,6 +107,7 @@ class Dashboard:
     hours_this_month: Decimal
     upcoming: list[UpcomingItem]
     recent_activity: list[ActivityEntry]
+    tasks_due_this_week: int
 
 
 def dashboard(
@@ -131,7 +132,10 @@ def dashboard(
                 WHERE organization_id = %(org)s AND status IN ('sent', 'overdue')),
               (SELECT coalesce(sum(hours), 0) FROM time_entries
                 WHERE organization_id = %(org)s
-                  AND entry_date >= date_trunc('month', CURRENT_DATE))
+                  AND entry_date >= date_trunc('month', CURRENT_DATE)),
+              (SELECT count(*) FROM tasks
+                WHERE organization_id = %(org)s AND status <> 'done'
+                  AND due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + 7)
             """,
             {"org": organization_id},
         )
@@ -174,4 +178,5 @@ def dashboard(
         hours_this_month=row[6],
         upcoming=upcoming,
         recent_activity=list_activity(conn, organization_id, limit=15),
+        tasks_due_this_week=row[7],
     )
