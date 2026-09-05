@@ -81,6 +81,8 @@ def test_components_index_exports():
         "EmptyState",
         "Skeleton",
         "Icon",
+        "Chat",
+        "Dialog",
     ]
 
     for item in expected_exports:
