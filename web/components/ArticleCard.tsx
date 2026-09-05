@@ -2,10 +2,9 @@
 
 import NextLink from "next/link";
 import { useState } from "react";
-import { Card } from "@astryxdesign/core/Card";
-import { Badge } from "@astryxdesign/core/Badge";
-import { Text } from "@astryxdesign/core/Text";
-import { Button } from "@astryxdesign/core/Button";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { Article, dirOf } from "@/lib/api";
 
@@ -34,70 +33,70 @@ export function ArticleCard({
     expanded || !isLong ? article.text : article.text.slice(0, COLLAPSE_AT) + "…";
 
   return (
-    <Card padding={4} variant={cited ? "muted" : "default"}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          flexWrap: "wrap",
-          marginBlockEnd: 10,
-        }}
-      >
+    <Card
+      padding="16px"
+      style={{
+        backgroundColor: cited ? "var(--surface2)" : "var(--surface)",
+        borderColor: cited ? "var(--border2)" : "var(--border)",
+      }}
+    >
+      <div className="flex items-center gap-2 flex-wrap mb-2.5">
         {rank !== undefined && (
-          <Text type="code" color="secondary">
+          <span className="font-mono text-xs" style={{ color: "var(--text3)" }}>
             {rank}.
-          </Text>
+          </span>
         )}
         <Badge
-          variant={cited ? "info" : "neutral"}
-          label={article.citation}
-        />
-        <Text
-          type="supporting"
-          maxLines={1}
+          color={cited ? "info" : "neutral"}
+          variant="soft"
+        >
+          {article.citation}
+        </Badge>
+        <span
+          className="text-xs truncate max-w-md"
+          style={{ color: "var(--text2)" }}
           dir={dirOf(article.instrument_title)}
         >
           {article.instrument_title}
-        </Text>
+        </span>
         {showScore && article.score > 0 && (
-          <div style={{ marginInlineStart: "auto" }}>
-            <Text type="code" color="secondary">
+          <div className="ms-auto">
+            <span className="font-mono text-xs" style={{ color: "var(--text3)" }}>
               {article.score.toFixed(4)}
-            </Text>
+            </span>
           </div>
         )}
       </div>
 
-      <p className="statute-text" dir={dirOf(article.text)}>
-        <Text type="body">{body}</Text>
+      <p
+        className="statute-text text-sm leading-relaxed whitespace-pre-wrap"
+        style={{ color: "var(--text)" }}
+        dir={dirOf(article.text)}
+      >
+        {body}
       </p>
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          marginBlockStart: 14,
-        }}
-      >
+      <div className="flex items-center gap-3 mt-3.5">
         {isLong && (
           <Button
-            size="sm"
+            size="xs"
             variant="ghost"
-            label={t(
+            onClick={() => setExpanded((v) => !v)}
+          >
+            {t(
               expanded
                 ? "@legalos.article.card.showLess"
                 : "@legalos.article.card.showFull",
             )}
-            onClick={() => setExpanded((v) => !v)}
-          />
+          </Button>
         )}
-        <div style={{ marginInlineStart: "auto" }}>
-          <NextLink href={`/article/${article.id}`}>
-            <Text type="label" color="accent">
-              {t("@legalos.article.card.open")}
-            </Text>
+        <div className="ms-auto">
+          <NextLink
+            href={`/article/${article.id}`}
+            className="text-xs font-medium hover:underline inline-flex items-center gap-1"
+            style={{ color: "var(--primary)" }}
+          >
+            {t("@legalos.article.card.open")}
           </NextLink>
         </div>
       </div>
