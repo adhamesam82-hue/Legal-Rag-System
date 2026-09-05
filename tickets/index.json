@@ -1024,5 +1024,44 @@
       "web/public/landing/assets/css/"
     ],
     "source": "owner decision 2026-09-05"
+  },
+  {
+    "id": "T-056",
+    "title": "لوحة التحكم على القالب — وما لا تسنده البيانات",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "1ي",
+    "labels": [
+      "frontend",
+      "تصميم"
+    ],
+    "deps": [
+      "T-051",
+      "T-052"
+    ],
+    "files": [
+      "web/app/dashboard/page.tsx",
+      "src/legalrag/practice/dashboard.py"
+    ],
+    "source": "owner request 2026-09-05"
+  },
+  {
+    "id": "T-057",
+    "title": "brandHue و accent في إعدادات العرض",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "3س",
+    "labels": [
+      "frontend",
+      "تصميم"
+    ],
+    "deps": [
+      "T-054"
+    ],
+    "files": [
+      "web/lib/appearance.ts",
+      "web/app/settings/appearance/page.tsx"
+    ],
+    "source": "owner request 2026-09-05"
   }
 ]
