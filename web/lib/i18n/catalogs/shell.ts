@@ -10,17 +10,19 @@ export const en: Catalog = {
   "@legalos.shell.firm.alSayed": { defaultMessage: "السيد وشركاه" },
   "@legalos.shell.firm.cairoLegal": { defaultMessage: "مجموعة القاهرة القانونية" },
 
+  // Seven navigation sections (T-051)
   "@legalos.shell.nav.section.overview": { defaultMessage: "Overview" },
   "@legalos.shell.nav.section.clients": { defaultMessage: "Clients" },
   "@legalos.shell.nav.section.practice": { defaultMessage: "Practice" },
-  "@legalos.shell.nav.section.content": { defaultMessage: "Content" },
+  "@legalos.shell.nav.section.content": { defaultMessage: "Content & Knowledge" },
   "@legalos.shell.nav.section.ai": { defaultMessage: "AI" },
   "@legalos.shell.nav.section.finance": { defaultMessage: "Finance" },
-  "@legalos.shell.nav.section.team": { defaultMessage: "Team" },
+  "@legalos.shell.nav.section.team": { defaultMessage: "Team & System" },
 
+  // Navigation items
   "@legalos.shell.nav.dashboard": { defaultMessage: "Dashboard" },
-  "@legalos.shell.nav.crm": { defaultMessage: "CRM" },
   "@legalos.shell.nav.clients": { defaultMessage: "Clients" },
+  "@legalos.shell.nav.crm": { defaultMessage: "CRM" },
   "@legalos.shell.nav.matters": { defaultMessage: "Matters" },
   "@legalos.shell.nav.hearings": { defaultMessage: "Hearings" },
   "@legalos.shell.nav.calendar": { defaultMessage: "Calendar" },
@@ -28,6 +30,7 @@ export const en: Catalog = {
   "@legalos.shell.nav.documents": { defaultMessage: "Documents" },
   "@legalos.shell.nav.lawLibrary": { defaultMessage: "Law Library" },
   "@legalos.shell.nav.knowledgeBase": { defaultMessage: "Forms & Templates" },
+  "@legalos.shell.nav.legalQuestion": { defaultMessage: "Legal Question" },
   "@legalos.shell.nav.aiAssistant": { defaultMessage: "AI Assistant" },
   "@legalos.shell.nav.legalResearch": { defaultMessage: "Legal Research" },
   "@legalos.shell.nav.contractReview": { defaultMessage: "Contract Review" },
@@ -37,16 +40,28 @@ export const en: Catalog = {
   "@legalos.shell.nav.reports": { defaultMessage: "Reports" },
   "@legalos.shell.nav.messages": { defaultMessage: "Messages" },
   "@legalos.shell.nav.automation": { defaultMessage: "Automation" },
+  "@legalos.shell.nav.settings": { defaultMessage: "Settings" },
 
-  "@legalos.shell.collapse": { defaultMessage: "Collapse" },
+  // Gated feature indicators
+  "@legalos.shell.nav.lockedBadge": { defaultMessage: "Locked" },
+  "@legalos.shell.nav.lockedTitle": { defaultMessage: "{path} — gated by {feature}" },
+  "@legalos.shell.nav.lockedAria": { defaultMessage: "{label} — gated feature" },
+
+  // Four shell themes
+  "@legalos.shell.theme.light": { defaultMessage: "Light" },
+  "@legalos.shell.theme.dark": { defaultMessage: "Dark" },
+  "@legalos.shell.theme.mixed": { defaultMessage: "Mixed: Dark Sidebar" },
+  "@legalos.shell.theme.mixedInv": { defaultMessage: "Mixed Inverse: Light Sidebar" },
+
+  // Collapse / Expand
+  "@legalos.shell.collapse": { defaultMessage: "Collapse sidebar" },
+  "@legalos.shell.expand": { defaultMessage: "Expand sidebar" },
   "@legalos.shell.languageToggle.toArabic": { defaultMessage: "التبديل إلى العربية" },
   "@legalos.shell.languageToggle.toEnglish": { defaultMessage: "Switch to English" },
   "@legalos.shell.themeToggle.toLight": { defaultMessage: "Switch to light mode" },
   "@legalos.shell.themeToggle.toDark": { defaultMessage: "Switch to dark mode" },
 
-  // No "ask AI" any more: the palette searches the firm's own records, and
-  // the assistant is off for this release. A button that offers something it
-  // cannot do costs more than a shorter label.
+  // Search & command palette
   "@legalos.shell.search.ariaLabel": { defaultMessage: "Search LegalOS" },
   "@legalos.shell.search.button": { defaultMessage: "Search" },
   "@legalos.shell.search.emptyBootstrap": {
@@ -64,7 +79,8 @@ export const en: Catalog = {
   "@legalos.shell.search.hint.select": { defaultMessage: "Open" },
   "@legalos.shell.search.hint.close": { defaultMessage: "Close" },
 
-  "@legalos.shell.account.menuAriaLabel": { defaultMessage: "أحمد السيد account menu" },
+  // Account menu
+  "@legalos.shell.account.menuAriaLabel": { defaultMessage: "User account menu" },
   "@legalos.shell.account.profile": { defaultMessage: "Profile" },
   "@legalos.shell.account.firmSettings": { defaultMessage: "Firm settings" },
   "@legalos.shell.account.signOut": { defaultMessage: "Sign out" },
@@ -77,47 +93,65 @@ export const ar: Catalog = {
   "@legalos.shell.firm.alSayed": { defaultMessage: "السيد وشركاه" },
   "@legalos.shell.firm.cairoLegal": { defaultMessage: "مجموعة القاهرة القانونية" },
 
-  "@legalos.shell.nav.section.overview": { defaultMessage: "نظرة عامة" },
-  "@legalos.shell.nav.section.clients": { defaultMessage: "الموكّلين" },
+  // Seven navigation sections (T-051)
+  "@legalos.shell.nav.section.overview": { defaultMessage: "عام" },
+  "@legalos.shell.nav.section.clients": { defaultMessage: "الموكّلون" },
   "@legalos.shell.nav.section.practice": { defaultMessage: "الممارسة القانونية" },
-  "@legalos.shell.nav.section.content": { defaultMessage: "المحتوى" },
+  "@legalos.shell.nav.section.content": { defaultMessage: "المحتوى والمدوّنة" },
   "@legalos.shell.nav.section.ai": { defaultMessage: "الذكاء الاصطناعي" },
   "@legalos.shell.nav.section.finance": { defaultMessage: "الشؤون المالية" },
-  "@legalos.shell.nav.section.team": { defaultMessage: "الفريق" },
+  "@legalos.shell.nav.section.team": { defaultMessage: "الفريق والنظام" },
 
+  // Navigation items
   "@legalos.shell.nav.dashboard": { defaultMessage: "لوحة التحكم" },
-  "@legalos.shell.nav.crm": { defaultMessage: "إدارة علاقات الموكّلين" },
-  "@legalos.shell.nav.clients": { defaultMessage: "الموكّلين" },
+  "@legalos.shell.nav.clients": { defaultMessage: "الموكّلون" },
+  "@legalos.shell.nav.crm": { defaultMessage: "إدارة العلاقات" },
   "@legalos.shell.nav.matters": { defaultMessage: "القضايا" },
-  "@legalos.shell.nav.hearings": { defaultMessage: "الجلسات" },
+  "@legalos.shell.nav.hearings": { defaultMessage: "يوميّة الجلسات" },
   "@legalos.shell.nav.calendar": { defaultMessage: "التقويم" },
   "@legalos.shell.nav.tasks": { defaultMessage: "المهام" },
   "@legalos.shell.nav.documents": { defaultMessage: "المستندات" },
-  "@legalos.shell.nav.lawLibrary": { defaultMessage: "المكتبة القانونية" },
-  "@legalos.shell.nav.knowledgeBase": { defaultMessage: "نماذج وقوالب" },
+  "@legalos.shell.nav.lawLibrary": { defaultMessage: "مكتبة القوانين" },
+  "@legalos.shell.nav.knowledgeBase": { defaultMessage: "النماذج والقوالب" },
+  "@legalos.shell.nav.legalQuestion": { defaultMessage: "السؤال القانوني" },
   "@legalos.shell.nav.aiAssistant": { defaultMessage: "المساعد الذكي" },
   "@legalos.shell.nav.legalResearch": { defaultMessage: "البحث القانوني" },
   "@legalos.shell.nav.contractReview": { defaultMessage: "مراجعة العقود" },
-  "@legalos.shell.nav.timeTracking": { defaultMessage: "تتبع الوقت" },
+  "@legalos.shell.nav.timeTracking": { defaultMessage: "تتبّع الوقت" },
   "@legalos.shell.nav.billing": { defaultMessage: "الفوترة" },
   "@legalos.shell.nav.accounting": { defaultMessage: "المحاسبة" },
   "@legalos.shell.nav.reports": { defaultMessage: "التقارير" },
   "@legalos.shell.nav.messages": { defaultMessage: "الرسائل" },
   "@legalos.shell.nav.automation": { defaultMessage: "الأتمتة" },
+  "@legalos.shell.nav.settings": { defaultMessage: "الإعدادات" },
 
-  "@legalos.shell.collapse": { defaultMessage: "طي القائمة" },
+  // Gated feature indicators
+  "@legalos.shell.nav.lockedBadge": { defaultMessage: "محجوب" },
+  "@legalos.shell.nav.lockedTitle": { defaultMessage: "{path} — محجوبة بمفتاح {feature}" },
+  "@legalos.shell.nav.lockedAria": { defaultMessage: "{label} — ميزة محجوبة" },
+
+  // Four shell themes
+  "@legalos.shell.theme.light": { defaultMessage: "فاتح" },
+  "@legalos.shell.theme.dark": { defaultMessage: "داكن" },
+  "@legalos.shell.theme.mixed": { defaultMessage: "مختلط: قائمة داكنة" },
+  "@legalos.shell.theme.mixedInv": { defaultMessage: "مختلط عكسي: قائمة فاتحة" },
+
+  // Collapse / Expand
+  "@legalos.shell.collapse": { defaultMessage: "طي الشريط الجانبي" },
+  "@legalos.shell.expand": { defaultMessage: "توسيع الشريط الجانبي" },
   "@legalos.shell.languageToggle.toArabic": { defaultMessage: "التبديل إلى العربية" },
   "@legalos.shell.languageToggle.toEnglish": { defaultMessage: "Switch to English" },
   "@legalos.shell.themeToggle.toLight": { defaultMessage: "التبديل إلى الوضع الفاتح" },
   "@legalos.shell.themeToggle.toDark": { defaultMessage: "التبديل إلى الوضع الداكن" },
 
+  // Search & command palette
   "@legalos.shell.search.ariaLabel": { defaultMessage: "البحث في LegalOS" },
   "@legalos.shell.search.button": { defaultMessage: "بحث" },
   "@legalos.shell.search.emptyBootstrap": {
     defaultMessage: "ابحث في القضايا والموكّلين والمستندات",
   },
   "@legalos.shell.search.placeholder": {
-    defaultMessage: "ابحث في القضايا والموكّلين والمستندات…",
+    defaultMessage: "ابحث برقم القضية أو اسم الموكّل…",
   },
   "@legalos.shell.search.empty": { defaultMessage: "لا يوجد ما يطابق البحث" },
   "@legalos.shell.search.group.navigation": { defaultMessage: "الانتقال إلى" },
@@ -128,7 +162,8 @@ export const ar: Catalog = {
   "@legalos.shell.search.hint.select": { defaultMessage: "فتح" },
   "@legalos.shell.search.hint.close": { defaultMessage: "إغلاق" },
 
-  "@legalos.shell.account.menuAriaLabel": { defaultMessage: "قائمة حساب أحمد السيد" },
+  // Account menu
+  "@legalos.shell.account.menuAriaLabel": { defaultMessage: "قائمة حساب المستخدم" },
   "@legalos.shell.account.profile": { defaultMessage: "الملف الشخصي" },
   "@legalos.shell.account.firmSettings": { defaultMessage: "إعدادات المكتب" },
   "@legalos.shell.account.signOut": { defaultMessage: "تسجيل الخروج" },
