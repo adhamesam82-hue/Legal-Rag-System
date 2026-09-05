@@ -314,3 +314,57 @@ body,
     transition-duration: 0.01ms !important;
   }
 }
+
+/*
+  أيقونات Material Symbols والرسوم المتحركة لمكتبة المكونات (T-052)
+*/
+.ms {
+  font-family: 'Material Symbols Rounded', system-ui, sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  white-space: nowrap;
+  unicode-bidi: isolate;
+  font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  display: inline-block;
+  user-select: none;
+  flex: none;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
