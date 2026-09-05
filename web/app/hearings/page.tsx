@@ -1,39 +1,26 @@
 "use client";
 
 /**
- * The hearings diary.
+ * The hearings diary (T-053 / Wave 2).
  *
- * This route used to list litigation records under a heading that says
- * الجلسات, which is not what a lawyer opens that tab for. What they want is
- * the sittings: what is coming, what happened at the last one, and where an
- * adjournment sent the case.
+ * This route lists court sittings: upcoming hearings, past rulings,
+ * and adjournment tracking.
  *
- * Filtering happens on the SERVER, not on a page of rows already fetched.
- * A practice with three years of sittings is thousands of them, and a filter
- * that only narrows what happens to be loaded is a filter that lies.
- *
- * "Not ruled on yet" is its own control rather than a value in the outcome
- * list, because it is the absence of an outcome and it is the question asked
- * most often.
+ * Filtering happens on the SERVER, preserving all hooks, parameters,
+ * and contract layer interfaces.
  */
 
 import { useState } from "react";
-import { Layout, LayoutHeader, LayoutContent } from "@astryxdesign/core/Layout";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Badge } from "@astryxdesign/core/Badge";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { Selector } from "@astryxdesign/core/Selector";
-import { DateInput } from "@astryxdesign/core/DateInput";
-import { Table, proportional, pixel } from "@astryxdesign/core/Table";
-import type { TableColumn } from "@astryxdesign/core/Table";
-import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
-import { LayoutFooter } from "@astryxdesign/core/Layout";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
+import { Dialog, DialogHeader, DialogContent, DialogFooter } from "@/components/ui/Dialog";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
+import { Card } from "@/components/ui/Card";
 import type { ISODateString } from "@astryxdesign/core/Calendar";
-import { MagnifyingGlassIcon, PlusIcon, ScaleIcon } from "@heroicons/react/24/outline";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useOrg, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
@@ -45,12 +32,12 @@ import { HEARING_OUTCOMES, todayIso, type Hearing, type HearingOutcome } from "@
 const ANY = "any";
 const UNDECIDED = "undecided";
 
-function outcomeVariant(outcome: string | null): "success" | "warning" | "neutral" | "blue" {
+function outcomeColor(outcome: string | null): "success" | "warn" | "neutral" | "info" {
   if (outcome === null) return "neutral";
   if (outcome === "judgment") return "success";
-  if (outcome === "adjourned") return "warning";
+  if (outcome === "adjourned") return "warn";
   if (outcome === "struck_out") return "neutral";
-  return "blue";
+  return "info";
 }
 
 interface Row extends Record<string, unknown> {
@@ -119,87 +106,84 @@ function NewHearingDialog({
   }
 
   return (
-    <Dialog isOpen={isOpen} onOpenChange={onOpenChange} purpose="form" width={460}>
-      <Layout
-        header={
-          <DialogHeader
-            title={t("@legalos.hearings.newHearing")}
-            onOpenChange={onOpenChange}
-          />
-        }
-        content={
-          <LayoutContent>
-            <VStack gap={4}>
-              <InlineError message={error} onDismiss={() => setError(null)} />
-              <Selector
-                label={t("@legalos.hearings.field.matter")}
-                value={matterId}
-                onChange={setMatterId}
-                isRequired
-                hasClear
-                placeholder={
-                  matters.loading
-                    ? t("@legalos.hearings.dialog.loadingMatters")
-                    : t("@legalos.hearings.dialog.selectMatter")
-                }
-                options={(matters.data ?? []).map((m) => ({
-                  value: String(m.id),
-                  label: m.name,
-                }))}
-              />
-              <HStack gap={3}>
-                <DateInput
-                  label={t("@legalos.hearings.field.date")}
-                  value={hearingDate}
-                  onChange={(v) => setHearingDate(v ?? hearingDate)}
-                />
-                {/* No "10:00" placeholder. A greyed-out plausible time reads
-                  * as a pre-filled default, so a sitting was booked with an
-                  * empty time by someone who believed they had left it at
-                  * ten. The format goes in the description, where it cannot
-                  * be mistaken for a value. */}
-                <TextInput
-                  label={t("@legalos.hearings.field.time")}
-                  value={hearingTime}
-                  onChange={setHearingTime}
-                  description={t("@legalos.hearings.field.timeHint")}
-                />
-              </HStack>
-              <TextInput
-                label={t("@legalos.hearings.field.court")}
-                value={court}
-                onChange={setCourt}
-              />
-              <TextInput
-                label={t("@legalos.hearings.field.purpose")}
-                value={purpose}
-                onChange={setPurpose}
-              />
-            </VStack>
-          </LayoutContent>
-        }
-        footer={
-          <LayoutFooter hasDivider>
-            <HStack gap={3} hAlign="end">
-              <Button
-                label={t("@legalos.hearings.dialog.cancel")}
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              >
-                {t("@legalos.hearings.dialog.cancel")}
-              </Button>
-              <Button
-                label={t("@legalos.hearings.dialog.submit")}
-                variant="primary"
-                isDisabled={saving || !matterId}
-                onClick={submit}
-              >
-                {t("@legalos.hearings.dialog.submit")}
-              </Button>
-            </HStack>
-          </LayoutFooter>
-        }
+    <Dialog isOpen={isOpen} onOpenChange={onOpenChange} width={480}>
+      <DialogHeader
+        title={t("@legalos.hearings.newHearing")}
+        onOpenChange={onOpenChange}
       />
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
+        <DialogContent>
+          <InlineError message={error} onDismiss={() => setError(null)} />
+          <Select
+            label={t("@legalos.hearings.field.matter")}
+            value={matterId ?? ""}
+            onChange={(e) => setMatterId(e.target.value || null)}
+            required
+            options={[
+              {
+                value: "",
+                label: matters.loading
+                  ? t("@legalos.hearings.dialog.loadingMatters")
+                  : t("@legalos.hearings.dialog.selectMatter"),
+              },
+              ...(matters.data ?? []).map((m) => ({
+                value: String(m.id),
+                label: m.name,
+              })),
+            ]}
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              type="date"
+              label={t("@legalos.hearings.field.date")}
+              value={hearingDate}
+              onChange={(e) => setHearingDate((e.target.value || todayIso) as ISODateString)}
+              required
+            />
+            <Input
+              label={t("@legalos.hearings.field.time")}
+              value={hearingTime}
+              onChange={(e) => setHearingTime(e.target.value)}
+              helperText={t("@legalos.hearings.field.timeHint")}
+              placeholder="10:00"
+            />
+          </div>
+          <Input
+            label={t("@legalos.hearings.field.court")}
+            value={court}
+            onChange={(e) => setCourt(e.target.value)}
+          />
+          <Input
+            label={t("@legalos.hearings.field.purpose")}
+            value={purpose}
+            onChange={(e) => setPurpose(e.target.value)}
+          />
+        </DialogContent>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+          >
+            {t("@legalos.hearings.dialog.cancel")}
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            size="sm"
+            loading={saving}
+            disabled={saving || !matterId}
+          >
+            {t("@legalos.hearings.dialog.submit")}
+          </Button>
+        </DialogFooter>
+      </form>
     </Dialog>
   );
 }
@@ -235,179 +219,222 @@ export default function HearingsPage() {
     [query, court, circuit, outcome, since, until],
   );
 
-  const columns: TableColumn<Row>[] = [
-    {
-      key: "date",
-      header: t("@legalos.hearings.column.date"),
-      width: pixel(160),
-      // The date, then the warning band under it: overdue > today > this
-      // week, nothing further out. The band comes from lib/distinction.ts so
-      // it reads the same as on the dashboard and the matter calendar.
-      renderCell: (row) => (
-        <VStack gap={1}>
-          <Text type="body" weight="semibold">
-            {row.date}
-          </Text>
-          <ProximityBadge date={row.dateIso} />
-        </VStack>
-      ),
-    },
-    { key: "matter", header: t("@legalos.hearings.column.matter"), width: proportional(2) },
-    { key: "court", header: t("@legalos.hearings.column.court"), width: proportional(2) },
-    { key: "circuit", header: t("@legalos.hearings.column.circuit"), width: proportional(1) },
-    {
-      key: "outcome",
-      header: t("@legalos.hearings.column.outcome"),
-      width: pixel(170),
-      renderCell: (row) => (
-        <VStack gap={1}>
-          <Badge
-            variant={outcomeVariant(row.outcome)}
-            label={row.outcome ? enumLabel(row.outcome) : enumLabel("undecided")}
-          />
-          {row.note ? (
-            <Text type="supporting" color="secondary">
-              {row.note}
-            </Text>
-          ) : null}
-        </VStack>
-      ),
-    },
-    {
-      key: "next",
-      header: t("@legalos.hearings.column.next"),
-      width: pixel(120),
-      renderCell: (row) => (
-        <VStack gap={1}>
-          <Text type="body" color={row.next ? "primary" : "secondary"}>
-            {row.next ?? "—"}
-          </Text>
-          <ProximityBadge date={row.nextIso} />
-        </VStack>
-      ),
-    },
-  ];
-
   const anyFilter =
     Boolean(query || court || circuit || since || until) || outcome !== ANY;
 
   return (
-    <Layout
-      height="fill"
-      header={
-        <LayoutHeader hasDivider padding={0}>
-          <VStack gap={4}>
-            <HStack hAlign="between" vAlign="start">
-              <VStack gap={1}>
-                <Heading level={3}>{t("@legalos.hearings.heading")}</Heading>
-                <Text type="body" color="secondary">
-                  {t("@legalos.hearings.subtitle")}
-                </Text>
-              </VStack>
-              <Button
-                label={t("@legalos.hearings.newHearing")}
-                variant="primary"
-                icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
-                onClick={() => setIsNewOpen(true)}
+    <div
+      className="w-full flex flex-col gap-6"
+      style={{
+        maxWidth: "1280px",
+        margin: "0 auto",
+        padding: "24px 20px",
+      }}
+    >
+      {/* رأس الصفحة وأزرار الإجراءات */}
+      <header
+        className="flex flex-col gap-4 pb-5 border-b"
+        style={{ borderColor: "var(--border)" }}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2.5">
+              <div
+                className="flex items-center justify-center w-9 h-9"
+                style={{
+                  borderRadius: "var(--rs)",
+                  backgroundColor: "var(--primary-soft)",
+                  color: "var(--primary)",
+                }}
               >
-                {t("@legalos.hearings.newHearing")}
-              </Button>
-            </HStack>
+                <Icon name="event" size={20} />
+              </div>
+              <h1
+                className="text-xl font-bold tracking-tight"
+                style={{ color: "var(--text)" }}
+              >
+                {t("@legalos.hearings.heading")}
+              </h1>
+            </div>
+            <p className="text-sm" style={{ color: "var(--text2)" }}>
+              {t("@legalos.hearings.subtitle")}
+            </p>
+          </div>
 
-            <HStack gap={3} wrap="wrap">
-              <TextInput
-                label={t("@legalos.hearings.search.label")}
-                isLabelHidden
-                value={query}
-                onChange={setQuery}
-                placeholder={t("@legalos.hearings.search.placeholder")}
-                startIcon={MagnifyingGlassIcon}
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setIsNewOpen(true)}
+            startIcon={<Icon name="add" size={16} />}
+          >
+            {t("@legalos.hearings.newHearing")}
+          </Button>
+        </div>
+
+        {/* شريط الفلاتر والبحث */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
+          <div className="lg:col-span-2">
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t("@legalos.hearings.search.placeholder")}
+              aria-label={t("@legalos.hearings.search.label")}
+              startIcon={<Icon name="search" size={18} />}
+            />
+          </div>
+          <div>
+            <Input
+              label={t("@legalos.hearings.column.court")}
+              value={court}
+              onChange={(e) => setCourt(e.target.value)}
+            />
+          </div>
+          <div>
+            <Input
+              label={t("@legalos.hearings.column.circuit")}
+              value={circuit}
+              onChange={(e) => setCircuit(e.target.value)}
+            />
+          </div>
+          <div>
+            <Select
+              label={t("@legalos.hearings.column.outcome")}
+              value={outcome}
+              onChange={(e) => setOutcome(e.target.value || ANY)}
+              options={[
+                { value: ANY, label: t("@legalos.hearings.filter.anyOutcome") },
+                { value: UNDECIDED, label: enumLabel("undecided") },
+                ...HEARING_OUTCOMES.map((o) => ({ value: o, label: enumLabel(o) })),
+              ]}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              type="date"
+              label={t("@legalos.hearings.filter.from")}
+              value={since ?? ""}
+              onChange={(e) => setSince(e.target.value ? (e.target.value as ISODateString) : undefined)}
+            />
+            <Input
+              type="date"
+              label={t("@legalos.hearings.filter.to")}
+              value={until ?? ""}
+              onChange={(e) => setUntil(e.target.value ? (e.target.value as ISODateString) : undefined)}
+            />
+          </div>
+        </div>
+      </header>
+
+      {/* منطقة عرض البيانات والجدول */}
+      <DataView resource={hearings}>
+        {(rows: Hearing[]) => {
+          if (rows.length === 0) {
+            return (
+              <EmptyState
+                icon={<Icon name="balance" size={32} />}
+                title={
+                  anyFilter
+                    ? t("@legalos.hearings.empty.noMatchTitle")
+                    : t("@legalos.hearings.empty.noneTitle")
+                }
+                description={
+                  anyFilter
+                    ? t("@legalos.hearings.empty.noMatchDescription")
+                    : t("@legalos.hearings.empty.noneDescription")
+                }
               />
-              <TextInput
-                label={t("@legalos.hearings.column.court")}
-                value={court}
-                onChange={setCourt}
-                size="sm"
-              />
-              <TextInput
-                label={t("@legalos.hearings.column.circuit")}
-                value={circuit}
-                onChange={setCircuit}
-                size="sm"
-              />
-              <Selector
-                label={t("@legalos.hearings.column.outcome")}
-                value={outcome}
-                onChange={(v) => setOutcome(v ?? ANY)}
-                size="sm"
-                options={[
-                  { value: ANY, label: t("@legalos.hearings.filter.anyOutcome") },
-                  { value: UNDECIDED, label: enumLabel("undecided") },
-                  ...HEARING_OUTCOMES.map((o) => ({ value: o, label: enumLabel(o) })),
-                ]}
-              />
-              <DateInput
-                label={t("@legalos.hearings.filter.from")}
-                value={since}
-                onChange={setSince}
-                size="sm"
-              />
-              <DateInput
-                label={t("@legalos.hearings.filter.to")}
-                value={until}
-                onChange={setUntil}
-                size="sm"
-              />
-            </HStack>
-          </VStack>
-        </LayoutHeader>
-      }
-      content={
-        <LayoutContent>
-          <DataView resource={hearings}>
-            {(rows: Hearing[]) => {
-              if (rows.length === 0) {
-                return (
-                  <EmptyState
-                    icon={<Icon icon={ScaleIcon} size="lg" color="secondary" />}
-                    title={
-                      anyFilter
-                        ? t("@legalos.hearings.empty.noMatchTitle")
-                        : t("@legalos.hearings.empty.noneTitle")
-                    }
-                    description={
-                      anyFilter
-                        ? t("@legalos.hearings.empty.noMatchDescription")
-                        : t("@legalos.hearings.empty.noneDescription")
-                    }
-                  />
-                );
-              }
-              const data: Row[] = rows.map((h) => ({
-                id: h.id,
-                date: formatDate(h.hearing_date) + (h.hearing_time ? ` · ${h.hearing_time}` : ""),
-                dateIso: h.hearing_date,
-                nextIso: h.next_hearing_date,
-                time: h.hearing_time,
-                matter: h.matter_name ?? "—",
-                court: h.court || "—",
-                circuit: h.judge || "—",
-                outcome: h.outcome,
-                note: h.outcome_note ?? "",
-                next: h.next_hearing_date ? formatDate(h.next_hearing_date) : null,
-              }));
-              return <Table<Row> data={data} columns={columns} idKey="id" hasHover />;
-            }}
-          </DataView>
-        </LayoutContent>
-      }
-      footer={
-        <NewHearingDialog
-          isOpen={isNewOpen}
-          onOpenChange={setIsNewOpen}
-          onCreated={hearings.reload}
-        />
-      }
-    />
+            );
+          }
+          const data: Row[] = rows.map((h) => ({
+            id: h.id,
+            date: formatDate(h.hearing_date) + (h.hearing_time ? ` · ${h.hearing_time}` : ""),
+            dateIso: h.hearing_date,
+            nextIso: h.next_hearing_date,
+            time: h.hearing_time,
+            matter: h.matter_name ?? "—",
+            court: h.court || "—",
+            circuit: h.judge || "—",
+            outcome: h.outcome,
+            note: h.outcome_note ?? "",
+            next: h.next_hearing_date ? formatDate(h.next_hearing_date) : null,
+          }));
+
+          return (
+            <Card padding={0} bordered shadow className="overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead style={{ minWidth: "160px" }}>{t("@legalos.hearings.column.date")}</TableHead>
+                    <TableHead style={{ minWidth: "220px" }}>{t("@legalos.hearings.column.matter")}</TableHead>
+                    <TableHead style={{ minWidth: "180px" }}>{t("@legalos.hearings.column.court")}</TableHead>
+                    <TableHead style={{ minWidth: "140px" }}>{t("@legalos.hearings.column.circuit")}</TableHead>
+                    <TableHead style={{ minWidth: "170px" }}>{t("@legalos.hearings.column.outcome")}</TableHead>
+                    <TableHead style={{ minWidth: "140px" }}>{t("@legalos.hearings.column.next")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <span className="font-semibold text-xs" style={{ color: "var(--text)" }}>
+                            {row.date}
+                          </span>
+                          <ProximityBadge date={row.dateIso} />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-medium text-xs" style={{ color: "var(--text)" }}>
+                          {row.matter}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs" style={{ color: "var(--text2)" }}>
+                          {row.court}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs" style={{ color: "var(--text2)" }}>
+                          {row.circuit}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <Badge color={outcomeColor(row.outcome)} variant="soft">
+                            {row.outcome ? enumLabel(row.outcome) : enumLabel("undecided")}
+                          </Badge>
+                          {row.note && (
+                            <span className="text-[11px]" style={{ color: "var(--text3)" }}>
+                              {row.note}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          <span
+                            className="text-xs font-medium"
+                            style={{ color: row.next ? "var(--primary)" : "var(--text3)" }}
+                          >
+                            {row.next ?? "—"}
+                          </span>
+                          <ProximityBadge date={row.nextIso} />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          );
+        }}
+      </DataView>
+
+      <NewHearingDialog
+        isOpen={isNewOpen}
+        onOpenChange={setIsNewOpen}
+        onCreated={hearings.reload}
+      />
+    </div>
   );
 }

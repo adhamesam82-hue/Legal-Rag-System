@@ -1,23 +1,17 @@
 "use client";
 
+import NextLink from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Layout, LayoutHeader, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Badge } from "@astryxdesign/core/Badge";
-import { Avatar } from "@astryxdesign/core/Avatar";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { TextArea } from "@astryxdesign/core/TextArea";
-import { Selector } from "@astryxdesign/core/Selector";
-import { Table, proportional, pixel } from "@astryxdesign/core/Table";
-import type { TableColumn } from "@astryxdesign/core/Table";
-import { Link } from "@astryxdesign/core/Link";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
-import { Banner } from "@astryxdesign/core/Banner";
-import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
-import { PlusIcon, MagnifyingGlassIcon, UserGroupIcon } from "@heroicons/react/24/outline";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Alert } from "@/components/ui/Alert";
+import { Dialog, DialogHeader, DialogContent, DialogFooter } from "@/components/ui/Dialog";
+import { Icon } from "@/components/ui/Icon";
+import { Card } from "@/components/ui/Card";
 import { useOrg, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import {
@@ -105,213 +99,249 @@ export default function ClientsPage() {
       });
   }, [resource.data, typeFilter]);
 
-  const columns: TableColumn<ClientRow>[] = [
-    {
-      key: "name",
-      header: t("@legalos.clients.table.client"),
-      width: proportional(2.5),
-      renderCell: (row) => (
-        <Link href={`/clients/${row.id}`}>
-          <VStack gap={0}>
-            <Text type="body" weight="semibold">
-              {row.name}
-            </Text>
-            <Text type="supporting" color="secondary">
-              {row.industry}
-            </Text>
-          </VStack>
-        </Link>
-      ),
-    },
-    {
-      key: "client_type",
-      header: t("@legalos.clients.table.type"),
-      width: pixel(120),
-      renderCell: (row) => <Text type="body">{enumLabel(row.client_type)}</Text>,
-    },
-    {
-      key: "primaryContactName",
-      header: t("@legalos.clients.table.primaryContact"),
-      width: proportional(1.6),
-      renderCell: (row) => (
-        <HStack gap={2} vAlign="center">
-          <Avatar name={row.primaryContactName} size="sm" tooltip={false} />
-          <VStack gap={0}>
-            <Text type="body">{row.primaryContactName}</Text>
-            {row.primaryContactTitle && (
-              <Text type="supporting" color="secondary">
-                {row.primaryContactTitle}
-              </Text>
-            )}
-          </VStack>
-        </HStack>
-      ),
-    },
-    {
-      key: "activeMatters",
-      header: t("@legalos.clients.table.activeMatters"),
-      width: pixel(130),
-      renderCell: (row) =>
-        row.activeMatters > 0 ? (
-          <Text type="body">{row.activeMatters}</Text>
-        ) : (
-          <Text type="body" color="secondary">
-            {t("@legalos.clients.table.noneActive")}
-          </Text>
-        ),
-    },
-    {
-      key: "lastActivity",
-      header: t("@legalos.clients.table.lastActivity"),
-      width: pixel(140),
-      renderCell: (row) => (
-        <Text type="body" color="secondary">
-          {formatDate(row.lastActivity)}
-        </Text>
-      ),
-    },
-    {
-      key: "status",
-      header: t("@legalos.clients.table.status"),
-      width: pixel(110),
-      renderCell: (row) =>
-        row.status === "inactive" ? (
-          <Badge variant="neutral" label={enumLabel("inactive")} />
-        ) : (
-          <Text type="body" color="secondary">
-            {enumLabel("active")}
-          </Text>
-        ),
-    },
-  ];
-
   const total = resource.data?.clients.length ?? 0;
 
   return (
-    <>
-      <Layout
-        height="fill"
-        header={
-          <LayoutHeader hasDivider padding={0}>
-            <VStack gap={4}>
-              <HStack hAlign="between" vAlign="center">
-                <VStack gap={1}>
-                  <Heading level={2}>{t("@legalos.clients.heading")}</Heading>
-                  <Text type="body" color="secondary">
-                    {organizationName
-                      ? t("@legalos.clients.subtitle.atFirm", {
-                          count: total,
-                          firm: organizationName,
-                        })
-                      : t("@legalos.clients.subtitle.plain", { count: total })}
-                  </Text>
-                </VStack>
-                <Button
-                  label={t("@legalos.clients.newClient")}
-                  variant="primary"
-                  icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
-                  onClick={() => setIsCreating(true)}
-                  isDisabled={!practice}
-                >
-                  {t("@legalos.clients.newClient")}
-                </Button>
-              </HStack>
-              <HStack gap={3} wrap="wrap">
-                <TextInput
-                  label={t("@legalos.clients.search.label")}
-                  isLabelHidden
-                  value={query}
-                  onChange={setQuery}
-                  placeholder={t("@legalos.clients.search.placeholder")}
-                  startIcon={MagnifyingGlassIcon}
-                  width={320}
-                />
-                <Selector
-                  label={t("@legalos.clients.table.type")}
-                  isLabelHidden
-                  value={typeFilter}
-                  onChange={(v) => setTypeFilter(v ?? "all")}
-                  options={[
-                    { value: "all", label: t("@legalos.clients.filter.allTypes") },
-                    { value: "company", label: enumLabel("company") },
-                    { value: "individual", label: enumLabel("individual") },
-                  ]}
-                  width={160}
-                />
-                <Selector
-                  label={t("@legalos.clients.table.status")}
-                  isLabelHidden
-                  value={statusFilter}
-                  onChange={(v) => setStatusFilter(v ?? "all")}
-                  options={[
-                    { value: "all", label: t("@legalos.clients.filter.allStatuses") },
-                    { value: "active", label: enumLabel("active") },
-                    { value: "inactive", label: enumLabel("inactive") },
-                  ]}
-                  width={160}
-                />
-              </HStack>
-            </VStack>
-          </LayoutHeader>
-        }
-        content={
-          <LayoutContent padding={0}>
-            {/* Creating a client closed the dialog and refreshed the table in
-              * silence, which is the same thing a failed save would have
-              * looked like. */}
-            {created && (
-              <div style={{ paddingBlockEnd: 16 }}>
-                <Banner
-                  status="success"
-                  title={t("@legalos.clients.created", { name: created })}
-                  isDismissable
-                  onDismiss={() => setCreated(null)}
-                />
+    <div
+      className="w-full flex flex-col gap-6"
+      style={{
+        maxWidth: "1280px",
+        margin: "0 auto",
+        padding: "24px 20px",
+      }}
+    >
+      {/* رأس الصفحة وحقل الإجراءات */}
+      <header
+        className="flex flex-col gap-4 pb-5 border-b"
+        style={{ borderColor: "var(--border)" }}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2.5">
+              <div
+                className="flex items-center justify-center w-9 h-9"
+                style={{
+                  borderRadius: "var(--rs)",
+                  backgroundColor: "var(--primary-soft)",
+                  color: "var(--primary)",
+                }}
+              >
+                <Icon name="groups" size={20} />
               </div>
-            )}
-            <DataView resource={resource} loadingLabel={t("@legalos.clients.loading")}>
-              {() =>
-                rows.length > 0 ? (
-                  <Table<ClientRow> data={rows} columns={columns} idKey="id" hasHover />
+              <h1
+                className="text-xl font-bold tracking-tight"
+                style={{ color: "var(--text)" }}
+              >
+                {t("@legalos.clients.heading")}
+              </h1>
+            </div>
+            <p className="text-sm" style={{ color: "var(--text2)" }}>
+              {organizationName
+                ? t("@legalos.clients.subtitle.atFirm", {
+                    count: total,
+                    firm: organizationName,
+                  })
+                : t("@legalos.clients.subtitle.plain", { count: total })}
+            </p>
+          </div>
+
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setIsCreating(true)}
+            disabled={!practice}
+            startIcon={<Icon name="person_add" size={16} />}
+          >
+            {t("@legalos.clients.newClient")}
+          </Button>
+        </div>
+
+        {/* شريط البحث والتصفية المتعددة */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="w-full sm:w-72">
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t("@legalos.clients.search.placeholder")}
+              aria-label={t("@legalos.clients.search.label")}
+              startIcon={<Icon name="search" size={18} />}
+            />
+          </div>
+          <div className="w-44">
+            <Select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              aria-label={t("@legalos.clients.table.type")}
+              options={[
+                { value: "all", label: t("@legalos.clients.filter.allTypes") },
+                { value: "company", label: enumLabel("company") },
+                { value: "individual", label: enumLabel("individual") },
+              ]}
+            />
+          </div>
+          <div className="w-44">
+            <Select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              aria-label={t("@legalos.clients.table.status")}
+              options={[
+                { value: "all", label: t("@legalos.clients.filter.allStatuses") },
+                { value: "active", label: enumLabel("active") },
+                { value: "inactive", label: enumLabel("inactive") },
+              ]}
+            />
+          </div>
+        </div>
+      </header>
+
+      {/* رسالة تأكيد إنشاء عميل */}
+      {created && (
+        <Alert
+          type="success"
+          title={t("@legalos.clients.created", { name: created })}
+          onClose={() => setCreated(null)}
+        />
+      )}
+
+      {/* منطقة عرض البيانات والجدول */}
+      <DataView resource={resource} loadingLabel={t("@legalos.clients.loading")}>
+        {() =>
+          rows.length > 0 ? (
+            <Card padding={0} bordered shadow className="overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead style={{ minWidth: "220px" }}>{t("@legalos.clients.table.client")}</TableHead>
+                    <TableHead style={{ minWidth: "120px" }}>{t("@legalos.clients.table.type")}</TableHead>
+                    <TableHead style={{ minWidth: "200px" }}>{t("@legalos.clients.table.primaryContact")}</TableHead>
+                    <TableHead style={{ minWidth: "120px" }}>{t("@legalos.clients.table.activeMatters")}</TableHead>
+                    <TableHead style={{ minWidth: "130px" }}>{t("@legalos.clients.table.lastActivity")}</TableHead>
+                    <TableHead style={{ minWidth: "100px" }}>{t("@legalos.clients.table.status")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell>
+                        <NextLink
+                          href={`/clients/${row.id}`}
+                          className="flex flex-col gap-0.5 group focus-visible:outline-2 focus-visible:outline-[var(--primary)] rounded"
+                          style={{ textDecoration: "none" }}
+                        >
+                          <span
+                            className="font-semibold text-sm group-hover:underline"
+                            style={{ color: "var(--primary)" }}
+                          >
+                            {row.name}
+                          </span>
+                          {row.industry && (
+                            <span className="text-xs" style={{ color: "var(--text3)" }}>
+                              {row.industry}
+                            </span>
+                          )}
+                        </NextLink>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs font-medium" style={{ color: "var(--text)" }}>
+                          {enumLabel(row.client_type)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2.5">
+                          <div
+                            className="flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold shrink-0"
+                            style={{
+                              backgroundColor: "var(--surface3)",
+                              color: "var(--text2)",
+                            }}
+                          >
+                            {row.primaryContactName.charAt(0)}
+                          </div>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-xs font-medium" style={{ color: "var(--text)" }}>
+                              {row.primaryContactName}
+                            </span>
+                            {row.primaryContactTitle && (
+                              <span className="text-[11px]" style={{ color: "var(--text3)" }}>
+                                {row.primaryContactTitle}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {row.activeMatters > 0 ? (
+                          <span className="text-xs font-bold" style={{ color: "var(--text)" }}>
+                            {row.activeMatters}
+                          </span>
+                        ) : (
+                          <span className="text-xs" style={{ color: "var(--text3)" }}>
+                            {t("@legalos.clients.table.noneActive")}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-xs" style={{ color: "var(--text2)" }}>
+                          {formatDate(row.lastActivity)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {row.status === "inactive" ? (
+                          <Badge color="neutral" variant="soft">
+                            {enumLabel("inactive")}
+                          </Badge>
+                        ) : (
+                          <Badge color="success" variant="soft">
+                            {enumLabel("active")}
+                          </Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          ) : (
+            <EmptyState
+              icon={<Icon name="groups" size={32} />}
+              title={
+                total === 0
+                  ? t("@legalos.clients.empty.noneTitle")
+                  : t("@legalos.clients.empty.noMatchTitle")
+              }
+              description={
+                total === 0
+                  ? t("@legalos.clients.empty.noneDescription")
+                  : t("@legalos.clients.empty.noMatchDescription")
+              }
+              action={
+                total === 0 ? (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setIsCreating(true)}
+                  >
+                    {t("@legalos.clients.newClient")}
+                  </Button>
                 ) : (
-                  <EmptyState
-                    icon={<Icon icon={UserGroupIcon} size="lg" color="secondary" />}
-                    title={
-                      total === 0
-                        ? t("@legalos.clients.empty.noneTitle")
-                        : t("@legalos.clients.empty.noMatchTitle")
-                    }
-                    description={
-                      total === 0
-                        ? t("@legalos.clients.empty.noneDescription")
-                        : t("@legalos.clients.empty.noMatchDescription")
-                    }
-                    actions={
-                      total === 0 ? (
-                        <Button
-                          label={t("@legalos.clients.newClient")}
-                          variant="primary"
-                          onClick={() => setIsCreating(true)}
-                        />
-                      ) : (
-                        <Button
-                          label={t("@legalos.clients.clearFilters")}
-                          variant="secondary"
-                          onClick={() => {
-                            setQuery("");
-                            setTypeFilter("all");
-                            setStatusFilter("all");
-                          }}
-                        />
-                      )
-                    }
-                  />
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setQuery("");
+                      setTypeFilter("all");
+                      setStatusFilter("all");
+                    }}
+                  >
+                    {t("@legalos.clients.clearFilters")}
+                  </Button>
                 )
               }
-            </DataView>
-          </LayoutContent>
+            />
+          )
         }
-      />
+      </DataView>
+
       <NewClientDialog
         isOpen={isCreating}
         onOpenChange={setIsCreating}
@@ -320,7 +350,7 @@ export default function ClientsPage() {
           resource.reload();
         }}
       />
-    </>
+    </div>
   );
 }
 
@@ -362,10 +392,10 @@ function NewClientDialog({
     if (!practice || !name.trim()) return;
     setSaving(true);
     setError(null);
-    const created = name.trim();
+    const createdName = name.trim();
     try {
       await practice.clients.create({
-        name: created,
+        name: createdName,
         client_type: clientType,
         industry,
         email,
@@ -375,7 +405,7 @@ function NewClientDialog({
       } as Partial<Client>);
       reset();
       onOpenChange(false);
-      onCreated(created);
+      onCreated(createdName);
     } catch (exc) {
       setError(exc instanceof Error ? exc.message : t("@legalos.clients.dialog.error"));
     } finally {
@@ -384,62 +414,100 @@ function NewClientDialog({
   }
 
   return (
-    <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
-      <Layout
-        header={<DialogHeader title={t("@legalos.clients.dialog.title")} onOpenChange={onOpenChange} />}
-        content={
-          <LayoutContent>
-            <VStack gap={4}>
-              <InlineError message={error} onDismiss={() => setError(null)} />
-              <TextInput
-                label={t("@legalos.clients.dialog.nameLabel")}
-                value={name}
-                onChange={setName}
-                placeholder="شركة النيل للتجارة"
-                isRequired
-              />
-              <Selector
-                label={t("@legalos.clients.dialog.typeLabel")}
-                value={clientType}
-                onChange={(v) => setClientType((v as ClientType) ?? "company")}
-                options={[
-                  { value: "company", label: enumLabel("company") },
-                  { value: "individual", label: enumLabel("individual") },
-                ]}
-              />
-              <TextInput
-                label={t("@legalos.clients.dialog.industryLabel")}
-                value={industry}
-                onChange={setIndustry}
-                placeholder={t("@legalos.clients.dialog.industryPlaceholder")}
-              />
-              <HStack gap={3}>
-                <TextInput label={t("@legalos.clients.dialog.emailLabel")} value={email} onChange={setEmail} />
-                <TextInput label={t("@legalos.clients.dialog.phoneLabel")} value={phone} onChange={setPhone} />
-              </HStack>
-              <TextInput label={t("@legalos.clients.dialog.addressLabel")} value={address} onChange={setAddress} />
-              <TextArea label={t("@legalos.clients.dialog.notesLabel")} value={notes} onChange={setNotes} rows={3} />
-            </VStack>
-          </LayoutContent>
-        }
-        footer={
-          <LayoutFooter hasDivider>
-            <HStack gap={3} hAlign="end">
-              <Button
-                label={t("@legalos.clients.dialog.cancel")}
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              />
-              <Button
-                label={saving ? t("@legalos.clients.dialog.saving") : t("@legalos.clients.dialog.create")}
-                variant="primary"
-                onClick={submit}
-                isDisabled={saving || !name.trim()}
-              />
-            </HStack>
-          </LayoutFooter>
-        }
+    <Dialog isOpen={isOpen} onOpenChange={onOpenChange} width={520}>
+      <DialogHeader
+        title={t("@legalos.clients.dialog.title")}
+        onOpenChange={onOpenChange}
       />
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
+        <DialogContent>
+          <InlineError message={error} onDismiss={() => setError(null)} />
+          <Input
+            label={t("@legalos.clients.dialog.nameLabel")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="شركة النيل للتجارة"
+            required
+          />
+          <Select
+            label={t("@legalos.clients.dialog.typeLabel")}
+            value={clientType}
+            onChange={(e) => setClientType((e.target.value as ClientType) ?? "company")}
+            options={[
+              { value: "company", label: enumLabel("company") },
+              { value: "individual", label: enumLabel("individual") },
+            ]}
+          />
+          <Input
+            label={t("@legalos.clients.dialog.industryLabel")}
+            value={industry}
+            onChange={(e) => setIndustry(e.target.value)}
+            placeholder={t("@legalos.clients.dialog.industryPlaceholder")}
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              type="email"
+              label={t("@legalos.clients.dialog.emailLabel")}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <Input
+              type="tel"
+              label={t("@legalos.clients.dialog.phoneLabel")}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+          </div>
+          <Input
+            label={t("@legalos.clients.dialog.addressLabel")}
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+          />
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold" style={{ color: "var(--text2)" }}>
+              {t("@legalos.clients.dialog.notesLabel")}
+            </label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              className="w-full p-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+              style={{
+                borderRadius: "var(--rs)",
+                backgroundColor: "var(--surface2)",
+                borderColor: "var(--border)",
+                color: "var(--text)",
+              }}
+            />
+          </div>
+        </DialogContent>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+          >
+            {t("@legalos.clients.dialog.cancel")}
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            size="sm"
+            loading={saving}
+            disabled={saving || !name.trim()}
+          >
+            {saving
+              ? t("@legalos.clients.dialog.saving")
+              : t("@legalos.clients.dialog.create")}
+          </Button>
+        </DialogFooter>
+      </form>
     </Dialog>
   );
 }
