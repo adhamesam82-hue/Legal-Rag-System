@@ -36,12 +36,18 @@ import psycopg
 
 from legalrag.config import get_clerk_secret_key
 from legalrag.db import get_connection
+from legalrag.orgs import create_organization
+from legalrag.practice.billing import compute_tax
 
 FIRM_NAME = "السيد وشركاه للمحاماة والاستشارات القانونية"
 
 # Names this same demo firm has been seeded under before. --reset clears these
 # too, so renaming the firm replaces it rather than seeding a second one.
 FORMER_FIRM_NAMES = ["Al-Sayed & Partners"]
+
+# What the firm says it practises. Exactly the matter types the seeded matters
+# below use, so the settings screen and the file list agree with each other.
+SPECIALTIES = ["civil", "corporate", "advisory", "family_personal_status", "tax"]
 
 # (clerk id, role, display name, title, email)
 #
@@ -498,17 +504,29 @@ DOCUMENTS = [
     ("samir-nassar-consulting-agreement", "عقد الاستشارات — النسخة النهائية", "contract", YOUSSEF, date(2025, 5, 14), 184_320, "signed"),
 ]
 
-# (matter, date, time, court, purpose, outcome)
+# (matter, date, time, court, purpose, outcome, outcome_note)
+#
+# Two columns, not one, since migration 0010: `outcome` is a five-value enum
+# the agenda filters and groups on, and `outcome_note` is what the court
+# actually did in prose. This table wrote its prose into `outcome` and the
+# CHECK constraint rejected every row of it.
+#
+# The three recorded outcomes are procedural -- a schedule set, a memo
+# accepted, an expert appointed -- and none of them is an adjournment, a
+# reservation, a judgment, a striking-out or a joinder. They are `other`
+# rather than the nearest-looking name: 0010 chose to leave a court record
+# blank over labelling it wrongly, and inventing 'adjourned' here because an
+# expert was appointed would be exactly that.
 HEARINGS = [
-    ("nabil-v-nile-trading", date(2025, 12, 1), "10:00 ص", "محكمة القاهرة الاقتصادية", "الجلسة الأولى — تحديد جدول الإثبات", "حُدد الجدول، دون حكم"),
-    ("nabil-v-nile-trading", date(2026, 2, 18), "10:30 ص", "محكمة القاهرة الاقتصادية", "نظر مذكرة الدفاع", "قُبلت للإيداع"),
-    ("nabil-v-nile-trading", date(2026, 5, 6), "9:30 ص", "محكمة القاهرة الاقتصادية", "جلسة ندب الخبير", "نُدب خبير محاسبي"),
-    ("nabil-v-nile-trading", date(2026, 8, 10), "10:00 ص", "محكمة القاهرة الاقتصادية", "نظر مستندات الإثبات", None),
-    ("delta-foods-labour-dispute", date(2026, 6, 2), "1:00 م", "محكمة العمل بالقاهرة", "الجلسة الأولى — طلب مستندات", None),
-    ("delta-foods-labour-dispute", date(2026, 8, 12), "1:30 م", "محكمة العمل بالقاهرة", "المرافعة الختامية", None),
-    ("el-sayed-estate-partition", date(2026, 6, 1), "11:00 ص", "محكمة الأسرة بالجيزة", "الإحالة إلى الوساطة", None),
-    ("el-sayed-estate-partition", date(2026, 8, 5), "11:00 ص", "محكمة الأسرة بالجيزة", "جلسة الوساطة", None),
-    ("zahran-contract-dispute", date(2025, 10, 2), "10:00 ص", "محكمة القاهرة الاقتصادية", "الجلسة الأولى — تأجيل للتسوية", None),
+    ("nabil-v-nile-trading", date(2025, 12, 1), "10:00 ص", "محكمة القاهرة الاقتصادية", "الجلسة الأولى — تحديد جدول الإثبات", "other", "حُدد الجدول، دون حكم"),
+    ("nabil-v-nile-trading", date(2026, 2, 18), "10:30 ص", "محكمة القاهرة الاقتصادية", "نظر مذكرة الدفاع", "other", "قُبلت للإيداع"),
+    ("nabil-v-nile-trading", date(2026, 5, 6), "9:30 ص", "محكمة القاهرة الاقتصادية", "جلسة ندب الخبير", "other", "نُدب خبير محاسبي"),
+    ("nabil-v-nile-trading", date(2026, 8, 10), "10:00 ص", "محكمة القاهرة الاقتصادية", "نظر مستندات الإثبات", None, None),
+    ("delta-foods-labour-dispute", date(2026, 6, 2), "1:00 م", "محكمة العمل بالقاهرة", "الجلسة الأولى — طلب مستندات", None, None),
+    ("delta-foods-labour-dispute", date(2026, 8, 12), "1:30 م", "محكمة العمل بالقاهرة", "المرافعة الختامية", None, None),
+    ("el-sayed-estate-partition", date(2026, 6, 1), "11:00 ص", "محكمة الأسرة بالجيزة", "الإحالة إلى الوساطة", None, None),
+    ("el-sayed-estate-partition", date(2026, 8, 5), "11:00 ص", "محكمة الأسرة بالجيزة", "جلسة الوساطة", None, None),
+    ("zahran-contract-dispute", date(2025, 10, 2), "10:00 ص", "محكمة القاهرة الاقتصادية", "الجلسة الأولى — تأجيل للتسوية", None, None),
 ]
 
 # (matter, title, assignee, due_date, status, priority)
@@ -536,6 +554,11 @@ TIME_ENTRIES = [
     ("khalil-tax-objection", AHMED, date(2026, 6, 10), Decimal("5.0"), "مراجعة دراسة أسعار التحويل في مواجهة إخطار إعادة التقدير", True, Decimal("2200")),
     ("el-sayed-estate-partition", AHMED, date(2026, 7, 22), Decimal("1.5"), "إعداد عرض شراء الحصة تمهيدًا للوساطة", True, Decimal("2200")),
 ]
+
+# Egyptian legal fees carry no VAT for these demo matters, so every seeded
+# invoice is taxed at zero. Named rather than inlined as 0: it is the one
+# place to change if the demo firm ever needs to show a taxed bill.
+TAX_RATE = Decimal(0)
 
 # (matter, client, number, amount, status, issued, due)
 INVOICES = [
@@ -723,13 +746,25 @@ def seed(conn: psycopg.Connection, owner_clerk_id: str | None) -> int:
         team[0] = (owner_clerk_id, "owner", TEAM[0][2], TEAM[0][3], TEAM[0][4])
     owner_id = team[0][0]
 
+    # Through create_organization rather than a raw INSERT: it is the only
+    # place that knows what a new firm needs beyond a name. Seeding around it
+    # drifted, and the drift was silent until the column it missed became NOT
+    # NULL -- trial_ends_at, in migration 0026, after which this script could
+    # not seed anything at all. It also plants the default document tags, so a
+    # seeded firm and a real one now start the same shape.
+    org = create_organization(conn, FIRM_NAME, owner_id, specialties=SPECIALTIES).id
+
     with conn.cursor() as cur:
+        # create_organization has already seated the Owner. It collects no
+        # profile, so fill those columns in rather than inserting a second
+        # membership the unique constraint would reject.
+        _, owner_name, owner_title, owner_email = team[0][1:]
         cur.execute(
-            "INSERT INTO organizations (name, created_by) VALUES (%s, %s) RETURNING id",
-            (FIRM_NAME, owner_id),
+            "UPDATE memberships SET display_name = %s, title = %s, email = %s "
+            "WHERE organization_id = %s AND clerk_user_id = %s",
+            (owner_name, owner_title, owner_email, org, owner_id),
         )
-        org = cur.fetchone()[0]
-        for clerk_user_id, role, display_name, title, email in team:
+        for clerk_user_id, role, display_name, title, email in team[1:]:
             cur.execute(
                 "INSERT INTO memberships (organization_id, clerk_user_id, role, "
                 "display_name, title, email) VALUES (%s, %s, %s, %s, %s, %s)",
@@ -842,12 +877,17 @@ def seed(conn: psycopg.Connection, owner_clerk_id: str | None) -> int:
                 ),
             )
 
-        for matter, hearing_date, hearing_time, court, purpose, outcome in HEARINGS:
+        for (
+            matter, hearing_date, hearing_time, court, purpose, outcome, outcome_note
+        ) in HEARINGS:
             cur.execute(
                 "INSERT INTO hearings (organization_id, matter_id, hearing_date, "
-                "hearing_time, court, purpose, outcome) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                (org, matter_ids[matter], hearing_date, hearing_time, court, purpose, outcome),
+                "hearing_time, court, purpose, outcome, outcome_note) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                (
+                    org, matter_ids[matter], hearing_date, hearing_time, court,
+                    purpose, outcome, outcome_note,
+                ),
             )
 
         for matter, title, assignee, due_date, status, priority in TASKS:
@@ -874,13 +914,21 @@ def seed(conn: psycopg.Connection, owner_clerk_id: str | None) -> int:
             )
 
         for matter, client, number, amount, status, issued, due in INVOICES:
+            # total_amount has been NOT NULL with no default since migration
+            # 0024 split an invoice into subtotal, tax and total. Through
+            # compute_tax rather than assigning amount twice: these firms are
+            # untaxed today, and the day one is not, a seeded invoice that
+            # quietly totals its subtotal is a wrong number on a bill.
+            tax_amount, total_amount = compute_tax(amount, TAX_RATE)
             cur.execute(
                 "INSERT INTO invoices (organization_id, matter_id, client_id, number, "
-                "amount, status, issued_date, due_date, paid_date) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, "
+                "amount, tax_rate, tax_amount, total_amount, status, issued_date, "
+                "due_date, paid_date) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, "
                 "CASE WHEN %s = 'paid' THEN %s END)",
                 (
                     org, matter_ids[matter], client_ids[client], number, amount,
+                    TAX_RATE, tax_amount, total_amount,
                     status, issued, due, status, due,
                 ),
             )
