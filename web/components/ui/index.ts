@@ -13,3 +13,4 @@ export * from "./EmptyState";
 export * from "./Skeleton";
 export * from "./Icon";
 export * from "./Chat";
+export * from "./Dialog";
