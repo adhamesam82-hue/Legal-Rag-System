@@ -15,12 +15,12 @@ import { LOCALE_COOKIE, resolveLocale, type Locale } from "@/lib/i18n/locale";
 // been the one string the language cookie could not reach.
 const METADATA: Record<Locale, Metadata> = {
   ar: {
-    title: "alsigil — إدارة مكاتب المحاماة في مصر والمنطقة العربية",
+    title: "السِّجل — إدارة مكاتب المحاماة",
     description:
       "القضايا والعملاء والمستندات والوقت والفوترة لمكاتب المحاماة في مصر والمنطقة العربية — مبنية حول بحث قانوني مستند إلى نصوص التشريعات، مع التحقق من كل استشهاد في مقابل النصوص الأصلية.",
   },
   en: {
-    title: "alsigil — Practice management for Egyptian & MENA law firms",
+    title: "Al-Sijil — Law Firm Management",
     description:
       "Matters, clients, documents, time and billing for Egyptian and MENA law firms — built around legal research grounded in statute text, with every citation verified against the corpus.",
   },
