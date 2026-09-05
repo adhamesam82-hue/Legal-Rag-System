@@ -1,23 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" role="img" aria-label="alsigil product tour">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" role="img" aria-label="Al-Sijil product tour">
   <defs>
     <linearGradient id="tg" x1="0" y1="0" x2="0.35" y2="1">
-      <stop offset="0%" stop-color="#F2EEE7"/>
-      <stop offset="100%" stop-color="#F6F3EE"/>
+      <stop offset="0%" stop-color="#FAF9FC"/>
+      <stop offset="100%" stop-color="#F4F2F8"/>
     </linearGradient>
     <radialGradient id="tv" cx="0.5" cy="0.38" r="0.62">
-      <stop offset="0%" stop-color="#A6301F" stop-opacity="0.07"/>
-      <stop offset="100%" stop-color="#A6301F" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#5B4FA6" stop-opacity="0.09"/>
+      <stop offset="100%" stop-color="#5B4FA6" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect width="1280" height="720" fill="url(#tg)"/>
   <rect width="1280" height="720" fill="url(#tv)"/>
-  <g stroke="#12161C" stroke-opacity="0.07" stroke-width="1">
+  <g stroke="#2A2736" stroke-opacity="0.07" stroke-width="1">
     <path d="M160 0v720M320 0v720M480 0v720M640 0v720M800 0v720M960 0v720M1120 0v720"/>
     <path d="M0 120h1280M0 240h1280M0 360h1280M0 480h1280M0 600h1280"/>
   </g>
   <g transform="translate(640 360)">
-    <circle r="62" fill="none" stroke="#12161C" stroke-opacity="0.22" stroke-width="1.6"/>
-    <path d="M-16 -25 L30 0 L-16 25 Z" fill="none" stroke="#12161C" stroke-opacity="0.8" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle r="62" fill="none" stroke="#2A2736" stroke-opacity="0.22" stroke-width="1.6"/>
+    <path d="M-16 -25 L30 0 L-16 25 Z" fill="none" stroke="#2A2736" stroke-opacity="0.8" stroke-width="2.4" stroke-linejoin="round"/>
   </g>
-  <rect x="0" y="640" width="1280" height="80" fill="#EFEAE1" opacity="0.5"/>
+  <rect x="0" y="640" width="1280" height="80" fill="#EDEAF3" opacity="0.5"/>
 </svg>
