@@ -13,7 +13,6 @@ import { Avatar } from "@astryxdesign/core/Avatar";
 import { List, ListItem } from "@astryxdesign/core/List";
 import { Divider } from "@astryxdesign/core/Divider";
 import { Link } from "@astryxdesign/core/Link";
-import { Breadcrumbs, BreadcrumbItem } from "@astryxdesign/core/Breadcrumbs";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import {
   SparklesIcon,
@@ -25,6 +24,7 @@ import {
   PencilSquareIcon,
 } from "@heroicons/react/24/outline";
 import { useTranslator } from "@astryxdesign/core/i18n";
+import { BreadcrumbOverride } from "@/components/ui/Breadcrumb";
 import { getKbItem, getKbItems, type KbItem, type KbCategory } from "../data";
 
 const AI_ICON_CLASS = "text-purple-vivid";
@@ -90,26 +90,29 @@ export default function KnowledgeBaseDetailPage({
   const TypeIcon = TYPE_ICON[item.type];
 
   return (
-    <Layout
-      height="fill"
-      content={
-        <LayoutContent padding={0}>
-          <VStack gap={6}>
-            <VStack gap={4}>
-              <Breadcrumbs variant="supporting">
-                <BreadcrumbItem href="/knowledge-base">
-                  {t("@legalos.knowledgeBase.detail.breadcrumb")}
-                </BreadcrumbItem>
-                <BreadcrumbItem href="/knowledge-base">{item.category}</BreadcrumbItem>
-                <BreadcrumbItem isCurrent>{item.title}</BreadcrumbItem>
-              </Breadcrumbs>
-
-              <HStack hAlign="between" vAlign="start">
-                <VStack gap={2}>
-                  <HStack gap={2} vAlign="center">
-                    <Icon icon={TypeIcon} size="sm" color="secondary" />
-                    <Heading level={2}>{item.title}</Heading>
-                  </HStack>
+    <>
+      <BreadcrumbOverride
+        items={[
+          { label: t("@legalos.shell.breadcrumb.home"), href: "/dashboard" },
+          { label: t("@legalos.shell.nav.knowledgeBase"), href: "/knowledge-base" },
+          { label: t(CATEGORY_KEY[item.category]), href: "/knowledge-base" },
+          { label: item.title, isCurrent: true },
+        ]}
+      />
+      <Layout
+        height="fill"
+        content={
+          <LayoutContent padding={0}>
+            <VStack gap={6}>
+              <VStack gap={4}>
+                <HStack hAlign="between" vAlign="start">
+                  <VStack gap={2}>
+                    <HStack gap={2} vAlign="center">
+                      <Icon icon={TypeIcon} size="sm" color="secondary" />
+                      <div data-breadcrumb-title={item.title}>
+                        <Heading level={2}>{item.title}</Heading>
+                      </div>
+                    </HStack>
                   <HStack gap={2} vAlign="center">
                     <Badge
                       variant={CATEGORY_BADGE[item.category]}
@@ -271,5 +274,6 @@ export default function KnowledgeBaseDetailPage({
         </LayoutContent>
       }
     />
+    </>
   );
 }
