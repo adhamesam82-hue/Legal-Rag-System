@@ -3,12 +3,11 @@
 import { Suspense, useState } from "react";
 import { useSignIn } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { Text } from "@astryxdesign/core/Text";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { Button } from "@astryxdesign/core/Button";
-import { Banner } from "@astryxdesign/core/Banner";
-import { Link } from "@astryxdesign/core/Link";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Alert";
 import { AuthFrame } from "@/components/AuthFrame";
 import { RedirectIfSignedIn } from "@/components/RedirectIfSignedIn";
 import { withRedirect } from "@/lib/redirect-url";
@@ -255,212 +254,199 @@ function SignInForm() {
   // ---------------------------------------------------------------- render
 
   const codeField = (
-    <>
-      <TextInput label={t("@legalos.auth.code.label")} value={code} onChange={setCode} />
-      {errors?.fields?.code && (
-        <Banner
-          status="error"
-          title={t("@legalos.auth.code.label")}
-          description={errors.fields.code.message}
-        />
-      )}
-    </>
+    <Input
+      label={t("@legalos.auth.code.label")}
+      value={code}
+      onChange={(e) => setCode(e.target.value)}
+      errorMessage={errors?.fields?.code?.message}
+    />
   );
 
   const emailField = (
-    <>
-      <TextInput
-        label={t("@legalos.auth.signIn.email")}
-        type="email"
-        value={email}
-        onChange={setEmail}
-      />
-      {errors?.fields?.identifier && (
-        <Banner
-          status="error"
-          title={t("@legalos.auth.signIn.email")}
-          description={errors.fields.identifier.message}
-        />
-      )}
-    </>
+    <Input
+      label={t("@legalos.auth.signIn.email")}
+      type="email"
+      value={email}
+      onChange={(e) => setEmail(e.target.value)}
+      errorMessage={errors?.fields?.identifier?.message}
+    />
   );
 
-  const form = { display: "grid", gap: 14 } as const;
+  const formStyle = { display: "grid", gap: "14px" } as const;
 
   return (
     <AuthFrame title={t(HEADING_KEY[step])}>
       {step === "password" && (
-        <form onSubmit={handleSubmit} style={form}>
+        <form onSubmit={handleSubmit} style={formStyle}>
           {globalError && (
-            <Banner
-              status="error"
-              title={t("@legalos.auth.signIn.errorTitle")}
-              description={globalError}
-            />
+            <Alert type="danger" title={t("@legalos.auth.signIn.errorTitle")}>
+              {globalError}
+            </Alert>
           )}
           {emailField}
-          <TextInput
+          <Input
             label={t("@legalos.auth.signIn.password")}
             type="password"
             value={password}
-            onChange={setPassword}
+            onChange={(e) => setPassword(e.target.value)}
+            errorMessage={errors?.fields?.password?.message}
           />
-          {errors?.fields?.password && (
-            <Banner
-              status="error"
-              title={t("@legalos.auth.signIn.password")}
-              description={errors.fields.password.message}
-            />
-          )}
           <Button
             type="submit"
-            label={t("@legalos.auth.signIn.submit")}
             variant="primary"
-            isLoading={busy}
-          />
+            loading={busy}
+          >
+            {t("@legalos.auth.signIn.submit")}
+          </Button>
           <Button
             type="button"
-            label={t("@legalos.auth.signIn.forgot")}
             variant="ghost"
             onClick={() => go("resetEmail")}
-          />
+          >
+            {t("@legalos.auth.signIn.forgot")}
+          </Button>
           {/* The only door to sign-up from inside the app. redirect_url
               travels with it: someone who arrived from an invitation link
               and turns out not to have an account must come back to that
               invitation after signing up, not land on "create your firm"
               for a firm that already exists. */}
-          <Text type="supporting">
+          <p style={{ margin: 0, fontSize: "12.5px", color: "var(--text3)", lineHeight: 1.5 }}>
             {t("@legalos.auth.signIn.noAccount")}{" "}
-            <Link href={withRedirect("/sign-up", searchParams.get("redirect_url"))}>
+            <Link
+              href={withRedirect("/sign-up", searchParams.get("redirect_url"))}
+              style={{ color: "var(--primary)", textDecoration: "underline" }}
+            >
               {t("@legalos.auth.signIn.createFirm")}
             </Link>
-          </Text>
+          </p>
         </form>
       )}
 
       {step === "clientTrust" && (
-        <form onSubmit={handleVerifyTrustCode} style={form}>
-          <Text type="supporting">{t("@legalos.auth.trust.intro", { email })}</Text>
+        <form onSubmit={handleVerifyTrustCode} style={formStyle}>
+          <p style={{ margin: 0, fontSize: "12.5px", color: "var(--text3)", lineHeight: 1.5 }}>
+            {t("@legalos.auth.trust.intro", { email })}
+          </p>
           {globalError && (
-            <Banner
-              status="error"
-              title={t("@legalos.auth.code.errorTitle")}
-              description={globalError}
-            />
+            <Alert type="danger" title={t("@legalos.auth.code.errorTitle")}>
+              {globalError}
+            </Alert>
           )}
           {resent && !globalError && (
-            <Banner status="info" title={t("@legalos.auth.code.resent")} />
+            <Alert type="info" title={t("@legalos.auth.code.resent")} />
           )}
           {codeField}
           <Button
             type="submit"
-            label={t("@legalos.auth.code.verify")}
             variant="primary"
-            isLoading={busy}
-          />
+            loading={busy}
+          >
+            {t("@legalos.auth.code.verify")}
+          </Button>
           <Button
             type="button"
-            label={t("@legalos.auth.code.resend")}
             variant="ghost"
             onClick={handleResendTrustCode}
-            isLoading={busy}
-          />
+            loading={busy}
+          >
+            {t("@legalos.auth.code.resend")}
+          </Button>
         </form>
       )}
 
       {step === "resetEmail" && (
-        <form onSubmit={handleRequestReset} style={form}>
-          <Text type="supporting">{t("@legalos.auth.reset.intro")}</Text>
+        <form onSubmit={handleRequestReset} style={formStyle}>
+          <p style={{ margin: 0, fontSize: "12.5px", color: "var(--text3)", lineHeight: 1.5 }}>
+            {t("@legalos.auth.reset.intro")}
+          </p>
           {globalError && (
-            <Banner
-              status="error"
-              title={t("@legalos.auth.reset.sendErrorTitle")}
-              description={globalError}
-            />
+            <Alert type="danger" title={t("@legalos.auth.reset.sendErrorTitle")}>
+              {globalError}
+            </Alert>
           )}
           {emailField}
           <Button
             type="submit"
-            label={t("@legalos.auth.reset.sendCode")}
             variant="primary"
-            isLoading={busy}
-          />
+            loading={busy}
+          >
+            {t("@legalos.auth.reset.sendCode")}
+          </Button>
           <Button
             type="button"
-            label={t("@legalos.auth.reset.backToSignIn")}
             variant="ghost"
             onClick={() => go("password")}
-          />
+          >
+            {t("@legalos.auth.reset.backToSignIn")}
+          </Button>
         </form>
       )}
 
       {step === "resetCode" && (
-        <form onSubmit={handleVerifyResetCode} style={form}>
+        <form onSubmit={handleVerifyResetCode} style={formStyle}>
           {/* Deliberately the same sentence whether or not the address
               exists. See sendResetCode(). */}
-          <Text type="supporting">{t("@legalos.auth.reset.sentIntro", { email })}</Text>
+          <p style={{ margin: 0, fontSize: "12.5px", color: "var(--text3)", lineHeight: 1.5 }}>
+            {t("@legalos.auth.reset.sentIntro", { email })}
+          </p>
           {globalError && (
-            <Banner
-              status="error"
-              title={t("@legalos.auth.code.errorTitle")}
-              description={globalError}
-            />
+            <Alert type="danger" title={t("@legalos.auth.code.errorTitle")}>
+              {globalError}
+            </Alert>
           )}
           {resent && !globalError && (
-            <Banner status="info" title={t("@legalos.auth.code.resent")} />
+            <Alert type="info" title={t("@legalos.auth.code.resent")} />
           )}
           {codeField}
           <Button
             type="submit"
-            label={t("@legalos.auth.code.verify")}
             variant="primary"
-            isLoading={busy}
-          />
+            loading={busy}
+          >
+            {t("@legalos.auth.code.verify")}
+          </Button>
           <Button
             type="button"
-            label={t("@legalos.auth.code.resend")}
             variant="ghost"
             onClick={handleResendResetCode}
-            isLoading={busy}
-          />
+            loading={busy}
+          >
+            {t("@legalos.auth.code.resend")}
+          </Button>
           <Button
             type="button"
-            label={t("@legalos.auth.reset.changeEmail")}
             variant="ghost"
             onClick={() => go("resetEmail")}
-          />
+          >
+            {t("@legalos.auth.reset.changeEmail")}
+          </Button>
         </form>
       )}
 
       {step === "resetPassword" && (
-        <form onSubmit={handleSubmitNewPassword} style={form}>
-          <Text type="supporting">{t("@legalos.auth.reset.newPasswordIntro")}</Text>
+        <form onSubmit={handleSubmitNewPassword} style={formStyle}>
+          <p style={{ margin: 0, fontSize: "12.5px", color: "var(--text3)", lineHeight: 1.5 }}>
+            {t("@legalos.auth.reset.newPasswordIntro")}
+          </p>
           {globalError && (
-            <Banner
-              status="error"
-              title={t("@legalos.auth.reset.saveErrorTitle")}
-              description={globalError}
-            />
+            <Alert type="danger" title={t("@legalos.auth.reset.saveErrorTitle")}>
+              {globalError}
+            </Alert>
           )}
-          <TextInput
+          <Input
             label={t("@legalos.auth.reset.newPassword")}
             type="password"
             value={newPassword}
-            onChange={setNewPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            errorMessage={errors?.fields?.password?.message}
           />
-          {errors?.fields?.password && (
-            <Banner
-              status="error"
-              title={t("@legalos.auth.reset.newPassword")}
-              description={errors.fields.password.message}
-            />
-          )}
           <Button
             type="submit"
-            label={t("@legalos.auth.reset.save")}
             variant="primary"
-            isLoading={busy}
-          />
+            loading={busy}
+          >
+            {t("@legalos.auth.reset.save")}
+          </Button>
         </form>
       )}
     </AuthFrame>

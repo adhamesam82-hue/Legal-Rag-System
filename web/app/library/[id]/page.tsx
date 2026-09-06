@@ -1,16 +1,11 @@
 "use client";
 
-import NextLink from "next/link";
+import Link from "next/link";
 import { use, useEffect, useState } from "react";
-import { Heading } from "@astryxdesign/core/Heading";
-import { Text } from "@astryxdesign/core/Text";
-import { Badge } from "@astryxdesign/core/Badge";
-import { Button } from "@astryxdesign/core/Button";
-import { Banner } from "@astryxdesign/core/Banner";
-import { Spinner } from "@astryxdesign/core/Spinner";
-import { Icon } from "@astryxdesign/core/Icon";
-import { HStack } from "@astryxdesign/core/Stack";
-import { ArrowLeftIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Alert";
+import { Icon } from "@/components/ui/Icon";
 import { useTranslator, useDirection } from "@astryxdesign/core/i18n";
 import { useFormat } from "@/lib/i18n/format";
 import { ArticleCard } from "@/components/ArticleCard";
@@ -43,8 +38,6 @@ export default function InstrumentPage({
       .then((data) => {
         if (cancelled) return;
         setInstrument(data.instrument);
-        // Replace rather than append: offset is the source of truth, so a
-        // double-fire in dev StrictMode cannot duplicate rows.
         setArticles(data.articles);
       })
       .catch((e) => !cancelled && setError(e instanceof ApiError ? e.message : String(e)))
@@ -56,12 +49,10 @@ export default function InstrumentPage({
 
   if (error) {
     return (
-      <div style={{ maxWidth: 880, margin: "0 auto", padding: "32px 20px" }}>
-        <Banner
-          status="error"
-          title={t("@legalos.library.instrument.error.title")}
-          description={error}
-        />
+      <div className="max-w-4xl mx-auto p-8">
+        <Alert type="danger" title={t("@legalos.library.instrument.error.title")}>
+          {error}
+        </Alert>
       </div>
     );
   }
@@ -70,72 +61,72 @@ export default function InstrumentPage({
   const shown = offset + articles.length;
 
   return (
-    <div style={{ maxWidth: 880, margin: "0 auto", padding: "32px 20px 64px" }}>
-      <div style={{ marginBlockEnd: 6 }}>
-        <NextLink href="/library">
-          <HStack gap={1} vAlign="center">
-            <Icon
-              icon={direction === "rtl" ? ArrowRightIcon : ArrowLeftIcon}
-              size="xsm"
-              color="secondary"
-            />
-            <Text type="supporting">{t("@legalos.library.backLink")}</Text>
-          </HStack>
-        </NextLink>
+    <div className="max-w-4xl mx-auto p-6 flex flex-col gap-6">
+      {/* رابط العودة للمكتبة */}
+      <div>
+        <Link
+          href="/library"
+          className="text-xs hover:underline inline-flex items-center gap-1.5 font-medium"
+          style={{ color: "var(--text2)" }}
+        >
+          <Icon name={direction === "rtl" ? "arrow_forward" : "arrow_back"} size={16} />
+          <span>{t("@legalos.library.backLink")}</span>
+        </Link>
       </div>
 
       {instrument && (
-        <>
-          <div style={{ display: "flex", gap: 8, marginBlockEnd: 8 }}>
-            <Badge variant="info" label={instrument.reference} />
-            <Badge
-              variant="neutral"
-              label={instrument.instrument_type.replace("_", " ")}
-            />
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <Badge color="info">{instrument.reference}</Badge>
+            <Badge color="neutral">{instrument.instrument_type.replace("_", " ")}</Badge>
           </div>
           <div dir={dirOf(instrument.title)}>
-            <Heading level={1}>{instrument.title}</Heading>
+            <h1 className="text-2xl font-bold" style={{ color: "var(--text)" }}>
+              {instrument.title}
+            </h1>
           </div>
-          <div style={{ marginBlock: 8 }}>
-            <Text type="supporting">
-              {t("@legalos.library.instrument.meta", {
-                total: total.toLocaleString(intlLocale),
-                from: offset + 1,
-                to: shown,
-              })}
-            </Text>
-          </div>
-        </>
+          <span className="text-xs" style={{ color: "var(--text2)" }}>
+            {t("@legalos.library.instrument.meta", {
+              total: total.toLocaleString(intlLocale),
+              from: offset + 1,
+              to: shown,
+            })}
+          </span>
+        </div>
       )}
 
-      {loading && <Spinner label={t("@legalos.library.instrument.loadingArticles")} />}
+      {loading && (
+        <div className="p-6 text-center text-xs flex items-center justify-center gap-2" style={{ color: "var(--text2)" }}>
+          <Icon name="hourglass_empty" size={18} />
+          <span>{t("@legalos.library.instrument.loadingArticles")}</span>
+        </div>
+      )}
 
-      <div style={{ display: "grid", gap: 12, marginBlockStart: 16 }}>
+      {/* قائمة المواد */}
+      <div className="flex flex-col gap-3">
         {articles.map((article) => (
           <ArticleCard key={article.id} article={article} />
         ))}
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          gap: 12,
-          justifyContent: "center",
-          marginBlockStart: 24,
-        }}
-      >
+      {/* أزرار التنقل بين الصفحات */}
+      <div className="flex items-center justify-center gap-3 pt-6 border-t" style={{ borderColor: "var(--border)" }}>
         <Button
-          label={t("@legalos.library.previous")}
           variant="secondary"
-          isDisabled={offset === 0 || loading}
+          disabled={offset === 0 || loading}
           onClick={() => setOffset((o) => Math.max(0, o - PAGE_SIZE))}
-        />
+        >
+          <Icon name={direction === "rtl" ? "arrow_forward" : "arrow_back"} size={16} />
+          <span>{t("@legalos.library.previous")}</span>
+        </Button>
         <Button
-          label={t("@legalos.library.next")}
           variant="secondary"
-          isDisabled={shown >= total || loading}
+          disabled={shown >= total || loading}
           onClick={() => setOffset((o) => o + PAGE_SIZE)}
-        />
+        >
+          <span>{t("@legalos.library.next")}</span>
+          <Icon name={direction === "rtl" ? "arrow_back" : "arrow_forward"} size={16} />
+        </Button>
       </div>
     </div>
   );

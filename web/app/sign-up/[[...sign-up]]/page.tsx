@@ -3,12 +3,11 @@
 import { Suspense, useState } from "react";
 import { useSignUp } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { Text } from "@astryxdesign/core/Text";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { Button } from "@astryxdesign/core/Button";
-import { Banner } from "@astryxdesign/core/Banner";
-import { Link } from "@astryxdesign/core/Link";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Alert";
 import { AuthFrame } from "@/components/AuthFrame";
 import { RedirectIfSignedIn } from "@/components/RedirectIfSignedIn";
 import { withRedirect } from "@/lib/redirect-url";
@@ -107,93 +106,83 @@ function SignUpForm() {
     }
   }
 
-  const form = { display: "grid", gap: 14 } as const;
+  const formStyle = { display: "grid", gap: "14px" } as const;
 
   return (
     <AuthFrame title={t("@legalos.auth.signUp.title")}>
       {!awaitingCode ? (
-        <form onSubmit={handleCreateAccount} style={form}>
+        <form onSubmit={handleCreateAccount} style={formStyle}>
           {globalError && (
-            <Banner
-              status="error"
-              title={t("@legalos.auth.signUp.errorTitle")}
-              description={globalError}
-            />
+            <Alert type="danger" title={t("@legalos.auth.signUp.errorTitle")}>
+              {globalError}
+            </Alert>
           )}
-          <TextInput
+          <Input
             label={t("@legalos.auth.signIn.email")}
             type="email"
             value={email}
-            onChange={setEmail}
+            onChange={(e) => setEmail(e.target.value)}
+            errorMessage={errors?.fields?.emailAddress?.message}
           />
-          {errors?.fields?.emailAddress && (
-            <Banner
-              status="error"
-              title={t("@legalos.auth.signIn.email")}
-              description={errors.fields.emailAddress.message}
-            />
-          )}
-          <TextInput
+          <Input
             label={t("@legalos.auth.signIn.password")}
             type="password"
             value={password}
-            onChange={setPassword}
+            onChange={(e) => setPassword(e.target.value)}
+            errorMessage={errors?.fields?.password?.message}
           />
-          {errors?.fields?.password && (
-            <Banner
-              status="error"
-              title={t("@legalos.auth.signIn.password")}
-              description={errors.fields.password.message}
-            />
-          )}
           <Button
             type="submit"
-            label={t("@legalos.auth.signUp.continue")}
             variant="primary"
-            isLoading={busy}
-          />
+            loading={busy}
+          >
+            {t("@legalos.auth.signUp.continue")}
+          </Button>
           {/* Same redirect_url hand-off as the sign-in page, in reverse. */}
-          <Text type="supporting">
+          <p style={{ margin: 0, fontSize: "12.5px", color: "var(--text3)", lineHeight: 1.5 }}>
             {t("@legalos.auth.signUp.haveAccount")}{" "}
-            <Link href={withRedirect("/sign-in", searchParams.get("redirect_url"))}>
+            <Link
+              href={withRedirect("/sign-in", searchParams.get("redirect_url"))}
+              style={{ color: "var(--primary)", textDecoration: "underline" }}
+            >
               {t("@legalos.auth.signUp.signIn")}
             </Link>
-          </Text>
+          </p>
         </form>
       ) : (
-        <form onSubmit={handleVerify} style={form}>
-          <Text type="supporting">{t("@legalos.auth.signUp.codeIntro", { email })}</Text>
+        <form onSubmit={handleVerify} style={formStyle}>
+          <p style={{ margin: 0, fontSize: "12.5px", color: "var(--text3)", lineHeight: 1.5 }}>
+            {t("@legalos.auth.signUp.codeIntro", { email })}
+          </p>
           {globalError && (
-            <Banner
-              status="error"
-              title={t("@legalos.auth.signUp.sendErrorTitle")}
-              description={globalError}
-            />
+            <Alert type="danger" title={t("@legalos.auth.signUp.sendErrorTitle")}>
+              {globalError}
+            </Alert>
           )}
           {resent && !globalError && (
-            <Banner status="info" title={t("@legalos.auth.code.resent")} />
+            <Alert type="info" title={t("@legalos.auth.code.resent")} />
           )}
-          <TextInput label={t("@legalos.auth.code.label")} value={code} onChange={setCode} />
-          {errors?.fields?.code && (
-            <Banner
-              status="error"
-              title={t("@legalos.auth.code.label")}
-              description={errors.fields.code.message}
-            />
-          )}
+          <Input
+            label={t("@legalos.auth.code.label")}
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            errorMessage={errors?.fields?.code?.message}
+          />
           <Button
             type="submit"
-            label={t("@legalos.auth.code.verify")}
             variant="primary"
-            isLoading={busy}
-          />
+            loading={busy}
+          >
+            {t("@legalos.auth.code.verify")}
+          </Button>
           <Button
             type="button"
-            label={t("@legalos.auth.code.resend")}
             variant="ghost"
             onClick={handleResend}
-            isLoading={busy}
-          />
+            loading={busy}
+          >
+            {t("@legalos.auth.code.resend")}
+          </Button>
         </form>
       )}
     </AuthFrame>

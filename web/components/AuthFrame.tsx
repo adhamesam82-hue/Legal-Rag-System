@@ -1,12 +1,11 @@
 "use client";
 
 import { getLocaleDirection } from "@astryxdesign/core/i18n";
-import { Card } from "@astryxdesign/core/Card";
-import { Heading } from "@astryxdesign/core/Heading";
+import { Card } from "@/components/ui/Card";
 import { useLocale } from "@/lib/i18n/provider";
 
 /**
- * The narrow centred card the sign-in, sign-up and invitation screens share.
+ * إطار بطاقة التوثيق الموحد للشاشات العامة (تسجيل الدخول، إنشاء الحساب، الدعوات).
  *
  * Direction comes from the current locale, not from a hard-coded dir="rtl":
  * these screens render outside the Shell, so nothing else would flip them
@@ -27,9 +26,19 @@ export function AuthFrame({
       dir={getLocaleDirection(locale)}
       style={{ maxWidth: width, margin: "64px auto", padding: "0 20px" }}
     >
-      <Heading level={1}>{title}</Heading>
+      <h1
+        style={{
+          fontSize: "22px",
+          fontWeight: 700,
+          color: "var(--text)",
+          margin: 0,
+          letterSpacing: "-0.02em",
+        }}
+      >
+        {title}
+      </h1>
       <div style={{ marginBlockStart: 20 }}>
-        <Card padding={4}>{children}</Card>
+        <Card padding="24px">{children}</Card>
       </div>
     </div>
   );

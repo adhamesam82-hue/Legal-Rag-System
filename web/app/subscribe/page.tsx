@@ -2,34 +2,30 @@
 
 /**
  * /subscribe (T-041) -- one honest state, because there is only one true
- * thing to say: no payment gateway is wired up. NO card field, no gateway
- * logos, no "pay now" button -- those are added when a gateway is chosen,
- * in that gateway's own ticket. A fake card field that swallows a number
- * and does nothing is the single worst lie this screen could tell.
+ * thing to say: no payment gateway is wired up.
  */
 
+import Link from "next/link";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { VStack } from "@astryxdesign/core/Stack";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Card } from "@astryxdesign/core/Card";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Button } from "@astryxdesign/core/Button";
-import { CreditCardIcon } from "@heroicons/react/24/outline";
+import { Card } from "@/components/ui/Card";
+import { Icon } from "@/components/ui/Icon";
+import { Button } from "@/components/ui/Button";
 import { useOrg, useResource } from "@/lib/org";
 import { useFormat } from "@/lib/i18n/format";
 import { api } from "@/lib/api";
 import { DataView } from "@/components/DataState";
-import { PrefetchedNavLink } from "@/app/providers";
 
 export default function SubscribePage() {
-  const { organizationId } = useOrg();
+  const { organizationId, role } = useOrg();
   const t = useTranslator();
   const { formatDate } = useFormat();
   const firm = useResource(() => api.organization(organizationId!), [organizationId]);
 
   return (
-    <VStack gap={6}>
-      <Heading level={3}>{t("@legalos.subscribe.heading")}</Heading>
+    <div className="flex flex-col gap-6 p-6 max-w-2xl mx-auto">
+      <h1 className="text-xl font-bold" style={{ color: "var(--text)" }}>
+        {t("@legalos.subscribe.heading")}
+      </h1>
 
       <DataView resource={firm}>
         {(loaded) => {
@@ -43,30 +39,34 @@ export default function SubscribePage() {
               : t("@legalos.subscribe.noChoiceBody", { date: formatDate(loaded.trial_ends_at) });
 
           return (
-            <Card padding={6}>
-              <VStack gap={4} hAlign="center">
-                <Icon icon={CreditCardIcon} size="lg" color="secondary" />
-                <VStack gap={1} hAlign="center">
-                  <Heading level={5}>{t("@legalos.subscribe.notEnabled")}</Heading>
-                  <Text type="body" color="secondary" style={{ textAlign: "center" }}>
-                    {body}
-                  </Text>
-                </VStack>
-                {!loaded.plan_intent && (
-                  <Button
-                    label={t("@legalos.subscribe.goToPlans")}
-                    variant="primary"
-                    as={PrefetchedNavLink}
-                    href="/plans"
-                  >
-                    {t("@legalos.subscribe.goToPlans")}
+            <Card className="p-8 flex flex-col items-center text-center gap-5">
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: "var(--surface2)", color: "var(--text2)" }}
+              >
+                <Icon name="credit_card" size={24} />
+              </div>
+
+              <div className="flex flex-col gap-2 max-w-md">
+                <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>
+                  {t("@legalos.subscribe.notEnabled")}
+                </h2>
+                <p className="text-xs leading-relaxed" style={{ color: "var(--text2)" }}>
+                  {body}
+                </p>
+              </div>
+
+              {!loaded.plan_intent && (
+                <Link href="/plans">
+                  <Button>
+                    <span>{t("@legalos.subscribe.goToPlans")}</span>
                   </Button>
-                )}
-              </VStack>
+                </Link>
+              )}
             </Card>
           );
         }}
       </DataView>
-    </VStack>
+    </div>
   );
 }

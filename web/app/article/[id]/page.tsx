@@ -1,17 +1,12 @@
 "use client";
 
-import NextLink from "next/link";
+import Link from "next/link";
 import { use, useEffect, useState } from "react";
-import { Heading } from "@astryxdesign/core/Heading";
-import { Text } from "@astryxdesign/core/Text";
-import { Card } from "@astryxdesign/core/Card";
-import { Badge } from "@astryxdesign/core/Badge";
-import { Button } from "@astryxdesign/core/Button";
-import { Banner } from "@astryxdesign/core/Banner";
-import { Spinner } from "@astryxdesign/core/Spinner";
-import { ToggleButton, ToggleButtonGroup } from "@astryxdesign/core/ToggleButton";
-import { Icon } from "@astryxdesign/core/Icon";
-import { ArrowLeftIcon, ArrowRightIcon } from "@heroicons/react/24/outline";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Alert";
+import { Icon } from "@/components/ui/Icon";
 import { useTranslator, useDirection } from "@astryxdesign/core/i18n";
 import { useLocale } from "@/lib/i18n/provider";
 import { api, ApiError, ArticleDetail, dirOf } from "@/lib/api";
@@ -29,10 +24,6 @@ export default function ArticlePage({
   const [detail, setDetail] = useState<ArticleDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Seeded from the UI locale, not hardcoded "en": asking for a plain-language
-  // explanation of an Arabic statute from an Arabic interface and getting
-  // English back was the wrong default. Still a selector — a lawyer drafting
-  // for a foreign client can switch it.
   const { locale } = useLocale();
   const [language, setLanguage] = useState<"en" | "ar">(locale);
   const [explanation, setExplanation] = useState<string | null>(null);
@@ -72,19 +63,19 @@ export default function ArticlePage({
 
   if (error) {
     return (
-      <div style={{ maxWidth: 780, margin: "0 auto", padding: "32px 20px" }}>
-        <Banner
-          status="error"
-          title={t("@legalos.article.error.title")}
-          description={error}
-        />
+      <div className="max-w-3xl mx-auto p-8">
+        <Alert type="danger" title={t("@legalos.article.error.title")}>
+          {error}
+        </Alert>
       </div>
     );
   }
+
   if (!detail) {
     return (
-      <div style={{ maxWidth: 780, margin: "0 auto", padding: "32px 20px" }}>
-        <Spinner label={t("@legalos.article.loading")} />
+      <div className="max-w-3xl mx-auto p-8 text-center text-xs flex items-center justify-center gap-2" style={{ color: "var(--text2)" }}>
+        <Icon name="hourglass_empty" size={18} />
+        <span>{t("@legalos.article.loading")}</span>
       </div>
     );
   }
@@ -92,145 +83,138 @@ export default function ArticlePage({
   const { article, instrument, previous_id, next_id } = detail;
 
   return (
-    <div style={{ maxWidth: 780, margin: "0 auto", padding: "32px 20px 64px" }}>
+    <div className="max-w-3xl mx-auto p-6 flex flex-col gap-6">
+      {/* رابط العودة للتشريع */}
       {instrument && (
-        <div style={{ marginBlockEnd: 10 }}>
-          <NextLink href={`/library/${instrument.id}`}>
-            <Text type="supporting">← {instrument.title}</Text>
-          </NextLink>
+        <div>
+          <Link
+            href={`/library/${instrument.id}`}
+            className="text-xs hover:underline inline-flex items-center gap-1 font-medium"
+            style={{ color: "var(--primary)" }}
+          >
+            <span>←</span>
+            <span>{instrument.title}</span>
+          </Link>
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 8, marginBlockEnd: 12 }}>
-        <Badge variant="info" label={article.citation} />
+      {/* شارة الاستشهاد وعنوان المادة */}
+      <div className="flex flex-col gap-2">
+        <div>
+          <Badge color="info">{article.citation}</Badge>
+        </div>
+        <h1 className="text-2xl font-bold" style={{ color: "var(--text)" }}>
+          {t("@legalos.article.heading", { number: article.article_number })}
+        </h1>
       </div>
 
-      <Heading level={1}>
-        {t("@legalos.article.heading", { number: article.article_number })}
-      </Heading>
+      {/* نص المادة التشريعية */}
+      <Card className="p-6">
+        <p className="text-sm leading-relaxed" dir={dirOf(article.text)} style={{ color: "var(--text)" }}>
+          {article.text}
+        </p>
+      </Card>
 
-      <div style={{ marginBlockStart: 16 }}>
-        <Card padding={5}>
-          <p className="statute-text" dir={dirOf(article.text)}>
-            <Text type="body">{article.text}</Text>
-          </p>
-        </Card>
-      </div>
+      {/* الشرح باللغة البسيطة (Plain Language Explainer) */}
+      <div className="flex flex-col gap-4 pt-4 border-t" style={{ borderColor: "var(--border)" }}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>
+            {t("@legalos.article.plainLanguage.heading")}
+          </h2>
 
-      {/* Explainer */}
-      <div style={{ marginBlockStart: 24 }}>
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-            marginBlockEnd: 12,
-          }}
-        >
-          <Heading level={2}>{t("@legalos.article.plainLanguage.heading")}</Heading>
-          <div style={{ marginInlineStart: "auto", display: "flex", gap: 8 }}>
-            <ToggleButtonGroup
-              label={t("@legalos.article.explanationLanguage.ariaLabel")}
-              type="single"
-              value={language}
-              onChange={(value) =>
-                setLanguage(value === "ar" ? "ar" : "en")
-              }
-            >
-              <ToggleButton value="en" label="English" />
-              <ToggleButton value="ar" label="العربية" />
-            </ToggleButtonGroup>
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-md p-1 border" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface2)" }}>
+              <button
+                type="button"
+                onClick={() => setLanguage("ar")}
+                className={`px-3 py-1 text-xs font-semibold rounded transition-colors ${
+                  language === "ar"
+                    ? "bg-[var(--surface)] text-[var(--primary)] shadow-sm"
+                    : "text-[var(--text2)] hover:text-[var(--text)]"
+                }`}
+              >
+                العربية
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage("en")}
+                className={`px-3 py-1 text-xs font-semibold rounded transition-colors ${
+                  language === "en"
+                    ? "bg-[var(--surface)] text-[var(--primary)] shadow-sm"
+                    : "text-[var(--text2)] hover:text-[var(--text)]"
+                }`}
+              >
+                English
+              </button>
+            </div>
+
             <Button
-              label={
-                explanation
-                  ? t("@legalos.article.explain.regenerate")
-                  : t("@legalos.article.explain.cta")
-              }
-              variant="primary"
-              isLoading={explaining}
+              loading={explaining}
               onClick={() => explain(language)}
-            />
+            >
+              <Icon name="auto_awesome" size={16} />
+              <span>
+                {explanation
+                  ? t("@legalos.article.explain.regenerate")
+                  : t("@legalos.article.explain.cta")}
+              </span>
+            </Button>
           </div>
         </div>
 
         {explainError && (
-          <Banner
-            status={explainError.isCredits ? "warning" : "error"}
+          <Alert
+            type={explainError.isCredits ? "warn" : "danger"}
             title={
               explainError.isCredits
                 ? t("@legalos.article.explain.creditsTitle")
                 : t("@legalos.article.explain.errorTitle")
             }
-            description={explainError.message}
-          />
+          >
+            {explainError.message}
+          </Alert>
         )}
 
         {explanation ? (
-          <Card padding={4} variant="muted">
-            <div className="answer-prose" dir={dirOf(explanation)}>
+          <Card className="p-5 flex flex-col gap-3" style={{ backgroundColor: "var(--surface2)" }}>
+            <div className="text-xs leading-relaxed flex flex-col gap-2" dir={dirOf(explanation)} style={{ color: "var(--text)" }}>
               {explanation.split(/\n{2,}/).map((p, i) => (
-                <p key={i}>
-                  <Text type="body">{p}</Text>
-                </p>
+                <p key={i}>{p}</p>
               ))}
             </div>
-            <div style={{ marginBlockStart: 14 }}>
-              <Text type="supporting">
-                {t("@legalos.article.explain.footerNote")}
-              </Text>
+            <div className="pt-2 border-t text-[11px]" style={{ borderColor: "var(--border)", color: "var(--text2)" }}>
+              {t("@legalos.article.explain.footerNote")}
             </div>
           </Card>
         ) : (
           !explaining &&
           !explainError && (
-            <Text type="supporting">
+            <p className="text-xs" style={{ color: "var(--text2)" }}>
               {t("@legalos.article.explain.helper")}
-            </Text>
+            </p>
           )
         )}
       </div>
 
-      {/* Prev / next within the same instrument */}
-      <div
-        style={{
-          display: "flex",
-          gap: 12,
-          justifyContent: "space-between",
-          marginBlockStart: 32,
-        }}
-      >
+      {/* التنقل بين المواد السابقة واللاحقة */}
+      <div className="flex items-center justify-between pt-6 border-t" style={{ borderColor: "var(--border)" }}>
         {previous_id ? (
-          <NextLink href={`/article/${previous_id}`}>
-            <Button
-              label={t("@legalos.article.previousArticle")}
-              variant="secondary"
-              icon={
-                <Icon
-                  icon={direction === "rtl" ? ArrowRightIcon : ArrowLeftIcon}
-                  size="sm"
-                  color="inherit"
-                />
-              }
-            />
-          </NextLink>
+          <Link href={`/article/${previous_id}`}>
+            <Button variant="secondary">
+              <Icon name={direction === "rtl" ? "arrow_forward" : "arrow_back"} size={16} />
+              <span>{t("@legalos.article.previousArticle")}</span>
+            </Button>
+          </Link>
         ) : (
-          <span />
+          <div />
         )}
         {next_id && (
-          <NextLink href={`/article/${next_id}`}>
-            <Button
-              label={t("@legalos.article.nextArticle")}
-              variant="secondary"
-              endContent={
-                <Icon
-                  icon={direction === "rtl" ? ArrowLeftIcon : ArrowRightIcon}
-                  size="sm"
-                  color="inherit"
-                />
-              }
-            />
-          </NextLink>
+          <Link href={`/article/${next_id}`}>
+            <Button variant="secondary">
+              <span>{t("@legalos.article.nextArticle")}</span>
+              <Icon name={direction === "rtl" ? "arrow_back" : "arrow_forward"} size={16} />
+            </Button>
+          </Link>
         )}
       </div>
     </div>
