@@ -138,6 +138,8 @@ def test_anti_flicker_inline_script_in_root_layout():
 # -----------------------------------------------------------------------------
 # 4. اختبار ما لا يُعرض: dir و brandHue و accent (AC4, AC5)
 # -----------------------------------------------------------------------------
+# 4. اختبار brandHue و accent في شاشة المظهر والتعقيم واشتقاق الألوان (T-057)
+# -----------------------------------------------------------------------------
 
 def test_dir_not_displayed_in_appearance_page():
     """التحقق من أن dir غير معروض في شاشة المظهر ويتبع اللغة حصراً (AC4)."""
@@ -149,19 +151,73 @@ def test_dir_not_displayed_in_appearance_page():
     assert '"ltr"' not in page_content
 
 
-def test_brand_hue_and_accent_not_in_page_and_free_token():
-    """التحقق من عدم عرض brandHue و accent في الشاشة مع بقاء --brand-h متغيراً حراً (AC5)."""
+def test_brand_hue_slider_and_presets():
+    """التحقق من منزلق brandHue من 0 إلى 360 بخطوة 5 والأزرار السريعة والافتراضي 265 (T-057 / AC1)."""
     page_content = APPEARANCE_PAGE_TSX.read_text(encoding="utf-8")
-    css_content = GLOBALS_CSS.read_text(encoding="utf-8")
-    theme_content = THEME_TS.read_text(encoding="utf-8")
+    app_ts_content = APPEARANCE_TS.read_text(encoding="utf-8")
 
-    # عدم وجود مدخلات للألوان الشخصية
-    assert "brandHue" not in page_content
-    assert "accentColor" not in page_content
+    # المنزلق في صفحة المظهر: 0 إلى 360 بخطوة 5
+    assert 'min={0}' in page_content or 'min="0"' in page_content
+    assert 'max={360}' in page_content or 'max="360"' in page_content
+    assert 'step={5}' in page_content or 'step="5"' in page_content
+    assert "currentBrandHue" in page_content
+    assert "handleBrandHueChange" in page_content
 
-    # بقاء --brand-h متغيراً حراً في CSS و theme.ts
-    assert "--brand-h: 265;" in css_content
-    assert "--brand-h" in theme_content
+    # الدرجات الخمس المحورية متوفرة في الواجهة: 0، 90، 180، 265، 340
+    for hue in [0, 90, 180, 265, 340]:
+        assert f"{hue}" in page_content
+
+    # القيمة الافتراضية 265 في النموذج
+    assert "brandHue: 265" in app_ts_content
+    assert "--brand-h" in app_ts_content
+
+
+def test_accent_options_and_color_mix():
+    """التحقق من خيارات accent الأربعة واشتقاق --accent-soft بـ color-mix وحظر الإدخال الحر (T-057 / AC1, AC5)."""
+    page_content = APPEARANCE_PAGE_TSX.read_text(encoding="utf-8")
+    app_ts_content = APPEARANCE_TS.read_text(encoding="utf-8")
+
+    # القيم الأربعة بدقة
+    expected_accents = [
+        "oklch(0.66 0.11 76)",
+        "oklch(0.5 0.14 25)",
+        "oklch(0.52 0.11 190)",
+        "oklch(0.5 0.13 300)",
+    ]
+    for acc in expected_accents:
+        assert acc in app_ts_content, f"اللون {acc} مفقود في appearance.ts"
+
+    # لا يوجد حقل إدخال لون حر
+    assert 'type="color"' not in page_content
+
+    # اشتقاق --accent-soft بـ color-mix
+    assert "color-mix(in oklab" in app_ts_content
+    assert "16%" in app_ts_content
+    assert "var(--surface)" in app_ts_content
+
+
+def test_sanitization_and_anti_css_injection():
+    """التحقق من التعقيم الصارم لـ brandHue و accent لمنع حقن أي قيم تالفة في CSS (T-057 / AC6)."""
+    app_ts_content = APPEARANCE_TS.read_text(encoding="utf-8")
+
+    # فحص تعقيم brandHue (حصر في 0..360 وتدوير لخطوة 5 والرجوع للافتراضي 265)
+    assert "Math.round(raw.brandHue / 5) * 5" in app_ts_content
+    assert "raw.brandHue >= 0" in app_ts_content
+    assert "raw.brandHue <= 360" in app_ts_content
+
+    # فحص تعقيم accent (حصر صارم في مصفوفة ACCENT_OPTIONS دون قبول نصوص حرة)
+    assert "ACCENT_OPTIONS" in app_ts_content
+    assert "includes(raw.accent" in app_ts_content
+
+
+def test_anti_flicker_script_includes_brand_and_accent():
+    """التحقق من ضبط --brand-h و --accent و --accent-soft في سكريبت منع الوميض (T-057 / AC3)."""
+    app_ts_content = APPEARANCE_TS.read_text(encoding="utf-8")
+
+    assert "el.style.setProperty('--brand-h', brandHue)" in app_ts_content
+    assert "el.style.setProperty('--accent', accent)" in app_ts_content
+    assert "el.style.setProperty('--accent-soft'" in app_ts_content
+    assert "color-mix(in oklab" in app_ts_content
 
 
 # -----------------------------------------------------------------------------
@@ -210,6 +266,21 @@ def test_appearance_i18n_catalog_keys_complete():
         "@legalos.settings.appearance.radius.heading",
         "@legalos.settings.appearance.radius.description",
         "@legalos.settings.appearance.radius.derivedNote",
+        "@legalos.settings.appearance.brandHue.heading",
+        "@legalos.settings.appearance.brandHue.description",
+        "@legalos.settings.appearance.brandHue.sliderAria",
+        "@legalos.settings.appearance.brandHue.derivedNote",
+        "@legalos.settings.appearance.accent.heading",
+        "@legalos.settings.appearance.accent.description",
+        "@legalos.settings.appearance.accent.amber",
+        "@legalos.settings.appearance.accent.amberDesc",
+        "@legalos.settings.appearance.accent.brick",
+        "@legalos.settings.appearance.accent.brickDesc",
+        "@legalos.settings.appearance.accent.teal",
+        "@legalos.settings.appearance.accent.tealDesc",
+        "@legalos.settings.appearance.accent.purple",
+        "@legalos.settings.appearance.accent.purpleDesc",
+        "@legalos.settings.appearance.accent.previewBadge",
         "@legalos.settings.appearance.sidebar.heading",
         "@legalos.settings.appearance.sidebar.collapseLabel",
         "@legalos.settings.appearance.reset.heading",

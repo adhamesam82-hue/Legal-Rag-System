@@ -65,6 +65,29 @@ export const en: Catalog = {
   "@legalos.settings.appearance.radius.previewBadge": { defaultMessage: "Active matter" },
   "@legalos.settings.appearance.radius.previewButton": { defaultMessage: "Save matter" },
 
+  "@legalos.settings.appearance.brandHue.heading": { defaultMessage: "Brand colour tone" },
+  "@legalos.settings.appearance.brandHue.description": {
+    defaultMessage: "Adjust the base hue (0\u2013360\u00b0) for primary buttons, focus rings, and active indicators.",
+  },
+  "@legalos.settings.appearance.brandHue.sliderAria": { defaultMessage: "Brand hue slider in degrees" },
+  "@legalos.settings.appearance.brandHue.derivedNote": {
+    defaultMessage: "Primary elements (--primary, --ring) dynamically derive from this hue without hardcoded overrides.",
+  },
+
+  "@legalos.settings.appearance.accent.heading": { defaultMessage: "Accent colour" },
+  "@legalos.settings.appearance.accent.description": {
+    defaultMessage: "Choose one of four curated accent colours for badges, highlights, and subtle accents.",
+  },
+  "@legalos.settings.appearance.accent.amber": { defaultMessage: "Amber" },
+  "@legalos.settings.appearance.accent.amberDesc": { defaultMessage: "Warm golden accent (default)" },
+  "@legalos.settings.appearance.accent.brick": { defaultMessage: "Brick" },
+  "@legalos.settings.appearance.accent.brickDesc": { defaultMessage: "Earthy terracotta tone" },
+  "@legalos.settings.appearance.accent.teal": { defaultMessage: "Teal" },
+  "@legalos.settings.appearance.accent.tealDesc": { defaultMessage: "Cool aquatic cyan-green" },
+  "@legalos.settings.appearance.accent.purple": { defaultMessage: "Purple" },
+  "@legalos.settings.appearance.accent.purpleDesc": { defaultMessage: "Rich royal purple" },
+  "@legalos.settings.appearance.accent.previewBadge": { defaultMessage: "Accent badge" },
+
   "@legalos.settings.appearance.sidebar.heading": { defaultMessage: "Sidebar behaviour" },
   "@legalos.settings.appearance.sidebar.description": {
     defaultMessage: "Keep the navigation sidebar collapsed to an icon rail by default.",
@@ -454,6 +477,29 @@ export const ar: Catalog = {
   "@legalos.settings.appearance.radius.previewCardTitle": { defaultMessage: "صياغة عقد تجاري" },
   "@legalos.settings.appearance.radius.previewBadge": { defaultMessage: "قضية نشطة" },
   "@legalos.settings.appearance.radius.previewButton": { defaultMessage: "حفظ القضية" },
+
+  "@legalos.settings.appearance.brandHue.heading": { defaultMessage: "درجة لون العلامة" },
+  "@legalos.settings.appearance.brandHue.description": {
+    defaultMessage: "ضبط درجة لون العلامة (٠–٣٦٠ درجة) للأزرار الرئيسية وحلقات التركيز والتمييز.",
+  },
+  "@legalos.settings.appearance.brandHue.sliderAria": { defaultMessage: "منزلق درجة لون العلامة بالدرجات" },
+  "@legalos.settings.appearance.brandHue.derivedNote": {
+    defaultMessage: "عناصر اللون الأساسي (--primary و --ring) تتبع هذه الدرجة تلقائياً دون إعادة تعريف.",
+  },
+
+  "@legalos.settings.appearance.accent.heading": { defaultMessage: "لون التمييز" },
+  "@legalos.settings.appearance.accent.description": {
+    defaultMessage: "اختر واحداً من أربعة ألوان تمييز معتمدة للشارات والوسوم ولمسات الواجهة.",
+  },
+  "@legalos.settings.appearance.accent.amber": { defaultMessage: "كهرماني" },
+  "@legalos.settings.appearance.accent.amberDesc": { defaultMessage: "لون ذهبي دافئ (الافتراضي)" },
+  "@legalos.settings.appearance.accent.brick": { defaultMessage: "طوبي" },
+  "@legalos.settings.appearance.accent.brickDesc": { defaultMessage: "لون ترابي مائل للحمرة" },
+  "@legalos.settings.appearance.accent.teal": { defaultMessage: "فيروزي" },
+  "@legalos.settings.appearance.accent.tealDesc": { defaultMessage: "لون بحري هادئ" },
+  "@legalos.settings.appearance.accent.purple": { defaultMessage: "أرجواني" },
+  "@legalos.settings.appearance.accent.purpleDesc": { defaultMessage: "لون بنفسجي عميق" },
+  "@legalos.settings.appearance.accent.previewBadge": { defaultMessage: "شارة التمييز" },
 
   "@legalos.settings.appearance.sidebar.heading": { defaultMessage: "سلوك الشريط الجانبي" },
   "@legalos.settings.appearance.sidebar.description": {
