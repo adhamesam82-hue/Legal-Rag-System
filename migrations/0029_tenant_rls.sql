@@ -42,8 +42,8 @@ BEGIN
         EXECUTE format('DROP POLICY IF EXISTS tenant_isolation ON %I', r.table_name);
         EXECUTE format(
             'CREATE POLICY tenant_isolation ON %I ' ||
-            'USING (organization_id = current_setting(''app.organization_id'', true)::bigint) ' ||
-            'WITH CHECK (organization_id = current_setting(''app.organization_id'', true)::bigint)',
+            'USING (organization_id = nullif(current_setting(''app.organization_id'', true), '''')::bigint) ' ||
+            'WITH CHECK (organization_id = nullif(current_setting(''app.organization_id'', true), '''')::bigint)',
             r.table_name
         );
     END LOOP;

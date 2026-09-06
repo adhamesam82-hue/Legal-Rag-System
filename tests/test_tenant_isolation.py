@@ -128,14 +128,14 @@ def test_1_cross_tenant_read(test_tenants):
         client_a_id = cur.fetchone()[0]
 
         cur.execute(
-            "INSERT INTO matters (organization_id, client_id, name) VALUES (%s, %s, 'قضية ألفا') RETURNING id",
+            "INSERT INTO matters (organization_id, client_id, name, matter_type) VALUES (%s, %s, 'قضية ألفا', 'advisory') RETURNING id",
             (org_a_id, client_a_id),
         )
         matter_a_id = cur.fetchone()[0]
 
         cur.execute(
-            "INSERT INTO documents (organization_id, matter_id, title, file_path, file_size_bytes, mime_type) "
-            "VALUES (%s, %s, 'مستند ألفا', 'alpha.pdf', 100, 'application/pdf') RETURNING id",
+            "INSERT INTO documents (organization_id, matter_id, name, uploaded_by) "
+            "VALUES (%s, %s, 'مستند ألفا', 'user_alpha') RETURNING id",
             (org_a_id, matter_a_id),
         )
         doc_a_id = cur.fetchone()[0]
