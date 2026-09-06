@@ -769,6 +769,8 @@ export function practiceApi(organizationId: number) {
       request<Dashboard>(`${base}/dashboard${query({ upcoming_days: upcomingDays })}`),
     dashboardInsights: (filters: { limit?: number; offset?: number; scope?: "all" | "my" } = {}) =>
       request<DashboardInsights>(`${base}/dashboard/insights${query(filters)}`),
+    dashboardExportCsv: (scope: "all" | "my" = "all") =>
+      fetchBlob(`${base}/dashboard/export/recent-matters${query({ scope })}`),
 
 
     clients: {

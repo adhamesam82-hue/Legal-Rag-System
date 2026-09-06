@@ -4,8 +4,8 @@
  * لوحة التحكم: مطابقة تامة للقالب (T-059).
  *
  * خمسة أقسام بالترتيب المحدد:
- * 1. الترويسة وشريط الأدوات (تحية، ملخص، مرشح العرض، تصدير معطل بتلميح "قريباً"، قضية جديدة)
- * 2. بطاقات المؤشرات الأربعة بألوان ثابتة ورسوم SVG sparkline تساعية النقاط وشارات الاتجاه
+ * 1. الترويسة وشريط الأدوات (تحية، ملخص، مرشح العرض، تصدير CSV مع BOM، قضية جديدة)
+ * 2. بطاقات المؤشرات الأربعة بألوان وهوية ثابتة ورسوم SVG sparkline تساعية النقاط
  * 3. حركة القضايا خلال 8 أشهر + توزيع القضايا حسب النوع
  * 4. جدول النشاط الأخير (يمينًا) + القادم خلال 30 يومًا (يسارًا) بخصائص منطقية RTL
  * 5. مهامي اليوم (مربعات تفاعلية قابلة للنقر مع تحديث متفائل) + التحصيلات وسطر الرؤية المحسوب + سجل النشاط
@@ -30,23 +30,24 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { MatterTypeIcon, ProximityBadge } from "@/components/Distinction";
 
 export default function DashboardPage() {
-  const { formatDate, formatDateTime, formatEGP, formatEGPCompact } = useFormat();
+  const { formatDate, formatDateTime, formatEGPCompact, formatMonth } = useFormat();
   const t = useTranslator();
   const enumLabel = useEnumLabel();
   const { practice, organizationName } = useOrg();
   const memberName = useMemberName();
 
-  // حالة شريط الأدوات والمرشحات
+  // Toolbar & filter state
   const [scope, setScope] = useState<"all" | "my">("all");
   const [page, setPage] = useState(1);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
 
-  // حالة المهام التفاعلية المتفائلة (Optimistic State)
+  // Optimistic tasks state
   const [localTasks, setLocalTasks] = useState<MyTaskItem[]>([]);
   const [taskErrorMessage, setTaskErrorMessage] = useState<string | null>(null);
 
-  // جلب بيانات لوحة التحكم والرؤى بالتوازي
+  // Parallel data fetching
   const resource = useResource(
     async (api) => {
       const [board, insights] = await Promise.all([
@@ -58,20 +59,19 @@ export default function DashboardPage() {
     [page, scope],
   );
 
-  // مزامنة المهام المحلية عند تحميل أو تجديد البيانات
+  // Sync tasks
   useEffect(() => {
     if (resource.data?.insights?.my_tasks_today?.items) {
       setLocalTasks(resource.data.insights.my_tasks_today.items);
     }
   }, [resource.data?.insights?.my_tasks_today]);
 
-  // تبديل حالة المهمة متفائلاً مع التراجع عند الفشل
+  // Optimistic task toggling
   async function handleToggleTask(task: MyTaskItem) {
     if (!practice) return;
     const nextStatus = task.status === "done" ? "todo" : "done";
     const prevTasks = [...localTasks];
 
-    // تحديث متفائل فوري للواجهة
     setLocalTasks((current) =>
       current.map((t) => (t.id === task.id ? { ...t, status: nextStatus } : t)),
     );
@@ -79,42 +79,43 @@ export default function DashboardPage() {
 
     try {
       await practice.tasks.update(task.id, { status: nextStatus });
-      // إعادة تحميل خفيفة في الخلفية لتحديث العدادات وسجل النشاط
       resource.reload();
     } catch (err) {
-      // التراجع عند الفشل
       setLocalTasks(prevTasks);
       setTaskErrorMessage(
-        err instanceof Error ? err.message : "تعذر تحديث حالة المهمة، يرجى المحاولة ثانية.",
+        err instanceof Error ? err.message : t("@legalos.dashboard.taskUpdateError"),
       );
     }
   }
 
-  // حساب عداد المهام المنجزة محلياً ليتفاعل فورياً
+  // Export CSV
+  async function handleExportCsv() {
+    if (!practice || isExporting) return;
+    setIsExporting(true);
+    try {
+      const blob = await practice.dashboardExportCsv(scope);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `recent-matters-${todayIso()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      // Export failed
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   const myTasksDoneCount = localTasks.filter((t) => t.status === "done").length;
   const myTasksTotalCount = localTasks.length;
 
-  // تنسيق الشهر الحالي بالعربية لشريط الأدوات
   const currentMonthLabel = useMemo(() => {
-    const now = new Date();
-    const months = [
-      "يناير",
-      "فبراير",
-      "مارس",
-      "أبريل",
-      "مايو",
-      "يونيو",
-      "يوليو",
-      "أغسطس",
-      "سبتمبر",
-      "أكتوبر",
-      "نوفمبر",
-      "ديسمبر",
-    ];
-    return `${months[now.getMonth()]} ${now.getFullYear()}`;
-  }, []);
+    return formatMonth(todayIso());
+  }, [formatMonth]);
 
-  // دالة رسم خط الرسم البياني المصغر تساعي النقاط (Sparkline)
   function renderSparkline(values: number[], strokeColor: string) {
     const safeVals = values && values.length >= 9 ? values.slice(-9) : [0, 0, 0, 0, 0, 0, 0, 0, 0];
     const min = Math.min(...safeVals);
@@ -123,7 +124,7 @@ export default function DashboardPage() {
 
     const points = safeVals
       .map((val, i) => {
-        const x = i * 15; // 0, 15, 30, 45, 60, 75, 90, 105, 120
+        const x = i * 15;
         const y = range === 0 ? 15 : 25 - ((val - min) / range) * 20;
         return `${x},${y.toFixed(1)}`;
       })
@@ -150,9 +151,8 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-[18px] p-[22px] max-w-[1440px] mx-auto w-full text-[var(--text)]">
-      <DataView resource={resource} loadingLabel="جارٍ تحميل بيانات لوحة السجل...">
+      <DataView resource={resource} loadingLabel={t("@legalos.dashboard.loading")}>
         {({ board, insights }) => {
-          // حساب ملخص الجلسات والمذكرات العاجلة اليوم
           const todayStr = todayIso();
           const hearingsTodayCount = (board.upcoming ?? []).filter(
             (u) => u.kind === "hearing" && u.due_date === todayStr,
@@ -164,37 +164,36 @@ export default function DashboardPage() {
               daysUntil(u.due_date) >= 0,
           ).length;
 
-          // حساب حركة القضايا للأعمدة البيانية
           const movementItems = insights.matters_movement ?? [];
           const maxMovement = Math.max(
             ...movementItems.map((m) => Math.max(m.opened, m.closed)),
             1,
           );
 
-          // حساب ألوان وتدرج دونات توزيع القضايا
           const typeItems = insights.matters_by_type?.items ?? [];
           const totalActiveMatters = insights.matters_by_type?.total_active ?? board.active_matters;
           const palette = [
             "var(--primary)",
-            "var(--accent)",
-            "var(--info)",
-            "var(--success)",
             "var(--warn)",
+            "var(--danger)",
+            "var(--success)",
+            "var(--accent)",
           ];
-          let currentDeg = 0;
-          const gradientSegments = typeItems.map((item, idx) => {
-            const start = currentDeg;
-            currentDeg += item.percentage;
-            const color = palette[idx % palette.length];
-            return `${color} ${start}% ${currentDeg}%`;
+          let currentAngle = 0;
+          const donutSegments = typeItems.map((item, idx) => {
+            const pct = totalActiveMatters > 0 ? (item.count / totalActiveMatters) * 100 : 0;
+            const start = currentAngle;
+            const end = currentAngle + (pct * 360) / 100;
+            currentAngle = end;
+            return `${palette[idx % palette.length]} ${start.toFixed(1)}deg ${end.toFixed(1)}deg`;
           });
           const donutConic =
-            gradientSegments.length > 0
-              ? `conic-gradient(${gradientSegments.join(", ")})`
+            donutSegments.length > 0
+              ? `conic-gradient(${donutSegments.join(", ")})`
               : "var(--surface3)";
 
-          // حساب نسبة التحصيلات
-          const totalBilledCollections = insights.collections.collected + insights.collections.outstanding;
+          const totalBilledCollections =
+            insights.collections.collected + insights.collections.outstanding;
           const collectedPercent =
             totalBilledCollections > 0
               ? Math.min(100, Math.round((insights.collections.collected / totalBilledCollections) * 100))
@@ -204,7 +203,6 @@ export default function DashboardPage() {
               ? Math.min(100, Math.round((insights.collections.outstanding / totalBilledCollections) * 100))
               : 0;
 
-          // ترقيم جدول النشاط الأخير
           const recentTotal = insights.recent_matters?.total ?? 0;
           const recentStart = recentTotal === 0 ? 0 : (page - 1) * 5 + 1;
           const recentEnd = Math.min(page * 5, recentTotal);
@@ -212,9 +210,7 @@ export default function DashboardPage() {
 
           return (
             <>
-              {/* ============================================================== */}
-              {/* ١ · الترويسة وشريط الأدوات                                     */}
-              {/* ============================================================== */}
+              {/* 1 · Header and Toolbar */}
               <div
                 style={{
                   display: "flex",
@@ -225,19 +221,6 @@ export default function DashboardPage() {
                 }}
               >
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "7px",
-                      fontSize: "11.5px",
-                      color: "var(--text3)",
-                    }}
-                  >
-                    <span>الرئيسية</span>
-                    <Icon name="chevron_left" size={15} />
-                    <span style={{ color: "var(--text2)", fontWeight: 500 }}>لوحة السجل</span>
-                  </div>
                   <h1
                     style={{
                       margin: 0,
@@ -246,35 +229,37 @@ export default function DashboardPage() {
                       letterSpacing: "-0.4px",
                     }}
                   >
-                    صباح الخير، {organizationName ?? "مكتب المحاماة"} 👋
+                    {t("@legalos.dashboard.greeting", {
+                      name: memberName || organizationName || t("@legalos.dashboard.orgFallback"),
+                    })}
                   </h1>
                   <div style={{ fontSize: "13px", color: "var(--text2)" }}>
                     {hearingsTodayCount > 0 || urgentDeadlinesCount > 0 ? (
                       <>
-                        عندك{" "}
+                        {t("@legalos.dashboard.summary.prefix")}{" "}
                         <strong style={{ color: "var(--warn)", fontWeight: 600 }}>
-                          {hearingsTodayCount} جلسات
+                          {t("@legalos.dashboard.summary.hearingsCount", { count: hearingsTodayCount })}
                         </strong>{" "}
-                        اليوم و
+                        {t("@legalos.dashboard.summary.and")}{" "}
                         <strong style={{ color: "var(--danger)", fontWeight: 600 }}>
-                          {urgentDeadlinesCount} مذكرات
+                          {t("@legalos.dashboard.summary.deadlinesCount", { count: urgentDeadlinesCount })}
                         </strong>{" "}
-                        على وشك انتهاء الميعاد.
+                        {t("@legalos.dashboard.summary.suffix")}
                       </>
                     ) : (
                       <>
-                        عندك{" "}
+                        {t("@legalos.dashboard.summary.prefix")}{" "}
                         <strong style={{ color: "var(--primary)", fontWeight: 600 }}>
-                          {board.upcoming?.length ?? 0} التزامات
+                          {t("@legalos.dashboard.summary.commitmentsCount", { count: board.upcoming?.length ?? 0 })}
                         </strong>{" "}
-                        مجدولة خلال الـ 30 يومًا القادمة.
+                        {t("@legalos.dashboard.summary.scheduledNext30")}
                       </>
                     )}
                   </div>
                 </div>
 
                 <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
-                  {/* مفتاح التبديل: على مستوى المكتب / ملفاتي */}
+                  {/* Scope Switcher */}
                   <div
                     style={{
                       height: "38px",
@@ -289,7 +274,7 @@ export default function DashboardPage() {
                     }}
                   >
                     <span style={{ fontSize: "12.5px", fontWeight: 600, color: "var(--text2)" }}>
-                      {scope === "all" ? "على مستوى المكتب" : "ملفاتي"}
+                      {scope === "all" ? t("@legalos.dashboard.scope.firmWide") : t("@legalos.dashboard.scope.myFiles")}
                     </span>
                     <button
                       type="button"
@@ -308,7 +293,7 @@ export default function DashboardPage() {
                         cursor: "pointer",
                         transition: "background 0.2s ease",
                       }}
-                      aria-label="تبديل العرض بين على مستوى المكتب وملفاتي"
+                      aria-label={t("@legalos.dashboard.scope.toggleAria")}
                     >
                       <span
                         style={{
@@ -326,7 +311,7 @@ export default function DashboardPage() {
                     </button>
                   </div>
 
-                  {/* التاريخ / الشهر الحالي */}
+                  {/* Current Month */}
                   <div
                     style={{
                       height: "38px",
@@ -347,11 +332,12 @@ export default function DashboardPage() {
                     <span>{currentMonthLabel}</span>
                   </div>
 
-                  {/* زر التصدير (معطل بتلميح "قريبًا") */}
-                  <Tooltip content="قريبًا">
+                  {/* CSV Export Button */}
+                  <Tooltip content={t("@legalos.dashboard.exportCsv")}>
                     <button
                       type="button"
-                      disabled
+                      onClick={handleExportCsv}
+                      disabled={isExporting}
                       style={{
                         height: "38px",
                         padding: "0 14px",
@@ -360,22 +346,21 @@ export default function DashboardPage() {
                         gap: "7px",
                         border: "1px solid var(--border)",
                         borderRadius: "var(--rs)",
-                        background: "var(--surface2)",
-                        color: "var(--text3)",
+                        background: "var(--surface)",
+                        color: isExporting ? "var(--text3)" : "var(--text)",
                         fontSize: "13px",
                         fontWeight: 600,
-                        cursor: "not-allowed",
+                        cursor: isExporting ? "wait" : "pointer",
                         boxShadow: "var(--shadow)",
-                        opacity: 0.75,
                       }}
-                      aria-label="تصدير (قريبًا)"
+                      aria-label={t("@legalos.dashboard.exportCsv")}
                     >
                       <Icon name="download" size={18} />
-                      <span>تصدير</span>
+                      <span>{isExporting ? t("@legalos.dashboard.exporting") : t("@legalos.dashboard.exportCsv")}</span>
                     </button>
                   </Tooltip>
 
-                  {/* زر إنشاء قضية جديدة */}
+                  {/* New Matter Button */}
                   <button
                     type="button"
                     onClick={() => setIsCreateOpen(true)}
@@ -397,16 +382,14 @@ export default function DashboardPage() {
                     }}
                   >
                     <Icon name="add" size={18} />
-                    <span>قضية جديدة</span>
+                    <span>{t("@legalos.dashboard.newMatter")}</span>
                   </button>
                 </div>
               </div>
 
-              {/* ============================================================== */}
-              {/* ٢ · بطاقات المؤشّرات الأربعة (ألوان وهوية ثابتة)                 */}
-              {/* ============================================================== */}
+              {/* 2 · Four KPI Cards (fixed identity colors) */}
               <div style={{ display: "flex", flexWrap: "wrap", gap: "18px" }}>
-                {/* بطاقة ١: قضايا نشطة */}
+                {/* Card 1: Active Matters */}
                 <div
                   style={{
                     flex: "1 1 210px",
@@ -437,7 +420,7 @@ export default function DashboardPage() {
                         <Icon name="folder_open" size={21} />
                       </div>
                       <span style={{ fontSize: "12.5px", color: "var(--text2)", fontWeight: 500 }}>
-                        قضايا نشطة
+                        {t("@legalos.dashboard.kpi.activeMatters")}
                       </span>
                     </div>
                     <Link
@@ -448,11 +431,11 @@ export default function DashboardPage() {
                         display: "grid",
                         placeItems: "center",
                         border: 0,
-                        borderRadius: "7px",
+                        borderRadius: "var(--rs)",
                         background: "transparent",
                         color: "var(--text3)",
                       }}
-                      aria-label="عرض القضايا"
+                      aria-label={t("@legalos.dashboard.kpi.viewMatters")}
                     >
                       <Icon name="more_horiz" size={18} />
                     </Link>
@@ -468,14 +451,8 @@ export default function DashboardPage() {
                         gap: "2px",
                         fontSize: "11.5px",
                         fontWeight: 600,
-                        color:
-                          insights.kpi_deltas.active_matters.direction === "down"
-                            ? "var(--danger)"
-                            : "var(--success)",
-                        background:
-                          insights.kpi_deltas.active_matters.direction === "down"
-                            ? "var(--danger-soft)"
-                            : "var(--success-soft)",
+                        color: "var(--primary)",
+                        background: "var(--primary-soft)",
                         padding: "3px 7px",
                         borderRadius: "999px",
                       }}
@@ -500,11 +477,11 @@ export default function DashboardPage() {
                       paddingTop: "9px",
                     }}
                   >
-                    {board.active_clients} موكّلًا نشطًا
+                    {t("@legalos.dashboard.kpi.activeClientsCount", { count: board.active_clients })}
                   </div>
                 </div>
 
-                {/* بطاقة ٢: المهام المفتوحة */}
+                {/* Card 2: Open Tasks */}
                 <div
                   style={{
                     flex: "1 1 210px",
@@ -535,7 +512,7 @@ export default function DashboardPage() {
                         <Icon name="task_alt" size={21} />
                       </div>
                       <span style={{ fontSize: "12.5px", color: "var(--text2)", fontWeight: 500 }}>
-                        المهام المفتوحة
+                        {t("@legalos.dashboard.kpi.openTasks")}
                       </span>
                     </div>
                     <Link
@@ -546,11 +523,11 @@ export default function DashboardPage() {
                         display: "grid",
                         placeItems: "center",
                         border: 0,
-                        borderRadius: "7px",
+                        borderRadius: "var(--rs)",
                         background: "transparent",
                         color: "var(--text3)",
                       }}
-                      aria-label="عرض المهام"
+                      aria-label={t("@legalos.dashboard.kpi.viewTasks")}
                     >
                       <Icon name="more_horiz" size={18} />
                     </Link>
@@ -566,14 +543,8 @@ export default function DashboardPage() {
                         gap: "2px",
                         fontSize: "11.5px",
                         fontWeight: 600,
-                        color:
-                          insights.kpi_deltas.open_tasks.direction === "up"
-                            ? "var(--danger)"
-                            : "var(--warn)",
-                        background:
-                          insights.kpi_deltas.open_tasks.direction === "up"
-                            ? "var(--danger-soft)"
-                            : "var(--warn-soft)",
+                        color: "var(--warn)",
+                        background: "var(--warn-soft)",
                         padding: "3px 7px",
                         borderRadius: "999px",
                       }}
@@ -598,11 +569,14 @@ export default function DashboardPage() {
                       paddingTop: "9px",
                     }}
                   >
-                    {board.overdue_tasks} متأخرة · {board.tasks_due_this_week} مستحقة هذا الأسبوع
+                    {t("@legalos.dashboard.kpi.tasksDetail", {
+                      overdue: board.overdue_tasks,
+                      dueThisWeek: board.tasks_due_this_week,
+                    })}
                   </div>
                 </div>
 
-                {/* بطاقة ٣: الوقت غير المفوتَر */}
+                {/* Card 3: Unbilled Time */}
                 <div
                   style={{
                     flex: "1 1 210px",
@@ -633,7 +607,7 @@ export default function DashboardPage() {
                         <Icon name="timer" size={21} />
                       </div>
                       <span style={{ fontSize: "12.5px", color: "var(--text2)", fontWeight: 500 }}>
-                        الوقت غير المفوتَر
+                        {t("@legalos.dashboard.kpi.unbilledTime")}
                       </span>
                     </div>
                     <Link
@@ -644,11 +618,11 @@ export default function DashboardPage() {
                         display: "grid",
                         placeItems: "center",
                         border: 0,
-                        borderRadius: "7px",
+                        borderRadius: "var(--rs)",
                         background: "transparent",
                         color: "var(--text3)",
                       }}
-                      aria-label="عرض تتبع الوقت"
+                      aria-label={t("@legalos.dashboard.kpi.viewTimeTracking")}
                     >
                       <Icon name="more_horiz" size={18} />
                     </Link>
@@ -666,7 +640,9 @@ export default function DashboardPage() {
                           marginInlineStart: "4px",
                         }}
                       >
-                        {Number(board.unbilled_amount) > 0 ? "ج.م" : "ساعة"}
+                        {Number(board.unbilled_amount) > 0
+                          ? t("@legalos.dashboard.currencyEGP")
+                          : t("@legalos.dashboard.hoursUnit")}
                       </span>
                     </span>
                     <span
@@ -676,14 +652,14 @@ export default function DashboardPage() {
                         gap: "2px",
                         fontSize: "11.5px",
                         fontWeight: 600,
-                        color: "var(--text2)",
-                        background: "var(--surface3)",
+                        color: "var(--danger)",
+                        background: "var(--danger-soft)",
                         padding: "3px 7px",
                         borderRadius: "999px",
                       }}
                     >
                       {insights.kpi_deltas.unbilled_hours.direction === "flat"
-                        ? "ثابت"
+                        ? t("@legalos.dashboard.kpi.flat")
                         : `${insights.kpi_deltas.unbilled_hours.delta_pct}%`}
                     </span>
                   </div>
@@ -696,11 +672,13 @@ export default function DashboardPage() {
                       paddingTop: "9px",
                     }}
                   >
-                    من {Number(board.hours_this_month).toFixed(1)} ساعة مسجَّلة هذا الشهر
+                    {t("@legalos.dashboard.kpi.hoursLoggedDetail", {
+                      hours: Number(board.hours_this_month).toFixed(1),
+                    })}
                   </div>
                 </div>
 
-                {/* بطاقة ٤: المستحقات */}
+                {/* Card 4: Outstanding */}
                 <div
                   style={{
                     flex: "1 1 210px",
@@ -731,7 +709,7 @@ export default function DashboardPage() {
                         <Icon name="payments" size={21} />
                       </div>
                       <span style={{ fontSize: "12.5px", color: "var(--text2)", fontWeight: 500 }}>
-                        المستحقات
+                        {t("@legalos.dashboard.kpi.outstanding")}
                       </span>
                     </div>
                     <Link
@@ -742,11 +720,11 @@ export default function DashboardPage() {
                         display: "grid",
                         placeItems: "center",
                         border: 0,
-                        borderRadius: "7px",
+                        borderRadius: "var(--rs)",
                         background: "transparent",
                         color: "var(--text3)",
                       }}
-                      aria-label="عرض الفوترة"
+                      aria-label={t("@legalos.dashboard.kpi.viewBilling")}
                     >
                       <Icon name="more_horiz" size={18} />
                     </Link>
@@ -762,7 +740,7 @@ export default function DashboardPage() {
                           marginInlineStart: "4px",
                         }}
                       >
-                        ج.م
+                        {t("@legalos.dashboard.currencyEGP")}
                       </span>
                     </span>
                     <span
@@ -778,8 +756,9 @@ export default function DashboardPage() {
                         borderRadius: "999px",
                       }}
                     >
-                      <Icon name="arrow_upward" size={14} />
-                      {insights.kpi_deltas.outstanding_amount.delta_pct}%
+                      {insights.kpi_deltas.outstanding_amount.direction === "flat"
+                        ? t("@legalos.dashboard.kpi.flat")
+                        : `${insights.kpi_deltas.outstanding_amount.delta_pct}%`}
                     </span>
                   </div>
                   {renderSparkline(insights.kpi_series.outstanding_amount, "var(--success)")}
@@ -791,16 +770,14 @@ export default function DashboardPage() {
                       paddingTop: "9px",
                     }}
                   >
-                    {formatEGPCompact(insights.collections.outstanding)} ج.م متأخرة السداد
+                    {t("@legalos.dashboard.kpi.outstandingDetail")}
                   </div>
                 </div>
               </div>
 
-              {/* ============================================================== */}
-              {/* ٣ · المخطّطان: حركة القضايا + توزيع القضايا                     */}
-              {/* ============================================================== */}
+              {/* 3 · Charts: Movement + Breakdown */}
               <div style={{ display: "flex", flexWrap: "wrap", gap: "18px" }}>
-                {/* حركة القضايا خلال الأشهر */}
+                {/* Movement */}
                 <div
                   style={{
                     flex: "2 1 480px",
@@ -826,10 +803,10 @@ export default function DashboardPage() {
                   >
                     <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
                       <span style={{ fontSize: "14.5px", fontWeight: 600 }}>
-                        حركة القضايا خلال الأشهر
+                        {t("@legalos.dashboard.movement.title")}
                       </span>
                       <span style={{ fontSize: "11.5px", color: "var(--text3)" }}>
-                        المقيدة مقابل المنتهية · آخر 8 أشهر
+                        {t("@legalos.dashboard.movement.subtitle")}
                       </span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
@@ -850,7 +827,7 @@ export default function DashboardPage() {
                             background: "var(--primary)",
                           }}
                         />
-                        مقيدة
+                        {t("@legalos.dashboard.movement.opened")}
                       </span>
                       <span
                         style={{
@@ -869,7 +846,7 @@ export default function DashboardPage() {
                             background: "var(--accent)",
                           }}
                         />
-                        منتهية
+                        {t("@legalos.dashboard.movement.closed")}
                       </span>
                     </div>
                   </div>
@@ -923,7 +900,11 @@ export default function DashboardPage() {
                                   zIndex: 10,
                                 }}
                               >
-                                {m.label} · {m.opened} مقيدة · {m.closed} منتهية
+                                {t("@legalos.dashboard.movement.tooltip", {
+                                  label: m.label,
+                                  opened: m.opened,
+                                  closed: m.closed,
+                                })}
                               </div>
                             )}
                             <div
@@ -959,7 +940,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* توزيع القضايا حسب النوع */}
+                {/* Breakdown by Type */}
                 <div
                   style={{
                     flex: "1 1 300px",
@@ -981,9 +962,11 @@ export default function DashboardPage() {
                       gap: "3px",
                     }}
                   >
-                    <span style={{ fontSize: "14.5px", fontWeight: 600 }}>توزيع القضايا حسب النوع</span>
+                    <span style={{ fontSize: "14.5px", fontWeight: 600 }}>
+                      {t("@legalos.dashboard.byType.title")}
+                    </span>
                     <span style={{ fontSize: "11.5px", color: "var(--text3)" }}>
-                      إجمالي {totalActiveMatters} قضية نشطة
+                      {t("@legalos.dashboard.byType.totalActive", { count: totalActiveMatters })}
                     </span>
                   </div>
                   <div style={{ padding: "18px", display: "flex", alignItems: "center", gap: "20px" }}>
@@ -1014,7 +997,9 @@ export default function DashboardPage() {
                           <div style={{ fontSize: "22px", fontWeight: 600, lineHeight: 1.1 }}>
                             {totalActiveMatters}
                           </div>
-                          <div style={{ fontSize: "10.5px", color: "var(--text3)" }}>قضية</div>
+                          <div style={{ fontSize: "10.5px", color: "var(--text3)" }}>
+                            {t("@legalos.dashboard.byType.mattersUnit")}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1041,7 +1026,7 @@ export default function DashboardPage() {
                       ))}
                       {typeItems.length === 0 && (
                         <span style={{ fontSize: "12px", color: "var(--text3)" }}>
-                          لا توجد قضايا نشطة مصنفة
+                          {t("@legalos.dashboard.byType.empty")}
                         </span>
                       )}
                     </div>
@@ -1049,11 +1034,9 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* ============================================================== */}
-              {/* ٤ · النشاط الأخير (يمينًا) + القادم خلال ٣٠ يومًا (يسارًا)      */}
-              {/* ============================================================== */}
+              {/* 4 · Recent Activity + Next 30 Days */}
               <div style={{ display: "flex", flexWrap: "wrap", gap: "18px" }}>
-                {/* النشاط الأخير (يمينًا في RTL) */}
+                {/* Recent Activity Table */}
                 <div
                   style={{
                     flex: "2 1 480px",
@@ -1079,9 +1062,11 @@ export default function DashboardPage() {
                     }}
                   >
                     <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-                      <span style={{ fontSize: "14.5px", fontWeight: 600 }}>النشاط الأخير</span>
+                      <span style={{ fontSize: "14.5px", fontWeight: 600 }}>
+                        {t("@legalos.dashboard.recentMatters.title")}
+                      </span>
                       <span style={{ fontSize: "11.5px", color: "var(--text3)" }}>
-                        آخر تحديث قبل دقيقة
+                        {t("@legalos.dashboard.recentMatters.lastUpdated")}
                       </span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -1102,7 +1087,7 @@ export default function DashboardPage() {
                         }}
                       >
                         <Icon name="filter_list" size={16} />
-                        تصفية
+                        {t("@legalos.dashboard.recentMatters.filter")}
                       </Link>
                       <Link
                         href="/matters"
@@ -1119,7 +1104,7 @@ export default function DashboardPage() {
                           fontWeight: 600,
                         }}
                       >
-                        كل القضايا
+                        {t("@legalos.dashboard.recentMatters.allMatters")}
                       </Link>
                     </div>
                   </div>
@@ -1128,22 +1113,22 @@ export default function DashboardPage() {
                       <thead>
                         <tr style={{ background: "var(--surface2)" }}>
                           <th style={{ textAlign: "start", padding: "11px 16px", fontSize: "11px", fontWeight: 600, color: "var(--text3)", borderBottom: "1px solid var(--border)" }}>
-                            رقم القضية
+                            {t("@legalos.dashboard.recentMatters.colMatterNumber")}
                           </th>
                           <th style={{ textAlign: "start", padding: "11px 16px", fontSize: "11px", fontWeight: 600, color: "var(--text3)", borderBottom: "1px solid var(--border)" }}>
-                            الموكّل
+                            {t("@legalos.dashboard.recentMatters.colClient")}
                           </th>
                           <th style={{ textAlign: "start", padding: "11px 16px", fontSize: "11px", fontWeight: 600, color: "var(--text3)", borderBottom: "1px solid var(--border)" }}>
-                            المحكمة
+                            {t("@legalos.dashboard.recentMatters.colCourt")}
                           </th>
                           <th style={{ textAlign: "start", padding: "11px 16px", fontSize: "11px", fontWeight: 600, color: "var(--text3)", borderBottom: "1px solid var(--border)" }}>
-                            المحامي المسؤول
+                            {t("@legalos.dashboard.recentMatters.colLawyer")}
                           </th>
                           <th style={{ textAlign: "start", padding: "11px 16px", fontSize: "11px", fontWeight: 600, color: "var(--text3)", borderBottom: "1px solid var(--border)" }}>
-                            الجلسة القادمة
+                            {t("@legalos.dashboard.recentMatters.colNextDeadline")}
                           </th>
                           <th style={{ textAlign: "start", padding: "11px 16px", fontSize: "11px", fontWeight: 600, color: "var(--text3)", borderBottom: "1px solid var(--border)" }}>
-                            الحالة
+                            {t("@legalos.dashboard.recentMatters.colStatus")}
                           </th>
                           <th style={{ padding: "11px 16px", borderBottom: "1px solid var(--border)" }} />
                         </tr>
@@ -1152,7 +1137,7 @@ export default function DashboardPage() {
                         {(insights.recent_matters?.items ?? []).map((matter) => {
                           const clientInitials = matter.client_name
                             ? matter.client_name.trim().slice(0, 2)
-                            : "مو";
+                            : "—";
                           const isTodayDeadline =
                             matter.next_deadline?.due_date === todayIso();
 
@@ -1213,7 +1198,9 @@ export default function DashboardPage() {
                                   <span>
                                     {matter.next_deadline
                                       ? isTodayDeadline
-                                        ? `اليوم · ${matter.next_deadline.label}`
+                                        ? t("@legalos.dashboard.recentMatters.todayPrefix", {
+                                            label: matter.next_deadline.label,
+                                          })
                                         : `${formatDate(matter.next_deadline.due_date)}`
                                       : "—"}
                                   </span>
@@ -1255,10 +1242,10 @@ export default function DashboardPage() {
                                     }}
                                   />
                                   {matter.status === "active"
-                                    ? "نشطة"
+                                    ? t("@legalos.dashboard.status.active")
                                     : matter.status === "closed"
-                                      ? "مغلقة"
-                                      : "مؤجلة"}
+                                      ? t("@legalos.dashboard.status.closed")
+                                      : t("@legalos.dashboard.status.pending")}
                                 </span>
                               </td>
                               <td style={{ padding: "12px 16px", textAlign: "end" }}>
@@ -1272,7 +1259,7 @@ export default function DashboardPage() {
                                     borderRadius: "var(--rs)",
                                     color: "var(--text3)",
                                   }}
-                                  aria-label="تفاصيل القضية"
+                                  aria-label={t("@legalos.dashboard.recentMatters.matterDetails")}
                                 >
                                   <Icon name="more_horiz" size={18} />
                                 </Link>
@@ -1285,8 +1272,8 @@ export default function DashboardPage() {
                             <td colSpan={7} style={{ textAlign: "center", padding: "28px" }}>
                               <EmptyState
                                 icon="folder_open"
-                                title="لا توجد قضايا"
-                                description="لا توجد قضايا لعرضها في هذا النطاق حالياً"
+                                title={t("@legalos.dashboard.recentMatters.emptyTitle")}
+                                description={t("@legalos.dashboard.recentMatters.emptyDescription")}
                               />
                             </td>
                           </tr>
@@ -1294,7 +1281,7 @@ export default function DashboardPage() {
                       </tbody>
                     </table>
                   </div>
-                  {/* تذييل ترقيم الصفحات */}
+                  {/* Pagination Footer */}
                   <div
                     style={{
                       padding: "12px 18px",
@@ -1306,7 +1293,11 @@ export default function DashboardPage() {
                     }}
                   >
                     <span style={{ fontSize: "11.5px", color: "var(--text3)" }}>
-                      عرض {recentStart}–{recentEnd} من {recentTotal} قضية
+                      {t("@legalos.dashboard.recentMatters.pagination", {
+                        start: recentStart,
+                        end: recentEnd,
+                        total: recentTotal,
+                      })}
                     </span>
                     <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                       <button
@@ -1325,7 +1316,7 @@ export default function DashboardPage() {
                           cursor: page <= 1 ? "not-allowed" : "pointer",
                           opacity: page <= 1 ? 0.5 : 1,
                         }}
-                        aria-label="الصفحة السابقة"
+                        aria-label={t("@legalos.dashboard.recentMatters.prevPage")}
                       >
                         <Icon name="chevron_right" size={17} />
                       </button>
@@ -1365,7 +1356,7 @@ export default function DashboardPage() {
                           cursor: page >= totalPages ? "not-allowed" : "pointer",
                           opacity: page >= totalPages ? 0.5 : 1,
                         }}
-                        aria-label="الصفحة التالية"
+                        aria-label={t("@legalos.dashboard.recentMatters.nextPage")}
                       >
                         <Icon name="chevron_left" size={17} />
                       </button>
@@ -1373,7 +1364,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* القادم خلال ٣٠ يومًا (يسارًا في RTL) */}
+                {/* Next 30 Days */}
                 <div
                   style={{
                     flex: "1 1 300px",
@@ -1395,18 +1386,17 @@ export default function DashboardPage() {
                       justifyContent: "space-between",
                     }}
                   >
-                    <span style={{ fontSize: "14.5px", fontWeight: 600 }}>القادم خلال ٣٠ يومًا</span>
+                    <span style={{ fontSize: "14.5px", fontWeight: 600 }}>
+                      {t("@legalos.dashboard.next30.heading")}
+                    </span>
                     <Link href="/calendar" style={{ fontSize: "11.5px", fontWeight: 600, color: "var(--primary)" }}>
-                      التقويم
+                      {t("@legalos.dashboard.next30.calendarLink")}
                     </Link>
                   </div>
                   <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
                     {(board.upcoming ?? []).slice(0, 4).map((item, idx) => {
                       const isToday = item.due_date === todayIso();
-                      const isRemote =
-                        item.label.includes("عن بُعد") ||
-                        item.label.includes("تحكيم") ||
-                        item.label.includes("مرئي");
+                      const isRemote = new RegExp(t("@legalos.dashboard.patterns.remote"), "i").test(item.label);
 
                       return (
                         <div
@@ -1437,7 +1427,7 @@ export default function DashboardPage() {
                               {item.due_date ? item.due_date.slice(8, 10) : "11"}
                             </span>
                             <span style={{ fontSize: "10px", fontWeight: 600 }}>
-                              {isToday ? "اليوم" : "صباحًا"}
+                              {isToday ? t("@legalos.dashboard.upcoming.today") : t("@legalos.dashboard.upcoming.morning")}
                             </span>
                           </div>
                           <div
@@ -1448,11 +1438,14 @@ export default function DashboardPage() {
                                 : "var(--border)",
                             }}
                           />
-                          <div style={{ display: "flex", flexDirection: "column", gap: "3px", minWidth: 0 }}>
-                            <span style={{ fontSize: "12.5px", fontWeight: 600 }}>
-                              {item.matter_name ? `${item.matter_name} — ` : ""}
-                              {item.label}
-                            </span>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "3px", minWidth: 0, flex: 1 }}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                              <span style={{ fontSize: "12.5px", fontWeight: 600 }}>
+                                {item.matter_name ? `${item.matter_name} — ` : ""}
+                                {item.label}
+                              </span>
+                              <ProximityBadge date={item.due_date} />
+                            </div>
                             <span
                               style={{
                                 fontSize: "11px",
@@ -1463,7 +1456,9 @@ export default function DashboardPage() {
                               }}
                             >
                               <Icon name={isRemote ? "videocam" : "place"} size={14} />
-                              {isRemote ? "جلسة عن بُعد · مركز القاهرة" : "المحكمة المختصة"}
+                              {isRemote
+                                ? t("@legalos.dashboard.upcoming.remoteLocation")
+                                : t("@legalos.dashboard.upcoming.defaultCourt")}
                             </span>
                           </div>
                         </div>
@@ -1471,18 +1466,16 @@ export default function DashboardPage() {
                     })}
                     {(board.upcoming ?? []).length === 0 && (
                       <div style={{ padding: "20px", textAlign: "center", color: "var(--text3)", fontSize: "12px" }}>
-                        لا توجد التزامات مجدولة في الـ 30 يومًا القادمة
+                        {t("@legalos.dashboard.next30.empty.title")}
                       </div>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* ============================================================== */}
-              {/* ٥ · مهامي اليوم · التحصيلات · سجل النشاط                       */}
-              {/* ============================================================== */}
+              {/* 5 · My Tasks Today + Collections + Activity Feed */}
               <div style={{ display: "flex", flexWrap: "wrap", gap: "18px" }}>
-                {/* مهامي اليوم (تفاعلية متفائلة) */}
+                {/* My Tasks Today */}
                 <div
                   style={{
                     flex: "1 1 300px",
@@ -1504,7 +1497,9 @@ export default function DashboardPage() {
                       justifyContent: "space-between",
                     }}
                   >
-                    <span style={{ fontSize: "14.5px", fontWeight: 600 }}>مهامي اليوم</span>
+                    <span style={{ fontSize: "14.5px", fontWeight: 600 }}>
+                      {t("@legalos.dashboard.myTasks.title")}
+                    </span>
                     <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--text3)" }}>
                       {myTasksDoneCount} / {myTasksTotalCount}
                     </span>
@@ -1581,20 +1576,24 @@ export default function DashboardPage() {
                               borderRadius: "999px",
                             }}
                           >
-                            {isDone ? "تم" : isDueToday ? "اليوم" : "غدًا"}
+                            {isDone
+                              ? t("@legalos.dashboard.myTasks.done")
+                              : isDueToday
+                                ? t("@legalos.dashboard.myTasks.today")
+                                : t("@legalos.dashboard.myTasks.tomorrow")}
                           </span>
                         </label>
                       );
                     })}
                     {localTasks.length === 0 && (
                       <div style={{ padding: "24px", textAlign: "center", color: "var(--text3)", fontSize: "12px" }}>
-                        لا توجد مهام مسندة إليك لليوم
+                        {t("@legalos.dashboard.myTasks.empty")}
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* التحصيلات */}
+                {/* Collections */}
                 <div
                   style={{
                     flex: "1 1 300px",
@@ -1616,17 +1615,21 @@ export default function DashboardPage() {
                       justifyContent: "space-between",
                     }}
                   >
-                    <span style={{ fontSize: "14.5px", fontWeight: 600 }}>التحصيلات</span>
+                    <span style={{ fontSize: "14.5px", fontWeight: 600 }}>
+                      {t("@legalos.dashboard.collections.heading")}
+                    </span>
                     <Link href="/billing" style={{ fontSize: "11.5px", fontWeight: 600, color: "var(--primary)" }}>
-                      الفوترة
+                      {t("@legalos.dashboard.collections.billingLink")}
                     </Link>
                   </div>
                   <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: "15px" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px" }}>
-                        <span style={{ color: "var(--text2)" }}>أتعاب محصّلة</span>
+                        <span style={{ color: "var(--text2)" }}>
+                          {t("@legalos.dashboard.collections.collectedFees")}
+                        </span>
                         <strong style={{ fontWeight: 600 }}>
-                          {formatEGPCompact(insights.collections.collected)} ج.م
+                          {formatEGPCompact(insights.collections.collected)} {t("@legalos.dashboard.currencyEGP")}
                         </strong>
                       </div>
                       <div style={{ height: "7px", borderRadius: "99px", background: "var(--surface3)", overflow: "hidden" }}>
@@ -1643,9 +1646,11 @@ export default function DashboardPage() {
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: "7px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px" }}>
-                        <span style={{ color: "var(--text2)" }}>متأخرات</span>
+                        <span style={{ color: "var(--text2)" }}>
+                          {t("@legalos.dashboard.collections.overdue")}
+                        </span>
                         <strong style={{ fontWeight: 600 }}>
-                          {formatEGPCompact(insights.collections.outstanding)} ج.م
+                          {formatEGPCompact(insights.collections.outstanding)} {t("@legalos.dashboard.currencyEGP")}
                         </strong>
                       </div>
                       <div style={{ height: "7px", borderRadius: "99px", background: "var(--surface3)", overflow: "hidden" }}>
@@ -1673,23 +1678,21 @@ export default function DashboardPage() {
                       <Icon name="lightbulb" size={18} className="text-[var(--info)] flex-none" />
                       <span style={{ fontSize: "11.5px", color: "var(--text2)", lineHeight: 1.6 }}>
                         {insights.top_collection_rate?.matter_type ? (
-                          <>
-                            أعلى نسبة تحصيل هذا الشهر لملفات{" "}
-                            <strong style={{ color: "var(--text)" }}>
-                              {enumLabel(insights.top_collection_rate.matter_type) ||
-                                insights.top_collection_rate.matter_type}
-                            </strong>{" "}
-                            ({insights.top_collection_rate.rate}%).
-                          </>
+                          t("@legalos.dashboard.collections.insightTopRate", {
+                            type:
+                              enumLabel(insights.top_collection_rate.matter_type) ||
+                              insights.top_collection_rate.matter_type,
+                            rate: insights.top_collection_rate.rate,
+                          })
                         ) : (
-                          "سجل الفواتير والتحصيلات لمتابعة أعلى نسب الأتعاب حسب التخصص."
+                          t("@legalos.dashboard.collections.insightEmpty")
                         )}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* سجل النشاط */}
+                {/* Activity Feed */}
                 <div
                   style={{
                     flex: "1 1 300px",
@@ -1703,25 +1706,27 @@ export default function DashboardPage() {
                   }}
                 >
                   <div style={{ padding: "15px 18px", borderBottom: "1px solid var(--border)" }}>
-                    <span style={{ fontSize: "14.5px", fontWeight: 600 }}>سجل النشاط</span>
+                    <span style={{ fontSize: "14.5px", fontWeight: 600 }}>
+                      {t("@legalos.dashboard.activity.title")}
+                    </span>
                   </div>
                   <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column" }}>
                     {(board.recent_activity ?? []).slice(0, 4).map((act, index, arr) => {
                       const isLast = index === arr.length - 1;
-                      // اختيار الأيقونة واللون حسب نوع الإجراء
                       let iconName = "check";
                       let iconColor = "var(--success)";
                       let iconBg = "var(--success-soft)";
 
-                      if (act.action.includes("أُرفقت") || act.action.includes("مستند") || act.action.includes("ملف")) {
+                      const actLower = act.action.toLowerCase();
+                      if (new RegExp(t("@legalos.dashboard.patterns.upload"), "i").test(actLower)) {
                         iconName = "upload_file";
                         iconColor = "var(--info)";
                         iconBg = "var(--info-soft)";
-                      } else if (act.action.includes("تأجيل") || act.action.includes("جلسة") || act.action.includes("ميعاد")) {
+                      } else if (new RegExp(t("@legalos.dashboard.patterns.schedule"), "i").test(actLower)) {
                         iconName = "schedule";
                         iconColor = "var(--warn)";
                         iconBg = "var(--warn-soft)";
-                      } else if (act.action.includes("تحصيل") || act.action.includes("فاتورة") || act.action.includes("أتعاب")) {
+                      } else if (new RegExp(t("@legalos.dashboard.patterns.payment"), "i").test(actLower)) {
                         iconName = "payments";
                         iconColor = "var(--accent)";
                         iconBg = "var(--accent-soft)";
@@ -1775,14 +1780,14 @@ export default function DashboardPage() {
                     })}
                     {(board.recent_activity ?? []).length === 0 && (
                       <div style={{ padding: "20px", textAlign: "center", color: "var(--text3)", fontSize: "12px" }}>
-                        لا يوجد نشاط مسجل مؤخرًا
+                        {t("@legalos.dashboard.activity.empty")}
                       </div>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* حوار إنشاء قضية جديدة المشترك */}
+              {/* Create Matter Dialog */}
               <CreateMatterDialog
                 isOpen={isCreateOpen}
                 onOpenChange={setIsCreateOpen}

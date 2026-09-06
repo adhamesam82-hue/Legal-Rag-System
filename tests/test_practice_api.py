@@ -599,3 +599,44 @@ class TestDashboardInsights:
         actions = [a["action"] for a in act_res.json()]
         assert any("أكمل مهمة: Draft appeal brief" in a for a in actions)
 
+    def test_dashboard_export_recent_matters_csv(self, client, org):
+        """التحقق من مواصفات تصدير CSV (T-059):
+        - ترميز UTF-8 مع علامة BOM لبرنامج Excel.
+        - فواصل الأسطر \\r\\n.
+        - ترويسة Content-Disposition.
+        - تحصين الخلايا ضد هجمات حقن الصيغ (Formula Injection).
+        - عزل المستأجرين (Tenant Isolation).
+        """
+        c = make_client(client, org, name="شركة النور")
+        # قضية عادية وقضية تبدأ بصيغة لاختبار الحماية
+        make_matter(client, org, c["id"], name="قضية تجارية عادية", matter_type="commercial")
+        make_matter(client, org, c["id"], name="=CMD('calc')|'A'", matter_type="civil")
+
+        other_org = client.post("/api/orgs", json={"name": "Org B"}).json()["id"]
+
+        # طلب تصدير Org A
+        res_a = client.get(f"/api/orgs/{org}/dashboard/export/recent-matters")
+        assert res_a.status_code == 200
+        assert "text/csv" in res_a.headers["content-type"]
+        assert "attachment; filename=" in res_a.headers.get("content-disposition", "")
+        
+        content = res_a.content
+        # 1. فحص وجود BOM
+        assert content.startswith(b"\xef\xbb\xbf"), "ملف CSV يجب أن يبدأ بـ UTF-8 BOM"
+
+        # 2. فحص فواصل الأسطر CRLF
+        text = content.decode("utf-8-sig")
+        assert "\r\n" in text, "فواصل الأسطر يجب أن تكون \\r\\n"
+
+        # 3. فحص الحماية من حقن الصيغ
+        assert "'=CMD('calc')|'A'" in text, "الصيغة التنفيذية يجب أن تسبق بفاصلة عليا للحماية"
+        assert "قضية تجارية عادية" in text
+
+        # 4. فحص عزل المستأجرين
+        res_b = client.get(f"/api/orgs/{other_org}/dashboard/export/recent-matters")
+        assert res_b.status_code == 200
+        text_b = res_b.content.decode("utf-8-sig")
+        assert "قضية تجارية عادية" not in text_b
+        assert "'=CMD('calc')|'A'" not in text_b
+
+

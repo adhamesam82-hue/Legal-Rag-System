@@ -8,6 +8,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import Decimal
+import csv
+import io
+from typing import Literal
 
 import psycopg
 
@@ -652,4 +655,131 @@ def dashboard_insights(
         recent_matters=recent_matters,
         my_tasks_today=my_tasks_today,
     )
+
+
+def _sanitize_csv_cell(val: object) -> str:
+    """تحصين خلايا CSV ضد هجمات حقن الصيغ (Formula Injection).
+
+    إذا بدأ النص بأحد الرموز (+, -, =, @)، نقوم بسبقه بفاصلة عليا (') لمنع
+    تنفيذه كمعادلة تنفيذية عند فتح الملف في برامج الجداول مثل Microsoft Excel.
+    """
+    if val is None:
+        return ""
+    text = str(val)
+    stripped = text.lstrip()
+    if stripped and stripped[0] in ("=", "+", "-", "@"):
+        return "'" + text
+    return text
+
+
+def export_recent_matters_csv(
+    conn: psycopg.Connection,
+    organization_id: int,
+    *,
+    clerk_user_id: str,
+    membership: Membership,
+    scope: Literal["all", "my"] = "all",
+) -> bytes:
+    """تصدير جدول القضايا الأخيرة بصيغة CSV على الخادم (T-059).
+
+    القيود الإلزامية:
+    - احترام عزل المستأجرين (Tenant Isolation) والتقيد بـ organization_id.
+    - تطبيق صلاحيات الرؤية عبر matter_visibility() بحيث لا يُصدّر ما لا يظهر للمستخدم.
+    - دعم مرشح النطاق: على مستوى المكتب (all) أو ملفاتي (my).
+    - جلب كافة الصفوف دون تقطيع صفحات (Unpaginated).
+    - إثراء المواعيد القادمة بحزمة واحدة منعاً لاستعلامات N+1.
+    - استخدام نهايات الأسطر \\r\\n المتوافقة مع نظام ويندوز وإكسيل.
+    - تصدير UTF-8 مع علامة ترتيب البايتات (BOM) لضمان قراءة النصوص العربية دون تشويه في Excel.
+    - حماية الخلايا من هجمات حقن صيغ CSV.
+    """
+    m_vis, m_params = matter_visibility(membership, "m")
+
+    base_where = f"m.organization_id = %s AND {m_vis}"
+    base_params: list[object] = [organization_id, *m_params]
+    if scope == "my":
+        base_where += (
+            " AND (m.responsible_user = %s OR m.id IN ("
+            "SELECT matter_id FROM matter_staff WHERE clerk_user_id = %s))"
+        )
+        base_params.extend([clerk_user_id, clerk_user_id])
+
+    with conn.cursor() as cur:
+        cur.execute(
+            f"""
+            SELECT m.id, m.matter_number, m.name, coalesce(c.name, '') AS client_name,
+                   m.matter_type, coalesce(cs.court, '—') AS court,
+                   coalesce(m.responsible_user, '—') AS responsible_user,
+                   m.status
+              FROM matters m
+              LEFT JOIN clients c ON c.id = m.client_id
+              LEFT JOIN cases cs ON cs.matter_id = m.id
+             WHERE {base_where}
+             ORDER BY m.opened_date DESC, m.id DESC
+            """,
+            tuple(base_params),
+        )
+        m_rows = cur.fetchall()
+        m_ids = [r[0] for r in m_rows]
+
+        deadlines: dict[int, tuple[str, date]] = {}
+        if m_ids:
+            cur.execute(
+                """
+                SELECT matter_id, label, due_date FROM (
+                    SELECT t.matter_id, t.title AS label, t.due_date,
+                           row_number() OVER (PARTITION BY t.matter_id ORDER BY t.due_date) AS rn
+                      FROM (
+                            SELECT matter_id, title, due_date
+                              FROM tasks
+                             WHERE matter_id = ANY(%s) AND status <> 'done'
+                               AND due_date IS NOT NULL
+                            UNION ALL
+                            SELECT c.matter_id, d.label, d.due_date
+                              FROM case_deadlines d
+                              JOIN cases c ON c.id = d.case_id
+                             WHERE c.matter_id = ANY(%s) AND NOT d.completed
+                           ) t
+                ) ranked WHERE rn = 1
+                """,
+                (m_ids, m_ids),
+            )
+            for r in cur.fetchall():
+                deadlines[r[0]] = (r[1], r[2])
+
+    output = io.StringIO()
+    writer = csv.writer(output, lineterminator="\r\n")
+
+    # ترويسة الأعمدة السبعة مطابقة لجدول النشاط الأخير (باستثناء قائمة الإجراءات more_horiz)
+    headers = [
+        "رقم القضية",
+        "الموكل / القضية",
+        "نوع القضية",
+        "المحكمة",
+        "المحامي المسؤول",
+        "الجلسة القادمة",
+        "الحالة",
+    ]
+    writer.writerow([_sanitize_csv_cell(h) for h in headers])
+
+    for r in m_rows:
+        mid, m_num, m_name, c_name, m_type, court, resp, status = r
+        client_or_matter = c_name or m_name
+        dl = deadlines.get(mid)
+        next_deadline_str = f"{dl[1].isoformat()} ({dl[0]})" if dl else "—"
+
+        row = [
+            _sanitize_csv_cell(m_num or str(mid)),
+            _sanitize_csv_cell(client_or_matter),
+            _sanitize_csv_cell(m_type or "—"),
+            _sanitize_csv_cell(court or "—"),
+            _sanitize_csv_cell(resp or "—"),
+            _sanitize_csv_cell(next_deadline_str),
+            _sanitize_csv_cell(status or "—"),
+        ]
+        writer.writerow(row)
+
+    # إضافة علامة ترتيب البايتات (UTF-8 BOM: \\ufeff) لتمكين Excel من التعرف التلقائي على الترميز العربي
+    csv_content = "\ufeff" + output.getvalue()
+    return csv_content.encode("utf-8")
+
 

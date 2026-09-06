@@ -54,6 +54,33 @@ def get_dashboard_insights(
     )
 
 
+@router.get("/dashboard/export/recent-matters")
+def export_recent_matters_csv(
+    organization_id: int,
+    scope: Literal["all", "my"] = Query(default="all"),
+    membership: Membership = Depends(get_current_membership),
+    clerk_user_id: str = Depends(get_current_user_id),
+    conn=Depends(db),
+):
+    """تصدير جدول القضايا الأخيرة بصيغة CSV المتوافقة مع إكسيل (T-059)."""
+    csv_bytes = activity.export_recent_matters_csv(
+        conn,
+        organization_id,
+        clerk_user_id=clerk_user_id,
+        membership=membership,
+        scope=scope,
+    )
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    filename = f"recent-matters-{today_str}.csv"
+    return Response(
+        content=csv_bytes,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        },
+    )
+
+
 @router.get("/me")
 def get_me(
     organization_id: int,
