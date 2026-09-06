@@ -1211,5 +1211,49 @@
       "web/lib/i18n/catalogs/shell.ts"
     ],
     "source": "owner request 2026-09-06"
+  },
+  {
+    "id": "T-066",
+    "title": "الشريط الجانبي: العدّادات وتمييز البند وسطوع اللون",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "6س",
+    "labels": [
+      "frontend",
+      "واجهة"
+    ],
+    "deps": [
+      "T-050",
+      "T-054"
+    ],
+    "files": [
+      "web/components/Shell.tsx",
+      "web/app/globals.css",
+      "web/lib/i18n/catalogs/shell.ts"
+    ],
+    "source": "owner review on staging 2026-09-06"
+  },
+  {
+    "id": "T-067",
+    "title": "شاشات القوائم على Toolbar وFilterBar — المصمَّم وحده",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "1ي",
+    "labels": [
+      "frontend",
+      "واجهة"
+    ],
+    "deps": [
+      "T-052",
+      "T-053"
+    ],
+    "files": [
+      "web/app/clients/page.tsx",
+      "web/app/matters/page.tsx",
+      "web/app/hearings/page.tsx",
+      "web/app/tasks/page.tsx",
+      "web/app/documents/page.tsx"
+    ],
+    "source": "owner review on staging 2026-09-06"
   }
 ]

@@ -1,0 +1,105 @@
+# Runs sections (هـ) and (و) of T-047's manual check, from the GitHub UI.
+#
+# WHY THIS EXISTS
+# ---------------
+# Everything a person can check through the browser proves that the
+# APPLICATION withholds another firm's rows. It does not prove that the
+# DATABASE refuses to return them -- and that distinction is the whole of
+# T-047. A missing SET LOCAL on one path, or an app role that happens to
+# bypass RLS, would leave every screen looking correct.
+#
+# Testing that means psql on the box as the application role, which the
+# person doing the check does not have. Same reasoning as seed-staging.yml:
+# the check would stall on access rather than on the work.
+#
+# STAGING ONLY. Read-only: every statement is a SELECT or a SET, and the
+# session is opened as legalrag_app, which cannot bypass RLS by design.
+
+name: Verify RLS isolation
+
+on:
+  workflow_dispatch:
+    inputs:
+      alpha_org_id:
+        description: "organization_id of مكتب ألفا (from the seed run summary)"
+        required: true
+      beta_org_id:
+        description: "organization_id of مكتب بيتا"
+        required: true
+      alpha_matter_id:
+        description: "A matter id belonging to ألفا -- the row beta must not see"
+        required: true
+
+concurrency:
+  group: verify-rls
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up SSH
+        run: |
+          install -d -m 0700 ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Run the two checks as the application role
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          ALPHA: ${{ inputs.alpha_org_id }}
+          BETA: ${{ inputs.beta_org_id }}
+          MATTER: ${{ inputs.alpha_matter_id }}
+        run: |
+          # pipefail: `ssh … | tee` otherwise reports tee's status, and a check
+          # that goes green on failure is worse than no check. See the same
+          # note in seed-staging.yml.
+          set -o pipefail
+
+          # The ids are integers by construction below (printf %d), so they
+          # cannot carry shell metacharacters onto a runner that holds
+          # SSH_PRIVATE_KEY, nor SQL onto the box.
+          A=$(printf '%d' "$ALPHA"); B=$(printf '%d' "$BETA"); M=$(printf '%d' "$MATTER")
+
+          # psql as legalrag_app, NOT as the compose superuser: connecting as
+          # the owner would silently bypass every policy and turn this into a
+          # test that always passes.
+          ssh "deploy@$SSH_HOST" \
+            "cd /opt/alsigil-staging && \
+             docker compose -f deploy/docker-compose.staging.yml exec -T postgres \
+               psql 'postgresql://legalrag_app:legalrag_app@localhost:5432/legalrag' -v ON_ERROR_STOP=1 <<SQL
+          \echo '=== هـ · الدور الصحيح فعلًا ==='
+          \echo 'المطلوب: legalrag_app | f | f  -- أي t يُبطل كل ما سبقه'
+          SELECT current_user, rolsuper, rolbypassrls
+            FROM pg_roles WHERE rolname = current_user;
+
+          \echo ''
+          \echo '=== و · الاختبار الحاسم ==='
+          SET app.organization_id = $B;
+          \echo 'قضايا بيتا وحدها (عدد > 0 متوقّع):'
+          SELECT count(*) AS beta_matters FROM matters;
+          \echo 'قضية ألفا بنطاق بيتا (المطلوب: صفر صفوف):'
+          SELECT count(*) AS alpha_row_visible_to_beta FROM matters WHERE id = $M;
+
+          SET app.organization_id = $A;
+          \echo 'قضايا ألفا بنطاق ألفا (عدد > 0 متوقّع):'
+          SELECT count(*) AS alpha_matters FROM matters;
+
+          RESET app.organization_id;
+          \echo 'بلا نطاق (المطلوب: صفر -- لا انكشاف افتراضي):'
+          SELECT count(*) AS matters_without_tenant FROM matters;
+          SQL" | tee rls-output.txt
+
+      - name: Publish the result
+        if: always()
+        run: |
+          {
+            echo '## نتيجة (هـ) و(و) من T-047'
+            echo
+            echo '```'
+            cat rls-output.txt 2>/dev/null || echo "لم يُنتج الفحص مخرجات — راجع الخطوة السابقة."
+            echo '```'
+            echo
+            echo '**المطلوب للاجتياز:** `legalrag_app | f | f` · صفر لقضية ألفا بنطاق بيتا · صفر بلا نطاق.'
+          } >> "$GITHUB_STEP_SUMMARY"
