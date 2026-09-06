@@ -17,6 +17,10 @@ def parse_css_block(css_content: str, selector_pattern: str) -> dict[str, str]:
     match = re.search(selector_pattern + r"\s*\{([^}]+)\}", css_content, re.MULTILINE)
     assert match, f"لم يتم العثور على كتلة CSS للمحدد: {selector_pattern}"
     block = match.group(1)
+    # التعليقات تُحذف قبل التقطيع لا بعده: التقطيع على «؛» يجعل التعليق يلتصق
+    # بالتصريح الذي يليه، فيُتخطّى الاثنان معًا ويختفي رمز من المقارنة بلا سبب
+    # ظاهر. حدث ذلك فعلًا مع --accent حين شُرح سببُ اشتقاقه بتعليق فوقه.
+    block = re.sub(r"/\*.*?\*/", "", block, flags=re.DOTALL)
     props = {}
     for line in block.split(";"):
         line = line.strip()

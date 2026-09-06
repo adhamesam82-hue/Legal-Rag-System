@@ -105,9 +105,18 @@ const sijilTokens: SijilThemeTokens = {
   ],
 
   // اللهجة (Accent)
-  "--accent": ["oklch(0.66 0.11 76)", "oklch(0.79 0.12 80)"],
+  // --accent-base هو ما يضبطه المستخدم وقت التشغيل (T-057)؛ القيمة هنا افتراضٌ
+  // يُستعمل حين لا يضبط شيئًا. ولو كُتب لون حرفي مكانه لداست هذه الكتلةُ اختياره.
+  "--accent": [
+    "var(--accent-base, oklch(0.66 0.11 76))",
+    "var(--accent-base, oklch(0.79 0.12 80))",
+  ],
   "--accent-fg": ["#ffffff", "oklch(0.2 0.04 80)"],
-  "--accent-soft": ["oklch(0.955 0.04 82)", "oklch(0.315 0.05 80)"],
+  // مشتقّ لا مستقلّ، كما في applyVars بالقالب: يتبع اللون المختار والسطح معًا.
+  "--accent-soft": [
+    "color-mix(in oklab, var(--accent) 16%, var(--surface))",
+    "color-mix(in oklab, var(--accent) 16%, var(--surface))",
+  ],
 
   // الحالات (States — نجاح، تحذير، خطر، معلومات مع -soft لكل منها)
   "--success": ["oklch(0.53 0.12 155)", "oklch(0.74 0.14 155)"],

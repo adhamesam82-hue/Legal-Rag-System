@@ -53,9 +53,11 @@
   --primary-h: oklch(0.38 0.11 var(--brand-h, 265));
   --primary-fg: #ffffff;
   --primary-soft: oklch(0.952 0.028 var(--brand-h, 265));
-  --accent: oklch(0.66 0.11 76);
+  /* --accent-base هو ما يضبطه المستخدم وقت التشغيل (T-057). يُكتب على <html>،
+     وهذه الكتلة تقرأه بدل أن تعيد تعريف --accent بقيمة حرفية تدوسه. */
+  --accent: var(--accent-base, oklch(0.66 0.11 76));
   --accent-fg: #ffffff;
-  --accent-soft: oklch(0.955 0.04 82);
+  --accent-soft: color-mix(in oklab, var(--accent) 16%, var(--surface));
   --success: oklch(0.53 0.12 155);
   --success-soft: oklch(0.955 0.045 155);
   --warn: oklch(0.63 0.13 68);
@@ -89,9 +91,9 @@
   --primary-h: oklch(0.78 0.12 var(--brand-h, 265));
   --primary-fg: oklch(0.17 0.03 var(--brand-h, 265));
   --primary-soft: oklch(0.3 0.055 var(--brand-h, 265));
-  --accent: oklch(0.79 0.12 80);
+  --accent: var(--accent-base, oklch(0.79 0.12 80));
   --accent-fg: oklch(0.2 0.04 80);
-  --accent-soft: oklch(0.315 0.05 80);
+  --accent-soft: color-mix(in oklab, var(--accent) 16%, var(--surface));
   --success: oklch(0.74 0.14 155);
   --success-soft: oklch(0.295 0.05 155);
   --warn: oklch(0.82 0.13 78);

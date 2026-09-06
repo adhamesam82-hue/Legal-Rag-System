@@ -215,9 +215,16 @@ def test_anti_flicker_script_includes_brand_and_accent():
     app_ts_content = APPEARANCE_TS.read_text(encoding="utf-8")
 
     assert "el.style.setProperty('--brand-h', brandHue)" in app_ts_content
-    assert "el.style.setProperty('--accent', accent)" in app_ts_content
-    assert "el.style.setProperty('--accent-soft'" in app_ts_content
-    assert "color-mix(in oklab" in app_ts_content
+
+    # --accent-base لا --accent. القشرة تحمل data-theme، وكتلته في globals.css
+    # تعيد تعريف --accent؛ فقيمة تُكتب هنا بذلك الاسم تُداس عند أول عنصر داخل
+    # التطبيق ولا يرى المستخدم للاختيار أثرًا. هذا ما كان يحدث فعلًا.
+    assert "el.style.setProperty('--accent-base', accent)" in app_ts_content
+    assert "setProperty('--accent'," not in app_ts_content
+
+    # ولا يُكتب --accent-soft هنا إطلاقًا: الكتلة تشتقّه من --accent والسطح،
+    # فيتبع اللون والثيم معًا بلا حساب في موضعين.
+    assert "setProperty('--accent-soft'" not in app_ts_content
 
 
 # -----------------------------------------------------------------------------
