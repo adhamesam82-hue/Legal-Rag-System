@@ -97,6 +97,13 @@ def reset_firm(conn: psycopg.Connection, name: str) -> None:
     Deletes the organization row and lets ON DELETE CASCADE take the rest.
     trust_transactions is the one table that blocks a matter delete by design
     (ON DELETE RESTRICT), so it goes first.
+
+    memberships and invitations are the two tables whose organization_id has no
+    ON DELETE clause at all (0005_organizations.sql, before the practice tables
+    established the CASCADE habit), so they default to NO ACTION and block the
+    delete. They are cleared here rather than by changing the constraint: a firm
+    row is not meant to be deletable while people still belong to it, and this
+    script is the one place where deleting a whole firm is the point.
     """
     with conn.cursor() as cur:
         cur.execute("SELECT id FROM organizations WHERE name = %s", (name,))
@@ -105,6 +112,8 @@ def reset_firm(conn: psycopg.Connection, name: str) -> None:
             return
         org_id = row[0]
         cur.execute("DELETE FROM trust_transactions WHERE organization_id = %s", (org_id,))
+        cur.execute("DELETE FROM invitations WHERE organization_id = %s", (org_id,))
+        cur.execute("DELETE FROM memberships WHERE organization_id = %s", (org_id,))
         cur.execute("DELETE FROM organizations WHERE id = %s", (org_id,))
     print(f"  حُذف المكتب السابق: {name}")
 
