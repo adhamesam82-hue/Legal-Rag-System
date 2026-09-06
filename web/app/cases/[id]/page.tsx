@@ -1,26 +1,19 @@
 "use client";
 
+/**
+ * Case detail page (T-053 / Wave 5).
+ *
+ * Shows full case record: court info, timeline, evidence, court documents,
+ * related sub-cases, next hearing, deadlines, and AI summary.
+ * Preserves all hooks, contract layer calls, and state intact.
+ */
+
 import { use } from "react";
-import { Layout, LayoutContent } from "@astryxdesign/core/Layout";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Grid, GridSpan } from "@astryxdesign/core/Grid";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Card } from "@astryxdesign/core/Card";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Badge } from "@astryxdesign/core/Badge";
-import { List, ListItem } from "@astryxdesign/core/List";
-import { MetadataList, MetadataListItem } from "@astryxdesign/core/MetadataList";
-import { Link } from "@astryxdesign/core/Link";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
-import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  ScaleIcon,
-  ClockIcon,
-  DocumentTextIcon,
-  SparklesIcon,
-  FlagIcon,
-} from "@heroicons/react/24/outline";
+import Link from "next/link";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
 import { useTranslator, useDirection, type TranslatorFn } from "@astryxdesign/core/i18n";
 import { useResource } from "@/lib/org";
 import { DataView } from "@/components/DataState";
@@ -29,9 +22,9 @@ import { useFormat } from "@/lib/i18n/format";
 import { enumLabelWith } from "@/lib/i18n/enum-label";
 import { CaseRefItem, ParentLine, PrimaryBadge } from "@/components/matter/SubCases";
 
-function statusVariant(status: string): "success" | "warning" | "neutral" {
+function statusVariant(status: string): "success" | "warn" | "neutral" {
   if (status.startsWith("Active")) return "success";
-  if (status.startsWith("On Hold")) return "warning";
+  if (status.startsWith("On Hold")) return "warn";
   return "neutral";
 }
 
@@ -57,305 +50,350 @@ export default function CaseDetailPage({
   const caseId = Number(id);
   const t = useTranslator();
   const direction = useDirection();
-  const BackIcon = direction === "rtl" ? ArrowRightIcon : ArrowLeftIcon;
 
   const resource = useResource((api) => api.cases.get(caseId), [caseId]);
 
   return (
-    <Layout
-      height="fill"
-      content={
-        <LayoutContent padding={0} isScrollable>
-          <DataView resource={resource} loadingLabel={t("@legalos.cases.detail.loading")}>
-            {(record) => (
-              <VStack gap={6}>
-                <Link href={`/matters/${record.matter_id}`}>
-                  <HStack gap={1.5} vAlign="center">
-                    <Icon icon={BackIcon} size="sm" color="secondary" />
-                    <Text type="body" color="secondary">
-                      {t("@legalos.cases.detail.backLink")}
-                    </Text>
-                  </HStack>
-                </Link>
+    <div
+      className="w-full flex flex-col gap-6"
+      style={{
+        maxWidth: "1280px",
+        margin: "0 auto",
+        padding: "24px 20px",
+      }}
+    >
+      <DataView resource={resource} loadingLabel={t("@legalos.cases.detail.loading")}>
+        {(record) => (
+          <div className="flex flex-col gap-6">
+            {/* Back link */}
+            <div>
+              <Link
+                href={`/matters/${record.matter_id}`}
+                className="inline-flex items-center gap-1.5 text-sm font-medium hover:underline"
+                style={{ color: "var(--text2)" }}
+              >
+                <Icon name={direction === "rtl" ? "arrow_forward" : "arrow_back"} size={18} />
+                <span>{t("@legalos.cases.detail.backLink")}</span>
+              </Link>
+            </div>
 
-                <VStack gap={1}>
-                  <HStack gap={3} vAlign="center" wrap="wrap">
-                    <Heading level={2}>{record.case_number || t("@legalos.cases.detail.unfiledHeading")}</Heading>
-                    {record.status && (
-                      <Badge
-                        variant={statusVariant(record.status)}
-                        label={record.status}
-                      />
-                    )}
-                    <PrimaryBadge record={record} />
-                  </HStack>
-                  <Text type="body" color="secondary">
-                    <Link href={`/matters/${record.matter_id}`}>
-                      {record.matter_name}
-                    </Link>
-                    {record.court ? ` · ${record.court}` : ""}
-                  </Text>
-                  <ParentLine record={record} />
-                </VStack>
-
-                {record.ai_summary && (
-                  <Card variant="muted">
-                    <VStack gap={2}>
-                      <HStack gap={2} vAlign="center">
-                        <Icon
-                          icon={SparklesIcon}
-                          size="sm"
-                          className="text-purple-vivid"
-                        />
-                        <Text type="label" weight="semibold">
-                          {t("@legalos.cases.detail.summaryHeading")}
-                        </Text>
-                      </HStack>
-                      <Text type="body">{record.ai_summary}</Text>
-                      <Text type="supporting" color="secondary">
-                        {t("@legalos.cases.detail.summaryDisclaimer")}
-                      </Text>
-                    </VStack>
-                  </Card>
+            {/* Header */}
+            <div className="flex flex-col gap-1 pb-4 border-b" style={{ borderColor: "var(--border)" }}>
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text)" }}>
+                  {record.case_number || t("@legalos.cases.detail.unfiledHeading")}
+                </h1>
+                {record.status && (
+                  <Badge color={statusVariant(record.status)}>
+                    {record.status}
+                  </Badge>
                 )}
+                <PrimaryBadge record={record} />
+              </div>
+              <div className="text-sm" style={{ color: "var(--text2)" }}>
+                <Link
+                  href={`/matters/${record.matter_id}`}
+                  className="font-medium hover:underline"
+                  style={{ color: "var(--primary)" }}
+                >
+                  {record.matter_name}
+                </Link>
+                {record.court ? ` · ${record.court}` : ""}
+              </div>
+              <ParentLine record={record} />
+            </div>
 
-                <Grid columns={3} gap={6}>
-                  <GridSpan columns={2}>
-                    <VStack gap={6}>
-                      <Card>
-                        <VStack gap={4}>
-                          <Heading level={4}>{t("@legalos.cases.detail.timelineHeading")}</Heading>
-                          {record.timeline.length === 0 ? (
-                            <Text type="body" color="secondary">
-                              {t("@legalos.cases.detail.timelineEmpty")}
-                            </Text>
-                          ) : (
-                            <List hasDividers density="compact">
-                              {record.timeline.map((event) => (
-                                <ListItem
-                                  key={event.id}
-                                  label={event.label}
-                                  description={event.detail ?? undefined}
-                                  startContent={
-                                    <Icon icon={FlagIcon} size="sm" color="secondary" />
-                                  }
-                                  endContent={
-                                    <Text type="supporting" color="secondary">
-                                      {formatDate(event.event_date)}
-                                    </Text>
-                                  }
-                                />
-                              ))}
-                            </List>
-                          )}
-                        </VStack>
-                      </Card>
-
-                      <Card>
-                        <VStack gap={4}>
-                          <Heading level={4}>{t("@legalos.cases.detail.evidenceHeading")}</Heading>
-                          {record.evidence.length === 0 ? (
-                            <Text type="body" color="secondary">
-                              No evidence filed yet.
-                            </Text>
-                          ) : (
-                            <List hasDividers density="compact">
-                              {record.evidence.map((item) => (
-                                <ListItem
-                                  key={item.id}
-                                  label={item.name}
-                                  description={item.evidence_type || undefined}
-                                  startContent={
-                                    <Icon
-                                      icon={DocumentTextIcon}
-                                      size="sm"
-                                      color="secondary"
-                                    />
-                                  }
-                                  endContent={
-                                    <HStack gap={3} vAlign="center">
-                                      <Badge
-                                        variant="neutral"
-                                        label={submittedByLabel(t, item.submitted_by)}
-                                      />
-                                      <Text type="supporting" color="secondary">
-                                        {formatDate(item.submitted_date)}
-                                      </Text>
-                                    </HStack>
-                                  }
-                                />
-                              ))}
-                            </List>
-                          )}
-                        </VStack>
-                      </Card>
-
-                      <Card>
-                        <VStack gap={4}>
-                          <Heading level={4}>{t("@legalos.cases.detail.courtDocumentsHeading")}</Heading>
-                          {record.court_documents.length === 0 ? (
-                            <Text type="body" color="secondary">
-                              No court documents recorded.
-                            </Text>
-                          ) : (
-                            <List hasDividers density="compact">
-                              {record.court_documents.map((doc) => (
-                                <ListItem
-                                  key={doc.id}
-                                  label={doc.name}
-                                  description={doc.doc_type || undefined}
-                                  startContent={
-                                    <Icon
-                                      icon={DocumentTextIcon}
-                                      size="sm"
-                                      color="secondary"
-                                    />
-                                  }
-                                  endContent={
-                                    <Text type="supporting" color="secondary">
-                                      {formatDate(doc.doc_date)}
-                                    </Text>
-                                  }
-                                />
-                              ))}
-                            </List>
-                          )}
-                        </VStack>
-                      </Card>
-                    </VStack>
-                  </GridSpan>
-
-                  <VStack gap={6}>
-                    <Card>
-                      <VStack gap={4}>
-                        <Heading level={4}>{t("@legalos.cases.detail.detailsHeading")}</Heading>
-                        <MetadataList>
-                          <MetadataListItem label={t("@legalos.cases.field.court")}>
-                            {record.court || "—"}
-                          </MetadataListItem>
-                          <MetadataListItem label={t("@legalos.cases.field.judge")}>
-                            {record.judge || "—"}
-                          </MetadataListItem>
-                          <MetadataListItem label={t("@legalos.cases.field.filed")}>
-                            {record.filed_date ? formatDate(record.filed_date) : t("@legalos.cases.field.notFiled")}
-                          </MetadataListItem>
-                          <MetadataListItem label={t("@legalos.cases.field.opposingParty")}>
-                            {record.opposing_party || "—"}
-                          </MetadataListItem>
-                          {record.opposing_counsel && (
-                            <MetadataListItem label={t("@legalos.cases.field.opposingCounsel")}>
-                              {record.opposing_counsel}
-                            </MetadataListItem>
-                          )}
-                        </MetadataList>
-                      </VStack>
-                    </Card>
-
-                    {/* Read-only here; linking and unlinking happen in the
-                      * case file on the matter page, where the lawyer works. */}
-                    <Card>
-                      <VStack gap={4}>
-                        <Heading level={4}>{t("@legalos.cases.related.heading")}</Heading>
-                        {record.parent ? (
-                          <Text type="body" color="secondary">
-                            {t("@legalos.cases.related.childCannotParent")}
-                          </Text>
-                        ) : record.children.length === 0 ? (
-                          <Text type="body" color="secondary">
-                            {t("@legalos.cases.related.empty")}
-                          </Text>
-                        ) : (
-                          <List hasDividers density="compact">
-                            {record.children.map((child) => (
-                              <CaseRefItem key={child.id} ref={child} />
-                            ))}
-                          </List>
-                        )}
-                        <Link href={`/matters/${record.matter_id}`}>
-                          {t("@legalos.cases.related.manageOnMatter")}
-                        </Link>
-                      </VStack>
-                    </Card>
-
-                    <Card>
-                      <VStack gap={4}>
-                        <Heading level={4}>{t("@legalos.cases.detail.nextHearingHeading")}</Heading>
-                        {record.next_hearing ? (
-                          <VStack gap={2}>
-                            <HStack gap={2} vAlign="center">
-                              <Icon icon={ScaleIcon} size="sm" color="secondary" />
-                              <Text type="body" weight="semibold">
-                                {formatDate(record.next_hearing.hearing_date)}
-                              </Text>
-                            </HStack>
-                            <Text type="body" color="secondary">
-                              {record.next_hearing.hearing_time}
-                              {record.next_hearing.purpose
-                                ? ` · ${record.next_hearing.purpose}`
-                                : ""}
-                            </Text>
-                          </VStack>
-                        ) : (
-                          <Text type="body" color="secondary">
-                            None scheduled.
-                          </Text>
-                        )}
-                      </VStack>
-                    </Card>
-
-                    <Card>
-                      <VStack gap={4}>
-                        <Heading level={4}>{t("@legalos.cases.detail.deadlinesHeading")}</Heading>
-                        {record.deadlines.length === 0 ? (
-                          <EmptyState
-                            icon={<Icon icon={ClockIcon} size="lg" color="secondary" />}
-                            title={t("@legalos.cases.detail.deadlinesEmptyTitle")}
-                            description={t("@legalos.cases.detail.deadlinesEmptyDescription")}
-                          />
-                        ) : (
-                          <List hasDividers density="compact">
-                            {record.deadlines.map((deadline) => {
-                              const days = daysUntil(deadline.due_date);
-                              return (
-                                <ListItem
-                                  key={deadline.id}
-                                  label={deadline.label}
-                                  description={formatDate(deadline.due_date)}
-                                  startContent={
-                                    <Icon
-                                      icon={ClockIcon}
-                                      size="sm"
-                                      color="secondary"
-                                    />
-                                  }
-                                  endContent={
-                                    deadline.completed ? (
-                                      <Badge variant="success" label={t("@legalos.cases.detail.deadlineDone")} />
-                                    ) : days <= 3 ? (
-                                      <Badge
-                                        variant={days < 0 ? "error" : "warning"}
-                                        label={t("@legalos.cases.detail.daysSuffix", { days })}
-                                      />
-                                    ) : (
-                                      <Text type="supporting" color="secondary">
-                                        {days}d
-                                      </Text>
-                                    )
-                                  }
-                                />
-                              );
-                            })}
-                          </List>
-                        )}
-                      </VStack>
-                    </Card>
-                  </VStack>
-                </Grid>
-              </VStack>
+            {/* AI summary */}
+            {record.ai_summary && (
+              <Card className="p-4 flex flex-col gap-2" style={{ backgroundColor: "var(--surface2)" }}>
+                <div className="flex items-center gap-2">
+                  <Icon name="auto_awesome" size={20} style={{ color: "var(--primary)" }} />
+                  <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+                    {t("@legalos.cases.detail.summaryHeading")}
+                  </span>
+                </div>
+                <p className="text-sm leading-relaxed" style={{ color: "var(--text)" }}>
+                  {record.ai_summary}
+                </p>
+                <span className="text-xs" style={{ color: "var(--text3)" }}>
+                  {t("@legalos.cases.detail.summaryDisclaimer")}
+                </span>
+              </Card>
             )}
-          </DataView>
-        </LayoutContent>
-      }
-    />
+
+            {/* Main grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left 2 columns: Timeline, Evidence, Court documents */}
+              <div className="lg:col-span-2 flex flex-col gap-6">
+                {/* Timeline */}
+                <Card className="p-5 flex flex-col gap-4">
+                  <h2 className="text-base font-semibold" style={{ color: "var(--text)" }}>
+                    {t("@legalos.cases.detail.timelineHeading")}
+                  </h2>
+                  {record.timeline.length === 0 ? (
+                    <p className="text-sm py-4" style={{ color: "var(--text2)" }}>
+                      {t("@legalos.cases.detail.timelineEmpty")}
+                    </p>
+                  ) : (
+                    <div className="flex flex-col divide-y" style={{ borderColor: "var(--border)" }}>
+                      {record.timeline.map((event) => (
+                        <div key={event.id} className="py-3 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-8 h-8 rounded flex items-center justify-center shrink-0"
+                              style={{ backgroundColor: "var(--surface2)", color: "var(--text2)" }}
+                            >
+                              <Icon name="flag" size={18} />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium" style={{ color: "var(--text)" }}>
+                                {event.label}
+                              </span>
+                              {event.detail && (
+                                <span className="text-xs" style={{ color: "var(--text2)" }}>
+                                  {event.detail}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <span className="text-xs shrink-0" style={{ color: "var(--text3)" }}>
+                            {formatDate(event.event_date)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+
+                {/* Evidence */}
+                <Card className="p-5 flex flex-col gap-4">
+                  <h2 className="text-base font-semibold" style={{ color: "var(--text)" }}>
+                    {t("@legalos.cases.detail.evidenceHeading")}
+                  </h2>
+                  {record.evidence.length === 0 ? (
+                    <p className="text-sm py-4" style={{ color: "var(--text2)" }}>
+                      No evidence filed yet.
+                    </p>
+                  ) : (
+                    <div className="flex flex-col divide-y" style={{ borderColor: "var(--border)" }}>
+                      {record.evidence.map((item) => (
+                        <div key={item.id} className="py-3 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-8 h-8 rounded flex items-center justify-center shrink-0"
+                              style={{ backgroundColor: "var(--surface2)", color: "var(--text2)" }}
+                            >
+                              <Icon name="description" size={18} />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium" style={{ color: "var(--text)" }}>
+                                {item.name}
+                              </span>
+                              {item.evidence_type && (
+                                <span className="text-xs" style={{ color: "var(--text2)" }}>
+                                  {item.evidence_type}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Badge color="neutral">
+                              {submittedByLabel(t, item.submitted_by)}
+                            </Badge>
+                            <span className="text-xs shrink-0" style={{ color: "var(--text3)" }}>
+                              {formatDate(item.submitted_date)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+
+                {/* Court documents */}
+                <Card className="p-5 flex flex-col gap-4">
+                  <h2 className="text-base font-semibold" style={{ color: "var(--text)" }}>
+                    {t("@legalos.cases.detail.courtDocumentsHeading")}
+                  </h2>
+                  {record.court_documents.length === 0 ? (
+                    <p className="text-sm py-4" style={{ color: "var(--text2)" }}>
+                      No court documents recorded.
+                    </p>
+                  ) : (
+                    <div className="flex flex-col divide-y" style={{ borderColor: "var(--border)" }}>
+                      {record.court_documents.map((doc) => (
+                        <div key={doc.id} className="py-3 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-8 h-8 rounded flex items-center justify-center shrink-0"
+                              style={{ backgroundColor: "var(--surface2)", color: "var(--text2)" }}
+                            >
+                              <Icon name="gavel" size={18} />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium" style={{ color: "var(--text)" }}>
+                                {doc.name}
+                              </span>
+                              {doc.doc_type && (
+                                <span className="text-xs" style={{ color: "var(--text2)" }}>
+                                  {doc.doc_type}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <span className="text-xs shrink-0" style={{ color: "var(--text3)" }}>
+                            {formatDate(doc.doc_date)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              </div>
+
+              {/* Right column: Details, Related cases, Next hearing, Deadlines */}
+              <div className="flex flex-col gap-6">
+                {/* Court Details */}
+                <Card className="p-5 flex flex-col gap-4">
+                  <h2 className="text-base font-semibold" style={{ color: "var(--text)" }}>
+                    {t("@legalos.cases.detail.detailsHeading")}
+                  </h2>
+                  <dl className="flex flex-col gap-2.5 text-sm">
+                    <div className="flex justify-between py-1 border-b" style={{ borderColor: "var(--border)" }}>
+                      <dt style={{ color: "var(--text2)" }}>{t("@legalos.cases.field.court")}</dt>
+                      <dd className="font-medium" style={{ color: "var(--text)" }}>{record.court || "—"}</dd>
+                    </div>
+                    <div className="flex justify-between py-1 border-b" style={{ borderColor: "var(--border)" }}>
+                      <dt style={{ color: "var(--text2)" }}>{t("@legalos.cases.field.judge")}</dt>
+                      <dd className="font-medium" style={{ color: "var(--text)" }}>{record.judge || "—"}</dd>
+                    </div>
+                    <div className="flex justify-between py-1 border-b" style={{ borderColor: "var(--border)" }}>
+                      <dt style={{ color: "var(--text2)" }}>{t("@legalos.cases.field.filed")}</dt>
+                      <dd className="font-medium" style={{ color: "var(--text)" }}>
+                        {record.filed_date ? formatDate(record.filed_date) : t("@legalos.cases.field.notFiled")}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between py-1 border-b" style={{ borderColor: "var(--border)" }}>
+                      <dt style={{ color: "var(--text2)" }}>{t("@legalos.cases.field.opposingParty")}</dt>
+                      <dd className="font-medium" style={{ color: "var(--text)" }}>{record.opposing_party || "—"}</dd>
+                    </div>
+                    {record.opposing_counsel && (
+                      <div className="flex justify-between py-1" style={{ borderColor: "var(--border)" }}>
+                        <dt style={{ color: "var(--text2)" }}>{t("@legalos.cases.field.opposingCounsel")}</dt>
+                        <dd className="font-medium" style={{ color: "var(--text)" }}>{record.opposing_counsel}</dd>
+                      </div>
+                    )}
+                  </dl>
+                </Card>
+
+                {/* Related cases */}
+                <Card className="p-5 flex flex-col gap-4">
+                  <h2 className="text-base font-semibold" style={{ color: "var(--text)" }}>
+                    {t("@legalos.cases.related.heading")}
+                  </h2>
+                  {record.parent ? (
+                    <p className="text-sm" style={{ color: "var(--text2)" }}>
+                      {t("@legalos.cases.related.childCannotParent")}
+                    </p>
+                  ) : record.children.length === 0 ? (
+                    <p className="text-sm" style={{ color: "var(--text2)" }}>
+                      {t("@legalos.cases.related.empty")}
+                    </p>
+                  ) : (
+                    <div className="flex flex-col divide-y" style={{ borderColor: "var(--border)" }}>
+                      {record.children.map((child) => (
+                        <CaseRefItem key={child.id} ref={child} />
+                      ))}
+                    </div>
+                  )}
+                  <Link
+                    href={`/matters/${record.matter_id}`}
+                    className="text-xs font-medium hover:underline"
+                    style={{ color: "var(--primary)" }}
+                  >
+                    {t("@legalos.cases.related.manageOnMatter")}
+                  </Link>
+                </Card>
+
+                {/* Next hearing */}
+                <Card className="p-5 flex flex-col gap-3">
+                  <h2 className="text-base font-semibold" style={{ color: "var(--text)" }}>
+                    {t("@legalos.cases.detail.nextHearingHeading")}
+                  </h2>
+                  {record.next_hearing ? (
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center gap-2">
+                        <Icon name="gavel" size={18} style={{ color: "var(--primary)" }} />
+                        <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+                          {formatDate(record.next_hearing.hearing_date)}
+                        </span>
+                      </div>
+                      <span className="text-xs" style={{ color: "var(--text2)" }}>
+                        {record.next_hearing.hearing_time}
+                        {record.next_hearing.purpose ? ` · ${record.next_hearing.purpose}` : ""}
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-sm" style={{ color: "var(--text2)" }}>
+                      None scheduled.
+                    </p>
+                  )}
+                </Card>
+
+                {/* Deadlines */}
+                <Card className="p-5 flex flex-col gap-4">
+                  <h2 className="text-base font-semibold" style={{ color: "var(--text)" }}>
+                    {t("@legalos.cases.detail.deadlinesHeading")}
+                  </h2>
+                  {record.deadlines.length === 0 ? (
+                    <EmptyState
+                      icon={<Icon name="schedule" size={32} />}
+                      title={t("@legalos.cases.detail.deadlinesEmptyTitle")}
+                      description={t("@legalos.cases.detail.deadlinesEmptyDescription")}
+                    />
+                  ) : (
+                    <div className="flex flex-col divide-y" style={{ borderColor: "var(--border)" }}>
+                      {record.deadlines.map((deadline) => {
+                        const days = daysUntil(deadline.due_date);
+                        return (
+                          <div key={deadline.id} className="py-2.5 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <Icon name="schedule" size={18} style={{ color: "var(--text2)" }} />
+                              <div className="flex flex-col">
+                                <span className="text-xs font-semibold" style={{ color: "var(--text)" }}>
+                                  {deadline.label}
+                                </span>
+                                <span className="text-xs" style={{ color: "var(--text2)" }}>
+                                  {formatDate(deadline.due_date)}
+                                </span>
+                              </div>
+                            </div>
+                            <div>
+                              {deadline.completed ? (
+                                <Badge color="success">
+                                  {t("@legalos.cases.detail.deadlineDone")}
+                                </Badge>
+                              ) : days <= 3 ? (
+                                <Badge color={days < 0 ? "danger" : "warn"}>
+                                  {t("@legalos.cases.detail.daysSuffix", { days })}
+                                </Badge>
+                              ) : (
+                                <span className="text-xs font-medium" style={{ color: "var(--text2)" }}>
+                                  {days}d
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </Card>
+              </div>
+            </div>
+          </div>
+        )}
+      </DataView>
+    </div>
   );
 }
