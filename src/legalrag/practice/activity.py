@@ -749,10 +749,11 @@ def export_recent_matters_csv(
     output = io.StringIO()
     writer = csv.writer(output, lineterminator="\r\n")
 
-    # ترويسة الأعمدة السبعة مطابقة لجدول النشاط الأخير (باستثناء قائمة الإجراءات more_horiz)
+    # ترويسة الأعمدة مطابقة لجدول النشاط الأخير (عدا قائمة الإجراءات more_horiz)
     headers = [
         "رقم القضية",
-        "الموكل / القضية",
+        "الموكل",
+        "اسم القضية",
         "نوع القضية",
         "المحكمة",
         "المحامي المسؤول",
@@ -763,13 +764,13 @@ def export_recent_matters_csv(
 
     for r in m_rows:
         mid, m_num, m_name, c_name, m_type, court, resp, status = r
-        client_or_matter = c_name or m_name
         dl = deadlines.get(mid)
         next_deadline_str = f"{dl[1].isoformat()} ({dl[0]})" if dl else "—"
 
         row = [
             _sanitize_csv_cell(m_num or str(mid)),
-            _sanitize_csv_cell(client_or_matter),
+            _sanitize_csv_cell(c_name or "—"),
+            _sanitize_csv_cell(m_name or "—"),
             _sanitize_csv_cell(m_type or "—"),
             _sanitize_csv_cell(court or "—"),
             _sanitize_csv_cell(resp or "—"),
