@@ -1196,23 +1196,6 @@
     "source": "observed during T-047 human check 2026-09-06"
   },
   {
-    "id": "T-065",
-    "title": "مبدّل المكاتب — لا سبيل إلى مكتب ثانٍ من الواجهة",
-    "batch": "sijil-shell",
-    "owner": "frontend",
-    "est": "4س",
-    "labels": [
-      "frontend",
-      "واجهة"
-    ],
-    "deps": [],
-    "files": [
-      "web/components/Shell.tsx",
-      "web/lib/i18n/catalogs/shell.ts"
-    ],
-    "source": "owner request 2026-09-06"
-  },
-  {
     "id": "T-066",
     "title": "الشريط الجانبي: العدّادات وتمييز البند وسطوع اللون",
     "batch": "sijil-shell",
