@@ -1,106 +1,20 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
-import {
-  Layout,
-  LayoutContent,
-  LayoutPanel,
-  Stack,
-  StackItem,
-  HStack,
-  VStack,
-} from "@astryxdesign/core/Layout";
-import { Text, Heading } from "@astryxdesign/core/Text";
-import {
-  ChatComposer,
-  ChatLayout,
-  ChatMessage,
-  ChatMessageBubble,
-  ChatMessageList,
-  ChatMessageMetadata,
-  ChatSystemMessage,
-} from "@astryxdesign/core/Chat";
-import { Avatar, AvatarStatusDot } from "@astryxdesign/core/Avatar";
-import { StatusDot } from "@astryxdesign/core/StatusDot";
-import { Badge } from "@astryxdesign/core/Badge";
-import { List, ListItem } from "@astryxdesign/core/List";
-import { Divider } from "@astryxdesign/core/Divider";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { Timestamp } from "@astryxdesign/core/Timestamp";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
-import { Icon } from "@astryxdesign/core/Icon";
-import { IconButton } from "@astryxdesign/core/IconButton";
-import { Button } from "@astryxdesign/core/Button";
-import { Card } from "@astryxdesign/core/Card";
-import { useMediaQuery } from "@astryxdesign/core/hooks";
-import {
-  BriefcaseIcon,
-  ChatBubbleLeftRightIcon,
-  DocumentTextIcon,
-  HashtagIcon,
-  InboxIcon,
-  MagnifyingGlassIcon,
-  PaperClipIcon,
-  PencilSquareIcon,
-  SparklesIcon,
-  UserGroupIcon,
-} from "@heroicons/react/24/outline";
+import { useState } from "react";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Input } from "@/components/ui/Input";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 import { useFormat } from "@/lib/i18n/format";
-
-// ---------------------------------------------------------------------------
-// Messages — Slack-like internal firm messaging. No backend yet; this is the
-// UI concept pass. Channels are organized around matters (per the brief),
-// plus a firm-wide channel and private DMs between teammates.
-// ---------------------------------------------------------------------------
-
-const styles: Record<string, CSSProperties> = {
-  // 100% of the shell's content region, not 100dvh: this page renders inside
-  // the app shell, which has already spent the top bar's height, so a viewport
-  // minimum made the screen 48px taller than the space it had. The overflow
-  // landed on the composer at the bottom, which is the one control the screen
-  // exists for.
-  root: { height: "100%", minHeight: 0 },
-  sidebar: { height: "100%", minHeight: 0 },
-  sidebarHeader: {
-    alignItems: "center",
-    paddingInline: "var(--spacing-3)",
-    paddingBlock: "var(--spacing-3)",
-  },
-  sidebarSearch: {
-    paddingInline: "var(--spacing-3)",
-    paddingBottom: "var(--spacing-2)",
-  },
-  sidebarScroll: {
-    minHeight: 0,
-    overflowY: "auto",
-    paddingInline: "var(--spacing-2)",
-    paddingBottom: "var(--spacing-3)",
-  },
-  sectionGap: { marginTop: "var(--spacing-4)" },
-  streamColumn: { height: "100%", minHeight: 0 },
-  streamHeader: {
-    alignItems: "center",
-    paddingInline: "var(--spacing-4)",
-    paddingBlock: "var(--spacing-3)",
-  },
-  streamTopic: { minWidth: 0 },
-  chatArea: { minHeight: 0, display: "flex", flexDirection: "column" },
-  // A flex column, not a plain block: ChatLayout sizes itself with `flex: 1`,
-  // which only means anything inside a flex container. As a block child it
-  // took its content height instead and ran past the bottom of the region,
-  // carrying the composer with it.
-  chatFill: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" },
-};
 
 type Presence = "online" | "busy" | "offline";
 
 interface Person {
   name: string;
-  /** Enum value, resolved through the catalog — see useEnumLabel below. It
-   *  used to be a literal ("Owner"), which was the one label on this screen
-   *  that stayed English after the locale switched. */
   role: "owner" | "lawyer" | "staff";
 }
 
@@ -158,16 +72,10 @@ const DIRECT_MESSAGES: DirectMessage[] = [
   { id: "dm-layla", userId: "layla", presence: "offline", unread: 0 },
 ];
 
-const PRESENCE_VARIANT: Record<Presence, "success" | "error" | "neutral"> = {
-  online: "success",
-  busy: "error",
-  offline: "neutral",
-};
-
-const PRESENCE_KEY: Record<Presence, string> = {
-  online: "@legalos.messages.presence.online",
-  busy: "@legalos.messages.presence.busy",
-  offline: "@legalos.messages.presence.offline",
+const PRESENCE_COLOR: Record<Presence, string> = {
+  online: "var(--success)",
+  busy: "var(--danger)",
+  offline: "var(--text3)",
 };
 
 interface Attachment {
@@ -255,88 +163,22 @@ const MESSAGES_BY_CHANNEL: Record<string, StreamMessage[]> = {
   ],
 };
 
-// \p{L}, not [A-Z]: an Arabic script has no case, so the old pattern matched
-// no mention at all once the names were Arabic. Two words at most, as before,
-// so "@يوسف عادل إذن" highlights the name and not the sentence after it.
 const MENTION_RE = /(@\p{L}[\p{L}\p{M}'’-]*(?:[  ]\p{L}[\p{L}\p{M}'’-]*)?)/gu;
 
 function MessageText({ text }: { text: string }) {
   const parts = text.split(MENTION_RE).filter(Boolean);
   return (
-    <Text type="body" as="span">
+    <span>
       {parts.map((part, i) =>
         part.startsWith("@") ? (
-          <Text key={i} type="body" as="span" color="accent" weight="semibold">
+          <span key={i} className="font-semibold" style={{ color: "var(--primary)" }}>
             {part}
-          </Text>
+          </span>
         ) : (
-          <Text key={i} type="body" as="span">
-            {part}
-          </Text>
+          <span key={i}>{part}</span>
         ),
       )}
-    </Text>
-  );
-}
-
-function AttachmentCard({ attachment }: { attachment: Attachment }) {
-  return (
-    <Card padding={2} variant="muted">
-      <HStack gap={3} vAlign="center">
-        <Icon icon={DocumentTextIcon} size="md" color="secondary" />
-        <VStack gap={0}>
-          <Text type="label" weight="semibold">
-            {attachment.name}
-          </Text>
-          <Text type="supporting" color="secondary">
-            {attachment.size} · PDF
-          </Text>
-        </VStack>
-      </HStack>
-    </Card>
-  );
-}
-
-function StreamMessageGroup({ message }: { message: StreamMessage }) {
-  const isSelf = message.userId === YOU;
-  const person = PEOPLE[message.userId];
-  const lastIndex = message.bubbles.length - 1;
-
-  return (
-    <ChatMessage
-      sender={isSelf ? "user" : "assistant"}
-      avatar={isSelf ? undefined : <Avatar name={person.name} size="md" />}
-    >
-      {message.bubbles.map((text, index) => (
-        <ChatMessageBubble
-          key={`${message.id}-${index}`}
-          group={
-            message.bubbles.length === 1
-              ? undefined
-              : index === 0
-                ? "first"
-                : index === lastIndex
-                  ? "last"
-                  : "middle"
-          }
-          name={!isSelf && index === 0 ? person.name : undefined}
-          metadata={
-            index === lastIndex ? (
-              <ChatMessageMetadata
-                timestamp={<Timestamp value={message.time} format="time" />}
-              />
-            ) : undefined
-          }
-        >
-          <MessageText text={text} />
-        </ChatMessageBubble>
-      ))}
-      {message.attachment && (
-        <ChatMessageBubble variant="ghost">
-          <AttachmentCard attachment={message.attachment} />
-        </ChatMessageBubble>
-      )}
-    </ChatMessage>
+    </span>
   );
 }
 
@@ -348,8 +190,6 @@ export default function MessagesPage() {
   const [selectedDmId, setSelectedDmId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [draft, setDraft] = useState("");
-
-  const isSidebarHidden = useMediaQuery("(max-width: 768px)");
 
   const selectedChannel =
     CHANNELS.find((c) => c.id === selectedChannelId) ?? CHANNELS[0];
@@ -374,207 +214,299 @@ export default function MessagesPage() {
       })
     : t("@legalos.messages.composer.toChannel", { name: selectedChannel.name });
 
-  const channelSidebar = (
-    <Stack direction="vertical" style={styles.sidebar}>
-      <HStack gap={2} style={styles.sidebarHeader}>
-        <StackItem size="fill">
-          <Heading level={5}>{t("@legalos.messages.heading")}</Heading>
-        </StackItem>
-        <IconButton
-          label={t("@legalos.messages.newMessage")}
-          tooltip={t("@legalos.messages.newMessage")}
-          icon={<Icon icon={PencilSquareIcon} size="sm" color="inherit" />}
-          variant="ghost"
-          size="sm"
-          onClick={() => {}}
-        />
-      </HStack>
-      <div style={styles.sidebarSearch}>
-        <TextInput
-          label={t("@legalos.messages.jumpTo.label")}
-          isLabelHidden
-          size="sm"
-          placeholder={t("@legalos.messages.jumpTo.placeholder")}
-          startIcon={MagnifyingGlassIcon}
-          value={searchQuery}
-          onChange={setSearchQuery}
-        />
-      </div>
-      <StackItem size="fill" style={styles.sidebarScroll}>
-        <List
-          density="compact"
-          hasDividers={false}
-          header={
-            <Text type="label" size="sm" color="secondary">
-              {t("@legalos.messages.matterChannels")}
-            </Text>
-          }
-        >
-          {visibleChannels.map((channel) => (
-            <ListItem
-              key={channel.id}
-              label={channel.name}
-              isSelected={selectedDmId === null && channel.id === selectedChannelId}
-              onClick={() => {
-                setSelectedChannelId(channel.id);
-                setSelectedDmId(null);
-              }}
-              startContent={
-                <Icon
-                  icon={channel.isMatter ? BriefcaseIcon : HashtagIcon}
-                  size="sm"
-                  color="secondary"
-                />
-              }
-              endContent={
-                channel.unread > 0 ? (
-                  <Badge label={String(channel.unread)} variant="neutral" />
-                ) : undefined
-              }
-            />
-          ))}
-        </List>
-        <div style={styles.sectionGap}>
-          <List
-            density="compact"
-            hasDividers={false}
-            header={
-              <Text type="label" size="sm" color="secondary">
-                {t("@legalos.messages.directMessages")}
-              </Text>
-            }
-          >
-            {visibleDms.map((dm) => (
-              <ListItem
-                key={dm.id}
-                label={PEOPLE[dm.userId].name}
-                isSelected={selectedDmId === dm.id}
-                onClick={() => setSelectedDmId(dm.id)}
-                startContent={
-                  <Avatar
-                    name={PEOPLE[dm.userId].name}
-                    size="sm"
-                    status={
-                      <AvatarStatusDot
-                        variant={PRESENCE_VARIANT[dm.presence]}
-                        label={t(PRESENCE_KEY[dm.presence])}
-                      />
-                    }
-                  />
-                }
-                endContent={
-                  dm.unread > 0 ? (
-                    <Badge label={String(dm.unread)} variant="neutral" />
-                  ) : undefined
-                }
-              />
-            ))}
-          </List>
-        </div>
-      </StackItem>
-    </Stack>
-  );
+  const handleSendMessage = () => {
+    if (!draft.trim()) return;
+    setDraft("");
+  };
 
-  const messageStream = (
-    <Stack direction="vertical" style={styles.streamColumn}>
-      <HStack gap={3} style={styles.streamHeader}>
-        <Icon
-          icon={selectedDm ? ChatBubbleLeftRightIcon : selectedChannel.isMatter ? BriefcaseIcon : HashtagIcon}
-          size="sm"
-          color="secondary"
-        />
-        <Heading level={5}>{headingLabel}</Heading>
-        <StackItem size="fill" style={styles.streamTopic}>
-          <Text type="supporting" color="secondary" maxLines={1}>
-            {selectedDm ? enumLabel(PEOPLE[selectedDm.userId].role) : selectedChannel.topic}
-          </Text>
-        </StackItem>
-        {!selectedDm && (
-          <StatusDot
-            variant="success"
-            label={t("@legalos.messages.memberCount", { count: 4 })}
+  return (
+    <div className="flex h-[calc(100vh-64px)] overflow-hidden border rounded-lg m-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
+      {/* الشريط الجانبي للقنوات والمحادثات المباشرة */}
+      <aside
+        className="w-72 flex-shrink-0 flex flex-col border-e overflow-hidden"
+        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface2)" }}
+      >
+        <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: "var(--border)" }}>
+          <h2 className="text-sm font-bold" style={{ color: "var(--text)" }}>
+            {t("@legalos.messages.heading")}
+          </h2>
+          <button
+            type="button"
+            className="p-1.5 rounded hover:bg-[var(--surface3)] transition-colors"
+            style={{ color: "var(--text2)" }}
+            aria-label={t("@legalos.messages.newMessage")}
+          >
+            <Icon name="edit" size={18} />
+          </button>
+        </div>
+
+        <div className="p-3">
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t("@legalos.messages.jumpTo.placeholder")}
+            startIcon={<Icon name="search" size={16} />}
           />
-        )}
-        {!selectedDm && (
-          <IconButton
-            label={t("@legalos.messages.members")}
-            tooltip={t("@legalos.messages.members")}
-            icon={<Icon icon={UserGroupIcon} size="sm" color="inherit" />}
-            variant="ghost"
-            size="sm"
-            onClick={() => {}}
-          />
-        )}
-      </HStack>
-      <Divider />
-      <StackItem size="fill" style={styles.chatArea}>
-        <div style={styles.chatFill}>
-          <ChatLayout
-            composer={
-              <ChatComposer
-                placeholder={composerPlaceholder}
-                value={draft}
-                onChange={setDraft}
-                onSubmit={() => setDraft("")}
-                headerActions={
-                  <IconButton
-                    label={t("@legalos.messages.attachFile")}
-                    tooltip={t("@legalos.messages.attachFile")}
-                    icon={<Icon icon={PaperClipIcon} size="sm" color="inherit" />}
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {}}
-                  />
-                }
-                footerActions={
-                  <Button
-                    label={t("@legalos.messages.aiSummary")}
-                    variant="ghost"
-                    size="sm"
-                    icon={<Icon icon={SparklesIcon} size="sm" className="text-purple-vivid" />}
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-2 pb-4 flex flex-col gap-5">
+          {/* قنوات القضايا */}
+          <div className="flex flex-col gap-1">
+            <span className="px-2 text-xs font-semibold" style={{ color: "var(--text2)" }}>
+              {t("@legalos.messages.matterChannels")}
+            </span>
+            {visibleChannels.map((channel) => {
+              const isSelected = selectedDmId === null && channel.id === selectedChannelId;
+              return (
+                <button
+                  key={channel.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedChannelId(channel.id);
+                    setSelectedDmId(null);
+                  }}
+                  className={`flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs font-medium text-start transition-colors ${
+                    isSelected ? "bg-[var(--surface3)] font-bold" : "hover:bg-[var(--surface)]"
+                  }`}
+                  style={{ color: isSelected ? "var(--primary)" : "var(--text)" }}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <Icon
+                      name={channel.isMatter ? "work" : "tag"}
+                      size={16}
+                    />
+                    <span className="truncate">{channel.name}</span>
+                  </div>
+                  {channel.unread > 0 && (
+                    <Badge color="neutral">{channel.unread}</Badge>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* المحادثات المباشرة */}
+          <div className="flex flex-col gap-1">
+            <span className="px-2 text-xs font-semibold" style={{ color: "var(--text2)" }}>
+              {t("@legalos.messages.directMessages")}
+            </span>
+            {visibleDms.map((dm) => {
+              const isSelected = selectedDmId === dm.id;
+              const person = PEOPLE[dm.userId];
+              return (
+                <button
+                  key={dm.id}
+                  type="button"
+                  onClick={() => setSelectedDmId(dm.id)}
+                  className={`flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs font-medium text-start transition-colors ${
+                    isSelected ? "bg-[var(--surface3)] font-bold" : "hover:bg-[var(--surface)]"
+                  }`}
+                  style={{ color: isSelected ? "var(--primary)" : "var(--text)" }}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <div className="relative">
+                      <div
+                        className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
+                        style={{ backgroundColor: "var(--primary)", color: "var(--primary-foreground)" }}
+                      >
+                        {person.name.slice(0, 1)}
+                      </div>
+                      <span
+                        className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border"
+                        style={{
+                          backgroundColor: PRESENCE_COLOR[dm.presence],
+                          borderColor: "var(--surface2)",
+                        }}
+                      />
+                    </div>
+                    <span className="truncate">{person.name}</span>
+                  </div>
+                  {dm.unread > 0 && (
+                    <Badge color="neutral">{dm.unread}</Badge>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </aside>
+
+      {/* منطقة المحادثة */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden" style={{ backgroundColor: "var(--surface)" }}>
+        {/* شريط رأس القناة / المحادثة */}
+        <div
+          className="p-4 border-b flex items-center justify-between gap-3 flex-shrink-0"
+          style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <Icon
+              name={selectedDm ? "chat" : selectedChannel.isMatter ? "work" : "tag"}
+              size={18}
+            />
+            <h1 className="text-sm font-bold truncate" style={{ color: "var(--text)" }}>
+              {headingLabel}
+            </h1>
+            <span className="text-xs truncate" style={{ color: "var(--text2)" }}>
+              · {selectedDm ? enumLabel(PEOPLE[selectedDm.userId].role) : selectedChannel.topic}
+            </span>
+          </div>
+
+          {!selectedDm && (
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 text-xs" style={{ color: "var(--text2)" }}>
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "var(--success)" }} />
+                {t("@legalos.messages.memberCount", { count: 4 })}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* سياق الرسائل */}
+        <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-4">
+          {messages.length > 0 ? (
+            <>
+              <div className="flex items-center justify-center my-2">
+                <span
+                  className="px-3 py-1 rounded-full text-xs font-medium border"
+                  style={{
+                    backgroundColor: "var(--surface2)",
+                    borderColor: "var(--border)",
+                    color: "var(--text2)",
+                  }}
+                >
+                  {formatDayLong(messages[0].time)}
+                </span>
+              </div>
+
+              {messages.map((message) => {
+                const isSelf = message.userId === YOU;
+                const person = PEOPLE[message.userId];
+                return (
+                  <div
+                    key={message.id}
+                    className={`flex items-start gap-3 ${isSelf ? "flex-row-reverse" : ""}`}
                   >
-                    {t("@legalos.messages.aiSummary")}
-                  </Button>
-                }
-              />
-            }
-            emptyState={
+                    {!isSelf && (
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                        style={{
+                          backgroundColor: "var(--surface3)",
+                          color: "var(--text)",
+                        }}
+                      >
+                        {person.name.slice(0, 1)}
+                      </div>
+                    )}
+                    <div
+                      className={`flex flex-col gap-1 max-w-[70%] ${
+                        isSelf ? "items-end" : "items-start"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 text-xs" style={{ color: "var(--text2)" }}>
+                        <span className="font-semibold" style={{ color: "var(--text)" }}>
+                          {isSelf ? "أنت" : person.name}
+                        </span>
+                        <span>
+                          {new Date(message.time).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+
+                      {message.bubbles.map((text, idx) => (
+                        <div
+                          key={idx}
+                          className="p-3 rounded-xl text-xs leading-relaxed"
+                          style={{
+                            backgroundColor: isSelf
+                              ? "var(--primary)"
+                              : "var(--surface2)",
+                            color: isSelf
+                              ? "var(--primary-foreground)"
+                              : "var(--text)",
+                            border: isSelf ? "none" : "1px solid var(--border)",
+                          }}
+                        >
+                          <MessageText text={text} />
+                        </div>
+                      ))}
+
+                      {message.attachment && (
+                        <Card className="p-3 flex items-center gap-3">
+                          <Icon name="description" size={20} />
+                          <div className="flex flex-col">
+                            <span className="text-xs font-semibold" style={{ color: "var(--text)" }}>
+                              {message.attachment.name}
+                            </span>
+                            <span className="text-[11px]" style={{ color: "var(--text2)" }}>
+                              {message.attachment.size} · PDF
+                            </span>
+                          </div>
+                        </Card>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          ) : (
+            <div className="m-auto">
               <EmptyState
-                icon={<Icon icon={InboxIcon} size="lg" />}
+                icon={<Icon name="inbox" size={32} />}
                 title={t("@legalos.messages.empty.title")}
                 description={t("@legalos.messages.empty.description")}
               />
-            }
-          >
-            {messages.length > 0 ? (
-              <ChatMessageList density="balanced">
-                <ChatSystemMessage variant="divider">
-                  {formatDayLong(messages[0].time)}
-                </ChatSystemMessage>
-                {messages.map((message) => (
-                  <StreamMessageGroup key={message.id} message={message} />
-                ))}
-              </ChatMessageList>
-            ) : null}
-          </ChatLayout>
+            </div>
+          )}
         </div>
-      </StackItem>
-    </Stack>
-  );
 
-  return (
-    <div style={styles.root}>
-      <Layout
-        height="fill"
-        start={
-          !isSidebarHidden && (
-            <LayoutPanel width={280} padding={0}>
-              {channelSidebar}
-            </LayoutPanel>
-          )
-        }
-        content={<LayoutContent padding={0}>{messageStream}</LayoutContent>}
-      />
+        {/* صندوق كتابة الرسالة */}
+        <div className="p-4 border-t flex flex-col gap-2 flex-shrink-0" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="p-2 rounded-md hover:bg-[var(--surface2)] transition-colors"
+              style={{ color: "var(--text2)" }}
+              title={t("@legalos.messages.attachFile")}
+            >
+              <Icon name="attach_file" size={18} />
+            </button>
+            <input
+              type="text"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+              placeholder={composerPlaceholder}
+              className="flex-1 text-xs px-3 py-2 rounded-md border outline-none transition-colors"
+              style={{
+                borderColor: "var(--border)",
+                backgroundColor: "var(--surface2)",
+                color: "var(--text)",
+              }}
+            />
+            <Button
+              size="sm"
+              onClick={handleSendMessage}
+              disabled={!draft.trim()}
+            >
+              <Icon name="send" size={16} />
+              <span>إرسال</span>
+            </Button>
+          </div>
+          <div className="flex items-center justify-between pt-1">
+            <Button variant="ghost" size="sm">
+              <Icon name="auto_awesome" size={14} />
+              <span>{t("@legalos.messages.aiSummary")}</span>
+            </Button>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

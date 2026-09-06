@@ -1,43 +1,23 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Layout, LayoutContent } from "@astryxdesign/core/Layout";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Grid } from "@astryxdesign/core/Grid";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Card } from "@astryxdesign/core/Card";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Badge } from "@astryxdesign/core/Badge";
-import { Avatar } from "@astryxdesign/core/Avatar";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { List, ListItem } from "@astryxdesign/core/List";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
-import { Link } from "@astryxdesign/core/Link";
-import {
-  SparklesIcon,
-  MagnifyingGlassIcon,
-  PlusIcon,
-  DocumentDuplicateIcon,
-  ScaleIcon,
-  BookOpenIcon,
-  ShieldCheckIcon,
-} from "@heroicons/react/24/outline";
+import Link from "next/link";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
+import { Badge } from "@/components/ui/Badge";
+import { Input } from "@/components/ui/Input";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { KB_CATEGORIES, KB_ITEMS, AI_RECOMMENDATIONS, getKbItems, type KbItem, type KbCategory } from "./data";
 
-const AI_ICON_CLASS = "text-purple-vivid";
-
-const TYPE_ICON: Record<KbItem["type"], React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
-  template: DocumentDuplicateIcon,
-  precedent: ScaleIcon,
-  guide: BookOpenIcon,
-  policy: ShieldCheckIcon,
+const TYPE_ICON_NAME: Record<KbItem["type"], string> = {
+  template: "content_copy",
+  precedent: "balance",
+  guide: "menu_book",
+  policy: "verified_user",
 };
 
-/** KbCategory's members are English strings (they discriminate the union in
- *  data.ts); this maps each to its catalog key so the badge and filter render
- *  in the active locale without changing the data model. */
 const CATEGORY_KEY: Record<KbCategory, string> = {
   "Contract Templates": "@legalos.knowledgeBase.category.contractTemplates",
   "Litigation Precedents": "@legalos.knowledgeBase.category.litigationPrecedents",
@@ -46,44 +26,43 @@ const CATEGORY_KEY: Record<KbCategory, string> = {
   "Client Communication Templates": "@legalos.knowledgeBase.category.clientCommunication",
 };
 
-const CATEGORY_BADGE: Record<KbCategory, "blue" | "orange" | "teal" | "cyan" | "pink"> = {
-  "Contract Templates": "blue",
-  "Litigation Precedents": "orange",
-  "Regulatory Guides": "teal",
-  "Firm Policies & SOPs": "cyan",
-  "Client Communication Templates": "pink",
-};
-
 function KbCard({ item }: { item: KbItem }) {
   const t = useTranslator();
-  const TypeIcon = TYPE_ICON[item.type];
   return (
-    <Card>
-      <VStack gap={3}>
-        <HStack hAlign="between" vAlign="start">
-          <Icon icon={TypeIcon} size="sm" color="secondary" />
-          <Badge variant={CATEGORY_BADGE[item.category]} label={t(CATEGORY_KEY[item.category])} />
-        </HStack>
-        <VStack gap={1}>
-          <Link href={`/knowledge-base/${item.id}`} isStandalone>
+    <Card className="p-5 flex flex-col justify-between gap-3 hover:border-[var(--primary)] transition-colors">
+      <div className="flex flex-col gap-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <Icon name={TYPE_ICON_NAME[item.type]} size={18} />
+          <Badge color="neutral">{t(CATEGORY_KEY[item.category])}</Badge>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Link
+            href={`/knowledge-base/${item.id}`}
+            className="text-xs font-bold hover:underline line-clamp-2"
+            style={{ color: "var(--text)" }}
+          >
             {item.title}
           </Link>
-          <Text type="supporting" color="secondary">
+          <p className="text-[11px] line-clamp-3" style={{ color: "var(--text2)" }}>
             {item.summary}
-          </Text>
-        </VStack>
-        <HStack hAlign="between" vAlign="center">
-          <HStack gap={2} vAlign="center">
-            <Avatar name={item.author} size="xsm" tooltip={false} />
-            <Text type="supporting" color="secondary">
-              {item.author}
-            </Text>
-          </HStack>
-          <Text type="supporting" color="secondary">
-            {t("@legalos.knowledgeBase.updated", { date: item.updated })}
-          </Text>
-        </HStack>
-      </VStack>
+          </p>
+        </div>
+      </div>
+
+      <div className="pt-2 border-t flex items-center justify-between text-[11px]" style={{ borderColor: "var(--border)", color: "var(--text2)" }}>
+        <div className="flex items-center gap-1.5 truncate">
+          <div
+            className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold"
+            style={{ backgroundColor: "var(--surface3)", color: "var(--text)" }}
+          >
+            {item.author.slice(0, 1)}
+          </div>
+          <span className="truncate">{item.author}</span>
+        </div>
+        <span className="flex-shrink-0">
+          {t("@legalos.knowledgeBase.updated", { date: item.updated })}
+        </span>
+      </div>
     </Card>
   );
 }
@@ -106,121 +85,116 @@ export default function KnowledgeBasePage() {
   const recommended = getKbItems(AI_RECOMMENDATIONS.map((r) => r.itemId));
 
   return (
-    <Layout
-      height="fill"
-      content={
-        <LayoutContent padding={0}>
-          <VStack gap={6}>
-            <HStack hAlign="between" vAlign="center">
-              <VStack gap={1}>
-                <Heading level={2}>{t("@legalos.knowledgeBase.heading")}</Heading>
-              </VStack>
-              <Button
-                label={t("@legalos.knowledgeBase.newTemplate")}
-                variant="primary"
-                icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
-              >
-                {t("@legalos.knowledgeBase.newTemplate")}
-              </Button>
-            </HStack>
+    <div className="flex flex-col gap-6 p-6">
+      {/* رأس الصفحة وزر إنشاء نموذج */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-xl font-bold" style={{ color: "var(--text)" }}>
+          {t("@legalos.knowledgeBase.heading")}
+        </h1>
+        <Button>
+          <Icon name="add" size={16} />
+          <span>{t("@legalos.knowledgeBase.newTemplate")}</span>
+        </Button>
+      </div>
 
-            <TextInput
-              label={t("@legalos.knowledgeBase.search.label")}
-              isLabelHidden
-              value={search}
-              onChange={setSearch}
-              placeholder={t("@legalos.knowledgeBase.search.placeholder")}
-              startIcon={MagnifyingGlassIcon}
-              hasClear
-              width={420}
-            />
+      {/* حقل البحث */}
+      <div className="max-w-md w-full">
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={t("@legalos.knowledgeBase.search.placeholder")}
+          startIcon={<Icon name="search" size={16} />}
+        />
+      </div>
 
-            {!filtered && (
-              <Card variant="purple">
-                <VStack gap={3}>
-                  <HStack gap={2} vAlign="center">
-                    <Icon icon={SparklesIcon} size="sm" className={AI_ICON_CLASS} />
-                    <Heading level={4}>{t("@legalos.knowledgeBase.relatedPrecedents")}</Heading>
-                  </HStack>
-                  <Text type="body" color="secondary">
-                    {t("@legalos.knowledgeBase.showingFor", {
-                      // The matter these mock recommendations pretend to be
-                      // scoped to; same name the seeded firm carries.
-                      matter: "نبيل ضد شركة النيل للتجارة",
-                    })}
-                  </Text>
-                  <List hasDividers density="compact">
-                    {recommended.map((item, i) => (
-                      <ListItem
-                        key={item.id}
-                        label={item.title}
-                        description={AI_RECOMMENDATIONS[i].reason}
-                        href={`/knowledge-base/${item.id}`}
-                        startContent={
-                          <Icon icon={TYPE_ICON[item.type]} size="sm" color="secondary" />
-                        }
-                        endContent={
-                          <Badge
-                            variant={CATEGORY_BADGE[item.category]}
-                            label={t(CATEGORY_KEY[item.category])}
-                          />
-                        }
-                      />
-                    ))}
-                  </List>
-                </VStack>
-              </Card>
-            )}
-
-            {filtered ? (
-              filtered.length > 0 ? (
-                <VStack gap={4}>
-                  <Heading level={4}>
-                    {t("@legalos.knowledgeBase.resultCount", { count: filtered.length })}
-                  </Heading>
-                  <Grid columns={{ minWidth: 280, repeat: "fit" }} gap={4}>
-                    {filtered.map((item) => (
-                      <KbCard key={item.id} item={item} />
-                    ))}
-                  </Grid>
-                </VStack>
-              ) : (
-                <EmptyState
-                  icon={<Icon icon={MagnifyingGlassIcon} size="lg" color="secondary" />}
-                  title={t("@legalos.knowledgeBase.empty.title")}
-                  description={t("@legalos.knowledgeBase.empty.description")}
-                  actions={
-                    <Button
-                      label={t("@legalos.knowledgeBase.clearSearch")}
-                      variant="secondary"
-                      onClick={() => setSearch("")}
+      {/* التوصيات الذكية عند عدم وجود بحث */}
+      {!filtered && (
+        <Card className="p-5 flex flex-col gap-4">
+          <div className="flex items-center gap-2">
+            <Icon name="auto_awesome" size={18} />
+            <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>
+              {t("@legalos.knowledgeBase.relatedPrecedents")}
+            </h2>
+          </div>
+          <p className="text-xs" style={{ color: "var(--text2)" }}>
+            {t("@legalos.knowledgeBase.showingFor", {
+              matter: "نبيل ضد شركة النيل للتجارة",
+            })}
+          </p>
+          <div className="flex flex-col divide-y" style={{ borderColor: "var(--border)" }}>
+            {recommended.map((item, i) => (
+              <div key={item.id} className="py-3 flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="p-1.5 rounded-md bg-[var(--surface2)] mt-0.5" style={{ color: "var(--text2)" }}>
+                    <Icon name={TYPE_ICON_NAME[item.type]} size={16} />
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <Link
+                      href={`/knowledge-base/${item.id}`}
+                      className="text-xs font-bold hover:underline"
+                      style={{ color: "var(--text)" }}
                     >
-                      {t("@legalos.knowledgeBase.clearSearch")}
-                    </Button>
-                  }
-                />
-              )
-            ) : (
-              <VStack gap={8}>
-                {KB_CATEGORIES.map((category) => {
-                  const items = KB_ITEMS.filter((i) => i.category === category);
-                  if (items.length === 0) return null;
-                  return (
-                    <VStack key={category} gap={4}>
-                      <Heading level={4}>{t(CATEGORY_KEY[category])}</Heading>
-                      <Grid columns={{ minWidth: 280, repeat: "fit" }} gap={4}>
-                        {items.map((item) => (
-                          <KbCard key={item.id} item={item} />
-                        ))}
-                      </Grid>
-                    </VStack>
-                  );
-                })}
-              </VStack>
-            )}
-          </VStack>
-        </LayoutContent>
-      }
-    />
+                      {item.title}
+                    </Link>
+                    <span className="text-[11px]" style={{ color: "var(--text2)" }}>
+                      {AI_RECOMMENDATIONS[i].reason}
+                    </span>
+                  </div>
+                </div>
+                <Badge color="neutral">{t(CATEGORY_KEY[item.category])}</Badge>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* نتائج البحث أو التصفح حسب التصنيفات */}
+      {filtered ? (
+        filtered.length > 0 ? (
+          <div className="flex flex-col gap-4">
+            <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>
+              {t("@legalos.knowledgeBase.resultCount", { count: filtered.length })}
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filtered.map((item) => (
+                <KbCard key={item.id} item={item} />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="py-8">
+            <EmptyState
+              icon={<Icon name="search_off" size={32} />}
+              title={t("@legalos.knowledgeBase.empty.title")}
+              description={t("@legalos.knowledgeBase.empty.description")}
+              action={
+                <Button variant="secondary" onClick={() => setSearch("")}>
+                  <span>{t("@legalos.knowledgeBase.clearSearch")}</span>
+                </Button>
+              }
+            />
+          </div>
+        )
+      ) : (
+        <div className="flex flex-col gap-8">
+          {KB_CATEGORIES.map((category) => {
+            const items = KB_ITEMS.filter((i) => i.category === category);
+            if (items.length === 0) return null;
+            return (
+              <div key={category} className="flex flex-col gap-4">
+                <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>
+                  {t(CATEGORY_KEY[category])}
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {items.map((item) => (
+                    <KbCard key={item.id} item={item} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

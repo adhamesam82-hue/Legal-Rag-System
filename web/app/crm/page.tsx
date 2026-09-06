@@ -1,22 +1,11 @@
 "use client";
 
-import NextLink from "next/link";
-import { Layout, LayoutContent } from "@astryxdesign/core/Layout";
-import { VStack, HStack, StackItem } from "@astryxdesign/core/Stack";
-import { Grid } from "@astryxdesign/core/Grid";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Card } from "@astryxdesign/core/Card";
-import { Badge } from "@astryxdesign/core/Badge";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Divider } from "@astryxdesign/core/Divider";
-import { Link } from "@astryxdesign/core/Link";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
-import {
-  PlusIcon,
-  ExclamationTriangleIcon,
-  InboxIcon,
-} from "@heroicons/react/24/outline";
+import Link from "next/link";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { LEADS, STAGE_META, STAGE_ORDER, type Lead } from "./data";
 import { useFormat } from "@/lib/i18n/format";
@@ -38,37 +27,36 @@ function LeadCard({ lead }: { lead: Lead }) {
   const t = useTranslator();
   const { formatEGPCompact } = useFormat();
   return (
-    <NextLink href={`/crm/${lead.id}`} className="block">
-      <Card
-        padding={4}
-        className="cursor-pointer transition-colors hover:bg-muted"
-      >
-        <VStack gap={2}>
-          <Text type="label" weight="semibold" maxLines={2}>
+    <Link href={`/crm/${lead.id}`} className="block">
+      <Card className="p-4 cursor-pointer hover:bg-[var(--surface2)] transition-colors flex flex-col gap-2.5">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs font-bold line-clamp-2" style={{ color: "var(--text)" }}>
             {lead.name}
-          </Text>
-          <Text type="supporting" color="secondary" maxLines={2}>
+          </span>
+          <span className="text-[11px] line-clamp-2" style={{ color: "var(--text2)" }}>
             {lead.matterType}
-          </Text>
-          <Divider />
-          <VStack gap={0.5}>
-            <Text type="supporting" color="secondary" maxLines={2}>
-              {lead.source}
-            </Text>
-            <Text type="label" weight="semibold">
-              {formatEGPCompact(lead.estValue)}
-            </Text>
-          </VStack>
-          {lead.conflictStatus === "flagged" && (
-            <Badge
-              variant="warning"
-              label={t("@legalos.crm.conflictFlagged")}
-              icon={<Icon icon={ExclamationTriangleIcon} size="xsm" color="inherit" />}
-            />
-          )}
-        </VStack>
+          </span>
+        </div>
+
+        <div className="pt-2 border-t flex items-center justify-between text-xs" style={{ borderColor: "var(--border)" }}>
+          <span className="truncate" style={{ color: "var(--text2)" }}>
+            {lead.source}
+          </span>
+          <span className="font-bold" style={{ color: "var(--text)" }}>
+            {formatEGPCompact(lead.estValue)}
+          </span>
+        </div>
+
+        {lead.conflictStatus === "flagged" && (
+          <div className="pt-1">
+            <Badge color="primary">
+              <Icon name="warning" size={12} />
+              <span>{t("@legalos.crm.conflictFlagged")}</span>
+            </Badge>
+          </div>
+        )}
       </Card>
-    </NextLink>
+    </Link>
   );
 }
 
@@ -80,45 +68,35 @@ function PipelineColumn({ stage }: { stage: (typeof STAGE_ORDER)[number] }) {
   const meta = STAGE_META[stage];
 
   return (
-    // size="static" is what makes the track a track: without it the six
-    // columns shrink to share the viewport instead of scrolling, and at
-    // 1280 they land near 148px each — narrow enough that every lead name
-    // wraps to two lines and the width prop reads as decoration.
-    <StackItem size="static">
-      <VStack width={272} gap={3}>
-      {/* Fixed height, and the stage name gets exactly two lines of it: the
-       *  longest name ("Consultation Scheduled") wraps while its neighbours
-       *  stay on one line, which otherwise drops that column's subtitle and
-       *  first card below every other column's and leaves the board ragged. */}
-      <VStack gap={0.5} height={72}>
-        <HStack hAlign="between" vAlign="start" gap={2}>
-          <VStack height={40}>
-            <Text type="label" weight="semibold" maxLines={2}>
-              {t(meta.labelKey)}
-            </Text>
-          </VStack>
-          <Badge variant="neutral" label={String(leads.length)} />
-        </HStack>
-        <Text type="supporting" color="secondary" maxLines={1}>
+    <div className="w-72 flex-shrink-0 flex flex-col gap-3">
+      <div className="h-16 flex flex-col justify-between p-2 rounded-lg" style={{ backgroundColor: "var(--surface2)" }}>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-bold line-clamp-2" style={{ color: "var(--text)" }}>
+            {t(meta.labelKey)}
+          </span>
+          <Badge color="neutral">{leads.length}</Badge>
+        </div>
+        <span className="text-[11px]" style={{ color: "var(--text2)" }}>
           {t("@legalos.crm.stageTotal", { value: formatEGPCompact(total) })}
-        </Text>
-      </VStack>
+        </span>
+      </div>
+
       {leads.length === 0 ? (
-        <EmptyState
-          isCompact
-          icon={<Icon icon={InboxIcon} size="md" color="secondary" />}
-          title={t("@legalos.crm.empty.title")}
-          description={t("@legalos.crm.empty.description")}
-        />
+        <div className="p-4 border border-dashed rounded-lg text-center" style={{ borderColor: "var(--border)" }}>
+          <EmptyState
+            icon={<Icon name="inbox" size={24} />}
+            title={t("@legalos.crm.empty.title")}
+            description={t("@legalos.crm.empty.description")}
+          />
+        </div>
       ) : (
-        <VStack gap={3}>
+        <div className="flex flex-col gap-3">
           {leads.map((lead) => (
             <LeadCard key={lead.id} lead={lead} />
           ))}
-        </VStack>
+        </div>
       )}
-      </VStack>
-    </StackItem>
+    </div>
   );
 }
 
@@ -126,82 +104,87 @@ export default function CrmPage() {
   const t = useTranslator();
   const { formatEGP, formatEGPCompact } = useFormat();
   return (
-    <Layout
-      height="fill"
-      content={
-        <LayoutContent padding={0}>
-          <VStack gap={6}>
-            <HStack hAlign="between" vAlign="start">
-              <VStack gap={1}>
-                <Heading level={2}>{t("@legalos.crm.heading")}</Heading>
-                <Link href="/clients">{t("@legalos.crm.viewExistingClients")}</Link>
-              </VStack>
-              <Button
-                label={t("@legalos.crm.newLead")}
-                variant="primary"
-                icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
-              >
-                {t("@legalos.crm.newLead")}
-              </Button>
-            </HStack>
+    <div className="flex flex-col gap-6 p-6">
+      {/* رأس الصفحة */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl font-bold" style={{ color: "var(--text)" }}>
+            {t("@legalos.crm.heading")}
+          </h1>
+          <Link
+            href="/clients"
+            className="text-xs hover:underline font-medium"
+            style={{ color: "var(--primary)" }}
+          >
+            {t("@legalos.crm.viewExistingClients")}
+          </Link>
+        </div>
 
-            <Grid columns={{ minWidth: 200, repeat: "fit" }} gap={4}>
-              <Card>
-                <VStack gap={2}>
-                  <Text type="label" color="secondary">
-                    {t("@legalos.crm.kpi.openLeads")}
-                  </Text>
-                  <Text size="2xl" weight="semibold">{openLeads.length}</Text>
-                  <Text type="supporting" color="secondary">
-                    {t("@legalos.crm.kpi.openLeadsDetail", {
-                      count: STAGE_ORDER.length - 2,
-                    })}
-                  </Text>
-                </VStack>
-              </Card>
-              <Card>
-                <VStack gap={2}>
-                  <Text type="label" color="secondary">
-                    {t("@legalos.crm.kpi.pipelineValue")}
-                  </Text>
-                  <Text size="2xl" weight="semibold">{formatEGPCompact(openPipelineValue)}</Text>
-                  <Text type="supporting" color="secondary">
-                    {t("@legalos.crm.kpi.pipelineValueDetail")}
-                  </Text>
-                </VStack>
-              </Card>
-              <Card>
-                <VStack gap={2}>
-                  <Text type="label" color="secondary">
-                    {t("@legalos.crm.kpi.wonThisMonth")}
-                  </Text>
-                  <Text size="2xl" weight="semibold">{formatEGP(wonValue)}</Text>
-                  <Text type="supporting" color="secondary">
-                    {t("@legalos.crm.kpi.wonDetail", { count: wonLeads.length })}
-                  </Text>
-                </VStack>
-              </Card>
-              <Card>
-                <VStack gap={2}>
-                  <Text type="label" color="secondary">
-                    {t("@legalos.crm.kpi.conflictsFlagged")}
-                  </Text>
-                  <Text size="2xl" weight="semibold">{flaggedCount}</Text>
-                  <Text type="supporting" color="secondary">
-                    {t("@legalos.crm.kpi.conflictsDetail")}
-                  </Text>
-                </VStack>
-              </Card>
-            </Grid>
+        <Button>
+          <Icon name="add" size={16} />
+          <span>{t("@legalos.crm.newLead")}</span>
+        </Button>
+      </div>
 
-            <HStack gap={4} isScrollable vAlign="start">
-              {STAGE_ORDER.map((stage) => (
-                <PipelineColumn key={stage} stage={stage} />
-              ))}
-            </HStack>
-          </VStack>
-        </LayoutContent>
-      }
-    />
+      {/* بطاقات المؤشرات الإحصائية */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-4 flex flex-col gap-2">
+          <span className="text-xs" style={{ color: "var(--text2)" }}>
+            {t("@legalos.crm.kpi.openLeads")}
+          </span>
+          <span className="text-2xl font-bold" style={{ color: "var(--text)" }}>
+            {openLeads.length}
+          </span>
+          <span className="text-xs" style={{ color: "var(--text2)" }}>
+            {t("@legalos.crm.kpi.openLeadsDetail", {
+              count: STAGE_ORDER.length - 2,
+            })}
+          </span>
+        </Card>
+
+        <Card className="p-4 flex flex-col gap-2">
+          <span className="text-xs" style={{ color: "var(--text2)" }}>
+            {t("@legalos.crm.kpi.pipelineValue")}
+          </span>
+          <span className="text-2xl font-bold" style={{ color: "var(--text)" }}>
+            {formatEGPCompact(openPipelineValue)}
+          </span>
+          <span className="text-xs" style={{ color: "var(--text2)" }}>
+            {t("@legalos.crm.kpi.pipelineValueDetail")}
+          </span>
+        </Card>
+
+        <Card className="p-4 flex flex-col gap-2">
+          <span className="text-xs" style={{ color: "var(--text2)" }}>
+            {t("@legalos.crm.kpi.wonThisMonth")}
+          </span>
+          <span className="text-2xl font-bold" style={{ color: "var(--text)" }}>
+            {formatEGP(wonValue)}
+          </span>
+          <span className="text-xs" style={{ color: "var(--text2)" }}>
+            {t("@legalos.crm.kpi.wonDetail", { count: wonLeads.length })}
+          </span>
+        </Card>
+
+        <Card className="p-4 flex flex-col gap-2">
+          <span className="text-xs" style={{ color: "var(--text2)" }}>
+            {t("@legalos.crm.kpi.conflictsFlagged")}
+          </span>
+          <span className="text-2xl font-bold" style={{ color: "var(--text)" }}>
+            {flaggedCount}
+          </span>
+          <span className="text-xs" style={{ color: "var(--text2)" }}>
+            {t("@legalos.crm.kpi.conflictsDetail")}
+          </span>
+        </Card>
+      </div>
+
+      {/* لوحة المراحل (Pipeline Board) */}
+      <div className="flex gap-4 overflow-x-auto pb-4">
+        {STAGE_ORDER.map((stage) => (
+          <PipelineColumn key={stage} stage={stage} />
+        ))}
+      </div>
+    </div>
   );
 }

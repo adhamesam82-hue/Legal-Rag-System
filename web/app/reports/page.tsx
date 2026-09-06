@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   ResponsiveContainer,
   LineChart,
@@ -15,18 +16,10 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-import { Layout, LayoutHeader, LayoutContent } from "@astryxdesign/core/Layout";
-import { Banner } from "@astryxdesign/core/Banner";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Grid, GridSpan } from "@astryxdesign/core/Grid";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Card } from "@astryxdesign/core/Card";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { ProgressBar } from "@astryxdesign/core/ProgressBar";
-import { Divider } from "@astryxdesign/core/Divider";
-import { Link } from "@astryxdesign/core/Link";
-import { ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Alert } from "@/components/ui/Alert";
+import { Icon } from "@/components/ui/Icon";
 import { useFormat } from "@/lib/i18n/format";
 import { useTranslator } from "@astryxdesign/core/i18n";
 
@@ -81,18 +74,18 @@ const UTILIZATION = [
 ];
 
 const OUTCOMES = [
-  { labelKey: "@legalos.reports.outcome.settled", value: 14, color: "var(--color-accent)" },
+  { labelKey: "@legalos.reports.outcome.settled", value: 14, color: "var(--primary)" },
   {
     labelKey: "@legalos.reports.outcome.wonAtJudgment",
     value: 8,
-    color: "var(--color-icon-blue)",
+    color: "var(--info)",
   },
   {
     labelKey: "@legalos.reports.outcome.withdrawn",
     value: 3,
-    color: "var(--color-border-emphasized)",
+    color: "var(--surface3)",
   },
-  { labelKey: "@legalos.reports.outcome.lost", value: 2, color: "var(--color-icon-red)" },
+  { labelKey: "@legalos.reports.outcome.lost", value: 2, color: "var(--danger)" },
 ];
 
 const COMPLETION = [
@@ -104,12 +97,14 @@ const COMPLETION = [
   { monthKey: MONTH_KEYS[5], opened: 9, closed: 6 },
 ];
 
-const AXIS_TICK = { fontSize: "var(--font-size-sm)", fill: "var(--color-text-secondary)" };
+const AXIS_TICK = { fontSize: 11, fill: "var(--text2)" };
 
 const tooltipStyle = {
-  background: "var(--color-background-popover)",
-  border: "1px solid var(--color-border)",
-  borderRadius: "var(--radius-element)",
+  backgroundColor: "var(--surface)",
+  border: "1px solid var(--border)",
+  borderRadius: "var(--r)",
+  color: "var(--text)",
+  fontSize: "12px",
 };
 
 const totalOutcomes = OUTCOMES.reduce((s, o) => s + o.value, 0);
@@ -137,230 +132,251 @@ export default function ReportsPage() {
   }));
 
   return (
-    <Layout
-      height="fill"
-      header={
-        <LayoutHeader hasDivider padding={0}>
-          <HStack hAlign="between" vAlign="center" wrap="wrap" gap={4}>
-            <VStack gap={1}>
-              <Heading level={2}>{t("@legalos.reports.heading")}</Heading>
-              <Text type="body" color="secondary">
-                {t("@legalos.reports.subtitle")}
-              </Text>
-            </VStack>
-            <Button
-              label={t("@legalos.reports.export.ariaLabel")}
-              variant="secondary"
-              icon={<Icon icon={ArrowDownTrayIcon} size="sm" />}
-            >
-              {t("@legalos.reports.export.button")}
-            </Button>
-          </HStack>
-        </LayoutHeader>
-      }
-      content={
-        <LayoutContent padding={0} isScrollable>
-          <VStack gap={6}>
-            <Banner
-              status="info"
-              title={t("@legalos.reports.banner.title")}
-              description={t("@legalos.reports.banner.description")}
-            />
-          <VStack gap={6}>
-            <Grid columns={{ minWidth: 220, repeat: "fit" }} gap={4}>
-              <Card>
-                <VStack gap={2}>
-                  <Text type="label" color="secondary">
-                    {t("@legalos.reports.stat.revenue.label")}
-                  </Text>
-                  <Text size="2xl" weight="semibold">
-                    {formatEGP(REVENUE.reduce((s, r) => s + r.revenue, 0))}
-                  </Text>
-                </VStack>
-              </Card>
-              <Card>
-                <VStack gap={2}>
-                  <Text type="label" color="secondary">
-                    {t("@legalos.reports.stat.collectionRate.label")}
-                  </Text>
-                  <Text size="2xl" weight="semibold">{collectionRate.toFixed(1)}%</Text>
-                </VStack>
-              </Card>
-              <Card>
-                <VStack gap={2}>
-                  <Text type="label" color="secondary">
-                    {t("@legalos.reports.stat.mattersClosed.label")}
-                  </Text>
-                  <Text size="2xl" weight="semibold">{COMPLETION.reduce((s, c) => s + c.closed, 0)}</Text>
-                </VStack>
-              </Card>
-              <Card>
-                <VStack gap={2}>
-                  <Text type="label" color="secondary">
-                    {t("@legalos.reports.stat.favourableOutcomes.label")}
-                  </Text>
-                  <Text size="2xl" weight="semibold">
-                    {Math.round(((OUTCOMES[0].value + OUTCOMES[1].value) / totalOutcomes) * 100)}%
-                  </Text>
-                </VStack>
-              </Card>
-            </Grid>
+    <div className="flex flex-col gap-6 p-6">
+      {/* رأس الصفحة */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl font-bold" style={{ color: "var(--text)" }}>
+            {t("@legalos.reports.heading")}
+          </h1>
+          <p className="text-xs" style={{ color: "var(--text2)" }}>
+            {t("@legalos.reports.subtitle")}
+          </p>
+        </div>
+        <Button variant="secondary">
+          <Icon name="download" size={16} />
+          <span>{t("@legalos.reports.export.button")}</span>
+        </Button>
+      </div>
 
-            <Card>
-              <VStack gap={4}>
-                <HStack hAlign="between" vAlign="center">
-                  <Heading level={4}>{t("@legalos.reports.billedCollected.heading")}</Heading>
-                  <Link href="/billing">{t("@legalos.reports.billedCollected.link")}</Link>
-                </HStack>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={revenue} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                    <CartesianGrid horizontal vertical={false} stroke="var(--color-border)" />
-                    <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                    <YAxis
-                      tickFormatter={(v: number) => formatEGPCompact(v)}
-                      tick={AXIS_TICK}
-                      axisLine={false}
-                      tickLine={false}
-                      width={64}
-                    />
-                    <Tooltip formatter={(v) => formatEGP(Number(v))} contentStyle={tooltipStyle} />
-                    <Legend wrapperStyle={{ fontSize: "var(--font-size-sm)" }} />
-                    <Line
-                      type="monotone"
-                      dataKey="revenue"
-                      name={t("@legalos.reports.legend.billed")}
-                      stroke="var(--color-accent)"
-                      strokeWidth={2.5}
-                      dot={{ r: 3, fill: "var(--color-accent)" }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="collected"
-                      name={t("@legalos.reports.legend.collected")}
-                      stroke="var(--color-icon-blue)"
-                      strokeWidth={2}
-                      strokeDasharray="5 4"
-                      dot={{ r: 3, fill: "var(--color-icon-blue)" }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </VStack>
-            </Card>
+      {/* شريط التنبيه */}
+      <Alert
+        type="info"
+        title={t("@legalos.reports.banner.title")}
+      >
+        {t("@legalos.reports.banner.description")}
+      </Alert>
 
-            <Grid columns={3} gap={6}>
-              <GridSpan columns={2}>
-                <Card>
-                  <VStack gap={4}>
-                    <Heading level={4}>{t("@legalos.reports.utilization.heading")}</Heading>
-                    <Text type="supporting" color="secondary">
-                      {t("@legalos.reports.utilization.description")}
-                    </Text>
-                    <VStack gap={5}>
-                      {UTILIZATION.map((u) => (
-                        <VStack key={u.nameKey} gap={1}>
-                          <HStack hAlign="between" vAlign="center">
-                            <Text type="label">{t(u.nameKey)}</Text>
-                            <Text type="supporting" color="secondary">
-                              {t("@legalos.reports.utilization.hoursOfTarget", {
-                                billable: u.billable,
-                                target: u.target,
-                              })}
-                            </Text>
-                          </HStack>
-                          <ProgressBar
-                            label={t("@legalos.reports.utilization.ariaLabel", {
-                              name: t(u.nameKey),
-                            })}
-                            isLabelHidden
-                            value={u.utilization}
-                            max={100}
-                            hasValueLabel
-                            variant={u.utilization > 85 ? "warning" : "accent"}
-                          />
-                        </VStack>
-                      ))}
-                    </VStack>
-                    <Divider />
-                    <Text type="supporting" color="secondary">
-                      {t("@legalos.reports.utilization.caption")}
-                    </Text>
-                  </VStack>
-                </Card>
-              </GridSpan>
+      {/* بطاقات الإحصاءات الأربعة */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-4 flex flex-col gap-2">
+          <span className="text-xs" style={{ color: "var(--text2)" }}>
+            {t("@legalos.reports.stat.revenue.label")}
+          </span>
+          <span className="text-2xl font-bold" style={{ color: "var(--text)" }}>
+            {formatEGP(REVENUE.reduce((s, r) => s + r.revenue, 0))}
+          </span>
+        </Card>
+        <Card className="p-4 flex flex-col gap-2">
+          <span className="text-xs" style={{ color: "var(--text2)" }}>
+            {t("@legalos.reports.stat.collectionRate.label")}
+          </span>
+          <span className="text-2xl font-bold" style={{ color: "var(--text)" }}>
+            {collectionRate.toFixed(1)}%
+          </span>
+        </Card>
+        <Card className="p-4 flex flex-col gap-2">
+          <span className="text-xs" style={{ color: "var(--text2)" }}>
+            {t("@legalos.reports.stat.mattersClosed.label")}
+          </span>
+          <span className="text-2xl font-bold" style={{ color: "var(--text)" }}>
+            {COMPLETION.reduce((s, c) => s + c.closed, 0)}
+          </span>
+        </Card>
+        <Card className="p-4 flex flex-col gap-2">
+          <span className="text-xs" style={{ color: "var(--text2)" }}>
+            {t("@legalos.reports.stat.favourableOutcomes.label")}
+          </span>
+          <span className="text-2xl font-bold" style={{ color: "var(--text)" }}>
+            {Math.round(((OUTCOMES[0].value + OUTCOMES[1].value) / totalOutcomes) * 100)}%
+          </span>
+        </Card>
+      </div>
 
-              <Card>
-                <VStack gap={4}>
-                  <Heading level={4}>{t("@legalos.reports.outcomes.heading")}</Heading>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie
-                        data={outcomes}
-                        dataKey="value"
-                        nameKey="label"
-                        innerRadius={52}
-                        outerRadius={80}
-                        paddingAngle={2}
-                      >
-                        {outcomes.map((o) => (
-                          <Cell key={o.label} fill={o.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip contentStyle={tooltipStyle} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <VStack gap={2}>
+      {/* مخطط الإيرادات والتحصيل */}
+      <Card className="p-5 flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>
+            {t("@legalos.reports.billedCollected.heading")}
+          </h2>
+          <Link
+            href="/billing"
+            className="text-xs font-medium hover:underline"
+            style={{ color: "var(--primary)" }}
+          >
+            {t("@legalos.reports.billedCollected.link")}
+          </Link>
+        </div>
+        <div className="w-full h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={revenue} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid horizontal vertical={false} stroke="var(--border)" />
+              <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+              <YAxis
+                tickFormatter={(v: number) => formatEGPCompact(v)}
+                tick={AXIS_TICK}
+                axisLine={false}
+                tickLine={false}
+                width={64}
+              />
+              <Tooltip formatter={(v) => formatEGP(Number(v))} contentStyle={tooltipStyle} />
+              <Legend wrapperStyle={{ fontSize: "11px" }} />
+              <Line
+                type="monotone"
+                dataKey="revenue"
+                name={t("@legalos.reports.legend.billed")}
+                stroke="var(--primary)"
+                strokeWidth={2.5}
+                dot={{ r: 3, fill: "var(--primary)" }}
+              />
+              <Line
+                type="monotone"
+                dataKey="collected"
+                name={t("@legalos.reports.legend.collected")}
+                stroke="var(--info)"
+                strokeWidth={2}
+                strokeDasharray="5 4"
+                dot={{ r: 3, fill: "var(--info)" }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+
+      {/* معدل الاستغلال وتوزيع النتائج */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Card className="p-5 flex flex-col gap-4">
+            <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>
+              {t("@legalos.reports.utilization.heading")}
+            </h2>
+            <p className="text-xs" style={{ color: "var(--text2)" }}>
+              {t("@legalos.reports.utilization.description")}
+            </p>
+            <div className="flex flex-col gap-4 mt-2">
+              {UTILIZATION.map((u) => (
+                <div key={u.nameKey} className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium" style={{ color: "var(--text)" }}>
+                      {t(u.nameKey)}
+                    </span>
+                    <span style={{ color: "var(--text2)" }}>
+                      {t("@legalos.reports.utilization.hoursOfTarget", {
+                        billable: u.billable,
+                        target: u.target,
+                      })}
+                    </span>
+                  </div>
+                  <div
+                    className="w-full h-2 rounded-full overflow-hidden"
+                    style={{ backgroundColor: "var(--surface3)" }}
+                  >
+                    <div
+                      className="h-full rounded-full transition-all duration-300"
+                      style={{
+                        width: `${Math.min(100, u.utilization)}%`,
+                        backgroundColor:
+                          u.utilization > 85 ? "var(--warn)" : "var(--primary)",
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="pt-3 border-t text-xs" style={{ borderColor: "var(--border)", color: "var(--text2)" }}>
+              {t("@legalos.reports.utilization.caption")}
+            </div>
+          </Card>
+        </div>
+
+        <div>
+          <Card className="p-5 flex flex-col gap-4">
+            <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>
+              {t("@legalos.reports.outcomes.heading")}
+            </h2>
+            <div className="w-full h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={outcomes}
+                    dataKey="value"
+                    nameKey="label"
+                    innerRadius={52}
+                    outerRadius={80}
+                    paddingAngle={2}
+                  >
                     {outcomes.map((o) => (
-                      <HStack key={o.label} hAlign="between" vAlign="center">
-                        <Text type="supporting">{o.label}</Text>
-                        <Text type="supporting" color="secondary">
-                          {t("@legalos.reports.outcome.countPercent", {
-                            count: o.value,
-                            percent: Math.round((o.value / totalOutcomes) * 100),
-                          })}
-                        </Text>
-                      </HStack>
+                      <Cell key={o.label} fill={o.color} />
                     ))}
-                  </VStack>
-                </VStack>
-              </Card>
-            </Grid>
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex flex-col gap-2 text-xs">
+              {outcomes.map((o) => (
+                <div key={o.label} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: o.color }}
+                    />
+                    <span style={{ color: "var(--text)" }}>{o.label}</span>
+                  </div>
+                  <span style={{ color: "var(--text2)" }}>
+                    {t("@legalos.reports.outcome.countPercent", {
+                      count: o.value,
+                      percent: Math.round((o.value / totalOutcomes) * 100),
+                    })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      </div>
 
-            <Card>
-              <VStack gap={4}>
-                <HStack hAlign="between" vAlign="center">
-                  <Heading level={4}>{t("@legalos.reports.completion.heading")}</Heading>
-                  <Link href="/matters">{t("@legalos.reports.completion.link")}</Link>
-                </HStack>
-                <ResponsiveContainer width="100%" height={260}>
-                  <BarChart data={completion} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                    <CartesianGrid horizontal vertical={false} stroke="var(--color-border)" />
-                    <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                    <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} width={32} />
-                    <Tooltip contentStyle={tooltipStyle} />
-                    <Legend wrapperStyle={{ fontSize: "var(--font-size-sm)" }} />
-                    <Bar
-                      dataKey="opened"
-                      name={t("@legalos.reports.legend.opened")}
-                      fill="var(--color-border-emphasized)"
-                      radius={[4, 4, 0, 0]}
-                    />
-                    <Bar
-                      dataKey="closed"
-                      name={t("@legalos.reports.legend.closed")}
-                      fill="var(--color-accent)"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-                <Text type="supporting" color="secondary">
-                  {t("@legalos.reports.completion.caption")}
-                </Text>
-              </VStack>
-            </Card>
-          </VStack>
-          </VStack>
-        </LayoutContent>
-      }
-    />
+      {/* معدل إغلاق القضايا */}
+      <Card className="p-5 flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>
+            {t("@legalos.reports.completion.heading")}
+          </h2>
+          <Link
+            href="/matters"
+            className="text-xs font-medium hover:underline"
+            style={{ color: "var(--primary)" }}
+          >
+            {t("@legalos.reports.completion.link")}
+          </Link>
+        </div>
+        <div className="w-full h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={completion} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid horizontal vertical={false} stroke="var(--border)" />
+              <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+              <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} width={32} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Legend wrapperStyle={{ fontSize: "11px" }} />
+              <Bar
+                dataKey="opened"
+                name={t("@legalos.reports.legend.opened")}
+                fill="var(--surface3)"
+                radius={[4, 4, 0, 0]}
+              />
+              <Bar
+                dataKey="closed"
+                name={t("@legalos.reports.legend.closed")}
+                fill="var(--primary)"
+                radius={[4, 4, 0, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <p className="text-xs" style={{ color: "var(--text2)" }}>
+          {t("@legalos.reports.completion.caption")}
+        </p>
+      </Card>
+    </div>
   );
 }
