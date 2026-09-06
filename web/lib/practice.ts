@@ -1132,3 +1132,8 @@ export function todayIso(): ISODateString {
   return `${now.getFullYear()}-${month}-${day}` as ISODateString;
 }
 
+/** مؤقّت حتى يصل seat_limit من الخلفية — T-041 (ملحمة الاشتراكات).
+ *  لا يمنع شيئًا ولا يُبنى عليه قرار: عرضٌ فقط.
+ *  عند وصول الحقل: احذف هذا الثابت واقرأ practice.seat_limit. */
+export const PLACEHOLDER_SEAT_LIMIT = 25;
+

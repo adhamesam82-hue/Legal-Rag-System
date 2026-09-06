@@ -7,6 +7,7 @@ import re
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 SETTINGS_PAGE = REPO_ROOT / "web" / "app" / "settings" / "page.tsx"
+SETTINGS_LAYOUT = REPO_ROOT / "web" / "app" / "settings" / "layout.tsx"
 SETTINGS_DIR = REPO_ROOT / "web" / "components" / "settings"
 
 
@@ -80,3 +81,35 @@ def test_settings_data_binding_and_handlers_preserved():
     assert "RequiredFieldsSection" in page_content
     assert "PlanSection" in page_content
     assert "NotificationsSection" in page_content
+
+
+def test_settings_layout_data_binding_and_handlers_preserved():
+    """التحقق الصارم من الحفاظ على دوال وخطافات منطق تخطيط الإعدادات (settings/layout.tsx) وخلوه من مكونات Astryx."""
+    assert SETTINGS_LAYOUT.exists()
+    content = SETTINGS_LAYOUT.read_text(encoding="utf-8")
+
+    # 1. التحقق من الحفاظ على الخطافات والربط
+    assert "usePathname" in content
+    assert "useTranslator" in content
+    assert "useOrg" in content
+    assert "organizationName" in content
+    assert "{children}" in content
+
+    # 2. التحقق من مسارات التنقل للأقسام
+    assert "/settings/profile" in content
+    assert "/settings/appearance" in content
+    assert "/settings" in content
+    assert "/settings/users" in content
+
+    # 3. التحقق من خلوه من مكونات Astryx العرضية واستخدام components/ui/Card
+    assert "@/components/ui/Card" in content
+    forbidden_astryx = [
+        "@astryxdesign/core/Layout",
+        "@astryxdesign/core/Stack",
+        "@astryxdesign/core/Text",
+        "@astryxdesign/core/Card",
+        "@astryxdesign/core/Icon",
+        "@astryxdesign/core/List",
+    ]
+    for forbidden in forbidden_astryx:
+        assert forbidden not in content, f"تم العثور على استيراد Astryx غير مسموح به في settings/layout.tsx: {forbidden}"
