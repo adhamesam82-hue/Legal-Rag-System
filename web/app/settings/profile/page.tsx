@@ -1,35 +1,18 @@
 "use client";
 
 /**
- * Who you are in this firm.
+ * Profile settings page (T-053).
  *
- * Small on purpose. The page it replaces showed a name, email, phone and job
- * title hardcoded to one person, so every user read someone else's details as
- * their own; a role badge permanently reading Owner; three notification
- * switches for a notification system that does not exist; and a list of
- * "active sessions" that was invented — the worst of them, because a fabricated
- * security screen is read as evidence.
- *
- * What is here is what the server actually knows: display name, job title and
- * role come from /me, and the language switch is real. Nothing else is shown,
- * because nothing else can be sourced or saved yet.
- *
- * Editing identity needs an endpoint that does not exist — the API exposes the
- * membership for reading only. When it lands, the fields become inputs and a
- * Save appears; until then a text field with nowhere to write is a worse lie
- * than a plain value.
+ * Shows user identity details from /me: display name, organization, job title,
+ * role badge, and language selection.
+ * Preserves all hooks, contract layer calls, and state intact.
  */
 
-import { Layout, LayoutHeader, LayoutContent } from "@astryxdesign/core/Layout";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Card } from "@astryxdesign/core/Card";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Badge } from "@astryxdesign/core/Badge";
-import { Avatar } from "@astryxdesign/core/Avatar";
-import { Selector } from "@astryxdesign/core/Selector";
-import { Link } from "@astryxdesign/core/Link";
-import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import Link from "next/link";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Select } from "@/components/ui/Select";
+import { Icon } from "@/components/ui/Icon";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useLocale } from "@/lib/i18n/provider";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
@@ -38,22 +21,11 @@ import { DataView } from "@/components/DataState";
 import type { Locale } from "@/lib/i18n/locale";
 import type { Role } from "@/lib/practice";
 
-const ROLE_BADGE_VARIANT: Record<Role, "purple" | "blue" | "neutral"> = {
-  owner: "purple",
-  lawyer: "blue",
+const ROLE_COLOR: Record<Role, "primary" | "info" | "neutral"> = {
+  owner: "primary",
+  lawyer: "info",
   staff: "neutral",
 };
-
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <VStack gap={1}>
-      <Text type="supporting" color="secondary">
-        {label}
-      </Text>
-      <Text type="body">{value}</Text>
-    </VStack>
-  );
-}
 
 export default function ProfileSettingsPage() {
   const t = useTranslator();
@@ -63,103 +35,102 @@ export default function ProfileSettingsPage() {
   const me = useResource((practice) => practice.me(), []);
 
   return (
-    <Layout
-      height="fill"
-      header={
-        <LayoutHeader hasDivider padding={0}>
-          <VStack gap={3}>
-            <Link href="/settings" color="secondary">
-              <HStack gap={1} vAlign="center">
-                <Icon icon={ArrowLeftIcon} size="xsm" color="inherit" />
-                <Text type="supporting" color="inherit">
-                  {t("@legalos.settings.profile.backToSettings")}
-                </Text>
-              </HStack>
-            </Link>
-            <Heading level={3}>{t("@legalos.settings.profile.heading")}</Heading>
-          </VStack>
-        </LayoutHeader>
-      }
-      content={
-        <LayoutContent>
-          <DataView resource={me}>
-            {(profile) => {
-              const name = memberLabel(profile);
-              return (
-                <VStack gap={5}>
-                  <Card>
-                    <VStack gap={4}>
-                      <HStack gap={4} vAlign="center">
-                        <Avatar name={name} size="lg" tooltip={false} />
-                        <VStack gap={1}>
-                          <Heading level={4}>{name}</Heading>
-                          <Text type="supporting" color="secondary">
-                            {organizationName ?? ""}
-                          </Text>
-                        </VStack>
-                      </HStack>
+    <div className="flex flex-col gap-6">
+      <div>
+        <Link
+          href="/settings"
+          className="inline-flex items-center gap-1.5 text-xs font-medium hover:underline"
+          style={{ color: "var(--text2)" }}
+        >
+          <Icon name="arrow_back" size={16} />
+          <span>{t("@legalos.settings.profile.backToSettings")}</span>
+        </Link>
+      </div>
 
-                      {profile.title && (
-                        <Field
-                          label={t("@legalos.settings.profile.titleLabel")}
-                          value={profile.title}
-                        />
-                      )}
+      <h2 className="text-lg font-bold" style={{ color: "var(--text)" }}>
+        {t("@legalos.settings.profile.heading")}
+      </h2>
 
-                      <Text type="supporting" color="secondary">
-                        {t("@legalos.settings.profile.identityReadOnly")}
-                      </Text>
-                    </VStack>
-                  </Card>
+      <DataView resource={me}>
+        {(profile) => {
+          const name = memberLabel(profile);
+          return (
+            <div className="flex flex-col gap-5">
+              <Card className="p-5 flex flex-col gap-4">
+                <div className="flex items-center gap-4">
+                  <div
+                    className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-base"
+                    style={{ backgroundColor: "var(--primary-soft)", color: "var(--primary)" }}
+                  >
+                    {name.slice(0, 2)}
+                  </div>
+                  <div className="flex flex-col">
+                    <h3 className="text-base font-semibold" style={{ color: "var(--text)" }}>{name}</h3>
+                    <span className="text-xs" style={{ color: "var(--text2)" }}>
+                      {organizationName ?? ""}
+                    </span>
+                  </div>
+                </div>
 
-                  <Card>
-                    <VStack gap={4}>
-                      <Heading level={4}>
-                        {t("@legalos.settings.profile.roleHeading")}
-                      </Heading>
-                      <HStack gap={3} vAlign="center" wrap="wrap">
-                        <Badge
-                          variant={ROLE_BADGE_VARIANT[profile.role]}
-                          label={enumLabel(profile.role)}
-                        />
-                        <Text type="body" color="secondary">
-                          {t(`@legalos.settings.profile.roleDescription.${profile.role}`)}
-                        </Text>
-                      </HStack>
-                      {profile.role === "owner" && (
-                        <Link href="/settings/users">
-                          {t("@legalos.settings.profile.manageTeam")}
-                        </Link>
-                      )}
-                    </VStack>
-                  </Card>
+                {profile.title && (
+                  <div className="flex flex-col gap-1 text-sm">
+                    <span className="text-xs" style={{ color: "var(--text2)" }}>
+                      {t("@legalos.settings.profile.titleLabel")}
+                    </span>
+                    <span className="font-medium" style={{ color: "var(--text)" }}>{profile.title}</span>
+                  </div>
+                )}
 
-                  <Card>
-                    <VStack gap={4}>
-                      <Heading level={4}>
-                        {t("@legalos.settings.profile.languageHeading")}
-                      </Heading>
-                      {/* `profile.languageLabel` was in neither catalog, so
-                        * the raw key rendered above the control in both
-                        * languages. The label this field needs was already
-                        * defined under its own name. */}
-                      <Selector
-                        label={t("@legalos.settings.profile.interfaceLanguage")}
-                        value={locale}
-                        onChange={(value) => setLocale(value as Locale)}
-                        options={[
-                          { value: "ar", label: "العربية" },
-                          { value: "en", label: "English" },
-                        ]}
-                      />
-                    </VStack>
-                  </Card>
-                </VStack>
-              );
-            }}
-          </DataView>
-        </LayoutContent>
-      }
-    />
+                <p className="text-xs" style={{ color: "var(--text3)" }}>
+                  {t("@legalos.settings.profile.identityReadOnly")}
+                </p>
+              </Card>
+
+              <Card className="p-5 flex flex-col gap-4">
+                <h3 className="text-base font-semibold" style={{ color: "var(--text)" }}>
+                  {t("@legalos.settings.profile.roleHeading")}
+                </h3>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <Badge color={ROLE_COLOR[profile.role]}>
+                    {enumLabel(profile.role)}
+                  </Badge>
+                  <span className="text-sm" style={{ color: "var(--text2)" }}>
+                    {t(`@legalos.settings.profile.roleDescription.${profile.role}`)}
+                  </span>
+                </div>
+                {profile.role === "owner" && (
+                  <div>
+                    <Link
+                      href="/settings/users"
+                      className="text-xs font-medium hover:underline"
+                      style={{ color: "var(--primary)" }}
+                    >
+                      {t("@legalos.settings.profile.manageTeam")}
+                    </Link>
+                  </div>
+                )}
+              </Card>
+
+              <Card className="p-5 flex flex-col gap-4">
+                <h3 className="text-base font-semibold" style={{ color: "var(--text)" }}>
+                  {t("@legalos.settings.profile.languageHeading")}
+                </h3>
+                <div style={{ maxWidth: "240px" }}>
+                  <Select
+                    label={t("@legalos.settings.profile.interfaceLanguage")}
+                    value={locale}
+                    onChange={(e) => setLocale(e.target.value as Locale)}
+                    options={[
+                      { value: "ar", label: "العربية" },
+                      { value: "en", label: "English" },
+                    ]}
+                  />
+                </div>
+              </Card>
+            </div>
+          );
+        }}
+      </DataView>
+    </div>
   );
 }

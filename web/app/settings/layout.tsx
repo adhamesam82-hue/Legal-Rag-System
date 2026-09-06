@@ -1,53 +1,37 @@
 "use client";
 
+/**
+ * Settings section layout (T-053).
+ *
+ * Side navigation for settings sections: profile, appearance, firm settings, and users.
+ */
+
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Layout,
-  LayoutContent,
-  LayoutHeader,
-  LayoutPanel,
-} from "@astryxdesign/core/Layout";
-import { VStack } from "@astryxdesign/core/Stack";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Card } from "@astryxdesign/core/Card";
-import { Icon } from "@astryxdesign/core/Icon";
-import { List, ListItem } from "@astryxdesign/core/List";
-import {
-  BuildingOffice2Icon,
-  PaintBrushIcon,
-  UserCircleIcon,
-  UserGroupIcon,
-} from "@heroicons/react/24/outline";
+import { Card } from "@/components/ui/Card";
+import { Icon } from "@/components/ui/Icon";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useOrg } from "@/lib/org";
 
 type NavItem = {
   href: string;
   labelKey: string;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  iconName: string;
   ai?: boolean;
 };
 
-/** The firm group's title is the firm's own name, so it carries no key --
- *  it is resolved from the active organization at render time. */
 const NAV_GROUPS: { titleKey?: string; items: NavItem[] }[] = [
   {
     titleKey: "@legalos.settings.group.myAccount",
     items: [
-      { href: "/settings/profile", labelKey: "@legalos.settings.nav.profile", icon: UserCircleIcon },
-      { href: "/settings/appearance", labelKey: "@legalos.settings.nav.appearance", icon: PaintBrushIcon },
+      { href: "/settings/profile", labelKey: "@legalos.settings.nav.profile", iconName: "person" },
+      { href: "/settings/appearance", labelKey: "@legalos.settings.nav.appearance", iconName: "palette" },
     ],
   },
   {
     items: [
-      { href: "/settings", labelKey: "@legalos.settings.nav.firmSettings", icon: BuildingOffice2Icon },
-      { href: "/settings/users", labelKey: "@legalos.settings.nav.users", icon: UserGroupIcon },
-      // Integrations, Branding, Billing, API keys and AI models were listed
-      // here with no page behind any of them. Each one landed on Next's own
-      // default 404 — English, outside the app shell entirely, with no way
-      // back — which is a worse answer than not offering the link. They come
-      // back with the screens, as entries beside the two that exist; the
-      // labels are kept in the catalog so that is a one-line change.
+      { href: "/settings", labelKey: "@legalos.settings.nav.firmSettings", iconName: "domain" },
+      { href: "/settings/users", labelKey: "@legalos.settings.nav.users", iconName: "group" },
     ],
   },
 ];
@@ -58,52 +42,64 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   const { organizationName } = useOrg();
 
   return (
-    <Card padding={0} width="100%" height="100%">
-      <Layout
-        height="fill"
-        header={
-          <LayoutHeader hasDivider>
-            <Heading level={4}>{t("@legalos.settings.heading")}</Heading>
-          </LayoutHeader>
-        }
-        start={
-          <LayoutPanel
-            hasDivider
-            role="navigation"
-            label={t("@legalos.settings.sectionsNavLabel")}
-            width={240}
-          >
-            <VStack gap={5}>
-              {NAV_GROUPS.map((group, index) => (
-                <VStack key={group.titleKey ?? `firm-${index}`} gap={1}>
-                  <Text type="label" size="sm" color="secondary">
-                    {group.titleKey ? t(group.titleKey) : organizationName}
-                  </Text>
-                  <List density="compact" hasDividers={false}>
-                    {group.items.map((item) => (
-                      <ListItem
-                        key={item.href}
-                        label={t(item.labelKey)}
-                        href={item.href}
-                        isSelected={pathname === item.href}
-                        startContent={
-                          <Icon
-                            icon={item.icon}
-                            size="sm"
-                            className={item.ai ? "text-purple-vivid" : undefined}
-                            color={item.ai ? undefined : "secondary"}
-                          />
-                        }
-                      />
-                    ))}
-                  </List>
-                </VStack>
-              ))}
-            </VStack>
-          </LayoutPanel>
-        }
-        content={<LayoutContent>{children}</LayoutContent>}
-      />
-    </Card>
+    <div
+      className="w-full flex flex-col gap-6"
+      style={{
+        maxWidth: "1280px",
+        margin: "0 auto",
+        padding: "24px 20px",
+      }}
+    >
+      <div className="pb-4 border-b" style={{ borderColor: "var(--border)" }}>
+        <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--text)" }}>
+          {t("@legalos.settings.heading")}
+        </h1>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
+        {/* Navigation panel */}
+        <aside
+          role="navigation"
+          aria-label={t("@legalos.settings.sectionsNavLabel")}
+          className="md:col-span-1 flex flex-col gap-6 p-4 rounded-lg border"
+          style={{
+            borderColor: "var(--border)",
+            backgroundColor: "var(--surface)",
+          }}
+        >
+          {NAV_GROUPS.map((group, index) => (
+            <div key={group.titleKey ?? `firm-${index}`} className="flex flex-col gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider px-2" style={{ color: "var(--text3)" }}>
+                {group.titleKey ? t(group.titleKey) : organizationName}
+              </span>
+              <nav className="flex flex-col gap-1">
+                {group.items.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm font-medium transition-colors"
+                      style={{
+                        backgroundColor: isActive ? "var(--primary-soft)" : "transparent",
+                        color: isActive ? "var(--primary)" : "var(--text2)",
+                      }}
+                    >
+                      <Icon name={item.iconName} size={18} />
+                      <span>{t(item.labelKey)}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+          ))}
+        </aside>
+
+        {/* Content area */}
+        <main className="md:col-span-3">
+          {children}
+        </main>
+      </div>
+    </div>
   );
 }
