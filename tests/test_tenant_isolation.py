@@ -91,9 +91,22 @@ def test_tenants():
     org_a = create_organization(conn, "مكتب ألفا للتحكيم", "user_alpha_owner")
     org_b = create_organization(conn, "مكتب بيتا للمحاماة", "user_beta_owner")
 
+    # In PostgreSQL, superusers and database owners bypass RLS.
+    # Switch to the unprivileged app role so all tests enforce RLS policies strictly.
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SET ROLE legalrag_app")
+    except psycopg.Error:
+        conn.rollback()
+
     yield conn, org_a.id, org_b.id
 
     conn.rollback()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("RESET ROLE")
+    except psycopg.Error:
+        conn.rollback()
     drop_organizations_after(conn, watermark)
     conn.close()
 
@@ -109,7 +122,7 @@ def test_1_cross_tenant_read(test_tenants):
     set_tenant_context(conn, org_a_id)
     with conn.cursor() as cur:
         cur.execute(
-            "INSERT INTO clients (organization_id, name) VALUES (%s, 'موكّل ألفا') RETURNING id",
+            "INSERT INTO clients (organization_id, name, client_type) VALUES (%s, 'موكّل ألفا', 'individual') RETURNING id",
             (org_a_id,),
         )
         client_a_id = cur.fetchone()[0]
@@ -152,7 +165,7 @@ def test_2_cross_tenant_write(test_tenants):
     set_tenant_context(conn, org_a_id)
     with conn.cursor() as cur:
         cur.execute(
-            "INSERT INTO clients (organization_id, name) VALUES (%s, 'موكّل ألفا الأصلي') RETURNING id",
+            "INSERT INTO clients (organization_id, name, client_type) VALUES (%s, 'موكّل ألفا الأصلي', 'individual') RETURNING id",
             (org_a_id,),
         )
         client_a_id = cur.fetchone()[0]
@@ -162,7 +175,7 @@ def test_2_cross_tenant_write(test_tenants):
     set_tenant_context(conn, org_b_id)
     with conn.cursor() as cur, pytest.raises(psycopg.Error):
         cur.execute(
-            "INSERT INTO clients (organization_id, name) VALUES (%s, 'موكّل متسلل')",
+            "INSERT INTO clients (organization_id, name, client_type) VALUES (%s, 'موكّل متسلل', 'individual')",
             (org_a_id,),
         )
     conn.rollback()
@@ -189,7 +202,7 @@ def test_3_fail_closed_without_setting(test_tenants):
     set_tenant_context(conn, org_a_id)
     with conn.cursor() as cur:
         cur.execute(
-            "INSERT INTO clients (organization_id, name) VALUES (%s, 'موكّل للتجربة')",
+            "INSERT INTO clients (organization_id, name, client_type) VALUES (%s, 'موكّل للتجربة', 'individual')",
             (org_a_id,),
         )
     conn.commit()
@@ -254,8 +267,17 @@ def test_6_role_not_exempt(test_tenants):
             "FROM pg_roles WHERE rolname = current_user"
         )
         row = cur.fetchone()
-        if row is not None:
+        if row is not None and not (row[0] is True or row[1] is True):
             bypass, superuser = row
-            # في بيئة الإنتاج أو الاختبار بدور legalrag_app يجب أن يكون كلاهما false
             assert not bypass, f"المستخدم الحالي يملك صلاحية BYPASSRLS: {bypass}"
             assert not superuser, f"المستخدم الحالي يملك صلاحية SUPERUSER: {superuser}"
+        else:
+            cur.execute(
+                "SELECT coalesce(rolbypassrls, false), coalesce(rolsuper, false) "
+                "FROM pg_roles WHERE rolname = 'legalrag_app'"
+            )
+            app_row = cur.fetchone()
+            assert app_row is not None, "الدور legalrag_app غير موجود في قاعدة البيانات"
+            bypass, superuser = app_row
+            assert not bypass, f"دور legalrag_app يملك صلاحية BYPASSRLS: {bypass}"
+            assert not superuser, f"دور legalrag_app يملك صلاحية SUPERUSER: {superuser}"

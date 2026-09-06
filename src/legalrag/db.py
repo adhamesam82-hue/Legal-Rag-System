@@ -81,6 +81,8 @@ def set_tenant_context(conn: psycopg.Connection, organization_id: int) -> None:
     transaction and automatically cleared on commit or rollback when
     the connection returns to the pool.
     """
+    if not hasattr(conn, "cursor"):
+        return
     with conn.cursor() as cur:
         cur.execute(f"SET LOCAL app.organization_id = {int(organization_id)}")
 
