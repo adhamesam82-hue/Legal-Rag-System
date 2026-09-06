@@ -10,30 +10,26 @@
  * API models.
  */
 
-import { useState } from "react";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Text } from "@astryxdesign/core/Text";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Badge } from "@astryxdesign/core/Badge";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
-import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
-import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { TextArea } from "@astryxdesign/core/TextArea";
-import { DateInput } from "@astryxdesign/core/DateInput";
-import { Selector } from "@astryxdesign/core/Selector";
-import { Switch } from "@astryxdesign/core/Switch";
-import { Divider } from "@astryxdesign/core/Divider";
+import React, { useState } from "react";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { AdjustmentsHorizontalIcon } from "@heroicons/react/24/outline";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Icon } from "@/components/ui/Icon";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Input, Textarea } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Switch } from "@/components/ui/Switch";
+import {
+  Dialog,
+  DialogHeader,
+  DialogContent,
+  DialogFooter,
+} from "@/components/ui/Dialog";
 import { useOrg } from "@/lib/org";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 import {
   type CustomFieldType,
   type CustomFieldValue,
-  type ISODateString,
-  type MatterType,
   MATTER_TYPES,
 } from "@/lib/practice";
 import { Panel, lines, useWrite, type TabProps } from "./shared";
@@ -45,7 +41,6 @@ const FIELD_TYPES: CustomFieldType[] = [
   "checkbox",
   "select",
 ];
-
 
 export function CustomFieldsTab({ data, reload, onError }: TabProps) {
   const t = useTranslator();
@@ -59,35 +54,36 @@ export function CustomFieldsTab({ data, reload, onError }: TabProps) {
         action={
           role !== "lawyer" ? (
             <Button
-              label={t("@legalos.matterWorkspace.customFields.manage")}
               variant="secondary"
               size="sm"
               onClick={() => setIsDefining(true)}
-            />
+            >
+              {t("@legalos.matterWorkspace.customFields.manage")}
+            </Button>
           ) : undefined
         }
       >
         {data.customFields.length === 0 ? (
           <EmptyState
-            icon={
-              <Icon icon={AdjustmentsHorizontalIcon} size="lg" color="secondary" />
-            }
+            icon={<Icon name="tune" size={24} />}
             title={t("@legalos.matterWorkspace.customFields.emptyTitle")}
             description={t(
               "@legalos.matterWorkspace.customFields.emptyDescription",
             )}
-            actions={
+            action={
               role !== "lawyer" ? (
                 <Button
-                  label={t("@legalos.matterWorkspace.customFields.manage")}
                   variant="secondary"
+                  size="sm"
                   onClick={() => setIsDefining(true)}
-                />
+                >
+                  {t("@legalos.matterWorkspace.customFields.manage")}
+                </Button>
               ) : undefined
             }
           />
         ) : (
-          <VStack gap={5}>
+          <div className="flex flex-col gap-4 divide-y" style={{ borderColor: "var(--border)" }}>
             {data.customFields.map((field) => (
               <FieldRow
                 key={field.definition_id}
@@ -98,7 +94,7 @@ export function CustomFieldsTab({ data, reload, onError }: TabProps) {
                 onError={onError}
               />
             ))}
-          </VStack>
+          </div>
         )}
       </Panel>
 
@@ -139,22 +135,20 @@ function FieldRow({
   }
 
   return (
-    <VStack gap={2}>
-      <HStack hAlign="between" vAlign="center" gap={3} wrap="wrap">
-        <HStack gap={2} vAlign="center">
-          <Text type="body" weight="semibold">
+    <div className="flex flex-col gap-2 pt-3 first:pt-0">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold" style={{ color: "var(--text)" }}>
             {field.label}
-          </Text>
+          </span>
           {field.is_required && (
-            <Badge
-              variant="neutral"
-              label={t("@legalos.matterWorkspace.customFields.requiredTag")}
-            />
+            <Badge color="neutral" variant="soft" size="sm">
+              {t("@legalos.matterWorkspace.customFields.requiredTag")}
+            </Badge>
           )}
-        </HStack>
+        </div>
         {canDelete && (
           <Button
-            label={t("@legalos.matterWorkspace.customFields.deleteField")}
             variant="ghost"
             size="sm"
             onClick={() =>
@@ -163,51 +157,48 @@ function FieldRow({
                 "@legalos.matterWorkspace.errors.customField",
               )
             }
-          />
+          >
+            {t("@legalos.matterWorkspace.customFields.deleteField")}
+          </Button>
         )}
-      </HStack>
+      </div>
 
       {field.field_type === "checkbox" ? (
         <Switch
           label={field.label}
-          isLabelHidden
-          value={field.value === "true"}
+          checked={field.value === "true"}
           onChange={(next) => save(next ? "true" : "false")}
         />
       ) : field.field_type === "select" ? (
-        <Selector
-          label={field.label}
-          isLabelHidden
-          value={field.value}
-          placeholder={t("@legalos.matterWorkspace.customFields.notSet")}
-          onChange={(value) => save(value)}
-          hasClear
-          options={field.options.map((option) => ({
-            value: option,
-            label: option,
-          }))}
+        <Select
+          value={field.value ?? ""}
+          onChange={(e) => save(e.target.value || null)}
+          options={[
+            { value: "", label: t("@legalos.matterWorkspace.customFields.notSet") },
+            ...field.options.map((option) => ({
+              value: option,
+              label: option,
+            })),
+          ]}
         />
       ) : field.field_type === "date" ? (
-        <DateInput
-          label={field.label}
-          isLabelHidden
-          value={(field.value as ISODateString) ?? null}
-          onChange={(value) => save(value ?? null)}
+        <Input
+          type="date"
+          value={field.value ?? ""}
+          onChange={(e) => save(e.target.value || null)}
         />
       ) : (
-        <TextInput
-          label={field.label}
-          isLabelHidden
+        <Input
+          type={field.field_type === "number" ? "number" : "text"}
           value={draft}
-          onChange={setDraft}
+          onChange={(e) => setDraft(e.target.value)}
           // Written when focus leaves rather than on every keystroke: one
           // request per edit, not one per character.
           onBlur={() => draft !== (field.value ?? "") && save(draft)}
           placeholder={t("@legalos.matterWorkspace.customFields.notSet")}
         />
       )}
-      <Divider />
-    </VStack>
+    </div>
   );
 }
 
@@ -277,93 +268,79 @@ function DefineFieldDialog({
 
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange} width={480}>
-      <Layout
-        header={
-          <DialogHeader
-            title={t("@legalos.matterWorkspace.customFields.define.heading")}
-            onOpenChange={onOpenChange}
-          />
-        }
-        content={
-          <LayoutContent>
-            <VStack gap={4}>
-              <TextInput
-                label={t("@legalos.matterWorkspace.customFields.define.label")}
-                value={label}
-                onChange={onLabelChange}
-                isRequired
-              />
-              <TextInput
-                label={t("@legalos.matterWorkspace.customFields.define.key")}
-                value={fieldKey}
-                onChange={setFieldKey}
-                description={t(
-                  "@legalos.matterWorkspace.customFields.define.keyHint",
-                )}
-              />
-              <Selector
-                label={t("@legalos.matterWorkspace.customFields.define.type")}
-                value={fieldType}
-                onChange={(value) => setFieldType(value as CustomFieldType)}
-                options={FIELD_TYPES.map((value) => ({
-                  value,
-                  label: t(`@legalos.matterWorkspace.customFields.type.${value}`),
-                }))}
-              />
-              {fieldType === "select" && (
-                <TextArea
-                  label={t("@legalos.matterWorkspace.customFields.define.options")}
-                  value={options}
-                  onChange={setOptions}
-                  rows={3}
-                  placeholder={t(
-                    "@legalos.matterWorkspace.customFields.define.optionsPlaceholder",
-                  )}
-                />
-              )}
-              <Selector
-                label={t("@legalos.matterWorkspace.customFields.define.appliesTo")}
-                value={matterType}
-                onChange={setMatterType}
-                hasClear
-                placeholder={t(
-                  "@legalos.matterWorkspace.customFields.define.allTypes",
-                )}
-                options={MATTER_TYPES.map((value) => ({
-                  value,
-                  label: enumLabel(value),
-                }))}
-              />
-              <Switch
-                label={t("@legalos.matterWorkspace.customFields.define.required")}
-                value={required}
-                onChange={setRequired}
-              />
-            </VStack>
-          </LayoutContent>
-        }
-        footer={
-          <LayoutFooter hasDivider>
-            <HStack gap={3} hAlign="end">
-              <Button
-                label={t("@legalos.matterWorkspace.action.cancel")}
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              />
-              <Button
-                label={
-                  saving
-                    ? t("@legalos.matterWorkspace.action.saving")
-                    : t("@legalos.matterWorkspace.action.save")
-                }
-                variant="primary"
-                isDisabled={saving || !canSubmit}
-                onClick={submit}
-              />
-            </HStack>
-          </LayoutFooter>
-        }
+      <DialogHeader
+        title={t("@legalos.matterWorkspace.customFields.define.heading")}
+        onOpenChange={onOpenChange}
       />
+      <DialogContent>
+        <div className="flex flex-col gap-4">
+          <Input
+            label={t("@legalos.matterWorkspace.customFields.define.label")}
+            value={label}
+            onChange={(e) => onLabelChange(e.target.value)}
+            required
+          />
+          <Input
+            label={t("@legalos.matterWorkspace.customFields.define.key")}
+            value={fieldKey}
+            onChange={(e) => setFieldKey(e.target.value)}
+            helperText={t("@legalos.matterWorkspace.customFields.define.keyHint")}
+          />
+          <Select
+            label={t("@legalos.matterWorkspace.customFields.define.type")}
+            value={fieldType}
+            onChange={(e) => setFieldType(e.target.value as CustomFieldType)}
+            options={FIELD_TYPES.map((value) => ({
+              value,
+              label: t(`@legalos.matterWorkspace.customFields.type.${value}`),
+            }))}
+          />
+          {fieldType === "select" && (
+            <Textarea
+              label={t("@legalos.matterWorkspace.customFields.define.options")}
+              value={options}
+              onChange={(e) => setOptions(e.target.value)}
+              rows={3}
+              placeholder={t(
+                "@legalos.matterWorkspace.customFields.define.optionsPlaceholder",
+              )}
+            />
+          )}
+          <Select
+            label={t("@legalos.matterWorkspace.customFields.define.appliesTo")}
+            value={matterType ?? ""}
+            onChange={(e) => setMatterType(e.target.value || null)}
+            options={[
+              { value: "", label: t("@legalos.matterWorkspace.customFields.define.allTypes") },
+              ...MATTER_TYPES.map((value) => ({
+                value,
+                label: enumLabel(value),
+              })),
+            ]}
+          />
+          <Switch
+            label={t("@legalos.matterWorkspace.customFields.define.required")}
+            checked={required}
+            onChange={setRequired}
+          />
+        </div>
+      </DialogContent>
+      <DialogFooter>
+        <Button
+          variant="secondary"
+          onClick={() => onOpenChange(false)}
+        >
+          {t("@legalos.matterWorkspace.action.cancel")}
+        </Button>
+        <Button
+          variant="primary"
+          loading={saving}
+          disabled={!canSubmit}
+          onClick={submit}
+        >
+          {t("@legalos.matterWorkspace.action.save")}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

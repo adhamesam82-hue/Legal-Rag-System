@@ -1,6 +1,17 @@
 "use client";
 
+/**
+ * شاشة الفوترة (Billing Page) - نظام السجل (LegalOS)
+ * الموجة الرابعة من T-053.
+ *
+ * إعادة رسم الشاشة بالكامل باستخدام مكتبة السجل (components/ui):
+ * Card, Button, Badge, Select, Dialog, Table, EmptyState, Icon
+ * والتخلص التام من أي مكون بصري من @astryxdesign/core.
+ * الحفاظ الصارم على كافة الخطافات والحسابات والربط والبيانات والمخطط البياني.
+ */
+
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   ResponsiveContainer,
   BarChart,
@@ -11,26 +22,13 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Grid } from "@astryxdesign/core/Grid";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Card } from "@astryxdesign/core/Card";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Link } from "@astryxdesign/core/Link";
-import { Selector } from "@astryxdesign/core/Selector";
-import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
-import { Table, proportional, pixel } from "@astryxdesign/core/Table";
-import type { TableColumn } from "@astryxdesign/core/Table";
-import {
-  BanknotesIcon,
-  PlusIcon,
-  ExclamationTriangleIcon,
-  DocumentTextIcon,
-  BuildingOffice2Icon,
-} from "@heroicons/react/24/outline";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Select } from "@/components/ui/Select";
+import { Dialog, DialogHeader, DialogContent, DialogFooter } from "@/components/ui/Dialog";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
 import { useOrg, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
 import { InvoiceStatusMark } from "@/components/Distinction";
@@ -100,7 +98,7 @@ export default function BillingPage() {
         }),
         ...totals,
       }));
-  }, [invoices]);
+  }, [invoices, intlLocale]);
 
   const rows = useMemo<InvoiceRow[]>(
     () =>
@@ -137,10 +135,9 @@ export default function BillingPage() {
           label: t("@legalos.billing.kpi.outstanding"),
           value: formatEGP(summary.outstanding),
           change: t("@legalos.billing.kpi.openInvoices", {
-            count: invoices.filter((i) => i.status === "sent" || i.status === "overdue")
-              .length,
+            count: invoices.filter((i) => i.status === "sent" || i.status === "overdue").length,
           }),
-          icon: BanknotesIcon,
+          icon: "payments",
           warn: false,
         },
         {
@@ -149,7 +146,7 @@ export default function BillingPage() {
           change: t("@legalos.billing.kpi.pastDue", {
             count: invoices.filter((i) => i.status === "overdue").length,
           }),
-          icon: ExclamationTriangleIcon,
+          icon: "warning",
           warn: true,
         },
         {
@@ -160,7 +157,7 @@ export default function BillingPage() {
               .reduce((sum, i) => sum + Number(i.amount), 0),
           ),
           change: t("@legalos.billing.kpi.notYetSent", { count: summary.draft_count }),
-          icon: DocumentTextIcon,
+          icon: "description",
           warn: false,
         },
         {
@@ -169,262 +166,264 @@ export default function BillingPage() {
           change: t("@legalos.billing.kpi.invoicesPaid", {
             count: invoices.filter((i) => i.status === "paid").length,
           }),
-          icon: BuildingOffice2Icon,
+          icon: "account_balance",
           warn: false,
         },
       ]
     : [];
 
-  const invoiceColumns: TableColumn<InvoiceRow>[] = [
-    {
-      key: "number",
-      header: t("@legalos.billing.table.invoice"),
-      width: pixel(150),
-      renderCell: (row) => (
-        <Link href={`/billing/${row.id}`}>
-          <Text type="body" weight="semibold">
-            {row.number}
-          </Text>
-        </Link>
-      ),
-    },
-    {
-      key: "client",
-      header: t("@legalos.billing.table.client"),
-      width: proportional(1.6),
-      renderCell: (row) => <Text type="body">{row.client}</Text>,
-    },
-    {
-      key: "matter",
-      header: t("@legalos.billing.table.matter"),
-      width: proportional(2),
-      renderCell: (row) => (
-        <Text type="body" color="secondary" maxLines={2}>
-          {row.matter}
-        </Text>
-      ),
-    },
-    {
-      key: "issued",
-      header: t("@legalos.billing.table.issued"),
-      width: pixel(120),
-      renderCell: (row) => (
-        <Text type="body" color="secondary">
-          {formatDate(row.issued)}
-        </Text>
-      ),
-    },
-    {
-      key: "due",
-      header: t("@legalos.billing.table.due"),
-      width: pixel(120),
-      renderCell: (row) => (
-        <Text type="body" color="secondary">
-          {formatDate(row.due)}
-        </Text>
-      ),
-    },
-    {
-      key: "status",
-      header: t("@legalos.billing.table.status"),
-      width: pixel(210),
-      renderCell: (row) => (
-        <HStack gap={2} vAlign="center">
-          <InvoiceStatusMark status={row.status} form="dot" />
-          {row.status === "draft" && (
-            <Button
-              label={t("@legalos.billing.action.send")}
-              variant="ghost"
-              size="sm"
-              isDisabled={pendingId === row.id}
-              onClick={() => setStatus(row, "sent")}
-            >
-              {t("@legalos.billing.action.send")}
-            </Button>
-          )}
-          {(row.status === "sent" || row.status === "overdue") && (
-            <Button
-              label={t("@legalos.billing.action.markPaid")}
-              variant="ghost"
-              size="sm"
-              isDisabled={pendingId === row.id}
-              onClick={() => setStatus(row, "paid")}
-            >
-              {t("@legalos.billing.action.markPaid")}
-            </Button>
-          )}
-        </HStack>
-      ),
-    },
-    {
-      key: "amount",
-      header: t("@legalos.billing.table.amount"),
-      width: pixel(130),
-      align: "end",
-      renderCell: (row) => (
-        <Text type="body" weight="semibold">
-          {formatEGP(row.amount)}
-        </Text>
-      ),
-    },
-  ];
-
   return (
-    <>
-      <Layout
-        height="fill"
-        content={
-          <LayoutContent padding={0}>
-            <VStack gap={6}>
-              <HStack hAlign="between" vAlign="center">
-                <VStack gap={1}>
-                  <Heading level={2}>{t("@legalos.billing.heading")}</Heading>
-                  <Text type="body" color="secondary">
-                    {t("@legalos.billing.subheading")}
-                  </Text>
-                </VStack>
-                <HStack gap={2}>
-                  <Button
-                    label={t("@legalos.billing.create.title")}
-                    variant="secondary"
-                    icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
-                    onClick={() => setIsCreating(true)}
-                    isDisabled={!practice}
-                  >
-                    {t("@legalos.billing.create.title")}
-                  </Button>
-                  <Button
-                    label={t("@legalos.billing.invoiceUnbilled")}
-                    variant="primary"
-                    icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
-                    onClick={() => setIsGenerating(true)}
-                    isDisabled={!practice}
-                  >
-                    {t("@legalos.billing.invoiceUnbilled")}
-                  </Button>
-                </HStack>
-              </HStack>
+    <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto w-full">
+      {/* ترويسة الصفحة */}
+      <div
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b"
+        style={{ borderColor: "var(--border)" }}
+      >
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--text)" }}>
+            {t("@legalos.billing.heading")}
+          </h1>
+          <p className="text-xs" style={{ color: "var(--text2)" }}>
+            {t("@legalos.billing.subheading")}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            startIcon={<Icon name="add" size={16} />}
+            onClick={() => setIsCreating(true)}
+            disabled={!practice}
+          >
+            {t("@legalos.billing.create.title")}
+          </Button>
+          <Button
+            variant="primary"
+            startIcon={<Icon name="add" size={16} />}
+            onClick={() => setIsGenerating(true)}
+            disabled={!practice}
+          >
+            {t("@legalos.billing.invoiceUnbilled")}
+          </Button>
+        </div>
+      </div>
 
-              <DataView resource={resource} loadingLabel={t("@legalos.billing.loading")}>
-                {() => (
-                  <VStack gap={6}>
-                    <InlineError message={error} onDismiss={() => setError(null)} />
+      <DataView resource={resource} loadingLabel={t("@legalos.billing.loading")}>
+        {() => (
+          <div className="flex flex-col gap-6">
+            <InlineError message={error} onDismiss={() => setError(null)} />
 
-                    <Grid columns={{ minWidth: 220, repeat: "fit" }} gap={4}>
-                      {kpis.map((kpi) => (
-                        <Card key={kpi.label}>
-                          <VStack gap={2}>
-                            {/* The glyph is kept only where it carries the
-                              * warning; as decoration on every card it made
-                              * four identical rows of ornament and left
-                              * nothing for the one card that needs attention
-                              * to stand out with. */}
-                            <HStack gap={1.5} vAlign="center">
-                              {kpi.warn && (
-                                <Icon icon={kpi.icon} size="sm" color="warning" />
-                              )}
-                              <Text type="label" color="secondary">
-                                {kpi.label}
-                              </Text>
-                            </HStack>
-                            <Text size="2xl" weight="semibold">{kpi.value}</Text>
-                            <Text type="supporting" color="secondary">
-                              {kpi.change}
-                            </Text>
-                          </VStack>
-                        </Card>
-                      ))}
-                    </Grid>
+            {/* بطاقات مؤشرات الأداء KPIs */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {kpis.map((kpi) => (
+                <Card key={kpi.label}>
+                  <CardContent className="flex flex-col gap-2 p-5">
+                    <div className="flex items-center gap-1.5">
+                      {kpi.warn && (
+                        <Icon name="warning" size={16} style={{ color: "var(--warn)" }} />
+                      )}
+                      <span className="text-xs font-semibold" style={{ color: "var(--text2)" }}>
+                        {kpi.label}
+                      </span>
+                    </div>
+                    <div className="text-2xl font-semibold" style={{ color: "var(--text)" }}>
+                      {kpi.value}
+                    </div>
+                    <div className="text-xs" style={{ color: "var(--text3)" }}>
+                      {kpi.change}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-                    {chart.length > 0 && (
-                      <Card>
-                        <VStack gap={4}>
-                          <HStack hAlign="between" vAlign="center">
-                            <Heading level={4}>{t("@legalos.billing.chart.heading")}</Heading>
-                            <Text type="supporting" color="secondary">
-                              {t("@legalos.billing.chart.lastMonths", {
-                                count: chart.length,
-                              })}
-                            </Text>
-                          </HStack>
-                          <ResponsiveContainer width="100%" height={240}>
-                            <BarChart
-                              data={chart}
-                              margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+            {/* مخطط التحصيلات البياني Recharts */}
+            {chart.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between gap-2 w-full">
+                    <CardTitle className="text-sm font-semibold">
+                      {t("@legalos.billing.chart.heading")}
+                    </CardTitle>
+                    <span className="text-xs" style={{ color: "var(--text2)" }}>
+                      {t("@legalos.billing.chart.lastMonths", {
+                        count: chart.length,
+                      })}
+                    </span>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="w-full h-[240px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={chart}
+                        margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                      >
+                        <CartesianGrid
+                          horizontal
+                          vertical={false}
+                          stroke="var(--border)"
+                        />
+                        <XAxis
+                          dataKey="month"
+                          tick={{ fontSize: 12, fill: "var(--text2)" }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          tickFormatter={(v: number) => formatEGPCompact(v)}
+                          tick={{ fontSize: 12, fill: "var(--text2)" }}
+                          axisLine={false}
+                          tickLine={false}
+                          width={72}
+                        />
+                        <Tooltip
+                          formatter={(value) => formatEGP(Number(value))}
+                          contentStyle={{
+                            background: "var(--surface)",
+                            border: "1px solid var(--border)",
+                            borderRadius: "var(--rs)",
+                            color: "var(--text)",
+                          }}
+                        />
+                        <Legend wrapperStyle={{ fontSize: 12 }} />
+                        <Bar
+                          dataKey="invoiced"
+                          name={t("@legalos.billing.chart.invoiced")}
+                          fill="var(--accent)"
+                          radius={[4, 4, 0, 0]}
+                        />
+                        <Bar
+                          dataKey="collected"
+                          name={t("@legalos.billing.chart.collected")}
+                          fill="var(--border2)"
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* جدول الفواتير */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm font-semibold">
+                  {t("@legalos.billing.invoices.heading")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent style={{ padding: 0 }}>
+                {rows.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead style={{ minWidth: "140px" }}>
+                          {t("@legalos.billing.table.invoice")}
+                        </TableHead>
+                        <TableHead style={{ minWidth: "160px" }}>
+                          {t("@legalos.billing.table.client")}
+                        </TableHead>
+                        <TableHead style={{ minWidth: "200px" }}>
+                          {t("@legalos.billing.table.matter")}
+                        </TableHead>
+                        <TableHead style={{ minWidth: "120px" }}>
+                          {t("@legalos.billing.table.issued")}
+                        </TableHead>
+                        <TableHead style={{ minWidth: "120px" }}>
+                          {t("@legalos.billing.table.due")}
+                        </TableHead>
+                        <TableHead style={{ minWidth: "200px" }}>
+                          {t("@legalos.billing.table.status")}
+                        </TableHead>
+                        <TableHead style={{ minWidth: "130px", textAlign: "end" }}>
+                          {t("@legalos.billing.table.amount")}
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {rows.map((row) => (
+                        <TableRow key={row.id}>
+                          <TableCell>
+                            <Link
+                              href={`/billing/${row.id}`}
+                              className="font-semibold hover:underline"
+                              style={{ color: "var(--primary)" }}
                             >
-                              <CartesianGrid
-                                horizontal
-                                vertical={false}
-                                stroke="var(--color-border)"
-                              />
-                              <XAxis
-                                dataKey="month"
-                                tick={{ fontSize: "var(--font-size-sm)", fill: "var(--color-text-secondary)" }}
-                                axisLine={false}
-                                tickLine={false}
-                              />
-                              <YAxis
-                                tickFormatter={(v: number) => formatEGPCompact(v)}
-                                tick={{ fontSize: "var(--font-size-sm)", fill: "var(--color-text-secondary)" }}
-                                axisLine={false}
-                                tickLine={false}
-                                width={72}
-                              />
-                              <Tooltip
-                                formatter={(value) => formatEGP(Number(value))}
-                                contentStyle={{
-                                  background: "var(--color-background-popover)",
-                                  border: "1px solid var(--color-border)",
-                                  borderRadius: "var(--radius-element)",
-                                }}
-                              />
-                              <Legend wrapperStyle={{ fontSize: "var(--font-size-sm)" }} />
-                              <Bar
-                                dataKey="invoiced"
-                                name={t("@legalos.billing.chart.invoiced")}
-                                fill="var(--color-accent)"
-                                radius={[4, 4, 0, 0]}
-                              />
-                              <Bar
-                                dataKey="collected"
-                                name={t("@legalos.billing.chart.collected")}
-                                fill="var(--color-border-strong)"
-                                radius={[4, 4, 0, 0]}
-                              />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </VStack>
-                      </Card>
-                    )}
-
-                    <Card>
-                      <VStack gap={4}>
-                        <Heading level={4}>{t("@legalos.billing.invoices.heading")}</Heading>
-                        {rows.length > 0 ? (
-                          <Table<InvoiceRow>
-                            data={rows}
-                            columns={invoiceColumns}
-                            idKey="id"
-                            hasHover
-                          />
-                        ) : (
-                          <EmptyState
-                            icon={
-                              <Icon icon={BanknotesIcon} size="lg" color="secondary" />
-                            }
-                            title={t("@legalos.billing.invoices.emptyTitle")}
-                            description={t("@legalos.billing.invoices.emptyDescription")}
-                          />
-                        )}
-                      </VStack>
-                    </Card>
-                  </VStack>
+                              {row.number}
+                            </Link>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-xs" style={{ color: "var(--text)" }}>
+                              {row.client}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-xs line-clamp-2" style={{ color: "var(--text2)" }}>
+                              {row.matter}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-xs" style={{ color: "var(--text2)" }}>
+                              {formatDate(row.issued)}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-xs" style={{ color: "var(--text2)" }}>
+                              {formatDate(row.due)}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <InvoiceStatusMark status={row.status} form="dot" />
+                              {row.status === "draft" && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={pendingId === row.id}
+                                  loading={pendingId === row.id}
+                                  onClick={() => setStatus(row, "sent")}
+                                >
+                                  {t("@legalos.billing.action.send")}
+                                </Button>
+                              )}
+                              {(row.status === "sent" || row.status === "overdue") && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={pendingId === row.id}
+                                  loading={pendingId === row.id}
+                                  onClick={() => setStatus(row, "paid")}
+                                >
+                                  {t("@legalos.billing.action.markPaid")}
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell style={{ textAlign: "end" }}>
+                            <span className="text-xs font-semibold" style={{ color: "var(--text)" }}>
+                              {formatEGP(row.amount)}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="p-6">
+                    <EmptyState
+                      icon={<Icon name="payments" size={24} />}
+                      title={t("@legalos.billing.invoices.emptyTitle")}
+                      description={t("@legalos.billing.invoices.emptyDescription")}
+                    />
+                  </div>
                 )}
-              </DataView>
-            </VStack>
-          </LayoutContent>
-        }
-      />
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </DataView>
+
+      {/* النوافذ المنبثقة */}
       <GenerateInvoiceDialog
         isOpen={isGenerating}
         onOpenChange={setIsGenerating}
@@ -435,7 +434,7 @@ export default function BillingPage() {
         onOpenChange={setIsCreating}
         onCreated={resource.reload}
       />
-    </>
+    </div>
   );
 }
 
@@ -497,56 +496,59 @@ function GenerateInvoiceDialog({
   }
 
   return (
-    <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
-      <Layout
-        header={
-          <DialogHeader title={t("@legalos.billing.dialog.title")} onOpenChange={onOpenChange} />
-        }
-        content={
-          <LayoutContent>
-            <VStack gap={4}>
-              <InlineError message={error} onDismiss={() => setError(null)} />
-              <Text type="body" color="secondary">
-                {t("@legalos.billing.dialog.description")}
-              </Text>
-              {options.length === 0 && !unbilled.loading ? (
-                <Text type="body">{t("@legalos.billing.dialog.noneAvailable")}</Text>
-              ) : (
-                <Selector
-                  label={t("@legalos.billing.dialog.matterLabel")}
-                  hasClear
-                  isRequired
-                  value={matterId}
-                  onChange={setMatterId}
-                  placeholder={
-                    unbilled.loading
-                      ? t("@legalos.billing.dialog.loadingPlaceholder")
-                      : t("@legalos.billing.dialog.matterPlaceholder")
-                  }
-                  options={options}
-                />
-              )}
-            </VStack>
-          </LayoutContent>
-        }
-        footer={
-          <LayoutFooter hasDivider>
-            <HStack gap={3} hAlign="end">
-              <Button
-                label={t("@legalos.billing.dialog.cancel")}
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              />
-              <Button
-                label={saving ? t("@legalos.billing.dialog.drafting") : t("@legalos.billing.dialog.draftInvoice")}
-                variant="primary"
-                onClick={submit}
-                isDisabled={saving || !matterId}
-              />
-            </HStack>
-          </LayoutFooter>
-        }
+    <Dialog isOpen={isOpen} onOpenChange={onOpenChange} width={520}>
+      <DialogHeader
+        title={t("@legalos.billing.dialog.title")}
+        onOpenChange={onOpenChange}
       />
+      <DialogContent className="flex flex-col gap-4">
+        <InlineError message={error} onDismiss={() => setError(null)} />
+        <p className="text-xs" style={{ color: "var(--text2)" }}>
+          {t("@legalos.billing.dialog.description")}
+        </p>
+        {options.length === 0 && !unbilled.loading ? (
+          <p className="text-xs" style={{ color: "var(--text3)" }}>
+            {t("@legalos.billing.dialog.noneAvailable")}
+          </p>
+        ) : (
+          <Select
+            label={t("@legalos.billing.dialog.matterLabel")}
+            value={matterId ?? ""}
+            onChange={(e) => setMatterId(e.target.value || null)}
+            disabled={unbilled.loading}
+          >
+            <option value="">
+              {unbilled.loading
+                ? t("@legalos.billing.dialog.loadingPlaceholder")
+                : t("@legalos.billing.dialog.matterPlaceholder")}
+            </option>
+            {options.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </Select>
+        )}
+      </DialogContent>
+      <DialogFooter>
+        <Button
+          variant="secondary"
+          onClick={() => onOpenChange(false)}
+          disabled={saving}
+        >
+          {t("@legalos.billing.dialog.cancel")}
+        </Button>
+        <Button
+          variant="primary"
+          onClick={submit}
+          disabled={saving || !matterId}
+          loading={saving}
+        >
+          {saving
+            ? t("@legalos.billing.dialog.drafting")
+            : t("@legalos.billing.dialog.draftInvoice")}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

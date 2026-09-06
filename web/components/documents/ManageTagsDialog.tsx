@@ -16,15 +16,10 @@
 
 import { useState } from "react";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Text } from "@astryxdesign/core/Text";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { Selector } from "@astryxdesign/core/Selector";
-import { Divider } from "@astryxdesign/core/Divider";
-import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
-import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
+import { Dialog, DialogHeader, DialogContent, DialogFooter } from "@/components/ui/Dialog";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
 import { PencilIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useOrg } from "@/lib/org";
 import { InlineError } from "@/components/DataState";
@@ -120,127 +115,151 @@ export function ManageTagsDialog({
   return (
     <>
       <Dialog isOpen={isOpen} onOpenChange={onOpenChange} purpose="form" width={560}>
-        <Layout
-          header={<DialogHeader title={t("@legalos.documents.tags.manageTitle")} onOpenChange={onOpenChange} />}
-          content={
-            <LayoutContent>
-              <VStack gap={4}>
-                <InlineError message={error} onDismiss={() => setError(null)} />
-
-                {/* --- create ------------------------------------------ */}
-                <HStack gap={2} vAlign="end" wrap="wrap">
-                  <TextInput
-                    label={t("@legalos.documents.tags.newName")}
-                    value={newName}
-                    onChange={setNewName}
-                    placeholder={t("@legalos.documents.tags.newNamePlaceholder")}
-                    width={220}
-                    onEnter={create}
-                  />
-                  <Selector
-                    label={t("@legalos.documents.tags.colorLabel")}
-                    value={newColor}
-                    onChange={(value) => setNewColor(value as DocumentTag["color"])}
-                    options={colorOptions}
-                    width={150}
-                  />
-                  <Button
-                    label={t("@legalos.documents.tags.add")}
-                    variant="primary"
-                    icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
-                    isDisabled={busy || !newName.trim()}
-                    onClick={create}
-                  />
-                </HStack>
-
-                <Divider />
-
-                {/* --- the list ---------------------------------------- */}
-                {tags.length === 0 ? (
-                  <Text type="body" color="secondary">
-                    {t("@legalos.documents.tags.noneDefined")}
-                  </Text>
-                ) : (
-                  <VStack gap={2}>
-                    {tags.map((tag) =>
-                      editing?.id === tag.id ? (
-                        <HStack key={tag.id} gap={2} vAlign="end" wrap="wrap">
-                          <TextInput
-                            label={t("@legalos.documents.tags.rename")}
-                            isLabelHidden
-                            value={name}
-                            onChange={setName}
-                            width={220}
-                            hasAutoFocus
-                            onEnter={saveEdit}
-                          />
-                          <Selector
-                            label={t("@legalos.documents.tags.colorLabel")}
-                            isLabelHidden
-                            value={color}
-                            onChange={(value) => setColor(value as DocumentTag["color"])}
-                            options={colorOptions}
-                            width={150}
-                          />
-                          <Button
-                            label={t("@legalos.documents.tags.save")}
-                            variant="primary"
-                            size="sm"
-                            isDisabled={busy || !name.trim()}
-                            onClick={saveEdit}
-                          />
-                          <Button
-                            label={t("@legalos.documents.tags.cancel")}
-                            variant="ghost"
-                            size="sm"
-                            isDisabled={busy}
-                            onClick={() => setEditing(null)}
-                          />
-                        </HStack>
-                      ) : (
-                        <HStack key={tag.id} hAlign="between" vAlign="center" gap={3}>
-                          <HStack gap={2} vAlign="center">
-                            <TagToken tag={tag} size="md" />
-                            <Text type="supporting" color="secondary">
-                              {t("@legalos.documents.tags.onDocuments", { count: tag.document_count })}
-                            </Text>
-                          </HStack>
-                          <HStack gap={1}>
-                            <Button
-                              label={t("@legalos.documents.tags.rename")}
-                              variant="ghost"
-                              size="sm"
-                              icon={<Icon icon={PencilIcon} size="sm" color="inherit" />}
-                              isDisabled={busy}
-                              onClick={() => startEdit(tag)}
-                            />
-                            <Button
-                              label={t("@legalos.documents.tags.delete")}
-                              variant="ghost"
-                              size="sm"
-                              icon={<Icon icon={TrashIcon} size="sm" color="inherit" />}
-                              isDisabled={busy}
-                              // A tag on no document goes without a question;
-                              // one that is in use asks, with the number.
-                              onClick={() => (tag.document_count > 0 ? setConfirmDelete(tag) : remove(tag))}
-                            />
-                          </HStack>
-                        </HStack>
-                      ),
-                    )}
-                  </VStack>
-                )}
-              </VStack>
-            </LayoutContent>
-          }
-          footer={
-            <LayoutFooter>
-              <HStack hAlign="end">
-                <Button label={t("@legalos.documents.tags.done")} variant="secondary" onClick={() => onOpenChange(false)} />
-              </HStack>
-            </LayoutFooter>
-          }
+        <DialogHeader
+          title={t("@legalos.documents.tags.manageTitle")}
+          onOpenChange={onOpenChange}
         />
+        <DialogContent>
+          <div className="flex flex-col gap-4">
+            <InlineError message={error} onDismiss={() => setError(null)} />
+
+            {/* --- create ------------------------------------------ */}
+            <div className="flex items-end gap-2 flex-wrap">
+              <div className="flex-1 min-w-[200px]">
+                <Input
+                  label={t("@legalos.documents.tags.newName")}
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder={t("@legalos.documents.tags.newNamePlaceholder")}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      create();
+                    }
+                  }}
+                />
+              </div>
+              <div className="w-36">
+                <Select
+                  label={t("@legalos.documents.tags.colorLabel")}
+                  value={newColor}
+                  onChange={(e) => setNewColor(e.target.value as DocumentTag["color"])}
+                  options={colorOptions}
+                />
+              </div>
+              <Button
+                variant="primary"
+                disabled={busy || !newName.trim()}
+                loading={busy}
+                startIcon={<PlusIcon className="w-4 h-4" />}
+                onClick={create}
+              >
+                {t("@legalos.documents.tags.add")}
+              </Button>
+            </div>
+
+            <hr className="border-t" style={{ borderColor: "var(--border)" }} />
+
+            {/* --- the list ---------------------------------------- */}
+            {tags.length === 0 ? (
+              <p className="text-sm" style={{ color: "var(--text2)" }}>
+                {t("@legalos.documents.tags.noneDefined")}
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto">
+                {tags.map((tag) =>
+                  editing?.id === tag.id ? (
+                    <div key={tag.id} className="flex items-end gap-2 flex-wrap p-2 rounded-md border" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface2)" }}>
+                      <div className="flex-1 min-w-[160px]">
+                        <Input
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          autoFocus
+                          aria-label={t("@legalos.documents.tags.rename")}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              saveEdit();
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="w-32">
+                        <Select
+                          value={color}
+                          onChange={(e) => setColor(e.target.value as DocumentTag["color"])}
+                          options={colorOptions}
+                          aria-label={t("@legalos.documents.tags.colorLabel")}
+                        />
+                      </div>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        disabled={busy || !name.trim()}
+                        loading={busy}
+                        onClick={saveEdit}
+                      >
+                        {t("@legalos.documents.tags.save")}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={busy}
+                        onClick={() => setEditing(null)}
+                      >
+                        {t("@legalos.documents.tags.cancel")}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div
+                      key={tag.id}
+                      className="flex items-center justify-between gap-3 p-2 rounded-md hover:bg-[var(--surface2)] transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <TagToken tag={tag} size="md" />
+                        <span className="text-xs" style={{ color: "var(--text2)" }}>
+                          {t("@legalos.documents.tags.onDocuments", { count: tag.document_count })}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={busy}
+                          onClick={() => startEdit(tag)}
+                          title={t("@legalos.documents.tags.rename")}
+                        >
+                          <PencilIcon className="w-4 h-4" />
+                          <span className="sr-only">{t("@legalos.documents.tags.rename")}</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={busy}
+                          onClick={() => (tag.document_count > 0 ? setConfirmDelete(tag) : remove(tag))}
+                          title={t("@legalos.documents.tags.delete")}
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                          <span className="sr-only">{t("@legalos.documents.tags.delete")}</span>
+                        </Button>
+                      </div>
+                    </div>
+                  ),
+                )}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+        <DialogFooter>
+          <div className="flex items-center justify-end">
+            <Button
+              variant="secondary"
+              onClick={() => onOpenChange(false)}
+            >
+              {t("@legalos.documents.tags.done")}
+            </Button>
+          </div>
+        </DialogFooter>
       </Dialog>
 
       {/* --- delete confirmation, with the count ------------------------ */}
@@ -250,39 +269,33 @@ export function ManageTagsDialog({
         purpose="form"
         width={420}
       >
-        <Layout
-          header={
-            <DialogHeader
-              title={t("@legalos.documents.tags.deleteTitle", { name: confirmDelete?.name ?? "" })}
-              onOpenChange={(open) => !open && setConfirmDelete(null)}
-            />
-          }
-          content={
-            <LayoutContent>
-              <Text type="body">
-                {t("@legalos.documents.tags.deleteBody", { count: confirmDelete?.document_count ?? 0 })}
-              </Text>
-            </LayoutContent>
-          }
-          footer={
-            <LayoutFooter>
-              <HStack hAlign="end" gap={2}>
-                <Button
-                  label={t("@legalos.documents.tags.cancel")}
-                  variant="secondary"
-                  isDisabled={busy}
-                  onClick={() => setConfirmDelete(null)}
-                />
-                <Button
-                  label={t("@legalos.documents.tags.deleteConfirm")}
-                  variant="destructive"
-                  isLoading={busy}
-                  onClick={() => confirmDelete && remove(confirmDelete)}
-                />
-              </HStack>
-            </LayoutFooter>
-          }
+        <DialogHeader
+          title={t("@legalos.documents.tags.deleteTitle", { name: confirmDelete?.name ?? "" })}
+          onOpenChange={(open) => !open && setConfirmDelete(null)}
         />
+        <DialogContent>
+          <p className="text-sm" style={{ color: "var(--text)" }}>
+            {t("@legalos.documents.tags.deleteBody", { count: confirmDelete?.document_count ?? 0 })}
+          </p>
+        </DialogContent>
+        <DialogFooter>
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() => setConfirmDelete(null)}
+            >
+              {t("@legalos.documents.tags.cancel")}
+            </Button>
+            <Button
+              variant="danger"
+              loading={busy}
+              onClick={() => confirmDelete && remove(confirmDelete)}
+            >
+              {t("@legalos.documents.tags.deleteConfirm")}
+            </Button>
+          </div>
+        </DialogFooter>
       </Dialog>
     </>
   );

@@ -1,58 +1,29 @@
 "use client";
 
 import { use } from "react";
-import { Layout, LayoutContent } from "@astryxdesign/core/Layout";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Grid, GridSpan } from "@astryxdesign/core/Grid";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Card } from "@astryxdesign/core/Card";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Badge } from "@astryxdesign/core/Badge";
-import { Avatar } from "@astryxdesign/core/Avatar";
-import { List, ListItem } from "@astryxdesign/core/List";
-import { Divider } from "@astryxdesign/core/Divider";
-import { Link } from "@astryxdesign/core/Link";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
-import {
-  SparklesIcon,
-  DocumentDuplicateIcon,
-  ScaleIcon,
-  BookOpenIcon,
-  ShieldCheckIcon,
-  ArrowDownTrayIcon,
-  PencilSquareIcon,
-} from "@heroicons/react/24/outline";
-import { useTranslator } from "@astryxdesign/core/i18n";
+import Link from "next/link";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
 import { BreadcrumbOverride } from "@/components/ui/Breadcrumb";
+import { useTranslator } from "@astryxdesign/core/i18n";
 import { getKbItem, getKbItems, type KbItem, type KbCategory } from "../data";
 
-const AI_ICON_CLASS = "text-purple-vivid";
-
-const TYPE_ICON: Record<KbItem["type"], React.ComponentType<React.SVGProps<SVGSVGElement>>> = {
-  template: DocumentDuplicateIcon,
-  precedent: ScaleIcon,
-  guide: BookOpenIcon,
-  policy: ShieldCheckIcon,
+const TYPE_ICON_NAME: Record<KbItem["type"], string> = {
+  template: "content_copy",
+  precedent: "balance",
+  guide: "menu_book",
+  policy: "verified_user",
 };
 
-/** KbCategory's members are English strings (they discriminate the union in
- *  data.ts); this maps each to its catalog key so badges render in the active
- *  locale without changing the data model. */
 const CATEGORY_KEY: Record<KbCategory, string> = {
   "Contract Templates": "@legalos.knowledgeBase.category.contractTemplates",
   "Litigation Precedents": "@legalos.knowledgeBase.category.litigationPrecedents",
   "Regulatory Guides": "@legalos.knowledgeBase.category.regulatoryGuides",
   "Firm Policies & SOPs": "@legalos.knowledgeBase.category.firmPolicies",
   "Client Communication Templates": "@legalos.knowledgeBase.category.clientCommunication",
-};
-
-const CATEGORY_BADGE: Record<KbCategory, "blue" | "orange" | "teal" | "cyan" | "pink"> = {
-  "Contract Templates": "blue",
-  "Litigation Precedents": "orange",
-  "Regulatory Guides": "teal",
-  "Firm Policies & SOPs": "cyan",
-  "Client Communication Templates": "pink",
 };
 
 export default function KnowledgeBaseDetailPage({
@@ -66,28 +37,26 @@ export default function KnowledgeBaseDetailPage({
 
   if (!item) {
     return (
-      <Layout
-        height="fill"
-        content={
-          <LayoutContent padding={0}>
-            <EmptyState
-              icon={<Icon icon={BookOpenIcon} size="lg" color="secondary" />}
-              title={t("@legalos.knowledgeBase.detail.notFoundTitle")}
-              description={t("@legalos.knowledgeBase.detail.notFoundDescription")}
-              actions={
-                <Link href="/knowledge-base" isStandalone>
-                  {t("@legalos.knowledgeBase.detail.backToKb")}
-                </Link>
-              }
-            />
-          </LayoutContent>
-        }
-      />
+      <div className="p-8 flex items-center justify-center">
+        <EmptyState
+          icon={<Icon name="menu_book" size={32} />}
+          title={t("@legalos.knowledgeBase.detail.notFoundTitle")}
+          description={t("@legalos.knowledgeBase.detail.notFoundDescription")}
+          action={
+            <Link
+              href="/knowledge-base"
+              className="text-xs font-semibold hover:underline"
+              style={{ color: "var(--primary)" }}
+            >
+              {t("@legalos.knowledgeBase.detail.backToKb")}
+            </Link>
+          }
+        />
+      </div>
     );
   }
 
   const related = getKbItems(item.relatedIds);
-  const TypeIcon = TYPE_ICON[item.type];
 
   return (
     <>
@@ -99,181 +68,200 @@ export default function KnowledgeBaseDetailPage({
           { label: item.title, isCurrent: true },
         ]}
       />
-      <Layout
-        height="fill"
-        content={
-          <LayoutContent padding={0}>
-            <VStack gap={6}>
-              <VStack gap={4}>
-                <HStack hAlign="between" vAlign="start">
-                  <VStack gap={2}>
-                    <HStack gap={2} vAlign="center">
-                      <Icon icon={TypeIcon} size="sm" color="secondary" />
-                      <div data-breadcrumb-title={item.title}>
-                        <Heading level={2}>{item.title}</Heading>
+      <div className="flex flex-col gap-6 p-6">
+        {/* مسار التصفح ورأس الصفحة */}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2 text-xs" style={{ color: "var(--text2)" }}>
+            <Link href="/knowledge-base" className="hover:underline">
+              {t("@legalos.knowledgeBase.detail.breadcrumb")}
+            </Link>
+            <span>/</span>
+            <Link href="/knowledge-base" className="hover:underline">
+              {item.category}
+            </Link>
+            <span>/</span>
+            <span className="font-semibold truncate" style={{ color: "var(--text)" }}>
+              {item.title}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2" data-breadcrumb-title={item.title}>
+                <Icon name={TYPE_ICON_NAME[item.type]} size={22} />
+                <h1 className="text-xl font-bold" style={{ color: "var(--text)" }}>
+                  {item.title}
+                </h1>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <Badge color="neutral">{t(CATEGORY_KEY[item.category])}</Badge>
+                <span style={{ color: "var(--text2)" }}>
+                  {t("@legalos.knowledgeBase.updatedBy", {
+                    date: item.updated,
+                    author: item.author,
+                  })}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button variant="secondary">
+                <Icon name="edit" size={16} />
+                <span>{t("@legalos.knowledgeBase.detail.edit")}</span>
+              </Button>
+              {item.type === "template" ? (
+                <Button>
+                  <Icon name="content_copy" size={16} />
+                  <span>{t("@legalos.knowledgeBase.detail.useTemplate")}</span>
+                </Button>
+              ) : (
+                <Button>
+                  <Icon name="download" size={16} />
+                  <span>{t("@legalos.knowledgeBase.detail.download")}</span>
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* المحتوى الرئيسي والشريط الجانبي */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          <div className="lg:col-span-2">
+            <Card className="p-6 flex flex-col gap-6">
+              <p className="text-xs leading-relaxed" style={{ color: "var(--text2)" }}>
+                {item.summary}
+              </p>
+              <div className="pt-4 border-t flex flex-col gap-6" style={{ borderColor: "var(--border)" }}>
+                {item.body.map((section) => (
+                  <div key={section.heading} className="flex flex-col gap-2">
+                    <h2 className="text-sm font-bold" style={{ color: "var(--text)" }}>
+                      {section.heading}
+                    </h2>
+                    <p className="text-xs leading-relaxed" style={{ color: "var(--text2)" }}>
+                      {section.text}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          </div>
+
+          <div className="flex flex-col gap-5">
+            {/* نصائح الذكاء الاصطناعي */}
+            <Card className="p-5 flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <Icon name="auto_awesome" size={18} />
+                <h3 className="text-xs font-bold" style={{ color: "var(--text)" }}>
+                  {t("@legalos.knowledgeBase.detail.aiHeading")}
+                </h3>
+              </div>
+              <p className="text-xs leading-relaxed" style={{ color: "var(--text2)" }}>
+                {item.relatedMatter
+                  ? t("@legalos.knowledgeBase.detail.aiForMatter", {
+                      matter: item.relatedMatter,
+                    })
+                  : t("@legalos.knowledgeBase.detail.aiGeneric")}
+              </p>
+              <Link
+                href="/ai-assistant"
+                className="text-xs font-semibold hover:underline"
+                style={{ color: "var(--primary)" }}
+              >
+                {t("@legalos.knowledgeBase.detail.askAi")}
+              </Link>
+            </Card>
+
+            {/* القضية المرتبطة */}
+            {item.relatedMatter && (
+              <Card className="p-5 flex flex-col gap-3">
+                <h3 className="text-xs font-bold" style={{ color: "var(--text)" }}>
+                  {t("@legalos.knowledgeBase.detail.relatedMatter")}
+                </h3>
+                <Link
+                  href="/matters"
+                  className="p-2.5 rounded-md border flex items-center gap-2 text-xs hover:bg-[var(--surface2)] transition-colors"
+                  style={{ borderColor: "var(--border)" }}
+                >
+                  <Icon name="balance" size={16} />
+                  <div className="flex flex-col truncate">
+                    <span className="font-semibold truncate" style={{ color: "var(--text)" }}>
+                      {item.relatedMatter}
+                    </span>
+                    <span className="text-[11px]" style={{ color: "var(--text2)" }}>
+                      {t("@legalos.knowledgeBase.detail.viewMatter")}
+                    </span>
+                  </div>
+                </Link>
+              </Card>
+            )}
+
+            {/* العناصر ذات الصلة */}
+            <Card className="p-5 flex flex-col gap-3">
+              <h3 className="text-xs font-bold" style={{ color: "var(--text)" }}>
+                {t("@legalos.knowledgeBase.detail.relatedItems")}
+              </h3>
+              {related.length > 0 ? (
+                <div className="flex flex-col divide-y" style={{ borderColor: "var(--border)" }}>
+                  {related.map((r) => (
+                    <Link
+                      key={r.id}
+                      href={`/knowledge-base/${r.id}`}
+                      className="py-2.5 flex items-start gap-2.5 hover:text-[var(--primary)] transition-colors text-xs"
+                    >
+                      <Icon name={TYPE_ICON_NAME[r.type]} size={16} />
+                      <div className="flex flex-col gap-0.5 truncate">
+                        <span className="font-semibold truncate" style={{ color: "var(--text)" }}>
+                          {r.title}
+                        </span>
+                        <span className="text-[11px]" style={{ color: "var(--text2)" }}>
+                          {t(CATEGORY_KEY[r.category])}
+                        </span>
                       </div>
-                    </HStack>
-                  <HStack gap={2} vAlign="center">
-                    <Badge
-                      variant={CATEGORY_BADGE[item.category]}
-                      label={t(CATEGORY_KEY[item.category])}
-                    />
-                    <Text type="supporting" color="secondary">
-                      {t("@legalos.knowledgeBase.updatedBy", {
-                        date: item.updated,
-                        author: item.author,
-                      })}
-                    </Text>
-                  </HStack>
-                </VStack>
-                <HStack gap={2}>
-                  <Button
-                    label={t("@legalos.knowledgeBase.detail.edit")}
-                    variant="secondary"
-                    icon={<Icon icon={PencilSquareIcon} size="sm" color="inherit" />}
-                  >
-                    {t("@legalos.knowledgeBase.detail.edit")}
-                  </Button>
-                  {item.type === "template" ? (
-                    <Button
-                      label={t("@legalos.knowledgeBase.detail.useTemplate")}
-                      variant="primary"
-                      icon={<Icon icon={DocumentDuplicateIcon} size="sm" color="inherit" />}
-                    >
-                      {t("@legalos.knowledgeBase.detail.useTemplate")}
-                    </Button>
-                  ) : (
-                    <Button
-                      label={t("@legalos.knowledgeBase.detail.download")}
-                      variant="primary"
-                      icon={<Icon icon={ArrowDownTrayIcon} size="sm" color="inherit" />}
-                    >
-                      {t("@legalos.knowledgeBase.detail.download")}
-                    </Button>
-                  )}
-                </HStack>
-              </HStack>
-            </VStack>
-
-            <Grid columns={3} gap={6}>
-              <GridSpan columns={2}>
-                <Card padding={8}>
-                  <VStack gap={5}>
-                    <Text type="body" color="secondary">
-                      {item.summary}
-                    </Text>
-                    <Divider />
-                    <VStack gap={5}>
-                      {item.body.map((section) => (
-                        <VStack key={section.heading} gap={1}>
-                          <Heading level={4}>{section.heading}</Heading>
-                          <Text type="body" color="secondary">
-                            {section.text}
-                          </Text>
-                        </VStack>
-                      ))}
-                    </VStack>
-                  </VStack>
-                </Card>
-              </GridSpan>
-
-              <VStack gap={6}>
-                <Card variant="purple">
-                  <VStack gap={3}>
-                    <HStack gap={2} vAlign="center">
-                      <Icon icon={SparklesIcon} size="sm" className={AI_ICON_CLASS} />
-                      <Heading level={4}>{t("@legalos.knowledgeBase.detail.aiHeading")}</Heading>
-                    </HStack>
-                    <Text type="body">
-                      {item.relatedMatter
-                        ? t("@legalos.knowledgeBase.detail.aiForMatter", {
-                            matter: item.relatedMatter,
-                          })
-                        : t("@legalos.knowledgeBase.detail.aiGeneric")}
-                    </Text>
-                    <Link href="/ai-assistant" isStandalone>
-                      {t("@legalos.knowledgeBase.detail.askAi")}
                     </Link>
-                  </VStack>
-                </Card>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs" style={{ color: "var(--text2)" }}>
+                  {t("@legalos.knowledgeBase.detail.noRelatedItems")}
+                </p>
+              )}
+            </Card>
 
-                {item.relatedMatter && (
-                  <Card>
-                    <VStack gap={3}>
-                      <Heading level={4}>{t("@legalos.knowledgeBase.detail.relatedMatter")}</Heading>
-                      <List hasDividers density="compact">
-                        <ListItem
-                          label={item.relatedMatter}
-                          description={t("@legalos.knowledgeBase.detail.viewMatter")}
-                          href="/matters"
-                          startContent={<Icon icon={ScaleIcon} size="sm" color="secondary" />}
-                        />
-                      </List>
-                    </VStack>
-                  </Card>
-                )}
-
-                <Card>
-                  <VStack gap={3}>
-                    <Heading level={4}>{t("@legalos.knowledgeBase.detail.relatedItems")}</Heading>
-                    {related.length > 0 ? (
-                      <List hasDividers density="compact">
-                        {related.map((r) => (
-                          <ListItem
-                            key={r.id}
-                            label={r.title}
-                            description={t(CATEGORY_KEY[r.category])}
-                            href={`/knowledge-base/${r.id}`}
-                            startContent={<Icon icon={TYPE_ICON[r.type]} size="sm" color="secondary" />}
-                          />
-                        ))}
-                      </List>
-                    ) : (
-                      <Text type="body" color="secondary">
-                        No related items yet.
-                      </Text>
-                    )}
-                  </VStack>
-                </Card>
-
-                <Card>
-                  <VStack gap={3}>
-                    <Heading level={4}>{t("@legalos.knowledgeBase.detail.detailsHeading")}</Heading>
-                    <VStack gap={2}>
-                      <HStack hAlign="between">
-                        <Text type="supporting" color="secondary">
-                          {t("@legalos.knowledgeBase.detail.author")}
-                        </Text>
-                        <HStack gap={2} vAlign="center">
-                          <Avatar name={item.author} size="xsm" tooltip={false} />
-                          <Text type="supporting">{item.author}</Text>
-                        </HStack>
-                      </HStack>
-                      <HStack hAlign="between">
-                        <Text type="supporting" color="secondary">
-                          {t("@legalos.knowledgeBase.detail.lastUpdated")}
-                        </Text>
-                        <Text type="supporting">{item.updated}</Text>
-                      </HStack>
-                      <HStack hAlign="between">
-                        <Text type="supporting" color="secondary">
-                          {t("@legalos.knowledgeBase.detail.tags")}
-                        </Text>
-                        <HStack gap={1}>
-                          {item.tags.map((t) => (
-                            <Badge key={t} variant="neutral" label={t} />
-                          ))}
-                        </HStack>
-                      </HStack>
-                    </VStack>
-                  </VStack>
-                </Card>
-              </VStack>
-            </Grid>
-          </VStack>
-        </LayoutContent>
-      }
-    />
+            {/* تفاصيل المستند والوسوم */}
+            <Card className="p-5 flex flex-col gap-3">
+              <h3 className="text-xs font-bold" style={{ color: "var(--text)" }}>
+                {t("@legalos.knowledgeBase.detail.detailsHeading")}
+              </h3>
+              <div className="flex flex-col gap-2.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <span style={{ color: "var(--text2)" }}>
+                    {t("@legalos.knowledgeBase.detail.author")}
+                  </span>
+                  <span className="font-semibold" style={{ color: "var(--text)" }}>
+                    {item.author}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span style={{ color: "var(--text2)" }}>
+                    {t("@legalos.knowledgeBase.detail.lastUpdated")}
+                  </span>
+                  <span style={{ color: "var(--text2)" }}>{item.updated}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span style={{ color: "var(--text2)" }}>
+                    {t("@legalos.knowledgeBase.detail.tags")}
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {item.tags.map((tag) => (
+                      <Badge key={tag} color="neutral">{tag}</Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </div>
     </>
   );
 }

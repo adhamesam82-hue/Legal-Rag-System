@@ -20,8 +20,6 @@ type NavItem = {
   ai?: boolean;
 };
 
-/** The firm group's title is the firm's own name, so it carries no key --
- *  it is resolved from the active organization at render time. */
 const NAV_GROUPS: { titleKey?: string; items: NavItem[] }[] = [
   {
     titleKey: "@legalos.settings.group.myAccount",
@@ -34,12 +32,6 @@ const NAV_GROUPS: { titleKey?: string; items: NavItem[] }[] = [
     items: [
       { href: "/settings", labelKey: "@legalos.settings.nav.firmSettings", icon: BuildingOffice2Icon },
       { href: "/settings/users", labelKey: "@legalos.settings.nav.users", icon: UserGroupIcon },
-      // Integrations, Branding, Billing, API keys and AI models were listed
-      // here with no page behind any of them. Each one landed on Next's own
-      // default 404 — English, outside the app shell entirely, with no way
-      // back — which is a worse answer than not offering the link. They come
-      // back with the screens, as entries beside the two that exist; the
-      // labels are kept in the catalog so that is a one-line change.
     ],
   },
 ];

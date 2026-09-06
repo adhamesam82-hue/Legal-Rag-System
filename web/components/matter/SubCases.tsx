@@ -17,18 +17,19 @@
  * still have to apply the same exclusions.
  */
 
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
+import Link from "next/link";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Text } from "@astryxdesign/core/Text";
-import { Button } from "@astryxdesign/core/Button";
-import { Badge } from "@astryxdesign/core/Badge";
-import { Link } from "@astryxdesign/core/Link";
-import { List, ListItem } from "@astryxdesign/core/List";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
-import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
-import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Icon } from "@/components/ui/Icon";
+import {
+  Dialog,
+  DialogHeader,
+  DialogContent,
+  DialogFooter,
+} from "@/components/ui/Dialog";
 import { useOrg, useResource } from "@/lib/org";
 import { InlineError } from "@/components/DataState";
 import { ApiError } from "@/lib/api";
@@ -40,7 +41,7 @@ import { useWrite } from "./shared";
 export function PrimaryBadge({ record }: { record: Pick<CaseRecord, "children"> }) {
   const t = useTranslator();
   if (record.children.length === 0) return null;
-  return <Badge variant="purple" label={t("@legalos.cases.related.primary")} />;
+  return <Badge color="accent" variant="soft">{t("@legalos.cases.related.primary")}</Badge>;
 }
 
 /** "Sub-case of 1234", linked, on a case that has a parent; nothing otherwise. */
@@ -49,12 +50,18 @@ export function ParentLine({ record }: { record: Pick<CaseRecord, "parent"> }) {
   if (!record.parent) return null;
   const label = record.parent.case_number || t("@legalos.cases.related.unfiledCase");
   return (
-    <HStack gap={1} vAlign="center" wrap="wrap">
-      <Text type="body" color="secondary">
+    <div className="flex items-center gap-1 flex-wrap text-xs">
+      <span style={{ color: "var(--text2)" }}>
         {t("@legalos.cases.related.subCaseOf")}
-      </Text>
-      <Link href={`/cases/${record.parent.id}`}>{label}</Link>
-    </HStack>
+      </span>
+      <Link
+        href={`/cases/${record.parent.id}`}
+        className="font-medium hover:underline"
+        style={{ color: "var(--primary)" }}
+      >
+        {label}
+      </Link>
+    </div>
   );
 }
 
@@ -66,14 +73,28 @@ export function CaseRefItem({ ref, endContent }: { ref: CaseRef; endContent?: Re
   const description = [ref.court, enumLabel(ref.litigation_degree), ref.status]
     .filter(Boolean)
     .join(" · ");
+
   return (
-    <ListItem
-      // The link is the label rather than the row, so the unlink button
-      // beside it is not a button inside an anchor.
-      label={<Link href={`/cases/${ref.id}`}>{label}</Link>}
-      description={description || undefined}
-      endContent={endContent}
-    />
+    <div
+      className="flex items-center justify-between gap-3 py-2 px-3 border-b last:border-b-0"
+      style={{ borderColor: "var(--border)" }}
+    >
+      <div className="flex flex-col min-w-0">
+        <Link
+          href={`/cases/${ref.id}`}
+          className="text-xs font-semibold hover:underline truncate"
+          style={{ color: "var(--primary)" }}
+        >
+          {label}
+        </Link>
+        {description && (
+          <span className="text-xs truncate" style={{ color: "var(--text3)" }}>
+            {description}
+          </span>
+        )}
+      </div>
+      {endContent && <div className="shrink-0">{endContent}</div>}
+    </div>
   );
 }
 
@@ -96,12 +117,12 @@ export function SubCases({
   // whose every option would be refused, the section says what this case is.
   if (linkedCase.parent) {
     return (
-      <VStack gap={2}>
+      <div className="flex flex-col gap-2">
         <ParentLine record={linkedCase} />
-        <Text type="supporting" color="secondary">
+        <span className="text-xs" style={{ color: "var(--text3)" }}>
           {t("@legalos.cases.related.childCannotParent")}
-        </Text>
-      </VStack>
+        </span>
+      </div>
     );
   }
 
@@ -118,46 +139,51 @@ export function SubCases({
   }
 
   return (
-    <VStack gap={3}>
+    <div className="flex flex-col gap-3">
       {linkedCase.children.length === 0 ? (
-        <Text type="body" color="secondary">
+        <span className="text-xs" style={{ color: "var(--text3)" }}>
           {t("@legalos.cases.related.empty")}
-        </Text>
+        </span>
       ) : (
-        <List hasDividers density="compact">
+        <div
+          className="flex flex-col rounded-md border divide-y overflow-hidden"
+          style={{ borderColor: "var(--border)" }}
+        >
           {linkedCase.children.map((child) => (
             <CaseRefItem
               key={child.id}
               ref={child}
               endContent={
                 <Button
-                  label={t("@legalos.cases.related.unlink")}
                   variant="ghost"
                   size="sm"
-                  isLoading={unlinking === child.id}
-                  isDisabled={unlinking !== null && unlinking !== child.id}
+                  loading={unlinking === child.id}
+                  disabled={unlinking !== null && unlinking !== child.id}
                   onClick={() => unlink(child.id)}
-                />
+                >
+                  {t("@legalos.cases.related.unlink")}
+                </Button>
               }
             />
           ))}
-        </List>
+        </div>
       )}
-      <HStack hAlign="end">
+      <div className="flex justify-end">
         <Button
-          label={t("@legalos.cases.related.link")}
           variant="secondary"
           size="sm"
           onClick={() => setLinkOpen(true)}
-        />
-      </HStack>
+        >
+          {t("@legalos.cases.related.link")}
+        </Button>
+      </div>
       <LinkCaseDialog
         isOpen={linkOpen}
         onOpenChange={setLinkOpen}
         parent={linkedCase}
         reload={reload}
       />
-    </VStack>
+    </div>
   );
 }
 
@@ -234,78 +260,79 @@ function LinkCaseDialog({
 
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange} purpose="form" width={520}>
-      <Layout
-        header={
-          <DialogHeader title={t("@legalos.cases.related.dialog.title")} onOpenChange={onOpenChange} />
-        }
-        content={
-          <LayoutContent>
-            <VStack gap={4}>
-              <InlineError message={error} onDismiss={() => setError(null)} />
-              <TextInput
-                label={t("@legalos.cases.related.dialog.search")}
-                isLabelHidden
-                value={q}
-                onChange={setQ}
-                placeholder={t("@legalos.cases.related.dialog.search")}
-                startIcon={MagnifyingGlassIcon}
-                hasAutoFocus
-                hasClear
-              />
-              {cases.loading ? (
-                <Text type="body" color="secondary">
-                  {t("@legalos.cases.related.dialog.loading")}
-                </Text>
-              ) : cases.error ? (
-                <Text type="body" color="secondary">
-                  {cases.error}
-                </Text>
-              ) : candidates.length === 0 ? (
-                <Text type="body" color="secondary">
-                  {t("@legalos.cases.related.dialog.noCandidates")}
-                </Text>
-              ) : shown.length === 0 ? (
-                <Text type="body" color="secondary">
-                  {t("@legalos.cases.related.dialog.noMatch")}
-                </Text>
-              ) : (
-                <List hasDividers density="compact">
-                  {shown.map((c) => (
-                    <ListItem
-                      key={c.id}
-                      label={c.case_number || t("@legalos.cases.related.unfiledCase")}
-                      description={[c.matter_name, c.court, enumLabel(c.litigation_degree)]
+      <DialogHeader
+        title={t("@legalos.cases.related.dialog.title")}
+        onOpenChange={onOpenChange}
+      />
+      <DialogContent>
+        <div className="flex flex-col gap-4">
+          <InlineError message={error} onDismiss={() => setError(null)} />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={t("@legalos.cases.related.dialog.search")}
+            startIcon={<Icon name="search" size={16} />}
+            autoFocus
+          />
+          {cases.loading ? (
+            <span className="text-xs" style={{ color: "var(--text3)" }}>
+              {t("@legalos.cases.related.dialog.loading")}
+            </span>
+          ) : cases.error ? (
+            <span className="text-xs" style={{ color: "var(--danger)" }}>
+              {cases.error}
+            </span>
+          ) : candidates.length === 0 ? (
+            <span className="text-xs" style={{ color: "var(--text3)" }}>
+              {t("@legalos.cases.related.dialog.noCandidates")}
+            </span>
+          ) : shown.length === 0 ? (
+            <span className="text-xs" style={{ color: "var(--text3)" }}>
+              {t("@legalos.cases.related.dialog.noMatch")}
+            </span>
+          ) : (
+            <div
+              className="flex flex-col rounded-md border divide-y max-h-72 overflow-y-auto"
+              style={{ borderColor: "var(--border)" }}
+            >
+              {shown.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-center justify-between gap-3 p-3"
+                >
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-semibold" style={{ color: "var(--text)" }}>
+                      {c.case_number || t("@legalos.cases.related.unfiledCase")}
+                    </span>
+                    <span className="text-xs truncate" style={{ color: "var(--text3)" }}>
+                      {[c.matter_name, c.court, enumLabel(c.litigation_degree)]
                         .filter(Boolean)
                         .join(" · ")}
-                      endContent={
-                        <Button
-                          label={t("@legalos.cases.related.link")}
-                          variant="primary"
-                          size="sm"
-                          isLoading={linking === c.id}
-                          isDisabled={linking !== null && linking !== c.id}
-                          onClick={() => link(c.id)}
-                        />
-                      }
-                    />
-                  ))}
-                </List>
-              )}
-            </VStack>
-          </LayoutContent>
-        }
-        footer={
-          <LayoutFooter>
-            <HStack hAlign="end">
-              <Button
-                label={t("@legalos.matterWorkspace.action.cancel")}
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              />
-            </HStack>
-          </LayoutFooter>
-        }
-      />
+                    </span>
+                  </div>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    loading={linking === c.id}
+                    disabled={linking !== null && linking !== c.id}
+                    onClick={() => link(c.id)}
+                  >
+                    {t("@legalos.cases.related.link")}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </DialogContent>
+      <DialogFooter>
+        <Button
+          variant="secondary"
+          onClick={() => onOpenChange(false)}
+        >
+          {t("@legalos.matterWorkspace.action.cancel")}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

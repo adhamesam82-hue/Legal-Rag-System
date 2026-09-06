@@ -1,6 +1,9 @@
 "use client";
 
 /**
+ * نافذة إنشاء فاتورة (Create Invoice Dialog) - نظام السجل (LegalOS)
+ * الموجة الرابعة من T-053.
+ *
  * Build an invoice line by line (T-033), as opposed to the other dialog on
  * this screen (billing/page.tsx's GenerateInvoiceDialog), which drafts one
  * from unbilled time in a single call. This one exists because the backend
@@ -19,25 +22,16 @@
 
 import { useState } from "react";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Text } from "@astryxdesign/core/Text";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { NumberInput } from "@astryxdesign/core/NumberInput";
-import { TextArea } from "@astryxdesign/core/TextArea";
-import { DateInput } from "@astryxdesign/core/DateInput";
-import { Selector } from "@astryxdesign/core/Selector";
-import { Divider } from "@astryxdesign/core/Divider";
-import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
-import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
-import { TrashIcon, PlusIcon } from "@heroicons/react/24/outline";
-import type { ISODateString } from "@astryxdesign/core/Calendar";
+import { Button } from "@/components/ui/Button";
+import { Input, Textarea } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Dialog, DialogHeader, DialogContent, DialogFooter } from "@/components/ui/Dialog";
+import { Icon } from "@/components/ui/Icon";
 import { useOrg, useResource } from "@/lib/org";
 import { InlineError } from "@/components/DataState";
 import { ApiError } from "@/lib/api";
 import { useFormat } from "@/lib/i18n/format";
-import { todayIso } from "@/lib/practice";
+import { todayIso, type ISODateString } from "@/lib/practice";
 import { fromPiastres, totalsOf, type DraftLine } from "@/lib/money";
 
 interface EditableLine extends DraftLine {
@@ -93,6 +87,7 @@ export function CreateInvoiceDialog({
   function updateLine(key: number, patch: Partial<EditableLine>) {
     setLines((current) => current.map((line) => (line.key === key ? { ...line, ...patch } : line)));
   }
+
   function removeLine(key: number) {
     setLines((current) => (current.length > 1 ? current.filter((line) => line.key !== key) : current));
   }
@@ -145,199 +140,230 @@ export function CreateInvoiceDialog({
       purpose="form"
       width={720}
     >
-      <Layout
-        header={<DialogHeader title={t("@legalos.billing.create.title")} onOpenChange={onOpenChange} />}
-        content={
-          <LayoutContent>
-            <VStack gap={5}>
-              <InlineError message={error} onDismiss={() => setError(null)} />
-
-              <HStack gap={3} wrap="wrap">
-                <Selector
-                  label={t("@legalos.billing.create.clientLabel")}
-                  isRequired
-                  hasClear
-                  value={clientId}
-                  onChange={(value) => {
-                    setClientId(value);
-                    setMatterId(null);
-                  }}
-                  placeholder={
-                    clients.loading
-                      ? t("@legalos.billing.dialog.loadingPlaceholder")
-                      : t("@legalos.billing.create.clientPlaceholder")
-                  }
-                  options={(clients.data ?? []).map((c) => ({ value: String(c.id), label: c.name }))}
-                  width={260}
-                />
-                <Selector
-                  label={t("@legalos.billing.create.matterLabel")}
-                  hasClear
-                  isDisabled={!clientId}
-                  value={matterId}
-                  onChange={setMatterId}
-                  placeholder={
-                    !clientId
-                      ? t("@legalos.billing.create.matterPlaceholderNoClient")
-                      : t("@legalos.billing.create.matterPlaceholder")
-                  }
-                  options={(matters.data ?? []).map((m) => ({ value: String(m.id), label: m.name }))}
-                  width={260}
-                />
-              </HStack>
-
-              <HStack gap={3} wrap="wrap">
-                <DateInput
-                  label={t("@legalos.billing.create.issuedLabel")}
-                  value={issuedDate}
-                  onChange={(v) => setIssuedDate(v ?? issuedDate)}
-                />
-                <DateInput
-                  label={t("@legalos.billing.create.dueLabel")}
-                  value={dueDate}
-                  onChange={(v) => setDueDate(v ?? dueDate)}
-                />
-                <TextInput
-                  label={t("@legalos.billing.create.numberLabel")}
-                  value={number}
-                  onChange={setNumber}
-                  placeholder={t("@legalos.billing.create.numberPlaceholder")}
-                  description={t("@legalos.billing.create.numberHint")}
-                  width={200}
-                />
-              </HStack>
-
-              <Divider />
-
-              {/* --- line items -------------------------------------------- */}
-              <VStack gap={3}>
-                <Text type="label">{t("@legalos.billing.create.linesHeading")}</Text>
-                {lines.map((line) => {
-                  const priced = totalsOf([line]);
-                  return (
-                    <HStack key={line.key} gap={2} vAlign="end" wrap="wrap">
-                      <TextInput
-                        label={t("@legalos.billingDetail.column.description")}
-                        isLabelHidden
-                        value={line.description}
-                        onChange={(value) => updateLine(line.key, { description: value })}
-                        placeholder={t("@legalos.billing.create.line.descriptionPlaceholder")}
-                        width={220}
-                      />
-                      <NumberInput
-                        label={t("@legalos.billing.create.line.quantity")}
-                        value={Number(line.quantity)}
-                        onChange={(value) => updateLine(line.key, { quantity: value ?? 0 })}
-                        min={0}
-                        step={0.25}
-                        width={90}
-                      />
-                      <NumberInput
-                        label={t("@legalos.billing.create.line.unitAmount")}
-                        value={line.unitAmount === "" ? null : Number(line.unitAmount)}
-                        onChange={(value) => updateLine(line.key, { unitAmount: value ?? 0 })}
-                        min={0}
-                        step={0.01}
-                        width={120}
-                      />
-                      <NumberInput
-                        label={t("@legalos.billing.create.line.taxPercent")}
-                        value={Number(line.taxRatePercent)}
-                        onChange={(value) => updateLine(line.key, { taxRatePercent: value ?? 0 })}
-                        min={0}
-                        max={100}
-                        step={1}
-                        width={90}
-                      />
-                      <VStack gap={0} width={110}>
-                        <Text type="supporting" color="secondary">
-                          {t("@legalos.billing.create.line.total")}
-                        </Text>
-                        <Text type="body" weight="semibold">
-                          {formatEGPExact(fromPiastres(priced.subtotal))}
-                        </Text>
-                      </VStack>
-                      <Button
-                        label={t("@legalos.billing.create.line.remove")}
-                        variant="ghost"
-                        size="sm"
-                        isIconOnly
-                        icon={<Icon icon={TrashIcon} size="sm" color="inherit" />}
-                        isDisabled={lines.length === 1}
-                        onClick={() => removeLine(line.key)}
-                      />
-                    </HStack>
-                  );
-                })}
-                <Button
-                  label={t("@legalos.billing.create.line.add")}
-                  variant="secondary"
-                  size="sm"
-                  icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
-                  onClick={() => setLines((current) => [...current, blankLine()])}
-                />
-              </VStack>
-
-              <Divider />
-
-              {/* --- totals: for display only, see money.ts ---------------- */}
-              <HStack hAlign="end">
-                <VStack gap={1.5} width={260}>
-                  <HStack hAlign="between">
-                    <Text type="body" color="secondary">
-                      {t("@legalos.billingDetail.linesTotal")}
-                    </Text>
-                    <Text type="body">{formatEGPExact(fromPiastres(totals.subtotal))}</Text>
-                  </HStack>
-                  {totals.tax > 0 && (
-                    <HStack hAlign="between">
-                      <Text type="body" color="secondary">
-                        {t("@legalos.billing.create.tax")}
-                      </Text>
-                      <Text type="body">{formatEGPExact(fromPiastres(totals.tax))}</Text>
-                    </HStack>
-                  )}
-                  <HStack hAlign="between">
-                    <Text type="body" weight="bold" size="lg">
-                      {t("@legalos.billingDetail.invoiceTotal")}
-                    </Text>
-                    <Text type="body" weight="bold" size="lg">
-                      {formatEGPExact(fromPiastres(totals.total))}
-                    </Text>
-                  </HStack>
-                </VStack>
-              </HStack>
-
-              <TextArea
-                label={t("@legalos.billing.create.notesLabel")}
-                value={notes}
-                onChange={setNotes}
-                rows={3}
-                placeholder={t("@legalos.billing.create.notesPlaceholder")}
-              />
-            </VStack>
-          </LayoutContent>
-        }
-        footer={
-          <LayoutFooter hasDivider>
-            <HStack gap={3} hAlign="end">
-              <Button
-                label={t("@legalos.billing.dialog.cancel")}
-                variant="secondary"
-                isDisabled={saving}
-                onClick={() => onOpenChange(false)}
-              />
-              <Button
-                label={saving ? t("@legalos.billing.create.saving") : t("@legalos.billing.create.save")}
-                variant="primary"
-                isLoading={saving}
-                isDisabled={!canSubmit}
-                onClick={submit}
-              />
-            </HStack>
-          </LayoutFooter>
-        }
+      <DialogHeader
+        title={t("@legalos.billing.create.title")}
+        onOpenChange={onOpenChange}
       />
+      <DialogContent className="flex flex-col gap-5">
+        <InlineError message={error} onDismiss={() => setError(null)} />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Select
+            label={t("@legalos.billing.create.clientLabel")}
+            value={clientId ?? ""}
+            onChange={(e) => {
+              setClientId(e.target.value || null);
+              setMatterId(null);
+            }}
+          >
+            <option value="">
+              {clients.loading
+                ? t("@legalos.billing.dialog.loadingPlaceholder")
+                : t("@legalos.billing.create.clientPlaceholder")}
+            </option>
+            {(clients.data ?? []).map((c) => (
+              <option key={c.id} value={String(c.id)}>
+                {c.name}
+              </option>
+            ))}
+          </Select>
+
+          <Select
+            label={t("@legalos.billing.create.matterLabel")}
+            value={matterId ?? ""}
+            onChange={(e) => setMatterId(e.target.value || null)}
+            disabled={!clientId}
+          >
+            <option value="">
+              {!clientId
+                ? t("@legalos.billing.create.matterPlaceholderNoClient")
+                : t("@legalos.billing.create.matterPlaceholder")}
+            </option>
+            {(matters.data ?? []).map((m) => (
+              <option key={m.id} value={String(m.id)}>
+                {m.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Input
+            type="date"
+            label={t("@legalos.billing.create.issuedLabel")}
+            value={issuedDate}
+            onChange={(e) => setIssuedDate((e.target.value as ISODateString) || issuedDate)}
+          />
+          <Input
+            type="date"
+            label={t("@legalos.billing.create.dueLabel")}
+            value={dueDate}
+            onChange={(e) => setDueDate((e.target.value as ISODateString) || dueDate)}
+          />
+          <Input
+            type="text"
+            label={t("@legalos.billing.create.numberLabel")}
+            value={number}
+            onChange={(e) => setNumber(e.target.value)}
+            placeholder={t("@legalos.billing.create.numberPlaceholder")}
+            helperText={t("@legalos.billing.create.numberHint")}
+          />
+        </div>
+
+        <div className="border-t" style={{ borderColor: "var(--border)" }} />
+
+        {/* --- بنود الفاتورة -------------------------------------------- */}
+        <div className="flex flex-col gap-3">
+          <span className="text-xs font-semibold" style={{ color: "var(--text)" }}>
+            {t("@legalos.billing.create.linesHeading")}
+          </span>
+
+          {lines.map((line) => {
+            const priced = totalsOf([line]);
+            return (
+              <div key={line.key} className="flex items-end gap-2 flex-wrap sm:flex-nowrap">
+                <div className="flex-1 min-w-[180px]">
+                  <Input
+                    label={t("@legalos.billingDetail.column.description")}
+                    value={line.description}
+                    onChange={(e) => updateLine(line.key, { description: e.target.value })}
+                    placeholder={t("@legalos.billing.create.line.descriptionPlaceholder")}
+                  />
+                </div>
+                <div className="w-20">
+                  <Input
+                    type="number"
+                    label={t("@legalos.billing.create.line.quantity")}
+                    value={line.quantity}
+                    onChange={(e) => updateLine(line.key, { quantity: Number(e.target.value) || 0 })}
+                    min={0}
+                    step={0.25}
+                  />
+                </div>
+                <div className="w-28">
+                  <Input
+                    type="number"
+                    label={t("@legalos.billing.create.line.unitAmount")}
+                    value={line.unitAmount}
+                    onChange={(e) =>
+                      updateLine(line.key, {
+                        unitAmount: e.target.value === "" ? "" : Number(e.target.value) || 0,
+                      })
+                    }
+                    min={0}
+                    step={0.01}
+                  />
+                </div>
+                <div className="w-20">
+                  <Input
+                    type="number"
+                    label={t("@legalos.billing.create.line.taxPercent")}
+                    value={line.taxRatePercent}
+                    onChange={(e) =>
+                      updateLine(line.key, { taxRatePercent: Number(e.target.value) || 0 })
+                    }
+                    min={0}
+                    max={100}
+                    step={1}
+                  />
+                </div>
+                <div className="flex flex-col gap-1 w-24 pb-2 shrink-0">
+                  <span className="text-xs" style={{ color: "var(--text2)" }}>
+                    {t("@legalos.billing.create.line.total")}
+                  </span>
+                  <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+                    {formatEGPExact(fromPiastres(priced.subtotal))}
+                  </span>
+                </div>
+                <div className="pb-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={lines.length === 1}
+                    onClick={() => removeLine(line.key)}
+                    aria-label={t("@legalos.billing.create.line.remove")}
+                  >
+                    <Icon name="delete" size={16} />
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+
+          <div>
+            <Button
+              variant="secondary"
+              size="sm"
+              startIcon={<Icon name="add" size={16} />}
+              onClick={() => setLines((current) => [...current, blankLine()])}
+            >
+              {t("@legalos.billing.create.line.add")}
+            </Button>
+          </div>
+        </div>
+
+        <div className="border-t" style={{ borderColor: "var(--border)" }} />
+
+        {/* --- الإجماليات ----------------------------------------------- */}
+        <div className="flex justify-end">
+          <div className="flex flex-col gap-1.5 w-64 text-xs">
+            <div className="flex justify-between items-center">
+              <span style={{ color: "var(--text2)" }}>
+                {t("@legalos.billingDetail.linesTotal")}
+              </span>
+              <span style={{ color: "var(--text)" }}>
+                {formatEGPExact(fromPiastres(totals.subtotal))}
+              </span>
+            </div>
+            {totals.tax > 0 && (
+              <div className="flex justify-between items-center">
+                <span style={{ color: "var(--text2)" }}>
+                  {t("@legalos.billing.create.tax")}
+                </span>
+                <span style={{ color: "var(--text)" }}>
+                  {formatEGPExact(fromPiastres(totals.tax))}
+                </span>
+              </div>
+            )}
+            <div
+              className="flex justify-between items-center text-sm font-bold pt-1.5 border-t"
+              style={{ borderColor: "var(--border)" }}
+            >
+              <span style={{ color: "var(--text)" }}>
+                {t("@legalos.billingDetail.invoiceTotal")}
+              </span>
+              <span style={{ color: "var(--text)" }}>
+                {formatEGPExact(fromPiastres(totals.total))}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <Textarea
+          label={t("@legalos.billing.create.notesLabel")}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={3}
+          placeholder={t("@legalos.billing.create.notesPlaceholder")}
+        />
+      </DialogContent>
+      <DialogFooter>
+        <Button
+          variant="secondary"
+          disabled={saving}
+          onClick={() => onOpenChange(false)}
+        >
+          {t("@legalos.billing.dialog.cancel")}
+        </Button>
+        <Button
+          variant="primary"
+          loading={saving}
+          disabled={!canSubmit}
+          onClick={submit}
+        >
+          {saving ? t("@legalos.billing.create.saving") : t("@legalos.billing.create.save")}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

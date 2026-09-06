@@ -1,31 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Layout, LayoutContent } from "@astryxdesign/core/Layout";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Card } from "@astryxdesign/core/Card";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Badge } from "@astryxdesign/core/Badge";
-import { Switch } from "@astryxdesign/core/Switch";
-import { List, ListItem } from "@astryxdesign/core/List";
-import { Divider } from "@astryxdesign/core/Divider";
-import { Center } from "@astryxdesign/core/Center";
-import {
-  ArrowDownIcon,
-  BoltIcon,
-  ChatBubbleOvalLeftEllipsisIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  EnvelopeIcon,
-  ExclamationTriangleIcon,
-  FolderPlusIcon,
-  PlusIcon,
-  SparklesIcon,
-  UserGroupIcon,
-  UserPlusIcon,
-} from "@heroicons/react/24/outline";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Icon } from "@/components/ui/Icon";
 import { useTranslator } from "@astryxdesign/core/i18n";
 
 // ---------------------------------------------------------------------------
@@ -36,7 +15,7 @@ import { useTranslator } from "@astryxdesign/core/i18n";
 interface Step {
   title: string;
   description: string;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  iconName: string;
   ai?: boolean;
 }
 
@@ -63,37 +42,37 @@ const AUTOMATIONS: AutomationFlow[] = [
       {
         title: "New client",
         description: "Triggered when a client record is created in the CRM.",
-        icon: UserPlusIcon,
+        iconName: "person_add",
       },
       {
         title: "Generate folder",
         description: "Creates the client's document folder with standard subfolders.",
-        icon: FolderPlusIcon,
+        iconName: "create_new_folder",
       },
       {
         title: "Assign lawyer",
         description: "Assigns the client to a lawyer based on practice area and workload.",
-        icon: UserGroupIcon,
+        iconName: "group",
       },
       {
         title: "Create tasks",
         description: "Adds the standard intake checklist as tasks for the assigned lawyer.",
-        icon: CheckCircleIcon,
+        iconName: "check_circle",
       },
       {
         title: "Send email",
         description: "Sends a welcome email with the engagement letter attached.",
-        icon: EnvelopeIcon,
+        iconName: "mail",
       },
       {
         title: "WhatsApp message",
         description: "Sends a WhatsApp confirmation to the client's registered number.",
-        icon: ChatBubbleOvalLeftEllipsisIcon,
+        iconName: "chat",
       },
       {
         title: "AI summary",
         description: "Drafts a one-paragraph intake summary for the assigned lawyer to review.",
-        icon: SparklesIcon,
+        iconName: "auto_awesome",
         ai: true,
       },
     ],
@@ -110,22 +89,22 @@ const AUTOMATIONS: AutomationFlow[] = [
       {
         title: "Hearing approaching",
         description: "Triggered 48 hours before a hearing on the calendar.",
-        icon: ClockIcon,
+        iconName: "schedule",
       },
       {
         title: "Notify assigned lawyer",
         description: "Sends an in-app and email reminder to the lawyer of record.",
-        icon: EnvelopeIcon,
+        iconName: "mail",
       },
       {
         title: "WhatsApp reminder",
         description: "Sends the client a WhatsApp reminder with the hearing date and court.",
-        icon: ChatBubbleOvalLeftEllipsisIcon,
+        iconName: "chat",
       },
       {
         title: "Log reminder sent",
         description: "Records the reminder on the matter timeline.",
-        icon: CheckCircleIcon,
+        iconName: "check_circle",
       },
     ],
   },
@@ -141,22 +120,22 @@ const AUTOMATIONS: AutomationFlow[] = [
       {
         title: "Invoice overdue",
         description: "Triggered when an invoice is 7 days past its due date and unpaid.",
-        icon: ExclamationTriangleIcon,
+        iconName: "warning",
       },
       {
         title: "Send reminder email",
         description: "Sends the client a polite payment reminder with the invoice link.",
-        icon: EnvelopeIcon,
+        iconName: "mail",
       },
       {
         title: "Notify billing staff",
         description: "Flags the invoice in the billing dashboard for staff follow-up.",
-        icon: UserGroupIcon,
+        iconName: "group",
       },
       {
         title: "Escalate to owner",
         description: "If still unpaid after 14 days, notifies the firm owner directly.",
-        icon: ExclamationTriangleIcon,
+        iconName: "warning",
       },
     ],
   },
@@ -164,23 +143,32 @@ const AUTOMATIONS: AutomationFlow[] = [
 
 function StepCard({ step }: { step: Step }) {
   return (
-    <Card variant={step.ai ? "purple" : "default"}>
-      <HStack gap={3} vAlign="center">
-        <Icon
-          icon={step.icon}
-          size="md"
-          className={step.ai ? "text-purple-vivid" : undefined}
-          color={step.ai ? undefined : "secondary"}
-        />
-        <VStack gap={0.5}>
-          <Text type="label" weight="semibold">
+    <Card
+      className="p-4 transition-colors"
+      style={{
+        borderColor: step.ai ? "var(--primary)" : "var(--border)",
+        backgroundColor: step.ai ? "var(--surface2)" : "var(--surface)",
+      }}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className="p-2 rounded-md flex items-center justify-center flex-shrink-0"
+          style={{
+            backgroundColor: step.ai ? "var(--primary-soft)" : "var(--surface3)",
+            color: step.ai ? "var(--primary)" : "var(--text2)",
+          }}
+        >
+          <Icon name={step.iconName} size={20} />
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs font-bold" style={{ color: "var(--text)" }}>
             {step.title}
-          </Text>
-          <Text type="supporting" color="secondary">
+          </span>
+          <span className="text-xs" style={{ color: "var(--text2)" }}>
             {step.description}
-          </Text>
-        </VStack>
-      </HStack>
+          </span>
+        </div>
+      </div>
     </Card>
   );
 }
@@ -194,135 +182,150 @@ export default function AutomationPage() {
   );
 
   return (
-    <Layout
-      height="fill"
-      content={
-        <LayoutContent padding={0}>
-          <VStack gap={6}>
-            <HStack hAlign="between" vAlign="center">
-              <VStack gap={1}>
-                <Heading level={2}>{t("@legalos.automation.heading")}</Heading>
-                <Text type="body" color="secondary">
-                  {t("@legalos.automation.subtitle")}
-                </Text>
-              </VStack>
-              <Button
-                label={t("@legalos.automation.newAutomation")}
-                variant="primary"
-                icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
+    <div className="flex flex-col gap-6 p-6">
+      {/* رأس الصفحة */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl font-bold" style={{ color: "var(--text)" }}>
+            {t("@legalos.automation.heading")}
+          </h1>
+          <p className="text-xs" style={{ color: "var(--text2)" }}>
+            {t("@legalos.automation.subtitle")}
+          </p>
+        </div>
+        <Button>
+          <Icon name="add" size={16} />
+          <span>{t("@legalos.automation.newAutomation")}</span>
+        </Button>
+      </div>
+
+      {/* تفاصيل وتدفقات الأتمتة */}
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
+        {/* قائمة التدفقات */}
+        <Card className="w-full lg:w-80 p-0 overflow-hidden flex flex-col divide-y" style={{ borderColor: "var(--border)" }}>
+          {AUTOMATIONS.map((automation) => {
+            const isSelected = automation.id === selectedId;
+            return (
+              <div
+                key={automation.id}
+                onClick={() => setSelectedId(automation.id)}
+                className={`p-4 flex items-start justify-between gap-3 cursor-pointer transition-colors ${
+                  isSelected ? "bg-[var(--surface2)]" : "hover:bg-[var(--surface2)]"
+                }`}
               >
-                {t("@legalos.automation.newAutomation")}
-              </Button>
-            </HStack>
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="mt-0.5" style={{ color: "var(--text2)" }}>
+                    <Icon name="bolt" size={18} />
+                  </div>
+                  <div className="flex flex-col gap-1 min-w-0">
+                    <span className="text-xs font-bold truncate" style={{ color: "var(--text)" }}>
+                      {automation.name}
+                    </span>
+                    <span className="text-[11px] line-clamp-2" style={{ color: "var(--text2)" }}>
+                      {t("@legalos.automation.triggerAndSteps", {
+                        trigger: automation.trigger,
+                        steps: t("@legalos.automation.stepCount", {
+                          count: automation.steps.length,
+                        }),
+                      })}
+                    </span>
+                  </div>
+                </div>
 
-            <HStack gap={6} vAlign="start">
-              <Card padding={0} width={320}>
-                <List hasDividers density="balanced">
-                  {AUTOMATIONS.map((automation) => (
-                    <ListItem
-                      key={automation.id}
-                      label={automation.name}
-                      description={
-                        <Text type="supporting" color="secondary" maxLines={2}>
-                          {t("@legalos.automation.triggerAndSteps", {
-                            trigger: automation.trigger,
-                            steps: t("@legalos.automation.stepCount", {
-                              count: automation.steps.length,
-                            }),
-                          })}
-                        </Text>
-                      }
-                      isSelected={automation.id === selectedId}
-                      onClick={() => setSelectedId(automation.id)}
-                      startContent={
-                        <Icon icon={BoltIcon} size="sm" color="secondary" />
-                      }
-                      endContent={
-                        <Switch
-                          label={t("@legalos.automation.toggle", {
-                            name: automation.name,
-                            state: t(
-                              activeState[automation.id]
-                                ? "@legalos.automation.toggle.off"
-                                : "@legalos.automation.toggle.on",
-                            ),
-                          })}
-                          isLabelHidden
-                          size="sm"
-                          value={activeState[automation.id]}
-                          onChange={(checked) =>
-                            setActiveState((prev) => ({ ...prev, [automation.id]: checked }))
-                          }
-                        />
-                      }
-                    />
-                  ))}
-                </List>
-              </Card>
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center pt-0.5"
+                >
+                  <input
+                    type="checkbox"
+                    checked={activeState[automation.id] ?? false}
+                    onChange={(e) =>
+                      setActiveState((prev) => ({
+                        ...prev,
+                        [automation.id]: e.target.checked,
+                      }))
+                    }
+                    className="w-4 h-4 cursor-pointer accent-[var(--primary)]"
+                    aria-label={t("@legalos.automation.toggle", {
+                      name: automation.name,
+                      state: t(
+                        activeState[automation.id]
+                          ? "@legalos.automation.toggle.off"
+                          : "@legalos.automation.toggle.on",
+                      ),
+                    })}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </Card>
 
-              <VStack gap={4} style={{ flex: 1, minWidth: 0 }}>
-                <Card>
-                  <VStack gap={3}>
-                    <HStack hAlign="between" vAlign="center">
-                      <VStack gap={1}>
-                        <HStack gap={2} vAlign="center">
-                          <Heading level={4}>{selected.name}</Heading>
-                          <Badge
-                            variant={activeState[selected.id] ? "success" : "neutral"}
-                            label={t(
-                              activeState[selected.id]
-                                ? "@legalos.automation.status.active"
-                                : "@legalos.automation.status.paused",
-                            )}
-                          />
-                        </HStack>
-                        <Text type="body" color="secondary">
-                          {selected.description}
-                        </Text>
-                      </VStack>
-                    </HStack>
-                    <Divider />
-                    <HStack gap={6}>
-                      <VStack gap={0.5}>
-                        <Text type="supporting" color="secondary">
-                          {t("@legalos.automation.trigger")}
-                        </Text>
-                        <Text type="body">{selected.trigger}</Text>
-                      </VStack>
-                      <VStack gap={0.5}>
-                        <Text type="supporting" color="secondary">
-                          {t("@legalos.automation.activity")}
-                        </Text>
-                        <Text type="body">{selected.runCount}</Text>
-                      </VStack>
-                    </HStack>
-                  </VStack>
-                </Card>
+        {/* تفاصيل التدفق المحدد وخطواته */}
+        <div className="flex-1 flex flex-col gap-4 min-w-0">
+          <Card className="p-5 flex flex-col gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>
+                    {selected.name}
+                  </h2>
+                  <Badge color={activeState[selected.id] ? "primary" : "neutral"}>
+                    {t(
+                      activeState[selected.id]
+                        ? "@legalos.automation.status.active"
+                        : "@legalos.automation.status.paused",
+                    )}
+                  </Badge>
+                </div>
+                <p className="text-xs" style={{ color: "var(--text2)" }}>
+                  {selected.description}
+                </p>
+              </div>
+            </div>
 
-                <Card>
-                  <VStack gap={0}>
-                    <Text type="label" weight="semibold" color="secondary">
-                      {t("@legalos.automation.workflowSteps")}
-                    </Text>
-                    <VStack gap={0} style={{ marginTop: "var(--spacing-3)" }}>
-                      {selected.steps.map((step, index) => (
-                        <VStack key={step.title} gap={0}>
-                          <StepCard step={step} />
-                          {index < selected.steps.length - 1 && (
-                            <Center height={28} axis="both">
-                              <Icon icon={ArrowDownIcon} size="sm" color="secondary" />
-                            </Center>
-                          )}
-                        </VStack>
-                      ))}
-                    </VStack>
-                  </VStack>
-                </Card>
-              </VStack>
-            </HStack>
-          </VStack>
-        </LayoutContent>
-      }
-    />
+            <div className="pt-3 border-t flex flex-wrap gap-6 text-xs" style={{ borderColor: "var(--border)" }}>
+              <div className="flex flex-col gap-0.5">
+                <span style={{ color: "var(--text2)" }}>
+                  {t("@legalos.automation.trigger")}
+                </span>
+                <span className="font-semibold" style={{ color: "var(--text)" }}>
+                  {selected.trigger}
+                </span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span style={{ color: "var(--text2)" }}>
+                  {t("@legalos.automation.activity")}
+                </span>
+                <span className="font-semibold" style={{ color: "var(--text)" }}>
+                  {selected.runCount}
+                </span>
+              </div>
+            </div>
+          </Card>
+
+          {/* الخطوات التسلسلية */}
+          <Card className="p-5 flex flex-col gap-4">
+            <span className="text-xs font-bold" style={{ color: "var(--text2)" }}>
+              {t("@legalos.automation.workflowSteps")}
+            </span>
+            <div className="flex flex-col items-stretch gap-2 mt-2">
+              {selected.steps.map((step, index) => (
+                <div key={step.title} className="flex flex-col items-center gap-2">
+                  <div className="w-full">
+                    <StepCard step={step} />
+                  </div>
+                  {index < selected.steps.length - 1 && (
+                    <div className="flex items-center justify-center py-1" style={{ color: "var(--text3)" }}>
+                      <Icon name="arrow_downward" size={16} />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      </div>
+    </div>
   );
 }

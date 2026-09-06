@@ -8,12 +8,9 @@
 
 import { useEffect, useState } from "react";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Text } from "@astryxdesign/core/Text";
-import { Button } from "@astryxdesign/core/Button";
-import { Selector } from "@astryxdesign/core/Selector";
-import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
-import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
+import { Dialog, DialogHeader, DialogContent, DialogFooter } from "@/components/ui/Dialog";
+import { Button } from "@/components/ui/Button";
+import { Select } from "@/components/ui/Select";
 import { useOrg } from "@/lib/org";
 import { InlineError } from "@/components/DataState";
 import { useDocTypeLabel } from "@/lib/i18n/enum-label";
@@ -65,44 +62,43 @@ export function DocTypeDialog({
 
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange} purpose="form" width={420}>
-      <Layout
-        header={<DialogHeader title={t("@legalos.documents.type.dialogTitle")} onOpenChange={onOpenChange} />}
-        content={
-          <LayoutContent>
-            <VStack gap={4}>
-              <Text type="body" color="secondary" maxLines={2}>
-                {documentName}
-              </Text>
-              <InlineError message={error} onDismiss={() => setError(null)} />
-              <Selector
-                label={t("@legalos.documents.field.type")}
-                value={value}
-                onChange={setValue}
-                options={DOC_TYPES.map((type) => ({ value: type, label: docTypeLabel(type) }))}
-              />
-            </VStack>
-          </LayoutContent>
-        }
-        footer={
-          <LayoutFooter>
-            <HStack hAlign="end" gap={2}>
-              <Button
-                label={t("@legalos.documents.tags.cancel")}
-                variant="secondary"
-                isDisabled={saving}
-                onClick={() => onOpenChange(false)}
-              />
-              <Button
-                label={t("@legalos.documents.tags.save")}
-                variant="primary"
-                isLoading={saving}
-                isDisabled={value === current}
-                onClick={save}
-              />
-            </HStack>
-          </LayoutFooter>
-        }
+      <DialogHeader
+        title={t("@legalos.documents.type.dialogTitle")}
+        onOpenChange={onOpenChange}
       />
+      <DialogContent>
+        <div className="flex flex-col gap-4">
+          <p className="text-sm line-clamp-2" style={{ color: "var(--text2)" }}>
+            {documentName}
+          </p>
+          <InlineError message={error} onDismiss={() => setError(null)} />
+          <Select
+            label={t("@legalos.documents.field.type")}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            options={DOC_TYPES.map((type) => ({ value: type, label: docTypeLabel(type) }))}
+          />
+        </div>
+      </DialogContent>
+      <DialogFooter>
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            variant="secondary"
+            disabled={saving}
+            onClick={() => onOpenChange(false)}
+          >
+            {t("@legalos.documents.tags.cancel")}
+          </Button>
+          <Button
+            variant="primary"
+            loading={saving}
+            disabled={value === current || saving}
+            onClick={save}
+          >
+            {t("@legalos.documents.tags.save")}
+          </Button>
+        </div>
+      </DialogFooter>
     </Dialog>
   );
 }

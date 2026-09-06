@@ -1,84 +1,48 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Layout, LayoutContent, LayoutPanel } from "@astryxdesign/core/Layout";
-import { VStack, HStack, StackItem } from "@astryxdesign/core/Stack";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Card } from "@astryxdesign/core/Card";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Badge } from "@astryxdesign/core/Badge";
-import { Avatar } from "@astryxdesign/core/Avatar";
-import { Divider } from "@astryxdesign/core/Divider";
-import { List, ListItem } from "@astryxdesign/core/List";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
-import { Banner } from "@astryxdesign/core/Banner";
-import { Spinner } from "@astryxdesign/core/Spinner";
-import { Selector } from "@astryxdesign/core/Selector";
-import { Timestamp } from "@astryxdesign/core/Timestamp";
-import {
-  ChatComposer,
-  ChatLayout,
-  ChatMessage,
-  ChatMessageBubble,
-  ChatMessageList,
-  ChatMessageMetadata,
-} from "@astryxdesign/core/Chat";
-import {
-  SparklesIcon,
-  PlusIcon,
-  DocumentTextIcon,
-  DocumentMagnifyingGlassIcon,
-  LanguageIcon,
-  ClipboardDocumentListIcon,
-  ScaleIcon,
-  ArrowsRightLeftIcon,
-  ClockIcon,
-  ChatBubbleLeftRightIcon,
-  BookOpenIcon,
-} from "@heroicons/react/24/outline";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Alert } from "@/components/ui/Alert";
+import { Select } from "@/components/ui/Select";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
 import { useTranslator, type TranslatorFn } from "@astryxdesign/core/i18n";
 import { GroundedAnswer } from "@/components/GroundedAnswer";
 import { useCorpusStats } from "@/lib/corpus";
 import { api, ApiError, dirOf, type AskResponse, type Jurisdiction } from "@/lib/api";
 
-/**
- * Modes the assistant is intended to offer. Only question answering is wired:
- * `/api/ask` composes an answer strictly from retrieved statute text and
- * refuses anything the corpus cannot support, so drafting, translation and
- * summarisation are not the same request with a different prompt — they need
- * their own backends. They are shown disabled rather than hidden so the
- * intended surface stays visible without implying it works.
- */
 const MODES: {
   id: string;
   labelKey: string;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  iconName: string;
   href?: string;
   isLive?: boolean;
 }[] = [
-  { id: "qa", labelKey: "@legalos.aiAssistant.modes.qa", icon: ChatBubbleLeftRightIcon, isLive: true },
-  { id: "draft", labelKey: "@legalos.aiAssistant.modes.draft", icon: DocumentTextIcon },
+  { id: "qa", labelKey: "@legalos.aiAssistant.modes.qa", iconName: "chat", isLive: true },
+  { id: "draft", labelKey: "@legalos.aiAssistant.modes.draft", iconName: "description" },
   {
     id: "review",
     labelKey: "@legalos.aiAssistant.modes.review",
-    icon: DocumentMagnifyingGlassIcon,
+    iconName: "find_in_page",
     href: "/contract-review",
   },
-  { id: "translate", labelKey: "@legalos.aiAssistant.modes.translate", icon: LanguageIcon },
+  { id: "translate", labelKey: "@legalos.aiAssistant.modes.translate", iconName: "translate" },
   {
     id: "summarize",
     labelKey: "@legalos.aiAssistant.modes.summarize",
-    icon: ClipboardDocumentListIcon,
+    iconName: "assignment",
   },
-  { id: "case-analysis", labelKey: "@legalos.aiAssistant.modes.caseAnalysis", icon: ScaleIcon },
+  { id: "case-analysis", labelKey: "@legalos.aiAssistant.modes.caseAnalysis", iconName: "balance" },
   {
     id: "clause-comparison",
     labelKey: "@legalos.aiAssistant.modes.clauseComparison",
-    icon: ArrowsRightLeftIcon,
+    iconName: "compare_arrows",
   },
-  { id: "timeline", labelKey: "@legalos.aiAssistant.modes.timeline", icon: ClockIcon },
+  { id: "timeline", labelKey: "@legalos.aiAssistant.modes.timeline", iconName: "schedule" },
 ];
 
 const SUGGESTION_KEYS = [
@@ -90,7 +54,6 @@ const SUGGESTION_KEYS = [
 interface Turn {
   id: string;
   question: string;
-  /** ISO timestamp, stamped when the question is sent. */
   at: string;
   answer?: AskResponse;
   error?: { message: string; isCredits: boolean };
@@ -102,10 +65,6 @@ interface Conversation {
   turns: Turn[];
 }
 
-// Conversations live in component state and end with the tab. There is no
-// history endpoint yet, so the rail lists this session only and says so —
-// showing a persistent-looking archive would promise storage that does not
-// exist.
 let sequence = 0;
 const nextId = (prefix: string) => `${prefix}-${++sequence}`;
 
@@ -118,14 +77,11 @@ export default function AiAssistantPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [inputQuery, setInputQuery] = useState("");
 
   const active = conversations.find((c) => c.id === activeId) ?? null;
   const turns = active?.turns ?? [];
 
-  // Only articles the answer actually cited, not everything retrieval
-  // returned. Eight articles are fetched per question and typically one or two
-  // are relied on; listing all of them under "Cited" would inflate the
-  // provenance trail this panel exists to make checkable.
   const citedArticles = Array.from(
     new Map(
       turns
@@ -156,12 +112,11 @@ export default function AiAssistantPage() {
   async function send(question: string) {
     const trimmed = question.trim();
     if (!trimmed || pending) return;
+    setInputQuery("");
 
     const turn: Turn = { id: nextId("turn"), question: trimmed, at: new Date().toISOString() };
-
-    // The first question of a session also creates the conversation, so the
-    // rail never shows an empty thread waiting to be filled.
     const conversationId = active?.id ?? nextId("conversation");
+
     if (active) {
       setConversations((prev) =>
         prev.map((c) => (c.id === conversationId ? { ...c, turns: [...c.turns, turn] } : c)),
@@ -197,240 +152,253 @@ export default function AiAssistantPage() {
   }
 
   return (
-    <Layout
-      height="fill"
-      start={
-        <LayoutPanel width={272} hasDivider padding={0}>
-          <VStack gap={0} height="100%">
-            <VStack gap={3} padding={4}>
-              <Button
-                label={t("@legalos.aiAssistant.newChat")}
-                variant="primary"
-                icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
-                onClick={() => setActiveId(null)}
-                isDisabled={pending}
-                width="100%"
-              >
-                {t("@legalos.aiAssistant.newChat")}
-              </Button>
-            </VStack>
-            <Divider />
-            <StackItem size="fill" isScrollable>
-              {conversations.length === 0 ? (
-                <VStack padding={4}>
-                  <Text type="supporting" color="secondary">
-                    {t("@legalos.aiAssistant.noConversations")}
-                  </Text>
-                </VStack>
-              ) : (
-                <List hasDividers density="compact">
-                  {conversations.map((conversation) => (
-                    <ListItem
-                      key={conversation.id}
-                      // A conversation is identified by its subject, and the
-                      // rail cut these one or two characters short of the end.
-                      // Node labels are exempt from ListItem's single-line
-                      // truncation, so the title wraps instead — and anything
-                      // still too long keeps a tooltip, which the plain-string
-                      // form does not give.
-                      label={
-                        <Text type="label" weight="medium" maxLines={2} dir={dirOf(conversation.title)}>
-                          {conversation.title}
-                        </Text>
-                      }
-                      description={t("@legalos.aiAssistant.turnCount", {
+    <div className="flex h-[calc(100vh-64px)] overflow-hidden border rounded-lg m-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
+      {/* الشريط الجانبي الأيسر للمحادثات */}
+      <aside
+        className="w-64 flex-shrink-0 flex flex-col border-e overflow-hidden"
+        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface2)" }}
+      >
+        <div className="p-4 border-b" style={{ borderColor: "var(--border)" }}>
+          <Button
+            variant="primary"
+            onClick={() => setActiveId(null)}
+            disabled={pending}
+            className="w-full"
+          >
+            <Icon name="add" size={16} />
+            <span>{t("@legalos.aiAssistant.newChat")}</span>
+          </Button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-2">
+          {conversations.length === 0 ? (
+            <div className="p-3 text-xs" style={{ color: "var(--text2)" }}>
+              {t("@legalos.aiAssistant.noConversations")}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1">
+              {conversations.map((conversation) => {
+                const isSelected = conversation.id === activeId;
+                return (
+                  <button
+                    key={conversation.id}
+                    type="button"
+                    onClick={() => setActiveId(conversation.id)}
+                    className={`p-2.5 rounded-md text-start flex flex-col gap-1 transition-colors ${
+                      isSelected
+                        ? "bg-[var(--surface3)] font-semibold"
+                        : "hover:bg-[var(--surface)]"
+                    }`}
+                    style={{ color: isSelected ? "var(--primary)" : "var(--text)" }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Icon name="chat" size={14} />
+                      <span className="text-xs truncate" dir={dirOf(conversation.title)}>
+                        {conversation.title}
+                      </span>
+                    </div>
+                    <span className="text-[10px]" style={{ color: "var(--text2)" }}>
+                      {t("@legalos.aiAssistant.turnCount", {
                         count: conversation.turns.length,
                       })}
-                      isSelected={conversation.id === activeId}
-                      onClick={() => setActiveId(conversation.id)}
-                      startContent={
-                        <Icon icon={ChatBubbleLeftRightIcon} size="sm" color="secondary" />
-                      }
-                    />
-                  ))}
-                </List>
-              )}
-            </StackItem>
-            <Divider />
-            <VStack padding={4}>
-              <Text type="supporting" color="secondary">
-                {t("@legalos.aiAssistant.sessionOnlyNote")}
-              </Text>
-            </VStack>
-          </VStack>
-        </LayoutPanel>
-      }
-      end={
-        <LayoutPanel width={300} hasDivider padding={4} isScrollable>
-          <VStack gap={4}>
-            <HStack gap={2} vAlign="center">
-              <Icon icon={SparklesIcon} size="sm" className="text-purple-vivid" />
-              <Heading level={4}>{t("@legalos.aiAssistant.knowledgeSources.heading")}</Heading>
-            </HStack>
-            <Text type="supporting" color="secondary">
-              {t("@legalos.aiAssistant.knowledgeSources.description")}
-            </Text>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
-            {corpus.failed ? (
-              <Banner
-                status="error"
-                title={t("@legalos.corpus.unavailableTitle")}
-                description={t("@legalos.corpus.unavailableDescription")}
-              />
-            ) : (
-              <Card variant="purple" padding={3}>
-                <VStack gap={2}>
-                  {(["EG", "SA"] as const).map((code) => (
-                    <HStack key={code} hAlign="between" vAlign="center" gap={2}>
-                      <Text type="label">{t(`@legalos.jurisdiction.${code}`)}</Text>
-                      {corpus.stats && !corpus.has(code) ? (
-                        <Badge variant="neutral" label={t("@legalos.corpus.notIngested")} />
-                      ) : (
-                        <Text type="supporting" color="secondary">
-                          {t("@legalos.corpus.counts", {
-                            instruments: corpus.counts(code).instruments,
-                            articles: corpus.counts(code).articles,
-                          })}
-                        </Text>
-                      )}
-                    </HStack>
-                  ))}
-                </VStack>
-              </Card>
-            )}
+        <div className="p-3 border-t text-[11px]" style={{ borderColor: "var(--border)", color: "var(--text2)" }}>
+          {t("@legalos.aiAssistant.sessionOnlyNote")}
+        </div>
+      </aside>
 
-            <Divider />
-            <VStack gap={2}>
-              <Text type="label" color="secondary">
-                {t("@legalos.aiAssistant.knowledgeSources.citedHeading")}
-              </Text>
-              {citedArticles.length === 0 ? (
-                <Text type="supporting" color="secondary">
-                  {t("@legalos.aiAssistant.knowledgeSources.noneYet")}
-                </Text>
-              ) : (
-                <List hasDividers density="compact">
-                  {citedArticles.map((article) => (
-                    <ListItem
-                      key={article.id}
-                      label={article.citation}
-                      description={article.instrument_title}
-                      href={`/article/${article.id}`}
-                      endContent={<Icon icon={BookOpenIcon} size="sm" color="secondary" />}
-                    />
-                  ))}
-                </List>
-              )}
-            </VStack>
-            <Divider />
-            <Text type="supporting" color="secondary">
-              {t("@legalos.aiAssistant.knowledgeSources.footer")}
-            </Text>
-          </VStack>
-        </LayoutPanel>
-      }
-      content={
-        <LayoutContent padding={0}>
-          <VStack gap={0} height="100%">
-            <VStack gap={3} padding={4}>
-              <HStack hAlign="between" vAlign="center" gap={3} wrap="wrap">
-                <VStack gap={0.5}>
-                  <Heading level={3}>{t("@legalos.aiAssistant.heading")}</Heading>
-                  <Text type="supporting" color="secondary">
-                    {t("@legalos.aiAssistant.subheading")}
-                  </Text>
-                </VStack>
-                <JurisdictionSelector
+      {/* منطقة المحادثة المركزية */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden" style={{ backgroundColor: "var(--surface)" }}>
+        {/* رأس منطقة المحادثة */}
+        <div className="p-4 border-b flex flex-col gap-3 flex-shrink-0" style={{ borderColor: "var(--border)" }}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-col gap-0.5">
+              <h1 className="text-base font-bold" style={{ color: "var(--text)" }}>
+                {t("@legalos.aiAssistant.heading")}
+              </h1>
+              <p className="text-xs" style={{ color: "var(--text2)" }}>
+                {t("@legalos.aiAssistant.subheading")}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs" style={{ color: "var(--text2)" }}>
+                {t("@legalos.jurisdiction.label")}
+              </span>
+              <div className="w-36">
+                <Select
                   value={jurisdiction}
-                  onChange={setJurisdiction}
-                  isSaudiAvailable={corpus.has("SA")}
-                  t={t}
+                  onChange={(e) => setJurisdiction(e.target.value as Jurisdiction)}
+                  options={[
+                    { value: "EG", label: t("@legalos.jurisdiction.EG") },
+                    {
+                      value: "SA",
+                      label: corpus.has("SA")
+                        ? t("@legalos.jurisdiction.SA")
+                        : t("@legalos.jurisdiction.SAUnavailable"),
+                      disabled: !corpus.has("SA"),
+                    },
+                  ]}
                 />
-              </HStack>
-              <ModeChips />
-            </VStack>
-            <Divider />
-            <StackItem size="fill">
-              <ChatLayout
-                density="spacious"
-                emptyState={
-                  <EmptyState
-                    title={t("@legalos.aiAssistant.emptyState.title")}
-                    description={t("@legalos.aiAssistant.emptyState.description")}
-                    actions={
-                      <VStack gap={2} width="100%">
-                        {SUGGESTION_KEYS.map((key) => {
-                          const label = t(key);
-                          return (
-                            <Card key={key} padding={2} variant="muted">
-                              <button
-                                onClick={() => send(label)}
-                                style={{ textAlign: "start", width: "100%" }}
-                                dir={dirOf(label)}
-                              >
-                                <Text type="label">{label}</Text>
-                              </button>
-                            </Card>
-                          );
-                        })}
-                      </VStack>
-                    }
-                  />
-                }
-                composer={
-                  <ChatComposer
-                    onSubmit={send}
-                    isDisabled={pending}
-                    placeholder={t("@legalos.aiAssistant.composer.placeholderDefault")}
-                  />
-                }
-              >
-                {turns.length > 0 && (
-                  <ChatMessageList>
-                    {turns.map((turn) => (
-                      <TurnView key={turn.id} turn={turn} t={t} />
-                    ))}
-                  </ChatMessageList>
-                )}
-              </ChatLayout>
-            </StackItem>
-          </VStack>
-        </LayoutContent>
-      }
-    />
-  );
-}
+              </div>
+            </div>
+          </div>
 
-function JurisdictionSelector({
-  value,
-  onChange,
-  isSaudiAvailable,
-  t,
-}: {
-  value: Jurisdiction;
-  onChange: (value: Jurisdiction) => void;
-  isSaudiAvailable: boolean;
-  t: TranslatorFn;
-}) {
-  return (
-    <Selector
-      label={t("@legalos.jurisdiction.label")}
-      value={value}
-      onChange={(next) => onChange(next as Jurisdiction)}
-      options={[
-        { value: "EG", label: t("@legalos.jurisdiction.EG") },
-        {
-          value: "SA",
-          // Jurisdiction is a hard filter in retrieval, so selecting a
-          // jurisdiction with nothing ingested would refuse every question
-          // with no indication why.
-          label: isSaudiAvailable
-            ? t("@legalos.jurisdiction.SA")
-            : t("@legalos.jurisdiction.SAUnavailable"),
-          disabled: !isSaudiAvailable,
-        },
-      ]}
-    />
+          <ModeChips />
+        </div>
+
+        {/* سياق الرسائل */}
+        <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-5">
+          {turns.length > 0 ? (
+            turns.map((turn) => <TurnView key={turn.id} turn={turn} t={t} />)
+          ) : (
+            <div className="m-auto max-w-lg w-full flex flex-col items-center gap-6">
+              <EmptyState
+                icon={<Icon name="auto_awesome" size={32} />}
+                title={t("@legalos.aiAssistant.emptyState.title")}
+                description={t("@legalos.aiAssistant.emptyState.description")}
+              />
+              <div className="w-full flex flex-col gap-2">
+                {SUGGESTION_KEYS.map((key) => {
+                  const label = t(key);
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => send(label)}
+                      className="p-3 rounded-lg border text-start text-xs font-medium hover:bg-[var(--surface2)] transition-colors"
+                      style={{ borderColor: "var(--border)", color: "var(--text)" }}
+                      dir={dirOf(label)}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* حقل الإدخال */}
+        <div className="p-4 border-t flex items-center gap-2 flex-shrink-0" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
+          <input
+            type="text"
+            value={inputQuery}
+            onChange={(e) => setInputQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                send(inputQuery);
+              }
+            }}
+            disabled={pending}
+            placeholder={t("@legalos.aiAssistant.composer.placeholderDefault")}
+            className="flex-1 text-xs px-3 py-2.5 rounded-md border outline-none transition-colors"
+            style={{
+              borderColor: "var(--border)",
+              backgroundColor: "var(--surface2)",
+              color: "var(--text)",
+            }}
+          />
+          <Button
+            onClick={() => send(inputQuery)}
+            loading={pending}
+            disabled={!inputQuery.trim() || pending}
+          >
+            <Icon name="send" size={16} />
+            <span>إرسال</span>
+          </Button>
+        </div>
+      </main>
+
+      {/* الشريط الجانبي الأيمن لمصادر المعرفة */}
+      <aside
+        className="w-72 flex-shrink-0 flex flex-col border-s overflow-y-auto p-4 gap-4"
+        style={{ borderColor: "var(--border)", backgroundColor: "var(--surface2)" }}
+      >
+        <div className="flex items-center gap-2">
+          <Icon name="auto_awesome" size={18} />
+          <h2 className="text-sm font-bold" style={{ color: "var(--text)" }}>
+            {t("@legalos.aiAssistant.knowledgeSources.heading")}
+          </h2>
+        </div>
+        <p className="text-xs" style={{ color: "var(--text2)" }}>
+          {t("@legalos.aiAssistant.knowledgeSources.description")}
+        </p>
+
+        {corpus.failed ? (
+          <Alert
+            type="danger"
+            title={t("@legalos.corpus.unavailableTitle")}
+          >
+            {t("@legalos.corpus.unavailableDescription")}
+          </Alert>
+        ) : (
+          <Card className="p-3 flex flex-col gap-2">
+            {(["EG", "SA"] as const).map((code) => (
+              <div key={code} className="flex items-center justify-between text-xs">
+                <span className="font-semibold" style={{ color: "var(--text)" }}>
+                  {t(`@legalos.jurisdiction.${code}`)}
+                </span>
+                {corpus.stats && !corpus.has(code) ? (
+                  <Badge color="neutral">{t("@legalos.corpus.notIngested")}</Badge>
+                ) : (
+                  <span style={{ color: "var(--text2)" }}>
+                    {t("@legalos.corpus.counts", {
+                      instruments: corpus.counts(code).instruments,
+                      articles: corpus.counts(code).articles,
+                    })}
+                  </span>
+                )}
+              </div>
+            ))}
+          </Card>
+        )}
+
+        <div className="pt-3 border-t flex flex-col gap-2" style={{ borderColor: "var(--border)" }}>
+          <span className="text-xs font-semibold" style={{ color: "var(--text)" }}>
+            {t("@legalos.aiAssistant.knowledgeSources.citedHeading")}
+          </span>
+          {citedArticles.length === 0 ? (
+            <p className="text-xs" style={{ color: "var(--text2)" }}>
+              {t("@legalos.aiAssistant.knowledgeSources.noneYet")}
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {citedArticles.map((article) => (
+                <Link
+                  key={article.id}
+                  href={`/article/${article.id}`}
+                  className="p-2 rounded-md border flex items-center justify-between gap-2 hover:bg-[var(--surface)] transition-colors text-xs"
+                  style={{ borderColor: "var(--border)" }}
+                >
+                  <div className="flex flex-col gap-0.5 truncate">
+                    <span className="font-bold truncate" style={{ color: "var(--primary)" }}>
+                      {article.citation}
+                    </span>
+                    <span className="text-[11px] truncate" style={{ color: "var(--text2)" }}>
+                      {article.instrument_title}
+                    </span>
+                  </div>
+                  <Icon name="open_in_new" size={14} />
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="pt-3 border-t text-[11px]" style={{ borderColor: "var(--border)", color: "var(--text2)" }}>
+          {t("@legalos.aiAssistant.knowledgeSources.footer")}
+        </div>
+      </aside>
+    </div>
   );
 }
 
@@ -438,64 +406,78 @@ function ModeChips() {
   const router = useRouter();
   const t = useTranslator();
   return (
-    <VStack gap={2}>
-      <HStack gap={2} wrap="wrap">
+    <div className="flex flex-col gap-1.5">
+      <div className="flex flex-wrap gap-2">
         {MODES.map((mode) => (
           <Button
             key={mode.id}
-            label={t(mode.labelKey)}
             size="sm"
             variant={mode.isLive ? "secondary" : "ghost"}
-            isDisabled={!mode.isLive && !mode.href}
-            tooltip={mode.isLive ? undefined : t("@legalos.aiAssistant.modes.notBuiltTooltip")}
-            icon={<Icon icon={mode.icon} size="sm" className="text-purple-vivid" />}
+            disabled={!mode.isLive && !mode.href}
             onClick={mode.href ? () => router.push(mode.href!) : undefined}
           >
-            {t(mode.labelKey)}
+            <Icon name={mode.iconName} size={14} />
+            <span>{t(mode.labelKey)}</span>
           </Button>
         ))}
-      </HStack>
-      <Text type="supporting" color="secondary">
+      </div>
+      <span className="text-[11px]" style={{ color: "var(--text2)" }}>
         {t("@legalos.aiAssistant.modes.availabilityNote")}
-      </Text>
-    </VStack>
+      </span>
+    </div>
   );
 }
 
 function TurnView({ turn, t }: { turn: Turn; t: TranslatorFn }) {
   return (
-    <div>
-      <ChatMessage sender="user">
-        <ChatMessageBubble
-          metadata={
-            <ChatMessageMetadata timestamp={<Timestamp value={turn.at} format="time" />} />
-          }
+    <div className="flex flex-col gap-3">
+      {/* سؤال المستخدم */}
+      <div className="flex justify-end">
+        <div
+          className="max-w-[80%] p-3 rounded-xl text-xs leading-relaxed"
+          style={{
+            backgroundColor: "var(--primary)",
+            color: "var(--primary-foreground)",
+          }}
+          dir={dirOf(turn.question)}
         >
-          <div dir={dirOf(turn.question)}>
-            <Text type="body">{turn.question}</Text>
-          </div>
-        </ChatMessageBubble>
-      </ChatMessage>
+          {turn.question}
+        </div>
+      </div>
 
-      <ChatMessage sender="assistant" avatar={<Avatar name="LegalOS AI" size="md" />}>
-        <ChatMessageBubble variant="ghost">
+      {/* إجابة المساعد الذكي */}
+      <div className="flex items-start gap-3">
+        <div
+          className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+          style={{
+            backgroundColor: "var(--surface3)",
+            color: "var(--primary)",
+          }}
+        >
+          <Icon name="auto_awesome" size={16} />
+        </div>
+        <div className="flex-1 max-w-[85%]">
           {!turn.answer && !turn.error ? (
-            <Spinner label={t("@legalos.ask.searching")} />
+            <div className="p-3 rounded-lg border text-xs flex items-center gap-2" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface2)" }}>
+              <Icon name="hourglass_empty" size={16} />
+              <span>{t("@legalos.ask.searching")}</span>
+            </div>
           ) : turn.error ? (
-            <Banner
-              status={turn.error.isCredits ? "warning" : "error"}
+            <Alert
+              type={turn.error.isCredits ? "warn" : "danger"}
               title={t(
                 turn.error.isCredits
                   ? "@legalos.ask.error.creditsTitle"
                   : "@legalos.ask.error.genericTitle",
               )}
-              description={turn.error.message}
-            />
+            >
+              {turn.error.message}
+            </Alert>
           ) : (
             <GroundedAnswer answer={turn.answer!} />
           )}
-        </ChatMessageBubble>
-      </ChatMessage>
+        </div>
+      </div>
     </div>
   );
 }

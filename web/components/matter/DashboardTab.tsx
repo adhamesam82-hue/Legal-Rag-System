@@ -10,31 +10,20 @@
  * preparing for a hearing opens it to answer.
  */
 
-import { useState } from "react";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Grid, GridSpan } from "@astryxdesign/core/Grid";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Badge } from "@astryxdesign/core/Badge";
-import { Avatar } from "@astryxdesign/core/Avatar";
-import { List, ListItem } from "@astryxdesign/core/List";
-import { MetadataList, MetadataListItem } from "@astryxdesign/core/MetadataList";
-import { Link } from "@astryxdesign/core/Link";
-import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
-import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { TextArea } from "@astryxdesign/core/TextArea";
-import { Selector } from "@astryxdesign/core/Selector";
-import { SegmentedControl, SegmentedControlItem } from "@astryxdesign/core/SegmentedControl";
+import React, { useState } from "react";
+import Link from "next/link";
 import { useTranslator } from "@astryxdesign/core/i18n";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Icon } from "@/components/ui/Icon";
+import { Input, Textarea } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
 import {
-  BanknotesIcon,
-  CheckCircleIcon,
-  ScaleIcon,
-  ShieldCheckIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
+  Dialog,
+  DialogHeader,
+  DialogContent,
+  DialogFooter,
+} from "@/components/ui/Dialog";
 import { useMemberName, useOrg } from "@/lib/org";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
 import {
@@ -47,10 +36,10 @@ import { MatterTypeBadge } from "@/components/Distinction";
 import { CaseFile } from "./CaseFile";
 import { ParentLine, PrimaryBadge } from "./SubCases";
 
-const CONFLICT_VARIANT: Record<ConflictResult, "success" | "warning" | "error"> = {
+const CONFLICT_VARIANT: Record<ConflictResult, "success" | "warn" | "danger"> = {
   clear: "success",
-  potential_conflict: "warning",
-  conflict: "error",
+  potential_conflict: "warn",
+  conflict: "danger",
 };
 
 export function DashboardTab({ data, reload, onError }: TabProps) {
@@ -66,231 +55,348 @@ export function DashboardTab({ data, reload, onError }: TabProps) {
   const billRecipient = data.contacts.find((c) => c.is_bill_recipient);
 
   return (
-    <VStack gap={6}>
+    <div className="flex flex-col gap-6">
       {/* --- the case file proper: what this matter is about ------------ */}
       <CaseFile data={data} reload={reload} onError={onError} />
 
-      <Grid columns={3} gap={6}>
-        <GridSpan columns={2}>
-          <VStack gap={6}>
-            {/* --- details ---------------------------------------------- */}
-            <Panel title={t("@legalos.matterWorkspace.details.heading")}>
-              <Text type="body">
-                {matter.description ||
-                  t("@legalos.matterWorkspace.details.noDescription")}
-              </Text>
-              <MetadataList>
-                <MetadataListItem
-                  label={t("@legalos.matterWorkspace.details.matterNumber")}
-                >
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          {/* --- details ---------------------------------------------- */}
+          <Panel title={t("@legalos.matterWorkspace.details.heading")}>
+            <p className="text-xs m-0 leading-relaxed" style={{ color: "var(--text)" }}>
+              {matter.description ||
+                t("@legalos.matterWorkspace.details.noDescription")}
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
+              <div className="flex flex-col gap-1">
+                <span style={{ color: "var(--text3)" }}>
+                  {t("@legalos.matterWorkspace.details.matterNumber")}
+                </span>
+                <span className="font-semibold" style={{ color: "var(--text)" }}>
                   {matter.matter_number}
-                </MetadataListItem>
-                <MetadataListItem label={t("@legalos.matters.field.type")}>
+                </span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span style={{ color: "var(--text3)" }}>
+                  {t("@legalos.matters.field.type")}
+                </span>
+                <div>
                   <MatterTypeBadge type={matter.matter_type} />
-                </MetadataListItem>
-                <MetadataListItem label={t("@legalos.matters.field.responsible")}>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span style={{ color: "var(--text3)" }}>
+                  {t("@legalos.matters.field.responsible")}
+                </span>
+                <span className="font-medium" style={{ color: "var(--text)" }}>
                   {memberName(matter.responsible_user)}
-                </MetadataListItem>
-                <MetadataListItem label={t("@legalos.matters.field.billing")}>
+                </span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span style={{ color: "var(--text3)" }}>
+                  {t("@legalos.matters.field.billing")}
+                </span>
+                <span className="font-medium" style={{ color: "var(--text)" }}>
                   {enumLabel(matter.billing_type)}
-                </MetadataListItem>
-                <MetadataListItem label={t("@legalos.matters.field.opened")}>
+                </span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span style={{ color: "var(--text3)" }}>
+                  {t("@legalos.matters.field.opened")}
+                </span>
+                <span className="font-medium" style={{ color: "var(--text)" }}>
                   {formatDate(matter.opened_date)}
-                </MetadataListItem>
-                {matter.budget_amount !== null && (
-                  <MetadataListItem
-                    label={t("@legalos.matters.detail.glance.budget")}
-                  >
+                </span>
+              </div>
+              {matter.budget_amount !== null && (
+                <div className="flex flex-col gap-1">
+                  <span style={{ color: "var(--text3)" }}>
+                    {t("@legalos.matters.detail.glance.budget")}
+                  </span>
+                  <span className="font-medium" style={{ color: "var(--text)" }}>
                     {formatEGP(Number(matter.budget_amount), currency)}
                     {matter.budget_is_estimate
-                      ? t("@legalos.matters.detail.glance.estimateSuffix")
+                      ? ` ${t("@legalos.matters.detail.glance.estimateSuffix")}`
                       : ""}
-                  </MetadataListItem>
-                )}
-                {matter.closed_date && (
-                  <MetadataListItem label={t("@legalos.matters.field.closed")}>
+                  </span>
+                </div>
+              )}
+              {matter.closed_date && (
+                <div className="flex flex-col gap-1">
+                  <span style={{ color: "var(--text3)" }}>
+                    {t("@legalos.matters.field.closed")}
+                  </span>
+                  <span className="font-medium" style={{ color: "var(--text)" }}>
                     {formatDate(matter.closed_date)}
-                  </MetadataListItem>
-                )}
-                <MetadataListItem label={t("@legalos.matterWorkspace.details.tags")}>
+                  </span>
+                </div>
+              )}
+              <div className="flex flex-col gap-1 sm:col-span-2">
+                <span style={{ color: "var(--text3)" }}>
+                  {t("@legalos.matterWorkspace.details.tags")}
+                </span>
+                <span className="font-medium" style={{ color: "var(--text)" }}>
                   {matter.tags.length > 0
                     ? matter.tags.join(", ")
                     : t("@legalos.matterWorkspace.details.noTags")}
-                </MetadataListItem>
-              </MetadataList>
-            </Panel>
+                </span>
+              </div>
+            </div>
+          </Panel>
 
-            {data.linkedCase && (
-              <Panel
-                title={t("@legalos.matters.detail.linkedCase.heading")}
-                action={
-                  <HStack gap={3} vAlign="center">
-                    <PrimaryBadge record={data.linkedCase} />
-                    <Link href={`/cases/${data.linkedCase.id}`}>
-                      {t("@legalos.matters.detail.linkedCase.openCase")}
-                    </Link>
-                  </HStack>
-                }
-              >
-                <ParentLine record={data.linkedCase} />
-                <MetadataList>
-                  <MetadataListItem
-                    label={t("@legalos.matters.detail.linkedCase.caseNumber")}
+          {data.linkedCase && (
+            <Panel
+              title={t("@legalos.matters.detail.linkedCase.heading")}
+              action={
+                <div className="flex items-center gap-3">
+                  <PrimaryBadge record={data.linkedCase} />
+                  <Link
+                    href={`/cases/${data.linkedCase.id}`}
+                    className="text-xs font-semibold hover:underline"
+                    style={{ color: "var(--primary)" }}
                   >
+                    {t("@legalos.matters.detail.linkedCase.openCase")}
+                  </Link>
+                </div>
+              }
+            >
+              <ParentLine record={data.linkedCase} />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="flex flex-col gap-1">
+                  <span style={{ color: "var(--text3)" }}>
+                    {t("@legalos.matters.detail.linkedCase.caseNumber")}
+                  </span>
+                  <span className="font-medium" style={{ color: "var(--text)" }}>
                     {data.linkedCase.case_number}
-                  </MetadataListItem>
-                  <MetadataListItem
-                    label={t("@legalos.matters.detail.linkedCase.court")}
-                  >
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span style={{ color: "var(--text3)" }}>
+                    {t("@legalos.matters.detail.linkedCase.court")}
+                  </span>
+                  <span className="font-medium" style={{ color: "var(--text)" }}>
                     {data.linkedCase.court}
-                  </MetadataListItem>
-                  <MetadataListItem
-                    label={t("@legalos.matters.detail.linkedCase.opposingParty")}
-                  >
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span style={{ color: "var(--text3)" }}>
+                    {t("@legalos.matters.detail.linkedCase.opposingParty")}
+                  </span>
+                  <span className="font-medium" style={{ color: "var(--text)" }}>
                     {data.linkedCase.opposing_party || "—"}
-                  </MetadataListItem>
-                </MetadataList>
-              </Panel>
+                  </span>
+                </div>
+              </div>
+            </Panel>
+          )}
+
+          <ConflictChecksCard data={data} reload={reload} onError={onError} />
+
+          <Panel title={t("@legalos.matters.detail.openTasks.heading")}>
+            {openTasks.length === 0 ? (
+              <p className="text-xs m-0" style={{ color: "var(--text3)" }}>
+                {t("@legalos.matters.detail.openTasks.empty")}
+              </p>
+            ) : (
+              <div
+                className="flex flex-col rounded-md border divide-y overflow-hidden"
+                style={{ borderColor: "var(--border)" }}
+              >
+                {openTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="flex items-center justify-between gap-3 p-3"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <Icon name="check_circle" size={16} style={{ color: "var(--text3)" }} />
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>
+                          {task.title}
+                        </span>
+                        <span className="text-xs truncate" style={{ color: "var(--text3)" }}>
+                          {memberName(task.assignee)}
+                        </span>
+                      </div>
+                    </div>
+                    {task.due_date && (
+                      <span className="text-xs shrink-0" style={{ color: "var(--text3)" }}>
+                        {formatDate(task.due_date)}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
+          </Panel>
 
-            <ConflictChecksCard data={data} reload={reload} onError={onError} />
-
-            <Panel title={t("@legalos.matters.detail.openTasks.heading")}>
-              {openTasks.length === 0 ? (
-                <Text type="body" color="secondary">
-                  {t("@legalos.matters.detail.openTasks.empty")}
-                </Text>
-              ) : (
-                <List hasDividers density="compact">
-                  {openTasks.map((task) => (
-                    <ListItem
-                      key={task.id}
-                      label={task.title}
-                      description={memberName(task.assignee)}
-                      startContent={
-                        <Icon icon={CheckCircleIcon} size="sm" color="secondary" />
-                      }
-                      endContent={
-                        task.due_date ? (
-                          <Text type="supporting" color="secondary">
-                            {formatDate(task.due_date)}
-                          </Text>
-                        ) : undefined
-                      }
-                    />
-                  ))}
-                </List>
-              )}
-            </Panel>
-
-            <Panel title={t("@legalos.matters.detail.activity.heading")}>
-              {data.activity.length === 0 ? (
-                <Text type="body" color="secondary">
-                  {t("@legalos.matters.detail.activity.empty")}
-                </Text>
-              ) : (
-                <List hasDividers density="compact">
-                  {data.activity.map((entry) => (
-                    <ListItem
+          <Panel title={t("@legalos.matters.detail.activity.heading")}>
+            {data.activity.length === 0 ? (
+              <p className="text-xs m-0" style={{ color: "var(--text3)" }}>
+                {t("@legalos.matters.detail.activity.empty")}
+              </p>
+            ) : (
+              <div
+                className="flex flex-col rounded-md border divide-y overflow-hidden"
+                style={{ borderColor: "var(--border)" }}
+              >
+                {data.activity.map((entry) => {
+                  const actorName = memberName(entry.actor);
+                  return (
+                    <div
                       key={entry.id}
-                      label={memberName(entry.actor)}
-                      description={entry.action}
-                      startContent={
-                        <Avatar
-                          name={memberName(entry.actor)}
-                          size="sm"
-                          tooltip={false}
-                        />
-                      }
-                      endContent={
-                        <Text type="supporting" color="secondary">
-                          {formatDateTime(entry.occurred_at)}
-                        </Text>
-                      }
-                    />
-                  ))}
-                </List>
-              )}
-            </Panel>
-          </VStack>
-        </GridSpan>
+                      className="flex items-center justify-between gap-3 p-3"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          title={actorName}
+                          className="flex items-center justify-center w-6 h-6 text-[10px] font-bold rounded-full border shrink-0"
+                          style={{
+                            backgroundColor: "var(--surface3)",
+                            borderColor: "var(--border)",
+                            color: "var(--text2)",
+                          }}
+                        >
+                          {actorName ? actorName.slice(0, 2).toUpperCase() : "?"}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>
+                            {actorName}
+                          </span>
+                          <span className="text-xs truncate" style={{ color: "var(--text3)" }}>
+                            {entry.action}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-xs shrink-0" style={{ color: "var(--text3)" }}>
+                        {formatDateTime(entry.occurred_at)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Panel>
+        </div>
 
-        <VStack gap={6}>
+        <div className="lg:col-span-1 flex flex-col gap-6">
           <ContactsCard data={data} reload={reload} onError={onError} />
 
           <Panel title={t("@legalos.matters.detail.team.heading")}>
-            <List hasDividers density="compact">
-              <ListItem
-                label={memberName(matter.responsible_user)}
-                description={t("@legalos.matters.field.responsible")}
-                startContent={
-                  <Avatar
-                    name={memberName(matter.responsible_user)}
-                    size="sm"
-                    tooltip={false}
-                  />
-                }
-              />
-              {matter.staff.map((userId) => (
-                <ListItem
-                  key={userId}
-                  label={memberName(userId)}
-                  description={t("@legalos.matters.detail.team.supporting")}
-                  startContent={
-                    <Avatar name={memberName(userId)} size="sm" tooltip={false} />
-                  }
-                />
-              ))}
-            </List>
+            <div
+              className="flex flex-col rounded-md border divide-y overflow-hidden"
+              style={{ borderColor: "var(--border)" }}
+            >
+              {(() => {
+                const leadName = memberName(matter.responsible_user);
+                return (
+                  <div className="flex items-center gap-2.5 p-3">
+                    <div
+                      title={leadName}
+                      className="flex items-center justify-center w-6 h-6 text-[10px] font-bold rounded-full border shrink-0"
+                      style={{
+                        backgroundColor: "var(--surface3)",
+                        borderColor: "var(--border)",
+                        color: "var(--text2)",
+                      }}
+                    >
+                      {leadName ? leadName.slice(0, 2).toUpperCase() : "?"}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>
+                        {leadName}
+                      </span>
+                      <span className="text-xs truncate" style={{ color: "var(--text3)" }}>
+                        {t("@legalos.matters.field.responsible")}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
+              {matter.staff.map((userId) => {
+                const staffName = memberName(userId);
+                return (
+                  <div key={userId} className="flex items-center gap-2.5 p-3">
+                    <div
+                      title={staffName}
+                      className="flex items-center justify-center w-6 h-6 text-[10px] font-bold rounded-full border shrink-0"
+                      style={{
+                        backgroundColor: "var(--surface3)",
+                        borderColor: "var(--border)",
+                        color: "var(--text2)",
+                      }}
+                    >
+                      {staffName ? staffName.slice(0, 2).toUpperCase() : "?"}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>
+                        {staffName}
+                      </span>
+                      <span className="text-xs truncate" style={{ color: "var(--text3)" }}>
+                        {t("@legalos.matters.detail.team.supporting")}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </Panel>
 
           <Panel title={t("@legalos.matters.detail.hearings.heading")}>
             {data.hearings.length === 0 ? (
-              <Text type="body" color="secondary">
+              <p className="text-xs m-0" style={{ color: "var(--text3)" }}>
                 {t("@legalos.matters.detail.hearings.empty")}
-              </Text>
+              </p>
             ) : (
-              <List hasDividers density="compact">
+              <div
+                className="flex flex-col rounded-md border divide-y overflow-hidden"
+                style={{ borderColor: "var(--border)" }}
+              >
                 {data.hearings.map((hearing) => (
-                  <ListItem
+                  <div
                     key={hearing.id}
-                    label={
-                      hearing.purpose ||
-                      t("@legalos.matters.detail.hearings.defaultPurpose")
-                    }
-                    description={hearing.court}
-                    startContent={
-                      <Icon icon={ScaleIcon} size="sm" color="secondary" />
-                    }
-                    endContent={
-                      <Text type="supporting" color="secondary">
-                        {formatDate(hearing.hearing_date)}
-                      </Text>
-                    }
-                  />
+                    className="flex items-center justify-between gap-3 p-3"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <Icon name="gavel" size={16} style={{ color: "var(--text3)" }} />
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>
+                          {hearing.purpose ||
+                            t("@legalos.matters.detail.hearings.defaultPurpose")}
+                        </span>
+                        <span className="text-xs truncate" style={{ color: "var(--text3)" }}>
+                          {hearing.court}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-xs shrink-0" style={{ color: "var(--text3)" }}>
+                      {formatDate(hearing.hearing_date)}
+                    </span>
+                  </div>
                 ))}
-              </List>
+              </div>
             )}
           </Panel>
 
           {billRecipient && (
             <Panel title={t("@legalos.matterWorkspace.contacts.billRecipient")}>
-              <HStack gap={3} vAlign="center">
-                <Icon icon={BanknotesIcon} size="sm" color="secondary" />
-                <VStack gap={0}>
-                  <Text type="body">{billRecipient.name}</Text>
+              <div className="flex items-center gap-3">
+                <Icon name="payments" size={18} style={{ color: "var(--text3)" }} />
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold" style={{ color: "var(--text)" }}>
+                    {billRecipient.name}
+                  </span>
                   {billRecipient.email && (
-                    <Text type="supporting" color="secondary">
+                    <span className="text-xs" style={{ color: "var(--text3)" }}>
                       {billRecipient.email}
-                    </Text>
+                    </span>
                   )}
-                </VStack>
-              </HStack>
+                </div>
+              </div>
             </Panel>
           )}
-        </VStack>
-      </Grid>
-    </VStack>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -311,28 +417,51 @@ function ContactsCard({ data, reload, onError }: TabProps) {
         title={t("@legalos.matterWorkspace.contacts.heading")}
         action={
           <Button
-            label={t("@legalos.matterWorkspace.contacts.add")}
             variant="secondary"
             size="sm"
             onClick={() => setIsAdding(true)}
-          />
+          >
+            {t("@legalos.matterWorkspace.contacts.add")}
+          </Button>
         }
       >
-        <VStack gap={2}>
-          <Text type="supporting" color="secondary" weight="semibold">
+        <div className="flex flex-col gap-2">
+          <span className="text-xs font-semibold" style={{ color: "var(--text2)" }}>
             {t("@legalos.matterWorkspace.contacts.clients", {
               count: clientParties.length,
             })}
-          </Text>
-          <List hasDividers density="compact">
-            <ListItem
-              label={data.matter.client_name}
-              href={`/clients/${data.matter.client_id}`}
-              description={t("@legalos.matters.field.client")}
-              startContent={
-                <Avatar name={data.matter.client_name} size="sm" tooltip={false} />
-              }
-            />
+          </span>
+          <div
+            className="flex flex-col rounded-md border divide-y overflow-hidden"
+            style={{ borderColor: "var(--border)" }}
+          >
+            <div className="flex items-center justify-between gap-3 p-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div
+                  title={data.matter.client_name}
+                  className="flex items-center justify-center w-6 h-6 text-[10px] font-bold rounded-full border shrink-0"
+                  style={{
+                    backgroundColor: "var(--surface3)",
+                    borderColor: "var(--border)",
+                    color: "var(--text2)",
+                  }}
+                >
+                  {data.matter.client_name ? data.matter.client_name.slice(0, 2).toUpperCase() : "?"}
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <Link
+                    href={`/clients/${data.matter.client_id}`}
+                    className="text-xs font-semibold hover:underline truncate"
+                    style={{ color: "var(--primary)" }}
+                  >
+                    {data.matter.client_name}
+                  </Link>
+                  <span className="text-xs" style={{ color: "var(--text3)" }}>
+                    {t("@legalos.matters.field.client")}
+                  </span>
+                </div>
+              </div>
+            </div>
             {clientParties.map((contact) => (
               <ContactRow
                 key={contact.id}
@@ -342,21 +471,24 @@ function ContactsCard({ data, reload, onError }: TabProps) {
                 practiceReady={Boolean(practice)}
               />
             ))}
-          </List>
-        </VStack>
+          </div>
+        </div>
 
-        <VStack gap={2}>
-          <Text type="supporting" color="secondary" weight="semibold">
+        <div className="flex flex-col gap-2 mt-2">
+          <span className="text-xs font-semibold" style={{ color: "var(--text2)" }}>
             {t("@legalos.matterWorkspace.contacts.related", {
               count: otherParties.length,
             })}
-          </Text>
+          </span>
           {otherParties.length === 0 ? (
-            <Text type="supporting" color="secondary">
+            <span className="text-xs" style={{ color: "var(--text3)" }}>
               {t("@legalos.matterWorkspace.contacts.empty")}
-            </Text>
+            </span>
           ) : (
-            <List hasDividers density="compact">
+            <div
+              className="flex flex-col rounded-md border divide-y overflow-hidden"
+              style={{ borderColor: "var(--border)" }}
+            >
               {otherParties.map((contact) => (
                 <ContactRow
                   key={contact.id}
@@ -366,9 +498,9 @@ function ContactsCard({ data, reload, onError }: TabProps) {
                   practiceReady={Boolean(practice)}
                 />
               ))}
-            </List>
+            </div>
           )}
-        </VStack>
+        </div>
       </Panel>
 
       <AddContactDialog
@@ -397,58 +529,73 @@ function ContactRow({
   const { practice } = useOrg();
 
   return (
-    <ListItem
-      label={contact.name}
-      description={contact.relationship || contact.email || undefined}
-      startContent={<Avatar name={contact.name} size="sm" tooltip={false} />}
-      // Icon buttons, not text ones. Two full-width Arabic labels
-      // ("تعيينه مستلمًا للفاتورة" and "إزالة") took the whole row at around
-      // 1000px and squeezed the name column to nothing, so the list showed an
-      // avatar and two buttons with no indication of whose contact it was.
-      // The labels survive as the accessible name and the tooltip.
-      endContent={
-        <HStack gap={2} vAlign="center">
-          {contact.is_bill_recipient ? (
-            <Badge
-              variant="info"
-              label={t("@legalos.matterWorkspace.contacts.billRecipient")}
-            />
-          ) : (
-            <Button
-              label={t("@legalos.matterWorkspace.contacts.makeBillRecipient")}
-              variant="ghost"
-              size="sm"
-              isIconOnly
-              icon={<Icon icon={BanknotesIcon} size="sm" color="inherit" />}
-              isDisabled={!practiceReady}
-              onClick={() =>
-                write(
-                  () =>
-                    practice!.matters.updateContact(matterId, contact.id, {
-                      is_bill_recipient: true,
-                    }),
-                  "@legalos.matterWorkspace.errors.contact",
-                )
-              }
-            />
+    <div className="flex items-center justify-between gap-3 p-3">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div
+          title={contact.name}
+          className="flex items-center justify-center w-6 h-6 text-[10px] font-bold rounded-full border shrink-0"
+          style={{
+            backgroundColor: "var(--surface3)",
+            borderColor: "var(--border)",
+            color: "var(--text2)",
+          }}
+        >
+          {contact.name ? contact.name.slice(0, 2).toUpperCase() : "?"}
+        </div>
+        <div className="flex flex-col min-w-0">
+          <span className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>
+            {contact.name}
+          </span>
+          {(contact.relationship || contact.email) && (
+            <span className="text-xs truncate" style={{ color: "var(--text3)" }}>
+              {contact.relationship || contact.email}
+            </span>
           )}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 shrink-0">
+        {contact.is_bill_recipient ? (
+          <Badge color="info" variant="soft">
+            {t("@legalos.matterWorkspace.contacts.billRecipient")}
+          </Badge>
+        ) : (
           <Button
-            label={t("@legalos.matterWorkspace.contacts.remove")}
             variant="ghost"
             size="sm"
-            isIconOnly
-            icon={<Icon icon={TrashIcon} size="sm" color="inherit" />}
-            isDisabled={!practiceReady}
+            disabled={!practiceReady}
+            startIcon={<Icon name="payments" size={16} />}
+            aria-label={t("@legalos.matterWorkspace.contacts.makeBillRecipient")}
             onClick={() =>
               write(
-                () => practice!.matters.removeContact(matterId, contact.id),
+                () =>
+                  practice!.matters.updateContact(matterId, contact.id, {
+                    is_bill_recipient: true,
+                  }),
                 "@legalos.matterWorkspace.errors.contact",
               )
             }
-          />
-        </HStack>
-      }
-    />
+          >
+            {t("@legalos.matterWorkspace.contacts.makeBillRecipient")}
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={!practiceReady}
+          startIcon={<Icon name="delete" size={16} />}
+          aria-label={t("@legalos.matterWorkspace.contacts.remove")}
+          onClick={() =>
+            write(
+              () => practice!.matters.removeContact(matterId, contact.id),
+              "@legalos.matterWorkspace.errors.contact",
+            )
+          }
+        >
+          {t("@legalos.matterWorkspace.contacts.remove")}
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -461,7 +608,7 @@ function AddContactDialog({
 }: {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  data: WorkspaceDataProp;
+  data: TabProps["data"];
   reload: () => void;
   onError: (message: string) => void;
 }) {
@@ -516,107 +663,125 @@ function AddContactDialog({
 
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange} width={480}>
-      <Layout
-        header={
-          <DialogHeader
-            title={t("@legalos.matterWorkspace.contacts.form.heading")}
-            onOpenChange={onOpenChange}
-          />
-        }
-        content={
-          <LayoutContent>
-            <VStack gap={4}>
-              <SegmentedControl
-                label={t("@legalos.matterWorkspace.contacts.form.heading")}
-                value={mode}
-                onChange={(value) => setMode(value as "existing" | "external")}
-              >
-                <SegmentedControlItem
-                  value="existing"
-                  label={t("@legalos.matterWorkspace.contacts.form.existing")}
-                />
-                <SegmentedControlItem
-                  value="external"
-                  label={t("@legalos.matterWorkspace.contacts.form.external")}
-                />
-              </SegmentedControl>
-
-              {mode === "existing" ? (
-                available.length === 0 ? (
-                  <Text type="body" color="secondary">
-                    {t("@legalos.matterWorkspace.contacts.form.noneOnFile")}
-                  </Text>
-                ) : (
-                  <Selector
-                    label={t("@legalos.matterWorkspace.contacts.form.pick")}
-                    value={contactId}
-                    onChange={setContactId}
-                    hasClear
-                    options={available.map((c) => ({
-                      value: String(c.id),
-                      label: c.title ? `${c.name} — ${c.title}` : c.name,
-                    }))}
-                  />
-                )
-              ) : (
-                <>
-                  <TextInput
-                    label={t("@legalos.matterWorkspace.contacts.form.name")}
-                    value={name}
-                    onChange={setName}
-                    isRequired
-                  />
-                  <TextInput
-                    label={t("@legalos.matterWorkspace.contacts.form.email")}
-                    value={email}
-                    onChange={setEmail}
-                  />
-                  <TextInput
-                    label={t("@legalos.matterWorkspace.contacts.form.phone")}
-                    value={phone}
-                    onChange={setPhone}
-                  />
-                </>
-              )}
-
-              <TextInput
-                label={t("@legalos.matterWorkspace.contacts.form.relationship")}
-                value={relationship}
-                onChange={setRelationship}
-                placeholder={t(
-                  "@legalos.matterWorkspace.contacts.form.relationshipPlaceholder",
-                )}
-              />
-            </VStack>
-          </LayoutContent>
-        }
-        footer={
-          <LayoutFooter>
-            <HStack gap={3} hAlign="end">
-              <Button
-                label={t("@legalos.matterWorkspace.action.cancel")}
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              />
-              <Button
-                label={
-                  saving
-                    ? t("@legalos.matterWorkspace.action.saving")
-                    : t("@legalos.matterWorkspace.action.add")
-                }
-                variant="primary"
-                isDisabled={saving || !canSubmit}
-                onClick={submit}
-              />
-            </HStack>
-          </LayoutFooter>
-        }
+      <DialogHeader
+        title={t("@legalos.matterWorkspace.contacts.form.heading")}
+        onOpenChange={onOpenChange}
       />
+      <DialogContent>
+        <div className="flex flex-col gap-4">
+          <div
+            role="radiogroup"
+            aria-label={t("@legalos.matterWorkspace.contacts.form.heading")}
+            className="inline-flex p-1 border max-w-fit"
+            style={{
+              backgroundColor: "var(--surface2)",
+              borderColor: "var(--border)",
+              borderRadius: "var(--rs)",
+            }}
+          >
+            <button
+              type="button"
+              role="radio"
+              aria-checked={mode === "existing"}
+              onClick={() => setMode("existing")}
+              className="px-3 py-1.5 text-xs font-medium transition-all"
+              style={{
+                borderRadius: "calc(var(--rs) - 2px)",
+                backgroundColor: mode === "existing" ? "var(--surface)" : "transparent",
+                color: mode === "existing" ? "var(--text)" : "var(--text2)",
+                boxShadow: mode === "existing" ? "var(--shadow)" : "none",
+              }}
+            >
+              {t("@legalos.matterWorkspace.contacts.form.existing")}
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={mode === "external"}
+              onClick={() => setMode("external")}
+              className="px-3 py-1.5 text-xs font-medium transition-all"
+              style={{
+                borderRadius: "calc(var(--rs) - 2px)",
+                backgroundColor: mode === "external" ? "var(--surface)" : "transparent",
+                color: mode === "external" ? "var(--text)" : "var(--text2)",
+                boxShadow: mode === "external" ? "var(--shadow)" : "none",
+              }}
+            >
+              {t("@legalos.matterWorkspace.contacts.form.external")}
+            </button>
+          </div>
+
+          {mode === "existing" ? (
+            available.length === 0 ? (
+              <span className="text-xs" style={{ color: "var(--text3)" }}>
+                {t("@legalos.matterWorkspace.contacts.form.noneOnFile")}
+              </span>
+            ) : (
+              <Select
+                label={t("@legalos.matterWorkspace.contacts.form.pick")}
+                value={contactId ?? ""}
+                onChange={(e) => setContactId(e.target.value || null)}
+                options={[
+                  { value: "", label: "—" },
+                  ...available.map((c) => ({
+                    value: String(c.id),
+                    label: c.title ? `${c.name} — ${c.title}` : c.name,
+                  })),
+                ]}
+              />
+            )
+          ) : (
+            <>
+              <Input
+                label={t("@legalos.matterWorkspace.contacts.form.name")}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+              <Input
+                type="email"
+                label={t("@legalos.matterWorkspace.contacts.form.email")}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <Input
+                type="tel"
+                label={t("@legalos.matterWorkspace.contacts.form.phone")}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </>
+          )}
+
+          <Input
+            label={t("@legalos.matterWorkspace.contacts.form.relationship")}
+            value={relationship}
+            onChange={(e) => setRelationship(e.target.value)}
+            placeholder={t(
+              "@legalos.matterWorkspace.contacts.form.relationshipPlaceholder",
+            )}
+          />
+        </div>
+      </DialogContent>
+      <DialogFooter>
+        <Button
+          variant="secondary"
+          onClick={() => onOpenChange(false)}
+        >
+          {t("@legalos.matterWorkspace.action.cancel")}
+        </Button>
+        <Button
+          variant="primary"
+          loading={saving}
+          disabled={!canSubmit}
+          onClick={submit}
+        >
+          {t("@legalos.matterWorkspace.action.add")}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }
-
-type WorkspaceDataProp = TabProps["data"];
 
 // --- conflict checks --------------------------------------------------------
 
@@ -662,161 +827,169 @@ function ConflictChecksCard({ data, reload, onError }: TabProps) {
         title={t("@legalos.matterWorkspace.conflicts.heading")}
         action={
           <Button
-            label={t("@legalos.matterWorkspace.conflicts.run")}
             variant="secondary"
             size="sm"
             onClick={() => setIsRunning(true)}
-          />
+          >
+            {t("@legalos.matterWorkspace.conflicts.run")}
+          </Button>
         }
       >
         {data.conflictChecks.length === 0 ? (
-          <Text type="body" color="secondary">
+          <p className="text-xs m-0" style={{ color: "var(--text3)" }}>
             {t("@legalos.matterWorkspace.conflicts.empty")}
-          </Text>
+          </p>
         ) : (
-          <List hasDividers density="compact">
+          <div
+            className="flex flex-col rounded-md border divide-y overflow-hidden"
+            style={{ borderColor: "var(--border)" }}
+          >
             {data.conflictChecks.map((check) => (
-              <ListItem
+              <div
                 key={check.id}
-                label={check.search_terms.join(", ")}
-                description={
-                  check.hit_summary ||
-                  t("@legalos.matterWorkspace.conflicts.noHits")
-                }
-                startContent={
-                  <Icon icon={ShieldCheckIcon} size="sm" color="secondary" />
-                }
-                endContent={
-                  <HStack gap={3} vAlign="center">
-                    <VStack gap={0} hAlign="end">
-                      <Badge
-                        variant={CONFLICT_VARIANT[check.result]}
-                        label={t(
-                          `@legalos.matterWorkspace.conflicts.result.${check.result}`,
-                        )}
+                className="flex items-center justify-between gap-3 p-3"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Icon name="verified_user" size={16} style={{ color: "var(--text3)" }} />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>
+                      {check.search_terms.join(", ")}
+                    </span>
+                    <span className="text-xs truncate" style={{ color: "var(--text3)" }}>
+                      {check.hit_summary ||
+                        t("@legalos.matterWorkspace.conflicts.noHits")}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex flex-col items-end">
+                    <Badge
+                      color={CONFLICT_VARIANT[check.result]}
+                      variant="soft"
+                    >
+                      {t(
+                        `@legalos.matterWorkspace.conflicts.result.${check.result}`,
+                      )}
+                    </Badge>
+                    <span className="text-[11px]" style={{ color: "var(--text3)" }}>
+                      {check.cleared_by
+                        ? t("@legalos.matterWorkspace.conflicts.clearedBy", {
+                            name: memberName(check.cleared_by),
+                            date: formatDate(check.cleared_at),
+                          })
+                        : t("@legalos.matterWorkspace.conflicts.ranBy", {
+                            name: memberName(check.run_by),
+                            date: formatDate(check.run_at),
+                          })}
+                    </span>
+                  </div>
+
+                  {!check.cleared_by && (
+                    <div className="w-36">
+                      <Select
+                        value=""
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val) {
+                            write(
+                              () =>
+                                practice!.conflicts.resolve(check.id, {
+                                  result: val as ConflictResult,
+                                }),
+                              "@legalos.matterWorkspace.errors.conflict",
+                            );
+                          }
+                        }}
+                        options={[
+                          { value: "", label: t("@legalos.matterWorkspace.conflicts.decide") },
+                          { value: "clear", label: t("@legalos.matterWorkspace.conflicts.result.clear") },
+                          { value: "potential_conflict", label: t("@legalos.matterWorkspace.conflicts.result.potential_conflict") },
+                          { value: "conflict", label: t("@legalos.matterWorkspace.conflicts.result.conflict") },
+                        ]}
                       />
-                      <Text type="supporting" color="secondary">
-                        {check.cleared_by
-                          ? t("@legalos.matterWorkspace.conflicts.clearedBy", {
-                              name: memberName(check.cleared_by),
-                              date: formatDate(check.cleared_at),
-                            })
-                          : t("@legalos.matterWorkspace.conflicts.ranBy", {
-                              name: memberName(check.run_by),
-                              date: formatDate(check.run_at),
-                            })}
-                      </Text>
-                    </VStack>
-                    {!check.cleared_by && (
-                      <Selector
-                        label={t("@legalos.matterWorkspace.conflicts.decide")}
-                        isLabelHidden
-                        value={null}
-                        hasClear
-                        width={170}
-                        placeholder={t("@legalos.matterWorkspace.conflicts.decide")}
-                        onChange={(value) =>
-                          value &&
-                          write(
-                            () =>
-                              practice!.conflicts.resolve(check.id, {
-                                result: value as ConflictResult,
-                              }),
-                            "@legalos.matterWorkspace.errors.conflict",
-                          )
-                        }
-                        options={(
-                          ["clear", "potential_conflict", "conflict"] as const
-                        ).map((value) => ({
-                          value,
-                          label: t(
-                            `@legalos.matterWorkspace.conflicts.result.${value}`,
-                          ),
-                        }))}
-                      />
-                    )}
-                  </HStack>
-                }
-              />
+                    </div>
+                  )}
+                </div>
+              </div>
             ))}
-          </List>
+          </div>
         )}
 
         {hits && hits.length > 0 && (
-          <VStack gap={2}>
-            <Text type="supporting" color="secondary" weight="semibold">
+          <div className="flex flex-col gap-2 mt-4">
+            <span className="text-xs font-semibold" style={{ color: "var(--text2)" }}>
               {t("@legalos.matterWorkspace.conflicts.hits", { count: hits.length })}
-            </Text>
-            <List hasDividers density="compact">
+            </span>
+            <div
+              className="flex flex-col rounded-md border divide-y overflow-hidden"
+              style={{ borderColor: "var(--border)" }}
+            >
               {hits.map((hit, index) => (
-                <ListItem
+                <div
                   key={`${hit.kind}-${hit.name}-${index}`}
-                  label={hit.name}
-                  description={
-                    hit.matter_name ? `${hit.detail} · ${hit.matter_name}` : hit.detail
-                  }
-                  endContent={
-                    <Badge
-                      variant="neutral"
-                      label={t(
-                        `@legalos.matterWorkspace.conflicts.hitKind.${hit.kind}`,
-                      )}
-                    />
-                  }
-                />
+                  className="flex items-center justify-between gap-3 p-3"
+                >
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>
+                      {hit.name}
+                    </span>
+                    <span className="text-xs truncate" style={{ color: "var(--text3)" }}>
+                      {hit.matter_name ? `${hit.detail} · ${hit.matter_name}` : hit.detail}
+                    </span>
+                  </div>
+                  <Badge color="neutral" variant="soft">
+                    {t(
+                      `@legalos.matterWorkspace.conflicts.hitKind.${hit.kind}`,
+                    )}
+                  </Badge>
+                </div>
               ))}
-            </List>
-          </VStack>
+            </div>
+          </div>
         )}
       </Panel>
 
       <Dialog isOpen={isRunning} onOpenChange={setIsRunning} width={480}>
-        <Layout
-          header={
-            <DialogHeader
-              title={t("@legalos.matterWorkspace.conflicts.run")}
-              onOpenChange={setIsRunning}
-            />
-          }
-          content={
-            <LayoutContent>
-              <VStack gap={3}>
-                <TextArea
-                  label={t("@legalos.matterWorkspace.conflicts.terms.label")}
-                  value={terms}
-                  onChange={setTerms}
-                  rows={4}
-                  placeholder={t(
-                    "@legalos.matterWorkspace.conflicts.terms.placeholder",
-                  )}
-                />
-                <Text type="supporting" color="secondary">
-                  {t("@legalos.matterWorkspace.conflicts.terms.hint")}
-                </Text>
-                <Text type="supporting" color="secondary">
-                  {t("@legalos.matterWorkspace.conflicts.decideHint")}
-                </Text>
-              </VStack>
-            </LayoutContent>
-          }
-          footer={
-            <LayoutFooter>
-              <HStack gap={3} hAlign="end">
-                <Button
-                  label={t("@legalos.matterWorkspace.action.cancel")}
-                  variant="secondary"
-                  onClick={() => setIsRunning(false)}
-                />
-                <Button
-                  label={t("@legalos.matterWorkspace.conflicts.run")}
-                  variant="primary"
-                  isDisabled={busy || lines(terms).length === 0}
-                  onClick={run}
-                />
-              </HStack>
-            </LayoutFooter>
-          }
+        <DialogHeader
+          title={t("@legalos.matterWorkspace.conflicts.run")}
+          onOpenChange={setIsRunning}
         />
+        <DialogContent>
+          <div className="flex flex-col gap-3">
+            <Textarea
+              label={t("@legalos.matterWorkspace.conflicts.terms.label")}
+              value={terms}
+              onChange={(e) => setTerms(e.target.value)}
+              rows={4}
+              placeholder={t(
+                "@legalos.matterWorkspace.conflicts.terms.placeholder",
+              )}
+            />
+            <span className="text-xs" style={{ color: "var(--text3)" }}>
+              {t("@legalos.matterWorkspace.conflicts.terms.hint")}
+            </span>
+            <span className="text-xs" style={{ color: "var(--text3)" }}>
+              {t("@legalos.matterWorkspace.conflicts.decideHint")}
+            </span>
+          </div>
+        </DialogContent>
+        <DialogFooter>
+          <Button
+            variant="secondary"
+            onClick={() => setIsRunning(false)}
+          >
+            {t("@legalos.matterWorkspace.action.cancel")}
+          </Button>
+          <Button
+            variant="primary"
+            loading={busy}
+            disabled={lines(terms).length === 0}
+            onClick={run}
+          >
+            {t("@legalos.matterWorkspace.conflicts.run")}
+          </Button>
+        </DialogFooter>
       </Dialog>
     </>
   );

@@ -1,6 +1,17 @@
 "use client";
 
+/**
+ * شاشة تتبع الوقت (Time Tracking) - نظام السجل (LegalOS)
+ * الموجة الرابعة من T-053.
+ *
+ * إعادة رسم الشاشة بالكامل باستخدام مكتبة السجل (components/ui):
+ * Card, Button, Badge, Input, Select, Checkbox, Dialog, Table, EmptyState, Icon
+ * والتخلص التام من أي مكون بصري من @astryxdesign/core.
+ * الحفاظ الصارم على كافة الخطافات والحسابات والمؤقت الحي المحفوظ في localStorage.
+ */
+
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   ResponsiveContainer,
   BarChart,
@@ -11,33 +22,16 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Grid, GridSpan } from "@astryxdesign/core/Grid";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Card } from "@astryxdesign/core/Card";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Badge } from "@astryxdesign/core/Badge";
-import { Divider } from "@astryxdesign/core/Divider";
-import { Link } from "@astryxdesign/core/Link";
-import { Selector } from "@astryxdesign/core/Selector";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { NumberInput } from "@astryxdesign/core/NumberInput";
-import { DateInput } from "@astryxdesign/core/DateInput";
-import { CheckboxInput } from "@astryxdesign/core/CheckboxInput";
-import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
-import { SegmentedControl, SegmentedControlItem } from "@astryxdesign/core/SegmentedControl";
-import { ProgressBar } from "@astryxdesign/core/ProgressBar";
-import { Table, proportional, pixel } from "@astryxdesign/core/Table";
-import type { TableColumn } from "@astryxdesign/core/Table";
-import {
-  PlayIcon,
-  StopIcon,
-  ClockIcon,
-  BriefcaseIcon,
-  PlusIcon,
-} from "@heroicons/react/24/outline";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Dialog, DialogHeader, DialogContent, DialogFooter } from "@/components/ui/Dialog";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
@@ -45,13 +39,21 @@ import {
   todayIso,
   type ISODateString,
   type Matter,
-  type TimeEntry,
 } from "@/lib/practice";
 import { useFormat } from "@/lib/i18n/format";
 
 const WEEKLY_TARGET_HOURS = 40;
 const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 type DayKey = (typeof DAY_KEYS)[number];
+
+const TIMER_STORAGE_KEY = "legalos_active_timer_v1";
+
+interface SavedTimerState {
+  isRunning: boolean;
+  matterId: string | null;
+  description: string;
+  baseSeconds: number;
+}
 
 /** Monday-anchored week containing `iso`. */
 function weekDays(
@@ -84,6 +86,7 @@ function formatDuration(totalSeconds: number) {
 interface EntryRow extends Record<string, unknown> {
   id: number;
   date: string;
+  rawDate: string;
   matter: string;
   description: string;
   lawyer: string;
@@ -96,10 +99,13 @@ interface EntryRow extends Record<string, unknown> {
 export default function TimeTrackingPage() {
   const { formatDate, formatEGP, intlLocale } = useFormat();
   const t = useTranslator();
+  const { practice } = useOrg();
   const memberName = useMemberName();
   const [view, setView] = useState<"day" | "week">("week");
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const today = todayIso();
   const week = useMemo(() => weekDays(today, intlLocale), [today, intlLocale]);
@@ -144,6 +150,7 @@ export default function TimeTrackingPage() {
       .map((e) => ({
         id: e.id,
         date: formatDate(e.entry_date),
+        rawDate: e.entry_date,
         matter: e.matter_name,
         description: e.description,
         lawyer: memberName(e.clerk_user_id),
@@ -152,7 +159,7 @@ export default function TimeTrackingPage() {
         amount: e.billable ? Number(e.hours) * Number(e.rate) : 0,
         invoiced: e.invoice_id !== null,
       }));
-  }, [entries, selectedDay, view, today, memberName]);
+  }, [entries, selectedDay, view, today, memberName, formatDate]);
 
   const perMember = useMemo(() => {
     const totals = new Map<string, { billable: number; nonBillable: number }>();
@@ -170,378 +177,475 @@ export default function TimeTrackingPage() {
       .sort((a, b) => b.billable - a.billable);
   }, [entries, memberName]);
 
-  const columns: TableColumn<EntryRow>[] = [
-    {
-      key: "date",
-      header: t("@legalos.timeTracking.table.date"),
-      width: pixel(110),
-      renderCell: (item) => (
-        <Text type="body" color="secondary">
-          {item.date}
-        </Text>
-      ),
-    },
-    {
-      key: "matter",
-      header: t("@legalos.timeTracking.table.matter"),
-      width: proportional(2),
-      renderCell: (item) => (
-        <Text type="body" weight="semibold" maxLines={2}>
-          {item.matter}
-        </Text>
-      ),
-    },
-    {
-      key: "description",
-      header: t("@legalos.timeTracking.table.description"),
-      width: proportional(3),
-      renderCell: (item) => <Text type="body">{item.description || "—"}</Text>,
-    },
-    {
-      key: "lawyer",
-      header: t("@legalos.timeTracking.table.lawyer"),
-      width: proportional(1.5),
-      renderCell: (item) => (
-        <Text type="body" color="secondary">
-          {item.lawyer}
-        </Text>
-      ),
-    },
-    {
-      key: "billable",
-      header: t("@legalos.timeTracking.table.billable"),
-      width: pixel(150),
-      renderCell: (item) =>
-        !item.billable ? (
-          <Badge variant="neutral" label={t("@legalos.timeTracking.badge.nonBillable")} />
-        ) : item.invoiced ? (
-          <Badge variant="info" label={t("@legalos.timeTracking.badge.invoiced")} />
-        ) : (
-          <Text type="body" color="secondary">
-            {formatEGP(item.amount)}
-          </Text>
-        ),
-    },
-    {
-      key: "hours",
-      header: t("@legalos.timeTracking.table.duration"),
-      width: pixel(90),
-      align: "end",
-      renderCell: (item) => (
-        <Text type="body" weight="semibold">
-          {t("@legalos.timeTracking.hoursShort", { hours: item.hours.toFixed(1) })}
-        </Text>
-      ),
-    },
-  ];
+  async function handleDeleteEntry(id: number) {
+    if (!practice) return;
+    setDeletingId(id);
+    setActionError(null);
+    try {
+      await practice.time.remove(id);
+      resource.reload();
+    } catch (exc) {
+      setActionError(exc instanceof Error ? exc.message : t("@legalos.timeTracking.deleteFailed"));
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   return (
-    <>
-      <Layout
-        height="fill"
-        content={
-          <LayoutContent padding={0}>
-            <VStack gap={6}>
-              <HStack hAlign="between" vAlign="center">
-                <VStack gap={1}>
-                  <Heading level={2}>{t("@legalos.timeTracking.heading")}</Heading>
-                  <Text type="body" color="secondary">
-                    {t("@legalos.timeTracking.weekOf", {
-                      start: week[0].date,
-                      end: week[6].date,
-                    })}
-                  </Text>
-                </VStack>
-                <Button
-                  label={t("@legalos.timeTracking.newTimeEntry")}
-                  variant="primary"
-                  icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
-                  onClick={() => setIsCreating(true)}
-                >
-                  {t("@legalos.timeTracking.newTimeEntry")}
-                </Button>
-              </HStack>
+    <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto w-full">
+      {/* الترويسة الرئيسية */}
+      <div
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b"
+        style={{ borderColor: "var(--border)" }}
+      >
+        <div className="flex flex-col gap-1">
+          <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--text)" }}>
+            {t("@legalos.timeTracking.heading")}
+          </h1>
+          <p className="text-xs" style={{ color: "var(--text2)" }}>
+            {t("@legalos.timeTracking.weekOf", {
+              start: week[0].date,
+              end: week[6].date,
+            })}
+          </p>
+        </div>
+        <Button
+          variant="primary"
+          onClick={() => setIsCreating(true)}
+          startIcon={<Icon name="add" size={16} />}
+        >
+          {t("@legalos.timeTracking.newTimeEntry")}
+        </Button>
+      </div>
 
-              <DataView resource={resource} loadingLabel={t("@legalos.timeTracking.loading")}>
-                {() => (
-                  <VStack gap={6}>
-                    <Grid columns={3} gap={6}>
-                      <LiveTimer matters={matters} onLogged={resource.reload} />
-                      <GridSpan columns={2}>
-                        <Card>
-                          <VStack gap={4}>
-                            <HStack hAlign="between" vAlign="center">
-                              <Heading level={4}>
-                                {t("@legalos.timeTracking.chart.heading")}
-                              </Heading>
-                              <Text type="supporting" color="secondary">
-                                {t("@legalos.timeTracking.chart.thisWeek")}
-                              </Text>
-                            </HStack>
-                            <ResponsiveContainer width="100%" height={220}>
-                              <BarChart
-                                data={chartData}
-                                margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
-                              >
-                                <CartesianGrid
-                                  horizontal
-                                  vertical={false}
-                                  stroke="var(--color-border)"
-                                />
-                                <XAxis
-                                  dataKey="day"
-                                  tick={{ fontSize: "var(--font-size-sm)", fill: "var(--color-text-secondary)" }}
-                                  axisLine={false}
-                                  tickLine={false}
-                                />
-                                <YAxis
-                                  // Hours to one decimal. A nine-second entry
-                                  // is 0.0025 of an hour, and the axis was
-                                  // printing exactly that -- four decimals of
-                                  // false precision on a chart whose smallest
-                                  // useful unit is six minutes.
-                                  tickFormatter={(value: number) =>
-                                    String(Number(value.toFixed(1)))
-                                  }
-                                  tick={{ fontSize: "var(--font-size-sm)", fill: "var(--color-text-secondary)" }}
-                                  axisLine={false}
-                                  tickLine={false}
-                                  width={36}
-                                />
-                                <Tooltip
-                                  formatter={(value, name) => [
-                                    t("@legalos.timeTracking.hoursShort", {
-                                      hours: Number(value).toFixed(2),
-                                    }),
-                                    name,
-                                  ]}
-                                  contentStyle={{
-                                    background: "var(--color-background-popover)",
-                                    border: "1px solid var(--color-border)",
-                                    borderRadius: "var(--radius-element)",
-                                  }}
-                                />
-                                <Legend wrapperStyle={{ fontSize: "var(--font-size-sm)" }} />
-                                <Bar
-                                  dataKey="billable"
-                                  name={t("@legalos.timeTracking.chart.billable")}
-                                  fill="var(--color-accent)"
-                                  radius={[4, 4, 0, 0]}
-                                  stackId="hours"
-                                />
-                                <Bar
-                                  dataKey="nonBillable"
-                                  name={t("@legalos.timeTracking.chart.nonBillable")}
-                                  fill="var(--color-border-strong)"
-                                  radius={[4, 4, 0, 0]}
-                                  stackId="hours"
-                                />
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </VStack>
-                        </Card>
-                      </GridSpan>
-                    </Grid>
+      <InlineError message={actionError} onDismiss={() => setActionError(null)} />
 
-                    <Card>
-                      <VStack gap={4}>
-                        <HStack hAlign="between" vAlign="center">
-                          <Heading level={4}>
-                            {t("@legalos.timeTracking.weekOverview.heading")}
-                          </Heading>
-                          <SegmentedControl
-                            label={t("@legalos.timeTracking.weekOverview.calendarViewLabel")}
-                            value={view}
-                            onChange={(v) => {
-                              setView(v as "day" | "week");
-                              if (v === "week") setSelectedDay(null);
+      {/* منطقة تحميل وعرض البيانات */}
+      <DataView resource={resource} loadingLabel={t("@legalos.timeTracking.loading")}>
+        {() => (
+          <div className="flex flex-col gap-6">
+            {/* الصف العلوي: المؤقت الحي والرسم البياني */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-1">
+                <LiveTimer matters={matters} onLogged={resource.reload} />
+              </div>
+
+              <div className="lg:col-span-2">
+                <Card className="h-full">
+                  <CardHeader>
+                    <div className="flex items-center justify-between gap-2 w-full">
+                      <CardTitle className="text-sm font-semibold">
+                        {t("@legalos.timeTracking.chart.heading")}
+                      </CardTitle>
+                      <span className="text-xs" style={{ color: "var(--text2)" }}>
+                        {t("@legalos.timeTracking.chart.thisWeek")}
+                      </span>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="w-full h-[220px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={chartData}
+                          margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                        >
+                          <CartesianGrid
+                            horizontal
+                            vertical={false}
+                            stroke="var(--border)"
+                          />
+                          <XAxis
+                            dataKey="day"
+                            tick={{ fontSize: 12, fill: "var(--text2)" }}
+                            axisLine={false}
+                            tickLine={false}
+                          />
+                          <YAxis
+                            tickFormatter={(value: number) => String(Number(value.toFixed(1)))}
+                            tick={{ fontSize: 12, fill: "var(--text2)" }}
+                            axisLine={false}
+                            tickLine={false}
+                            width={36}
+                          />
+                          <Tooltip
+                            formatter={(value, name) => [
+                              t("@legalos.timeTracking.hoursShort", {
+                                hours: Number(value).toFixed(2),
+                              }),
+                              name,
+                            ]}
+                            contentStyle={{
+                              backgroundColor: "var(--surface)",
+                              borderColor: "var(--border)",
+                              borderRadius: "var(--r)",
+                              color: "var(--text)",
                             }}
-                            size="sm"
+                          />
+                          <Legend wrapperStyle={{ fontSize: "12px", color: "var(--text2)" }} />
+                          <Bar
+                            dataKey="billable"
+                            name={t("@legalos.timeTracking.chart.billable")}
+                            fill="var(--primary)"
+                            radius={[4, 4, 0, 0]}
+                            stackId="hours"
+                          />
+                          <Bar
+                            dataKey="nonBillable"
+                            name={t("@legalos.timeTracking.chart.nonBillable")}
+                            fill="var(--text3)"
+                            radius={[4, 4, 0, 0]}
+                            stackId="hours"
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* بطاقة النظرة العامة على الأسبوع */}
+            <Card>
+              <CardHeader>
+                <div className="flex flex-wrap items-center justify-between gap-4 w-full">
+                  <CardTitle className="text-sm font-semibold">
+                    {t("@legalos.timeTracking.weekOverview.heading")}
+                  </CardTitle>
+                  <div
+                    role="radiogroup"
+                    aria-label={t("@legalos.timeTracking.weekOverview.calendarViewLabel")}
+                    className="inline-flex p-1 rounded-lg border max-w-fit"
+                    style={{
+                      backgroundColor: "var(--surface2)",
+                      borderColor: "var(--border)",
+                      borderRadius: "var(--rs)",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={view === "week"}
+                      onClick={() => {
+                        setView("week");
+                        setSelectedDay(null);
+                      }}
+                      className="px-3 py-1 text-xs font-medium transition-all"
+                      style={{
+                        borderRadius: "calc(var(--rs) - 2px)",
+                        backgroundColor: view === "week" ? "var(--surface)" : "transparent",
+                        color: view === "week" ? "var(--text)" : "var(--text2)",
+                        boxShadow: view === "week" ? "var(--shadow-sm)" : "none",
+                      }}
+                    >
+                      {t("@legalos.timeTracking.weekOverview.week")}
+                    </button>
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={view === "day"}
+                      onClick={() => setView("day")}
+                      className="px-3 py-1 text-xs font-medium transition-all"
+                      style={{
+                        borderRadius: "calc(var(--rs) - 2px)",
+                        backgroundColor: view === "day" ? "var(--surface)" : "transparent",
+                        color: view === "day" ? "var(--text)" : "var(--text2)",
+                        boxShadow: view === "day" ? "var(--shadow-sm)" : "none",
+                      }}
+                    >
+                      {t("@legalos.timeTracking.weekOverview.day")}
+                    </button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                  {week.map((d) => {
+                    const total = entries
+                      .filter((e) => e.entry_date === d.iso)
+                      .reduce((sum, e) => sum + Number(e.hours), 0);
+                    const isSelected = selectedDay === d.iso;
+                    const isToday = d.iso === today;
+                    const dayLabel = t(`@legalos.timeTracking.day.${d.dayKey}`);
+                    return (
+                      <div
+                        key={d.iso}
+                        className="flex flex-col justify-between p-3 rounded-lg border transition-all"
+                        style={{
+                          backgroundColor: isSelected
+                            ? "var(--primary-soft)"
+                            : isToday
+                              ? "var(--surface2)"
+                              : "var(--surface)",
+                          borderColor: isSelected ? "var(--primary)" : "var(--border)",
+                          borderRadius: "var(--rs)",
+                        }}
+                      >
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-xs font-semibold" style={{ color: "var(--text)" }}>
+                              {dayLabel}
+                            </span>
+                            {isToday && (
+                              <Badge variant="soft" color="info" size="sm">
+                                {t("@legalos.timeTracking.weekOverview.today")}
+                              </Badge>
+                            )}
+                          </div>
+                          <span className="text-xs" style={{ color: "var(--text2)" }}>
+                            {d.date}
+                          </span>
+                        </div>
+
+                        <div className="my-2 border-t" style={{ borderColor: "var(--border)" }} />
+
+                        <div className="flex flex-col gap-2">
+                          <span className="text-sm font-bold tracking-tight" style={{ color: "var(--text)" }}>
+                            {total > 0
+                              ? t("@legalos.timeTracking.hoursShort", { hours: total.toFixed(1) })
+                              : "—"}
+                          </span>
+                          <Button
+                            variant={isSelected ? "secondary" : "ghost"}
+                            size="xs"
+                            onClick={() => setSelectedDay(isSelected ? null : d.iso)}
                           >
-                            <SegmentedControlItem
-                              value="week"
-                              label={t("@legalos.timeTracking.weekOverview.week")}
-                            />
-                            <SegmentedControlItem
-                              value="day"
-                              label={t("@legalos.timeTracking.weekOverview.day")}
-                            />
-                          </SegmentedControl>
-                        </HStack>
-                        <Grid columns={7} gap={2}>
-                          {week.map((d) => {
-                            const total = entries
-                              .filter((e) => e.entry_date === d.iso)
-                              .reduce((sum, e) => sum + Number(e.hours), 0);
-                            const isSelected = selectedDay === d.iso;
-                            const isToday = d.iso === today;
-                            const dayLabel = t(`@legalos.timeTracking.day.${d.dayKey}`);
-                            return (
-                              <Card
-                                key={d.iso}
-                                variant={
-                                  isSelected ? "green" : isToday ? "muted" : "default"
-                                }
-                              >
-                                <VStack gap={2}>
-                                  <HStack hAlign="between" vAlign="center">
-                                    <Text type="label" weight="semibold">
-                                      {dayLabel}
-                                    </Text>
-                                    {isToday && (
-                                      <Badge
-                                        variant="info"
-                                        label={t("@legalos.timeTracking.weekOverview.today")}
-                                      />
-                                    )}
-                                  </HStack>
-                                  <Text type="supporting" color="secondary">
-                                    {d.date}
-                                  </Text>
-                                  <Divider />
-                                  <Text type="body" weight="semibold">
-                                    {total > 0
-                                      ? t("@legalos.timeTracking.hoursShort", {
-                                          hours: total.toFixed(1),
-                                        })
-                                      : "—"}
-                                  </Text>
+                            {isSelected
+                              ? t("@legalos.timeTracking.weekOverview.clear")
+                              : t("@legalos.timeTracking.weekOverview.view")}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* الصف السفلي: جدول القيود وملخص الساعات */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <Card className="h-full">
+                  <CardHeader>
+                    <div className="flex flex-wrap items-center justify-between gap-2 w-full">
+                      <CardTitle className="text-sm font-semibold">
+                        {t("@legalos.timeTracking.entries.heading")}
+                      </CardTitle>
+                      <span className="text-xs" style={{ color: "var(--text2)" }}>
+                        {selectedDay
+                          ? t("@legalos.timeTracking.entries.showingDate", {
+                              date: formatDate(selectedDay),
+                            })
+                          : view === "day"
+                            ? t("@legalos.timeTracking.entries.showingToday", {
+                                date: formatDate(today),
+                              })
+                            : t("@legalos.timeTracking.entries.showingFullWeek")}
+                      </span>
+                    </div>
+                  </CardHeader>
+                  <CardContent style={{ padding: 0 }}>
+                    {visibleEntries.length > 0 ? (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead style={{ minWidth: "110px" }}>
+                              {t("@legalos.timeTracking.table.date")}
+                            </TableHead>
+                            <TableHead style={{ minWidth: "180px" }}>
+                              {t("@legalos.timeTracking.table.matter")}
+                            </TableHead>
+                            <TableHead style={{ minWidth: "220px" }}>
+                              {t("@legalos.timeTracking.table.description")}
+                            </TableHead>
+                            <TableHead style={{ minWidth: "130px" }}>
+                              {t("@legalos.timeTracking.table.lawyer")}
+                            </TableHead>
+                            <TableHead style={{ minWidth: "130px" }}>
+                              {t("@legalos.timeTracking.table.billable")}
+                            </TableHead>
+                            <TableHead style={{ minWidth: "90px", textAlign: "end" }}>
+                              {t("@legalos.timeTracking.table.duration")}
+                            </TableHead>
+                            <TableHead style={{ width: "50px", textAlign: "end" }}>
+                              <span className="sr-only">{t("@legalos.timeTracking.table.actions")}</span>
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {visibleEntries.map((item) => (
+                            <TableRow key={item.id}>
+                              <TableCell>
+                                <span className="text-xs" style={{ color: "var(--text2)" }}>
+                                  {item.date}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-xs font-medium" style={{ color: "var(--text)" }}>
+                                  {item.matter}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-xs leading-relaxed" style={{ color: "var(--text2)" }}>
+                                  {item.description || "—"}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-xs" style={{ color: "var(--text2)" }}>
+                                  {item.lawyer}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                {item.billable ? (
+                                  <Badge color="success" variant="soft" size="sm">
+                                    {item.invoiced
+                                      ? t("@legalos.timeTracking.badge.invoiced")
+                                      : formatEGP(item.amount)}
+                                  </Badge>
+                                ) : (
+                                  <Badge color="neutral" variant="soft" size="sm">
+                                    {t("@legalos.timeTracking.badge.nonBillable")}
+                                  </Badge>
+                                )}
+                              </TableCell>
+                              <TableCell style={{ textAlign: "end" }}>
+                                <span
+                                  className="text-xs font-mono font-semibold"
+                                  style={{ color: "var(--text)" }}
+                                >
+                                  {t("@legalos.timeTracking.hoursShort", { hours: item.hours.toFixed(1) })}
+                                </span>
+                              </TableCell>
+                              <TableCell style={{ textAlign: "end" }}>
+                                {!item.invoiced && (
                                   <Button
-                                    label={t("@legalos.timeTracking.weekOverview.viewDay", {
-                                      day: dayLabel,
-                                    })}
                                     variant="ghost"
-                                    size="sm"
-                                    onClick={() =>
-                                      setSelectedDay(isSelected ? null : d.iso)
-                                    }
+                                    size="xs"
+                                    loading={deletingId === item.id}
+                                    disabled={deletingId === item.id}
+                                    onClick={() => handleDeleteEntry(item.id)}
+                                    style={{ color: "var(--danger)" }}
+                                    aria-label={t("@legalos.timeTracking.deleteEntry")}
                                   >
-                                    {isSelected
-                                      ? t("@legalos.timeTracking.weekOverview.clear")
-                                      : t("@legalos.timeTracking.weekOverview.view")}
+                                    <Icon name="delete" size={16} />
                                   </Button>
-                                </VStack>
-                              </Card>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <div className="p-6">
+                        <EmptyState
+                          icon={<Icon name="schedule" size={24} />}
+                          title={t("@legalos.timeTracking.entries.empty")}
+                        />
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* ملخص الساعات واستغلال الفريق */}
+              <div className="lg:col-span-1">
+                <Card className="h-full">
+                  <CardHeader>
+                    <div className="flex items-center justify-between gap-2 w-full">
+                      <CardTitle className="text-sm font-semibold">
+                        {t("@legalos.timeTracking.summary.heading")}
+                      </CardTitle>
+                      <Link
+                        href="/reports"
+                        className="text-xs font-medium hover:underline"
+                        style={{ color: "var(--primary)" }}
+                      >
+                        {t("@legalos.timeTracking.summary.fullReport")}
+                      </Link>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col gap-4">
+                      <p className="text-xs" style={{ color: "var(--text2)" }}>
+                        {t("@legalos.timeTracking.summary.targetLabel", {
+                          hours: WEEKLY_TARGET_HOURS,
+                        })}
+                      </p>
+
+                      {perMember.length === 0 ? (
+                        <p className="text-xs" style={{ color: "var(--text2)" }}>
+                          {t("@legalos.timeTracking.summary.empty")}
+                        </p>
+                      ) : (
+                        <div className="flex flex-col gap-4">
+                          {perMember.map((member) => {
+                            const percentage = Math.min(
+                              100,
+                              Math.round((member.billable / WEEKLY_TARGET_HOURS) * 100),
+                            );
+                            return (
+                              <div key={member.name} className="flex flex-col gap-1.5">
+                                <div className="flex items-center justify-between gap-2 text-xs">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <Icon name="work" size={15} style={{ color: "var(--text2)" }} />
+                                    <span className="font-semibold truncate" style={{ color: "var(--text)" }}>
+                                      {member.name}
+                                    </span>
+                                  </div>
+                                  <span className="text-xs shrink-0" style={{ color: "var(--text2)" }}>
+                                    {t("@legalos.timeTracking.summary.billableHours", {
+                                      hours: member.billable.toFixed(1),
+                                    })}
+                                    {member.nonBillable > 0
+                                      ? ` · ${t("@legalos.timeTracking.summary.otherHours", {
+                                          hours: member.nonBillable.toFixed(1),
+                                        })}`
+                                      : ""}
+                                  </span>
+                                </div>
+
+                                <div
+                                  role="progressbar"
+                                  aria-valuenow={percentage}
+                                  aria-valuemin={0}
+                                  aria-valuemax={100}
+                                  aria-label={t("@legalos.timeTracking.summary.utilizationAriaLabel", {
+                                    name: member.name,
+                                  })}
+                                  className="w-full h-2 rounded-full overflow-hidden"
+                                  style={{
+                                    backgroundColor: "var(--surface3)",
+                                  }}
+                                >
+                                  <div
+                                    className="h-full rounded-full transition-all duration-300"
+                                    style={{
+                                      width: `${percentage}%`,
+                                      backgroundColor: "var(--primary)",
+                                    }}
+                                  />
+                                </div>
+                              </div>
                             );
                           })}
-                        </Grid>
-                      </VStack>
-                    </Card>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        )}
+      </DataView>
 
-                    <Grid columns={3} gap={6}>
-                      <GridSpan columns={2}>
-                        <Card>
-                          <VStack gap={4}>
-                            <HStack hAlign="between" vAlign="center">
-                              <Heading level={4}>
-                                {t("@legalos.timeTracking.entries.heading")}
-                              </Heading>
-                              <Text type="supporting" color="secondary">
-                                {selectedDay
-                                  ? t("@legalos.timeTracking.entries.showingDate", {
-                                      date: formatDate(selectedDay),
-                                    })
-                                  : view === "day"
-                                    ? t("@legalos.timeTracking.entries.showingToday", {
-                                        date: formatDate(today),
-                                      })
-                                    : t("@legalos.timeTracking.entries.showingFullWeek")}
-                              </Text>
-                            </HStack>
-                            {visibleEntries.length > 0 ? (
-                              <Table<EntryRow>
-                                data={visibleEntries}
-                                columns={columns}
-                                idKey="id"
-                                hasHover
-                                density="compact"
-                              />
-                            ) : (
-                              <Text type="body" color="secondary">
-                                {t("@legalos.timeTracking.entries.empty")}
-                              </Text>
-                            )}
-                          </VStack>
-                        </Card>
-                      </GridSpan>
-
-                      <Card>
-                        <VStack gap={4}>
-                          <HStack hAlign="between" vAlign="center">
-                            <Heading level={4}>
-                              {t("@legalos.timeTracking.summary.heading")}
-                            </Heading>
-                            <Link href="/reports">
-                              {t("@legalos.timeTracking.summary.fullReport")}
-                            </Link>
-                          </HStack>
-                          <Text type="supporting" color="secondary">
-                            {t("@legalos.timeTracking.summary.targetLabel", {
-                              hours: WEEKLY_TARGET_HOURS,
-                            })}
-                          </Text>
-                          {perMember.length === 0 ? (
-                            <Text type="body" color="secondary">
-                              {t("@legalos.timeTracking.summary.empty")}
-                            </Text>
-                          ) : (
-                            <VStack gap={4}>
-                              {perMember.map((member) => (
-                                <VStack key={member.name} gap={1}>
-                                  <HStack hAlign="between" vAlign="center">
-                                    <HStack gap={2} vAlign="center">
-                                      <Icon
-                                        icon={BriefcaseIcon}
-                                        size="sm"
-                                        color="secondary"
-                                      />
-                                      <Text type="label">{member.name}</Text>
-                                    </HStack>
-                                    <Text type="supporting" color="secondary">
-                                      {t("@legalos.timeTracking.summary.billableHours", {
-                                        hours: member.billable.toFixed(1),
-                                      })}
-                                      {member.nonBillable > 0
-                                        ? ` · ${t("@legalos.timeTracking.summary.otherHours", {
-                                            hours: member.nonBillable.toFixed(1),
-                                          })}`
-                                        : ""}
-                                    </Text>
-                                  </HStack>
-                                  <ProgressBar
-                                    label={t(
-                                      "@legalos.timeTracking.summary.utilizationAriaLabel",
-                                      { name: member.name },
-                                    )}
-                                    isLabelHidden
-                                    value={Math.round(
-                                      (member.billable / WEEKLY_TARGET_HOURS) * 100,
-                                    )}
-                                    max={100}
-                                    hasValueLabel
-                                    variant="accent"
-                                  />
-                                </VStack>
-                              ))}
-                            </VStack>
-                          )}
-                        </VStack>
-                      </Card>
-                    </Grid>
-                  </VStack>
-                )}
-              </DataView>
-            </VStack>
-          </LayoutContent>
-        }
-      />
+      {/* نافذة إنشاء قيد وقت جديد */}
       <TimeEntryDialog
         isOpen={isCreating}
         onOpenChange={setIsCreating}
         matters={matters}
         onSaved={resource.reload}
       />
-    </>
+    </div>
   );
 }
 
@@ -562,16 +666,56 @@ function LiveTimer({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // استرجاع حالة المؤقت من localStorage دون استئناف العدّ تلقائياً
+  // حماية لفواتير الموكلين من احتساب ساعات وهمية أثناء إغلاق التبويب (T-053)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(TIMER_STORAGE_KEY);
+      if (!raw) return;
+      const parsed: SavedTimerState = JSON.parse(raw);
+      if (parsed.matterId) setMatterId(parsed.matterId);
+      if (parsed.description) setDescription(parsed.description);
+      setSeconds(parsed.baseSeconds ?? 0);
+      setIsRunning(false);
+    } catch {
+      // تجاهل أخطاء التخزين المحلي
+    }
+  }, []);
+
+  // تشغيل العداد الحي
   useEffect(() => {
     if (!isRunning) return;
     const interval = setInterval(() => setSeconds((s) => s + 1), 1000);
     return () => clearInterval(interval);
   }, [isRunning]);
 
+  // حفظ حالة المؤقت في localStorage عند تغير الحالة أو الحقول
+  useEffect(() => {
+    if (!isRunning && seconds === 0 && !matterId && !description) return;
+    try {
+      const state: SavedTimerState = {
+        isRunning: false,
+        matterId,
+        description,
+        baseSeconds: seconds,
+      };
+      localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // تجاهل
+    }
+  }, [isRunning, matterId, description, seconds]);
+
+  function startTimer() {
+    setIsRunning(true);
+  }
+
   async function stopAndLog() {
     setIsRunning(false);
     if (!practice || !matterId || seconds < 1) {
       setSeconds(0);
+      try {
+        localStorage.removeItem(TIMER_STORAGE_KEY);
+      } catch {}
       return;
     }
     setSaving(true);
@@ -587,6 +731,9 @@ function LiveTimer({
       });
       setSeconds(0);
       setDescription("");
+      try {
+        localStorage.removeItem(TIMER_STORAGE_KEY);
+      } catch {}
       onLogged();
     } catch (exc) {
       setError(exc instanceof Error ? exc.message : t("@legalos.timeTracking.timer.error"));
@@ -596,63 +743,71 @@ function LiveTimer({
   }
 
   return (
-    <Card>
-      <VStack gap={4}>
-        <HStack hAlign="between" vAlign="center">
-          <Heading level={4}>{t("@legalos.timeTracking.timer.heading")}</Heading>
+    <Card className="h-full">
+      <CardHeader>
+        <div className="flex items-center justify-between gap-2 w-full">
+          <CardTitle className="text-sm font-semibold">
+            {t("@legalos.timeTracking.timer.heading")}
+          </CardTitle>
           {isRunning && (
             <Badge
-              variant="success"
-              label={t("@legalos.timeTracking.timer.running")}
-              icon={<Icon icon={ClockIcon} size="xsm" color="inherit" />}
-            />
+              variant="soft"
+              color="success"
+              icon={<Icon name="schedule" size={14} />}
+            >
+              {t("@legalos.timeTracking.timer.running")}
+            </Badge>
           )}
-        </HStack>
-        <InlineError message={error} onDismiss={() => setError(null)} />
-        <Grid columns={{ minWidth: 200, repeat: "fit" }} gap={3}>
-          <Selector
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-4">
+          <InlineError message={error} onDismiss={() => setError(null)} />
+
+          <Select
             label={t("@legalos.timeTracking.timer.matterLabel")}
-            hasClear
-            options={matters.map((m) => ({ value: String(m.id), label: m.name }))}
-            value={matterId}
-            onChange={setMatterId}
-            placeholder={t("@legalos.timeTracking.timer.matterPlaceholder")}
+            value={matterId ?? ""}
+            onChange={(e) => setMatterId(e.target.value || null)}
+            options={[
+              { value: "", label: t("@legalos.timeTracking.timer.matterPlaceholder") },
+              ...matters.map((m) => ({ value: String(m.id), label: m.name })),
+            ]}
           />
-          <TextInput
+
+          <Input
             label={t("@legalos.timeTracking.timer.descriptionLabel")}
             value={description}
-            onChange={setDescription}
+            onChange={(e) => setDescription(e.target.value)}
             placeholder={t("@legalos.timeTracking.timer.descriptionPlaceholder")}
           />
-        </Grid>
-        <HStack hAlign="between" vAlign="center">
-          <Text type="body" size="4xl" weight="bold" hasTabularNumbers>
-            {formatDuration(seconds)}
-          </Text>
-          <Button
-            label={
-              isRunning
-                ? t("@legalos.timeTracking.timer.stopAndLog")
-                : t("@legalos.timeTracking.timer.start")
-            }
-            variant={isRunning ? "destructive" : "primary"}
-            icon={
-              <Icon icon={isRunning ? StopIcon : PlayIcon} size="sm" color="inherit" />
-            }
-            isDisabled={saving || (!isRunning && !matterId)}
-            onClick={() => (isRunning ? stopAndLog() : setIsRunning(true))}
-          >
-            {isRunning
-              ? t("@legalos.timeTracking.timer.stopShort")
-              : t("@legalos.timeTracking.timer.startShort")}
-          </Button>
-        </HStack>
-        {!matterId && !isRunning && (
-          <Text type="supporting" color="secondary">
-            {t("@legalos.timeTracking.timer.pickMatterHint")}
-          </Text>
-        )}
-      </VStack>
+
+          <div className="flex items-center justify-between gap-4 pt-2">
+            <span
+              className="text-3xl sm:text-4xl font-mono font-bold tracking-tight"
+              style={{ color: "var(--text)" }}
+            >
+              {formatDuration(seconds)}
+            </span>
+            <Button
+              variant={isRunning ? "danger" : "primary"}
+              startIcon={<Icon name={isRunning ? "stop" : "play_arrow"} size={18} />}
+              loading={saving}
+              disabled={saving || (!isRunning && !matterId)}
+              onClick={() => (isRunning ? stopAndLog() : startTimer())}
+            >
+              {isRunning
+                ? t("@legalos.timeTracking.timer.stopShort")
+                : t("@legalos.timeTracking.timer.startShort")}
+            </Button>
+          </div>
+
+          {!matterId && !isRunning && (
+            <p className="text-xs" style={{ color: "var(--text3)" }}>
+              {t("@legalos.timeTracking.timer.pickMatterHint")}
+            </p>
+          )}
+        </div>
+      </CardContent>
     </Card>
   );
 }
@@ -704,85 +859,92 @@ function TimeEntryDialog({
   }
 
   return (
-    <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
-      <Layout
-        header={
-          <DialogHeader
-            title={t("@legalos.timeTracking.dialog.title")}
-            onOpenChange={onOpenChange}
-          />
-        }
-        content={
-          <LayoutContent>
-            <VStack gap={4}>
-              <InlineError message={error} onDismiss={() => setError(null)} />
-              <Selector
-                label={t("@legalos.timeTracking.dialog.matterLabel")}
-                hasClear
-                isRequired
-                value={matterId}
-                onChange={setMatterId}
-                placeholder={t("@legalos.timeTracking.dialog.matterPlaceholder")}
-                options={matters.map((m) => ({ value: String(m.id), label: m.name }))}
-              />
-              <HStack gap={3}>
-                <DateInput
-                  label={t("@legalos.timeTracking.dialog.dateLabel")}
-                  value={entryDate}
-                  onChange={(v) => setEntryDate(v ?? entryDate)}
-                />
-                <NumberInput
-                  label={t("@legalos.timeTracking.dialog.hoursLabel")}
-                  value={hours}
-                  onChange={(v) => setHours(v ?? 0)}
-                  min={0.25}
-                  max={24}
-                  step={0.25}
-                />
-                <NumberInput
-                  label={t("@legalos.timeTracking.dialog.rateLabel")}
-                  value={rate}
-                  onChange={(v) => setRate(v ?? 0)}
-                  min={0}
-                  step={50}
-                />
-              </HStack>
-              <TextInput
-                label={t("@legalos.timeTracking.dialog.descriptionLabel")}
-                value={description}
-                onChange={setDescription}
-                placeholder={t("@legalos.timeTracking.dialog.descriptionPlaceholder")}
-              />
-              <CheckboxInput
-                label={t("@legalos.timeTracking.dialog.billableLabel")}
-                value={billable}
-                onChange={setBillable}
-              />
-            </VStack>
-          </LayoutContent>
-        }
-        footer={
-          <LayoutFooter hasDivider>
-            <HStack gap={3} hAlign="end">
-              <Button
-                label={t("@legalos.timeTracking.dialog.cancel")}
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              />
-              <Button
-                label={
-                  saving
-                    ? t("@legalos.timeTracking.dialog.saving")
-                    : t("@legalos.timeTracking.dialog.logTime")
-                }
-                variant="primary"
-                onClick={submit}
-                isDisabled={saving || !matterId || hours <= 0}
-              />
-            </HStack>
-          </LayoutFooter>
-        }
+    <Dialog isOpen={isOpen} onOpenChange={onOpenChange} width={520}>
+      <DialogHeader
+        title={t("@legalos.timeTracking.dialog.title")}
+        onOpenChange={onOpenChange}
       />
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
+        <DialogContent>
+          <div className="flex flex-col gap-4">
+            <InlineError message={error} onDismiss={() => setError(null)} />
+            <Select
+              label={t("@legalos.timeTracking.dialog.matterLabel")}
+              value={matterId ?? ""}
+              onChange={(e) => setMatterId(e.target.value || null)}
+              options={[
+                { value: "", label: t("@legalos.timeTracking.dialog.matterPlaceholder") },
+                ...matters.map((m) => ({ value: String(m.id), label: m.name })),
+              ]}
+              required
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Input
+                type="date"
+                label={t("@legalos.timeTracking.dialog.dateLabel")}
+                value={entryDate}
+                onChange={(e) => setEntryDate((e.target.value || todayIso()) as ISODateString)}
+                required
+              />
+              <Input
+                type="number"
+                label={t("@legalos.timeTracking.dialog.hoursLabel")}
+                value={hours}
+                onChange={(e) => setHours(Number(e.target.value) || 0)}
+                min={0.25}
+                max={24}
+                step={0.25}
+                required
+              />
+              <Input
+                type="number"
+                label={t("@legalos.timeTracking.dialog.rateLabel")}
+                value={rate}
+                onChange={(e) => setRate(Number(e.target.value) || 0)}
+                min={0}
+                step={50}
+              />
+            </div>
+            <Input
+              label={t("@legalos.timeTracking.dialog.descriptionLabel")}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={t("@legalos.timeTracking.dialog.descriptionPlaceholder")}
+            />
+            <Checkbox
+              label={t("@legalos.timeTracking.dialog.billableLabel")}
+              checked={billable}
+              onChange={(e) => setBillable(e.target.checked)}
+            />
+          </div>
+        </DialogContent>
+        <DialogFooter>
+          <div className="flex items-center justify-end gap-3 w-full">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => onOpenChange(false)}
+            >
+              {t("@legalos.timeTracking.dialog.cancel")}
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              loading={saving}
+              disabled={saving || !matterId || hours <= 0}
+            >
+              {saving
+                ? t("@legalos.timeTracking.dialog.saving")
+                : t("@legalos.timeTracking.dialog.logTime")}
+            </Button>
+          </div>
+        </DialogFooter>
+      </form>
     </Dialog>
   );
 }

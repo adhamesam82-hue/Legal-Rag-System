@@ -1,35 +1,22 @@
 "use client";
 
+/**
+ * Calendar page (T-053 / Wave 3).
+ *
+ * This route displays the month calendar with hearings, tasks, and deadlines.
+ * All state, hooks, and practice contract bindings are preserved verbatim.
+ */
+
 import { useMemo, useState } from "react";
-import {
-  Layout,
-  LayoutHeader,
-  LayoutContent,
-  LayoutPanel,
-  LayoutFooter,
-} from "@astryxdesign/core/Layout";
-import { VStack, HStack, StackItem } from "@astryxdesign/core/Stack";
-import { Grid } from "@astryxdesign/core/Grid";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Card } from "@astryxdesign/core/Card";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { List, ListItem } from "@astryxdesign/core/List";
-import { Link } from "@astryxdesign/core/Link";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
-import { Selector } from "@astryxdesign/core/Selector";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { DateInput } from "@astryxdesign/core/DateInput";
-import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
-import {
-  PlusIcon,
-  CalendarDaysIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ScaleIcon,
-  ClockIcon,
-  CheckCircleIcon,
-} from "@heroicons/react/24/outline";
+import Link from "next/link";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Dialog, DialogHeader, DialogContent, DialogFooter } from "@/components/ui/Dialog";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
 import { ProximityBadge } from "@/components/Distinction";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { memberLabel, useOrg, useMemberName, useResource } from "@/lib/org";
@@ -54,11 +41,11 @@ interface CalendarEvent {
   matterId?: number;
 }
 
-const KIND_ICON = {
-  hearing: ScaleIcon,
-  deadline: ClockIcon,
-  task: CheckCircleIcon,
-} as const;
+const KIND_ICON_NAME: Record<EventKind, string> = {
+  hearing: "balance",
+  deadline: "schedule",
+  task: "check_circle",
+};
 
 const KIND_LABEL_KEY = {
   hearing: "@legalos.calendar.kind.hearing",
@@ -168,7 +155,7 @@ export default function CalendarPage() {
     );
 
     return [...hearingEvents, ...taskEvents, ...deadlineEvents];
-  }, [resource.data]);
+  }, [resource.data, t]);
 
   const filtered = useMemo(
     () =>
@@ -219,268 +206,315 @@ export default function CalendarPage() {
   }
 
   return (
-    <>
-      <Layout
-        height="fill"
-        header={
-          <LayoutHeader hasDivider padding={0}>
-            <HStack hAlign="between" vAlign="center" wrap="wrap" gap={4}>
-              <Heading level={2}>{t("@legalos.calendar.heading")}</Heading>
-              <HStack gap={2} vAlign="center">
-                <Selector
-                  label={t("@legalos.calendar.filterByLawyer")}
-                  value={ownerFilter}
-                  onChange={(v) => setOwnerFilter(v ?? "all")}
-                  options={[
-                    { value: "all", label: t("@legalos.calendar.wholeFirm") },
-                    ...members.map((m) => ({
-                      value: m.clerk_user_id,
-                      label: memberLabel(m),
-                    })),
-                  ]}
-                />
-                <Button
-                  label={t("@legalos.calendar.scheduleHearing")}
-                  variant="primary"
-                  icon={<Icon icon={PlusIcon} size="sm" color="inherit" />}
-                  onClick={() => setIsCreating(true)}
-                  isDisabled={!practice}
-                >
-                  {t("@legalos.calendar.scheduleHearing")}
-                </Button>
-              </HStack>
-            </HStack>
-          </LayoutHeader>
-        }
-        content={
-          // Not scrollable: the month divides the height it is given (see the
-          // grid below), so there is nothing to scroll past. The right rail is
-          // the screen's one deliberate second scroll region.
-          <LayoutContent padding={0}>
-            <Card className="min-w-0" height="100%">
-              <VStack gap={3} height="100%">
-                <HStack hAlign="between" vAlign="center">
-                  <Heading level={4}>{monthLabel}</Heading>
-                  <HStack gap={1}>
-                    <Button
-                      label={t("@legalos.calendar.previousMonth")}
-                      variant="ghost"
-                      isIconOnly
-                      icon={<Icon icon={ChevronLeftIcon} size="sm" />}
-                      onClick={() => shiftMonth(-1)}
-                    />
-                    <Button
-                      label={t("@legalos.calendar.nextMonth")}
-                      variant="ghost"
-                      isIconOnly
-                      icon={<Icon icon={ChevronRightIcon} size="sm" />}
-                      onClick={() => shiftMonth(1)}
-                    />
-                  </HStack>
-                </HStack>
+    <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto w-full">
+      {/* Header */}
+      <div className="flex flex-col gap-4 pb-4 border-b" style={{ borderColor: "var(--border)" }}>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-xl font-bold tracking-tight" style={{ color: "var(--text)" }}>
+            {t("@legalos.calendar.heading")}
+          </h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="w-56">
+              <Select
+                aria-label={t("@legalos.calendar.filterByLawyer")}
+                value={ownerFilter}
+                onChange={(e) => setOwnerFilter(e.target.value ?? "all")}
+                options={[
+                  { value: "all", label: t("@legalos.calendar.wholeFirm") },
+                  ...members.map((m) => ({
+                    value: m.clerk_user_id,
+                    label: memberLabel(m),
+                  })),
+                ]}
+              />
+            </div>
+            <Button
+              variant="primary"
+              startIcon={<Icon name="add" size={16} />}
+              onClick={() => setIsCreating(true)}
+              disabled={!practice}
+            >
+              {t("@legalos.calendar.scheduleHearing")}
+            </Button>
+          </div>
+        </div>
+      </div>
 
-                <DataView resource={resource} loadingLabel={t("@legalos.calendar.loading")}>
-                  {() => (
-                    <>
-                      <Grid columns={7} gap={2} className="min-w-0">
-                        {WEEKDAY_KEYS.map((key) => (
-                          <Text
-                            key={key}
-                            type="supporting"
-                            color="secondary"
-                            weight="semibold"
+      {/* Main Grid: Calendar + Right Rail */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full items-start">
+        {/* Month Calendar Section */}
+        <div className="lg:col-span-8 flex flex-col gap-4 min-w-0">
+          <Card padding="20px" className="min-w-0 w-full">
+            <div className="flex flex-col gap-4">
+              {/* Navigation & Month Title */}
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-base font-bold tracking-tight" style={{ color: "var(--text)" }}>
+                  {monthLabel}
+                </h2>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    title={t("@legalos.calendar.previousMonth")}
+                    onClick={() => shiftMonth(-1)}
+                  >
+                    <Icon name="chevron_left" size={18} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    title={t("@legalos.calendar.nextMonth")}
+                    onClick={() => shiftMonth(1)}
+                  >
+                    <Icon name="chevron_right" size={18} />
+                  </Button>
+                </div>
+              </div>
+
+              <DataView resource={resource} loadingLabel={t("@legalos.calendar.loading")}>
+                {() => (
+                  <div className="flex flex-col gap-2">
+                    {/* Weekday Labels */}
+                    <div className="grid grid-cols-7 gap-2 min-w-0 text-center">
+                      {WEEKDAY_KEYS.map((key) => (
+                        <span
+                          key={key}
+                          className="text-xs font-semibold py-1"
+                          style={{ color: "var(--text2)" }}
+                        >
+                          {t(key)}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Day Cells Grid */}
+                    <div className="grid grid-cols-7 gap-2 min-w-0">
+                      {cells.map((date, index) => {
+                        if (!date) {
+                          return (
+                            <div
+                              key={`pad-${index}`}
+                              className="min-h-[85px] rounded-lg border border-transparent"
+                            />
+                          );
+                        }
+                        const dayEvents = byDate[date] ?? [];
+                        const isToday = date === today;
+                        const isSelected = date === selectedDate;
+
+                        return (
+                          <button
+                            key={date}
+                            type="button"
+                            onClick={() => setSelectedDate(date)}
+                            className="flex flex-col gap-1 p-2 rounded-lg text-left transition-all min-h-[85px] overflow-hidden focus:outline-none focus:ring-1"
+                            style={{
+                              backgroundColor: isSelected
+                                ? "var(--surface2)"
+                                : isToday
+                                  ? "var(--surface3)"
+                                  : "var(--surface)",
+                              border: isSelected
+                                ? "1px solid var(--primary)"
+                                : isToday
+                                  ? "1px solid var(--border2)"
+                                  : "1px solid var(--border)",
+                              boxShadow: isSelected ? "var(--shadow-sm)" : "none",
+                            }}
                           >
-                            {t(key)}
-                          </Text>
-                        ))}
-                      </Grid>
-                      {/* The six week rows divide whatever height is left
-                       *  rather than each claiming a fixed 96px: with a fixed
-                       *  height the last row was sliced off the bottom of the
-                       *  viewport (30 and 31 half-visible) while weeks three
-                       *  to five sat almost empty. `grid-rows-6` is Tailwind's
-                       *  repeat(6, minmax(0, 1fr)); the minmax(0) is what lets
-                       *  a row get shorter than the events inside it. */}
-                      <StackItem size="fill">
-                        <Grid columns={7} gap={2} className="grid-rows-6 h-full min-w-0">
-                          {cells.map((date, index) => {
-                            if (!date) {
-                              return <VStack key={`pad-${index}`} gap={0} />;
-                            }
-                            const dayEvents = byDate[date] ?? [];
-                            const isToday = date === today;
-                            const isSelected = date === selectedDate;
-                            return (
-                              <Card
-                                key={date}
-                                padding={2}
-                                variant={isSelected ? "muted" : "default"}
-                                onClick={() => setSelectedDate(date)}
-                                className="cursor-pointer min-w-0 min-h-0 overflow-hidden"
+                            <div className="flex items-center justify-between w-full">
+                              <span
+                                className={`text-xs ${isToday ? "font-bold" : "font-medium"}`}
+                                style={{
+                                  color: isToday
+                                    ? "var(--accent)"
+                                    : isSelected
+                                      ? "var(--primary)"
+                                      : "var(--text)",
+                                }}
                               >
-                                <VStack gap={0.5}>
-                                  <Text
-                                    type="label"
-                                    weight={isToday ? "bold" : "normal"}
-                                    color={isToday ? "accent" : "primary"}
-                                  >
-                                    {Number(date.slice(8))}
-                                  </Text>
-                                  {dayEvents.slice(0, MAX_CHIPS_PER_DAY).map((event) => (
-                                    <HStack
-                                      key={event.id}
-                                      gap={1}
-                                      vAlign="center"
-                                      className="min-w-0"
-                                    >
-                                      <Icon
-                                        icon={KIND_ICON[event.kind]}
-                                        size="xsm"
-                                        color="secondary"
-                                      />
-                                      {/* A day cell is ~90px wide at the 1280
-                                       *  floor, so a matter name cannot fit
-                                       *  whole here and never will; maxLines
-                                       *  (rather than a CSS-only clamp) is
-                                       *  what makes the full string
-                                       *  recoverable, as a title attribute and
-                                       *  a hover tooltip. The day's events are
-                                       *  also listed in full in the rail. */}
-                                      <Text
-                                        size="xsm"
-                                        color="secondary"
-                                        maxLines={1}
-                                        className="min-w-0"
-                                      >
-                                        {event.title}
-                                      </Text>
-                                    </HStack>
-                                  ))}
-                                  {dayEvents.length > MAX_CHIPS_PER_DAY && (
-                                    <Text size="xsm" color="secondary">
-                                      {t("@legalos.calendar.moreEvents", {
-                                        count: dayEvents.length - MAX_CHIPS_PER_DAY,
-                                      })}
-                                    </Text>
-                                  )}
-                                </VStack>
-                              </Card>
-                            );
-                          })}
-                        </Grid>
-                      </StackItem>
-                    </>
-                  )}
-                </DataView>
-              </VStack>
-            </Card>
-          </LayoutContent>
-        }
-        end={
-          <LayoutPanel width={320} padding={0} isScrollable>
-            <VStack gap={6}>
-              <Card>
-                <VStack gap={4}>
-                  <Heading level={4}>{formatDate(selectedDate)}</Heading>
-                  {selectedEvents.length === 0 ? (
-                    <EmptyState
-                      icon={<Icon icon={CalendarDaysIcon} size="lg" color="secondary" />}
-                      title={t("@legalos.calendar.nothingScheduledTitle")}
-                      description={t("@legalos.distinction.calendar.emptyDescription")}
-                    />
-                  ) : (
-                    <List hasDividers density="compact">
-                      {selectedEvents.map((event) => (
-                        <ListItem
-                          key={event.id}
-                          // A plain string label is truncated to one line by
-                          // ListItem, which left "Draft appeal brief respon…"
-                          // in a 320px rail — the one place on this screen
-                          // where the full title has to be readable, since it
-                          // is where the month grid's chips send you. A node
-                          // label opts out of that single-line rule.
-                          label={
-                            <Text type="label" weight="medium" maxLines={2}>
-                              {event.title}
-                            </Text>
-                          }
-                          description={event.detail}
-                          href={
-                            event.matterId ? `/matters/${event.matterId}` : undefined
-                          }
-                          startContent={
-                            <Icon
-                              icon={KIND_ICON[event.kind]}
-                              size="sm"
-                              color="secondary"
-                            />
-                          }
-                          endContent={
-                            <VStack gap={0} align="end">
-                              <Text type="supporting" color="secondary">
-                                {event.time || t("@legalos.calendar.allDay")}
-                              </Text>
-                              <Text type="supporting" color="secondary">
-                                {t(KIND_LABEL_KEY[event.kind])}
-                              </Text>
-                            </VStack>
-                          }
-                        />
-                      ))}
-                    </List>
-                  )}
-                </VStack>
-              </Card>
+                                {Number(date.slice(8))}
+                              </span>
+                              {dayEvents.length > 0 && (
+                                <span
+                                  className="w-1.5 h-1.5 rounded-full"
+                                  style={{ backgroundColor: "var(--primary)" }}
+                                />
+                              )}
+                            </div>
 
-              <Card>
-                <VStack gap={4}>
-                  <HStack hAlign="between" vAlign="center">
-                    <Heading level={4}>{t("@legalos.calendar.comingUp")}</Heading>
-                    <Link href="/tasks">{t("@legalos.calendar.allTasksLink")}</Link>
-                  </HStack>
-                  {upcoming.length === 0 ? (
-                    <Text type="body" color="secondary">
-                      {t("@legalos.calendar.nothingUpcoming")}
-                    </Text>
-                  ) : (
-                    <List hasDividers density="compact">
-                      {upcoming.map((event) => (
-                        <ListItem
-                          key={event.id}
-                          label={
-                            <Text type="label" weight="medium" maxLines={2}>
-                              {event.title}
-                            </Text>
-                          }
-                          description={`${t(KIND_LABEL_KEY[event.kind])}${
-                            event.owner ? ` · ${memberName(event.owner)}` : ""
-                          }`}
-                          startContent={
-                            <Icon
-                              icon={KIND_ICON[event.kind]}
-                              size="sm"
-                              color="secondary"
-                            />
-                          }
-                          endContent={
-                            <HStack gap={2} vAlign="center">
-                              <ProximityBadge date={event.date} />
-                              <Text type="supporting" color="secondary">
-                                {event.date.slice(5)}
-                              </Text>
-                            </HStack>
-                          }
-                        />
-                      ))}
-                    </List>
-                  )}
-                </VStack>
-              </Card>
+                            {/* Event Chips */}
+                            <div className="flex flex-col gap-1 w-full min-w-0">
+                              {dayEvents.slice(0, MAX_CHIPS_PER_DAY).map((event) => (
+                                <div
+                                  key={event.id}
+                                  title={event.title}
+                                  className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium truncate w-full"
+                                  style={{
+                                    backgroundColor: "var(--surface3)",
+                                    color: "var(--text2)",
+                                  }}
+                                >
+                                  <Icon
+                                    name={KIND_ICON_NAME[event.kind]}
+                                    size={12}
+                                    className="shrink-0"
+                                    style={{ color: "var(--text3)" }}
+                                  />
+                                  <span className="truncate">{event.title}</span>
+                                </div>
+                              ))}
+                              {dayEvents.length > MAX_CHIPS_PER_DAY && (
+                                <span
+                                  className="text-[10px] font-medium px-1 truncate"
+                                  style={{ color: "var(--text3)" }}
+                                >
+                                  {t("@legalos.calendar.moreEvents", {
+                                    count: dayEvents.length - MAX_CHIPS_PER_DAY,
+                                  })}
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </DataView>
+            </div>
+          </Card>
+        </div>
 
-            </VStack>
-          </LayoutPanel>
-        }
-      />
+        {/* Right Sidebar Rail */}
+        <div className="lg:col-span-4 flex flex-col gap-6 w-full">
+          {/* Selected Date Details */}
+          <Card padding="20px">
+            <div className="flex flex-col gap-4">
+              <h3 className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+                {formatDate(selectedDate)}
+              </h3>
+
+              {selectedEvents.length === 0 ? (
+                <EmptyState
+                  icon={<Icon name="calendar_today" size={24} style={{ color: "var(--text2)" }} />}
+                  title={t("@legalos.calendar.nothingScheduledTitle")}
+                  description={t("@legalos.distinction.calendar.emptyDescription")}
+                />
+              ) : (
+                <div className="flex flex-col divide-y" style={{ borderColor: "var(--border)" }}>
+                  {selectedEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                    >
+                      <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                        <div
+                          className="flex items-center justify-center w-7 h-7 rounded-md shrink-0 mt-0.5"
+                          style={{ backgroundColor: "var(--surface2)", color: "var(--text2)" }}
+                        >
+                          <Icon name={KIND_ICON_NAME[event.kind]} size={16} />
+                        </div>
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          {event.matterId ? (
+                            <Link
+                              href={`/matters/${event.matterId}`}
+                              className="text-xs font-semibold hover:underline line-clamp-2"
+                              style={{ color: "var(--text)" }}
+                            >
+                              {event.title}
+                            </Link>
+                          ) : (
+                            <span
+                              className="text-xs font-semibold line-clamp-2"
+                              style={{ color: "var(--text)" }}
+                            >
+                              {event.title}
+                            </span>
+                          )}
+                          {event.detail && (
+                            <span className="text-[11px] truncate" style={{ color: "var(--text3)" }}>
+                              {event.detail}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0 text-[11px]" style={{ color: "var(--text2)" }}>
+                        <span>{event.time || t("@legalos.calendar.allDay")}</span>
+                        <Badge color="neutral" variant="soft" size="sm">
+                          {t(KIND_LABEL_KEY[event.kind])}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Coming Up */}
+          <Card padding="20px">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+                  {t("@legalos.calendar.comingUp")}
+                </h3>
+                <Link
+                  href="/tasks"
+                  className="text-xs font-medium hover:underline"
+                  style={{ color: "var(--primary)" }}
+                >
+                  {t("@legalos.calendar.allTasksLink")}
+                </Link>
+              </div>
+
+              {upcoming.length === 0 ? (
+                <p className="text-xs" style={{ color: "var(--text3)" }}>
+                  {t("@legalos.calendar.nothingUpcoming")}
+                </p>
+              ) : (
+                <div className="flex flex-col divide-y" style={{ borderColor: "var(--border)" }}>
+                  {upcoming.map((event) => (
+                    <div
+                      key={event.id}
+                      className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                    >
+                      <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                        <div
+                          className="flex items-center justify-center w-7 h-7 rounded-md shrink-0 mt-0.5"
+                          style={{ backgroundColor: "var(--surface2)", color: "var(--text2)" }}
+                        >
+                          <Icon name={KIND_ICON_NAME[event.kind]} size={16} />
+                        </div>
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <span
+                            className="text-xs font-semibold line-clamp-2"
+                            style={{ color: "var(--text)" }}
+                          >
+                            {event.title}
+                          </span>
+                          <span className="text-[11px] truncate" style={{ color: "var(--text3)" }}>
+                            {`${t(KIND_LABEL_KEY[event.kind])}${
+                              event.owner ? ` · ${memberName(event.owner)}` : ""
+                            }`}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <ProximityBadge date={event.date} />
+                        <span className="text-[11px]" style={{ color: "var(--text2)" }}>
+                          {event.date.slice(5)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
+      </div>
+
       <NewHearingDialog
         isOpen={isCreating}
         onOpenChange={setIsCreating}
@@ -488,7 +522,7 @@ export default function CalendarPage() {
         defaultDate={selectedDate}
         onCreated={resource.reload}
       />
-    </>
+    </div>
   );
 }
 
@@ -540,63 +574,78 @@ function NewHearingDialog({
   }
 
   return (
-    <Dialog isOpen={isOpen} onOpenChange={onOpenChange}>
-      <Layout
-        header={<DialogHeader title={t("@legalos.calendar.dialog.title")} onOpenChange={onOpenChange} />}
-        content={
-          <LayoutContent>
-            <VStack gap={4}>
-              <InlineError message={error} onDismiss={() => setError(null)} />
-              <Selector
-                label={t("@legalos.calendar.dialog.matterLabel")}
-                hasClear
-                isRequired
-                value={matterId}
-                onChange={setMatterId}
-                placeholder={t("@legalos.calendar.dialog.matterPlaceholder")}
-                options={matters.map((m) => ({ value: String(m.id), label: m.name }))}
-              />
-              <HStack gap={3}>
-                <DateInput
-                  label={t("@legalos.calendar.dialog.dateLabel")}
-                  value={date}
-                  onChange={(v) => setDate(v ?? date)}
-                />
-                <TextInput label={t("@legalos.calendar.dialog.timeLabel")} value={time} onChange={setTime} />
-              </HStack>
-              <TextInput
-                label={t("@legalos.calendar.dialog.courtLabel")}
-                value={court}
-                onChange={setCourt}
-                placeholder={t("@legalos.calendar.dialog.courtPlaceholder")}
-              />
-              <TextInput
-                label={t("@legalos.calendar.dialog.purposeLabel")}
-                value={purpose}
-                onChange={setPurpose}
-                placeholder={t("@legalos.calendar.dialog.purposePlaceholder")}
-              />
-            </VStack>
-          </LayoutContent>
-        }
-        footer={
-          <LayoutFooter hasDivider>
-            <HStack gap={3} hAlign="end">
-              <Button
-                label={t("@legalos.calendar.dialog.cancel")}
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              />
-              <Button
-                label={saving ? t("@legalos.calendar.dialog.saving") : t("@legalos.calendar.dialog.schedule")}
-                variant="primary"
-                onClick={submit}
-                isDisabled={saving || !matterId}
-              />
-            </HStack>
-          </LayoutFooter>
-        }
+    <Dialog isOpen={isOpen} onOpenChange={onOpenChange} width={500}>
+      <DialogHeader
+        title={t("@legalos.calendar.dialog.title")}
+        onOpenChange={onOpenChange}
       />
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
+        <DialogContent>
+          <div className="flex flex-col gap-4">
+            <InlineError message={error} onDismiss={() => setError(null)} />
+            <Select
+              label={t("@legalos.calendar.dialog.matterLabel")}
+              value={matterId ?? ""}
+              onChange={(e) => setMatterId(e.target.value || null)}
+              required
+              options={[
+                { value: "", label: t("@legalos.calendar.dialog.matterPlaceholder") },
+                ...matters.map((m) => ({ value: String(m.id), label: m.name })),
+              ]}
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                type="date"
+                label={t("@legalos.calendar.dialog.dateLabel")}
+                value={date}
+                onChange={(e) => setDate((e.target.value || defaultDate) as ISODateString)}
+                required
+              />
+              <Input
+                label={t("@legalos.calendar.dialog.timeLabel")}
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+              />
+            </div>
+            <Input
+              label={t("@legalos.calendar.dialog.courtLabel")}
+              value={court}
+              onChange={(e) => setCourt(e.target.value)}
+              placeholder={t("@legalos.calendar.dialog.courtPlaceholder")}
+            />
+            <Input
+              label={t("@legalos.calendar.dialog.purposeLabel")}
+              value={purpose}
+              onChange={(e) => setPurpose(e.target.value)}
+              placeholder={t("@legalos.calendar.dialog.purposePlaceholder")}
+            />
+          </div>
+        </DialogContent>
+        <DialogFooter>
+          <div className="flex items-center justify-end gap-3 w-full">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => onOpenChange(false)}
+            >
+              {t("@legalos.calendar.dialog.cancel")}
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              loading={saving}
+              disabled={saving || !matterId}
+            >
+              {saving ? t("@legalos.calendar.dialog.saving") : t("@legalos.calendar.dialog.schedule")}
+            </Button>
+          </div>
+        </DialogFooter>
+      </form>
     </Dialog>
   );
 }

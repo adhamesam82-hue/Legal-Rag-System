@@ -6,24 +6,21 @@
  * ever sees the total the client is about to be sent.
  */
 
-import { useMemo, useState } from "react";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Text } from "@astryxdesign/core/Text";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Badge } from "@astryxdesign/core/Badge";
-import { List, ListItem } from "@astryxdesign/core/List";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
-import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
-import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { NumberInput } from "@astryxdesign/core/NumberInput";
-import { DateInput } from "@astryxdesign/core/DateInput";
-import { Selector } from "@astryxdesign/core/Selector";
-import { Switch } from "@astryxdesign/core/Switch";
-import { SegmentedControl, SegmentedControlItem } from "@astryxdesign/core/SegmentedControl";
+import React, { useMemo, useState } from "react";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { BanknotesIcon, ClockIcon } from "@heroicons/react/24/outline";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Icon } from "@/components/ui/Icon";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Switch } from "@/components/ui/Switch";
+import {
+  Dialog,
+  DialogHeader,
+  DialogContent,
+  DialogFooter,
+} from "@/components/ui/Dialog";
 import { useMemberName, useOrg } from "@/lib/org";
 import {
   todayIso,
@@ -117,83 +114,107 @@ export function ActivitiesTab({
       <Panel
         title={t("@legalos.matterWorkspace.activities.heading")}
         action={
-          <HStack gap={3} vAlign="center" wrap="wrap">
-            <SegmentedControl
-              label={t("@legalos.matterWorkspace.activities.heading")}
-              value={filter}
-              size="sm"
-              onChange={(value) => setFilter(value as typeof filter)}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div
+              role="radiogroup"
+              aria-label={t("@legalos.matterWorkspace.activities.heading")}
+              className="inline-flex p-1 border max-w-fit"
+              style={{
+                backgroundColor: "var(--surface2)",
+                borderColor: "var(--border)",
+                borderRadius: "var(--rs)",
+              }}
             >
-              <SegmentedControlItem
-                value="all"
-                label={t("@legalos.matterWorkspace.activities.filter.all")}
-              />
-              <SegmentedControlItem
-                value="time"
-                label={t("@legalos.matterWorkspace.activities.filter.time")}
-              />
-              <SegmentedControlItem
-                value="expense"
-                label={t("@legalos.matterWorkspace.activities.filter.expenses")}
-              />
-            </SegmentedControl>
+              {(["all", "time", "expense"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  role="radio"
+                  aria-checked={filter === mode}
+                  onClick={() => setFilter(mode)}
+                  className="px-2.5 py-1 text-xs font-medium transition-all"
+                  style={{
+                    borderRadius: "calc(var(--rs) - 2px)",
+                    backgroundColor: filter === mode ? "var(--surface)" : "transparent",
+                    color: filter === mode ? "var(--text)" : "var(--text2)",
+                    boxShadow: filter === mode ? "var(--shadow)" : "none",
+                  }}
+                >
+                  {mode === "all"
+                    ? t("@legalos.matterWorkspace.activities.filter.all")
+                    : mode === "time"
+                    ? t("@legalos.matterWorkspace.activities.filter.time")
+                    : t("@legalos.matterWorkspace.activities.filter.expenses")}
+                </button>
+              ))}
+            </div>
             <Button
-              label={t("@legalos.matterWorkspace.financial.addTime")}
               variant="secondary"
               size="sm"
               onClick={() => onAddTimeChange(true)}
-            />
+            >
+              {t("@legalos.matterWorkspace.financial.addTime")}
+            </Button>
             <Button
-              label={t("@legalos.matterWorkspace.financial.addExpense")}
               variant="secondary"
               size="sm"
               onClick={() => onAddExpenseChange(true)}
-            />
-          </HStack>
+            >
+              {t("@legalos.matterWorkspace.financial.addExpense")}
+            </Button>
+          </div>
         }
       >
         {visible.length === 0 ? (
           <EmptyState
-            icon={<Icon icon={ClockIcon} size="lg" color="secondary" />}
+            icon={<Icon name="schedule" size={24} />}
             title={t("@legalos.matterWorkspace.activities.emptyTitle")}
             description={t("@legalos.matterWorkspace.activities.emptyDescription")}
           />
         ) : (
-          <List hasDividers density="compact">
+          <div
+            className="flex flex-col rounded-md border divide-y overflow-hidden"
+            style={{ borderColor: "var(--border)" }}
+          >
             {visible.map((row) => (
-              <ListItem
+              <div
                 key={row.key}
-                label={row.label}
-                description={`${row.who} · ${formatDate(row.date)} · ${row.quantity}`}
-                startContent={
+                className="flex items-center justify-between gap-3 p-3"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
                   <Icon
-                    icon={row.kind === "time" ? ClockIcon : BanknotesIcon}
-                    size="sm"
-                    color="secondary"
+                    name={row.kind === "time" ? "schedule" : "payments"}
+                    size={16}
+                    style={{ color: "var(--text3)" }}
                   />
-                }
-                endContent={
-                  <HStack gap={3} vAlign="center">
-                    {!row.billable && (
-                      <Badge
-                        variant="neutral"
-                        label={t("@legalos.matterWorkspace.activities.nonBillable")}
-                      />
-                    )}
-                    {row.billed && (
-                      <Badge
-                        variant="info"
-                        label={t("@legalos.matterWorkspace.activities.billed")}
-                      />
-                    )}
-                    <Text type="body" weight="semibold">
-                      {formatEGP(row.amount)}
-                    </Text>
-                  </HStack>
-                }
-              />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>
+                      {row.label}
+                    </span>
+                    <span className="text-xs truncate" style={{ color: "var(--text3)" }}>
+                      {`${row.who} · ${formatDate(row.date)} · ${row.quantity}`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  {!row.billable && (
+                    <Badge color="neutral" variant="soft">
+                      {t("@legalos.matterWorkspace.activities.nonBillable")}
+                    </Badge>
+                  )}
+                  {row.billed && (
+                    <Badge color="info" variant="soft">
+                      {t("@legalos.matterWorkspace.activities.billed")}
+                    </Badge>
+                  )}
+                  <span className="text-xs font-semibold" style={{ color: "var(--text)" }}>
+                    {formatEGP(row.amount)}
+                  </span>
+                </div>
+              </div>
             ))}
-          </List>
+          </div>
         )}
       </Panel>
 
@@ -263,73 +284,65 @@ function AddTimeDialog({
 
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange} width={480}>
-      <Layout
-        header={
-          <DialogHeader
-            title={t("@legalos.matterWorkspace.activities.time.heading")}
-            onOpenChange={onOpenChange}
-          />
-        }
-        content={
-          <LayoutContent>
-            <VStack gap={4}>
-              <HStack gap={3}>
-                <DateInput
-                  label={t("@legalos.matterWorkspace.activities.field.date")}
-                  value={entryDate}
-                  onChange={(value) => setEntryDate(value ?? entryDate)}
-                />
-                <NumberInput
-                  label={t("@legalos.matterWorkspace.activities.time.hours")}
-                  value={hours}
-                  onChange={(value) => setHours(value ?? 0)}
-                  min={0.25}
-                  max={24}
-                  step={0.25}
-                />
-                <NumberInput
-                  label={t("@legalos.matterWorkspace.activities.time.rate")}
-                  value={rate}
-                  onChange={(value) => setRate(value ?? 0)}
-                  min={0}
-                  step={50}
-                />
-              </HStack>
-              <TextInput
-                label={t("@legalos.matterWorkspace.activities.field.description")}
-                value={description}
-                onChange={setDescription}
-              />
-              <Switch
-                label={t("@legalos.matterWorkspace.activities.field.billable")}
-                value={billable}
-                onChange={setBillable}
-              />
-            </VStack>
-          </LayoutContent>
-        }
-        footer={
-          <LayoutFooter hasDivider>
-            <HStack gap={3} hAlign="end">
-              <Button
-                label={t("@legalos.matterWorkspace.action.cancel")}
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              />
-              <Button
-                label={
-                  saving
-                    ? t("@legalos.matterWorkspace.action.saving")
-                    : t("@legalos.matterWorkspace.action.save")
-                }
-                variant="primary"
-                isDisabled={saving || hours <= 0}
-                onClick={submit}
-              />
-            </HStack>
-          </LayoutFooter>
-        }
+      <DialogHeader
+        title={t("@legalos.matterWorkspace.activities.time.heading")}
+        onOpenChange={onOpenChange}
       />
+      <DialogContent>
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Input
+              type="date"
+              label={t("@legalos.matterWorkspace.activities.field.date")}
+              value={entryDate}
+              onChange={(e) => setEntryDate((e.target.value as ISODateString) || entryDate)}
+            />
+            <Input
+              type="number"
+              label={t("@legalos.matterWorkspace.activities.time.hours")}
+              value={hours}
+              onChange={(e) => setHours(e.target.value ? Number(e.target.value) : 0)}
+              min={0.25}
+              max={24}
+              step={0.25}
+            />
+            <Input
+              type="number"
+              label={t("@legalos.matterWorkspace.activities.time.rate")}
+              value={rate}
+              onChange={(e) => setRate(e.target.value ? Number(e.target.value) : 0)}
+              min={0}
+              step={50}
+            />
+          </div>
+          <Input
+            label={t("@legalos.matterWorkspace.activities.field.description")}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+          <Switch
+            label={t("@legalos.matterWorkspace.activities.field.billable")}
+            checked={billable}
+            onChange={setBillable}
+          />
+        </div>
+      </DialogContent>
+      <DialogFooter>
+        <Button
+          variant="secondary"
+          onClick={() => onOpenChange(false)}
+        >
+          {t("@legalos.matterWorkspace.action.cancel")}
+        </Button>
+        <Button
+          variant="primary"
+          loading={saving}
+          disabled={hours <= 0}
+          onClick={submit}
+        >
+          {t("@legalos.matterWorkspace.action.save")}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }
@@ -386,86 +399,78 @@ function AddExpenseDialog({
 
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange} width={480}>
-      <Layout
-        header={
-          <DialogHeader
-            title={t("@legalos.matterWorkspace.activities.expense.heading")}
-            onOpenChange={onOpenChange}
-          />
-        }
-        content={
-          <LayoutContent>
-            <VStack gap={4}>
-              <HStack gap={3}>
-                <DateInput
-                  label={t("@legalos.matterWorkspace.activities.field.date")}
-                  value={entryDate}
-                  onChange={(value) => setEntryDate(value ?? entryDate)}
-                />
-                <Selector
-                  label={t("@legalos.matterWorkspace.activities.expense.category")}
-                  value={category}
-                  onChange={(value) => setCategory(value as ExpenseCategory)}
-                  options={CATEGORIES.map((value) => ({
-                    value,
-                    label: t(`@legalos.matterWorkspace.expenseCategory.${value}`),
-                  }))}
-                />
-              </HStack>
-              <HStack gap={3}>
-                <NumberInput
-                  label={t("@legalos.matterWorkspace.activities.expense.quantity")}
-                  value={quantity}
-                  onChange={(value) => setQuantity(value ?? 1)}
-                  min={0.01}
-                  step={1}
-                />
-                <NumberInput
-                  label={t("@legalos.matterWorkspace.activities.expense.unitAmount")}
-                  value={unitAmount}
-                  onChange={(value) => setUnitAmount(value ?? 0)}
-                  min={0}
-                  step={50}
-                />
-              </HStack>
-              <Text type="supporting" color="secondary">
-                {formatEGP(quantity * unitAmount)}
-              </Text>
-              <TextInput
-                label={t("@legalos.matterWorkspace.activities.field.description")}
-                value={description}
-                onChange={setDescription}
-              />
-              <Switch
-                label={t("@legalos.matterWorkspace.activities.field.billable")}
-                value={billable}
-                onChange={setBillable}
-              />
-            </VStack>
-          </LayoutContent>
-        }
-        footer={
-          <LayoutFooter hasDivider>
-            <HStack gap={3} hAlign="end">
-              <Button
-                label={t("@legalos.matterWorkspace.action.cancel")}
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              />
-              <Button
-                label={
-                  saving
-                    ? t("@legalos.matterWorkspace.action.saving")
-                    : t("@legalos.matterWorkspace.action.save")
-                }
-                variant="primary"
-                isDisabled={saving || quantity <= 0}
-                onClick={submit}
-              />
-            </HStack>
-          </LayoutFooter>
-        }
+      <DialogHeader
+        title={t("@legalos.matterWorkspace.activities.expense.heading")}
+        onOpenChange={onOpenChange}
       />
+      <DialogContent>
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              type="date"
+              label={t("@legalos.matterWorkspace.activities.field.date")}
+              value={entryDate}
+              onChange={(e) => setEntryDate((e.target.value as ISODateString) || entryDate)}
+            />
+            <Select
+              label={t("@legalos.matterWorkspace.activities.expense.category")}
+              value={category}
+              onChange={(e) => setCategory(e.target.value as ExpenseCategory)}
+              options={CATEGORIES.map((value) => ({
+                value,
+                label: t(`@legalos.matterWorkspace.expenseCategory.${value}`),
+              }))}
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              type="number"
+              label={t("@legalos.matterWorkspace.activities.expense.quantity")}
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value ? Number(e.target.value) : 1)}
+              min={0.01}
+              step={1}
+            />
+            <Input
+              type="number"
+              label={t("@legalos.matterWorkspace.activities.expense.unitAmount")}
+              value={unitAmount}
+              onChange={(e) => setUnitAmount(e.target.value ? Number(e.target.value) : 0)}
+              min={0}
+              step={50}
+            />
+          </div>
+          <span className="text-xs" style={{ color: "var(--text2)" }}>
+            {formatEGP(quantity * unitAmount)}
+          </span>
+          <Input
+            label={t("@legalos.matterWorkspace.activities.field.description")}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+          <Switch
+            label={t("@legalos.matterWorkspace.activities.field.billable")}
+            checked={billable}
+            onChange={setBillable}
+          />
+        </div>
+      </DialogContent>
+      <DialogFooter>
+        <Button
+          variant="secondary"
+          onClick={() => onOpenChange(false)}
+        >
+          {t("@legalos.matterWorkspace.action.cancel")}
+        </Button>
+        <Button
+          variant="primary"
+          loading={saving}
+          disabled={quantity <= 0}
+          onClick={submit}
+        >
+          {t("@legalos.matterWorkspace.action.save")}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

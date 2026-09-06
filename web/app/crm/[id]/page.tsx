@@ -1,38 +1,13 @@
 "use client";
 
 import { use, useState } from "react";
-import { Layout, LayoutContent } from "@astryxdesign/core/Layout";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Grid, GridSpan } from "@astryxdesign/core/Grid";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Card } from "@astryxdesign/core/Card";
-import { Badge } from "@astryxdesign/core/Badge";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Link } from "@astryxdesign/core/Link";
-import { Divider } from "@astryxdesign/core/Divider";
-import { List, ListItem } from "@astryxdesign/core/List";
-import { StatusDot } from "@astryxdesign/core/StatusDot";
-import { MetadataList, MetadataListItem } from "@astryxdesign/core/MetadataList";
-import { TextArea } from "@astryxdesign/core/TextArea";
-import { DateTimeInput } from "@astryxdesign/core/DateTimeInput";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
-import {
-  ArrowLeftIcon,
-  PhoneIcon,
-  EnvelopeIcon,
-  ChatBubbleLeftRightIcon,
-  UserGroupIcon,
-  PencilSquareIcon,
-  FlagIcon,
-  BuildingOffice2Icon,
-  UserIcon,
-  BanknotesIcon,
-  CalendarDaysIcon,
-  ShieldCheckIcon,
-  SparklesIcon,
-  ClockIcon,
-} from "@heroicons/react/24/outline";
+import Link from "next/link";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import {
   getLead,
@@ -42,13 +17,13 @@ import {
 } from "../data";
 import { useFormat } from "@/lib/i18n/format";
 
-const TIMELINE_ICON: Record<TimelineEntryType, typeof PhoneIcon> = {
-  call: PhoneIcon,
-  email: EnvelopeIcon,
-  whatsapp: ChatBubbleLeftRightIcon,
-  meeting: UserGroupIcon,
-  note: PencilSquareIcon,
-  stage: FlagIcon,
+const TIMELINE_ICON_NAME: Record<TimelineEntryType, string> = {
+  call: "call",
+  email: "mail",
+  whatsapp: "chat",
+  meeting: "group",
+  note: "edit",
+  stage: "flag",
 };
 
 const TIMELINE_LABEL_KEY: Record<TimelineEntryType, string> = {
@@ -61,9 +36,9 @@ const TIMELINE_LABEL_KEY: Record<TimelineEntryType, string> = {
 };
 
 const CONFLICT_META = {
-  clear: { variant: "success" as const, labelKey: "@legalos.crm.conflict.clear" },
-  pending: { variant: "warning" as const, labelKey: "@legalos.crm.conflict.pending" },
-  flagged: { variant: "error" as const, labelKey: "@legalos.crm.conflict.flagged" },
+  clear: { color: "neutral" as const, labelKey: "@legalos.crm.conflict.clear" },
+  pending: { color: "warn" as const, labelKey: "@legalos.crm.conflict.pending" },
+  flagged: { color: "danger" as const, labelKey: "@legalos.crm.conflict.flagged" },
 };
 
 export default function LeadProfilePage({
@@ -86,22 +61,21 @@ export default function LeadProfilePage({
 
   if (!lead) {
     return (
-      <Layout
-        height="fill"
-        content={
-          <LayoutContent padding={0}>
-            <EmptyState
-              title={t("@legalos.crm.detail.notFoundTitle")}
-              description={t("@legalos.crm.detail.notFoundDescription")}
-              actions={
-                <Link href="/crm" isStandalone>
-                  {t("@legalos.crm.detail.backToPipeline")}
-                </Link>
-              }
-            />
-          </LayoutContent>
-        }
-      />
+      <div className="p-8 flex items-center justify-center">
+        <EmptyState
+          title={t("@legalos.crm.detail.notFoundTitle")}
+          description={t("@legalos.crm.detail.notFoundDescription")}
+          action={
+            <Link
+              href="/crm"
+              className="text-xs font-semibold hover:underline"
+              style={{ color: "var(--primary)" }}
+            >
+              {t("@legalos.crm.detail.backToPipeline")}
+            </Link>
+          }
+        />
+      </div>
     );
   }
 
@@ -127,301 +101,305 @@ export default function LeadProfilePage({
   }
 
   return (
-    <Layout
-      height="fill"
-      content={
-        <LayoutContent padding={0}>
-          <VStack gap={6}>
-            <VStack gap={3}>
-              <Link href="/crm">
-                <HStack gap={1} vAlign="center">
-                  <Icon icon={ArrowLeftIcon} size="sm" color="inherit" />
-                  {t("@legalos.crm.detail.allLeads")}
-                </HStack>
-              </Link>
+    <div className="flex flex-col gap-6 p-6">
+      {/* العودة ورأس الصفحة */}
+      <div className="flex flex-col gap-3">
+        <Link
+          href="/crm"
+          className="inline-flex items-center gap-1 text-xs font-medium hover:underline"
+          style={{ color: "var(--text2)" }}
+        >
+          <Icon name="arrow_back" size={16} />
+          <span>{t("@legalos.crm.detail.allLeads")}</span>
+        </Link>
 
-              <HStack hAlign="between" vAlign="start" gap={4}>
-                <VStack gap={2}>
-                  <HStack gap={2} vAlign="center">
-                    <Icon
-                      icon={lead.company ? BuildingOffice2Icon : UserIcon}
-                      size="md"
-                      color="secondary"
-                    />
-                    <Heading level={2}>{lead.name}</Heading>
-                  </HStack>
-                  <HStack gap={2} vAlign="center" wrap="wrap">
-                    <Badge variant={stageMeta.badgeVariant} label={t(stageMeta.labelKey)} />
-                    {lead.conflictStatus !== "clear" && (
-                      <Badge variant={conflictMeta.variant} label={t(conflictMeta.labelKey)} />
-                    )}
-                    <Text type="body" color="secondary">
-                      {lead.matterType}
-                    </Text>
-                  </HStack>
-                </VStack>
-                <HStack gap={2}>
-                  <Button label={t("@legalos.crm.detail.logInteraction")} variant="secondary">
-                    {t("@legalos.crm.detail.logInteraction")}
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Icon name={lead.company ? "business" : "person"} size={22} />
+              <h1 className="text-xl font-bold" style={{ color: "var(--text)" }}>
+                {lead.name}
+              </h1>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge color="neutral">{t(stageMeta.labelKey)}</Badge>
+              {lead.conflictStatus !== "clear" && (
+                <Badge color={conflictMeta.color}>{t(conflictMeta.labelKey)}</Badge>
+              )}
+              <span className="text-xs" style={{ color: "var(--text2)" }}>
+                {lead.matterType}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button variant="secondary">
+              <span>{t("@legalos.crm.detail.logInteraction")}</span>
+            </Button>
+            <Button>
+              <span>{t("@legalos.crm.detail.convertToClient")}</span>
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* تفاصيل العميل والسجل الزمني */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          {/* الخط الزمني */}
+          <Card className="p-5 flex flex-col gap-4">
+            <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>
+              {t("@legalos.crm.detail.timeline")}
+            </h2>
+            <div className="flex flex-col divide-y" style={{ borderColor: "var(--border)" }}>
+              {lead.timeline.map((entry, i) => (
+                <div key={`${entry.time}-${i}`} className="py-3 flex items-start justify-between gap-3 text-xs">
+                  <div className="flex items-start gap-3">
+                    <div className="p-1.5 rounded-md bg-[var(--surface2)]" style={{ color: "var(--text2)" }}>
+                      <Icon name={TIMELINE_ICON_NAME[entry.type]} size={16} />
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-semibold" style={{ color: "var(--text)" }}>
+                        {entry.who} · {t(TIMELINE_LABEL_KEY[entry.type])}
+                      </span>
+                      <span style={{ color: "var(--text2)" }}>{entry.text}</span>
+                    </div>
+                  </div>
+                  <span className="text-[11px] flex-shrink-0" style={{ color: "var(--text3)" }}>
+                    {entry.time}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* الرسائل المتبادلة */}
+          <Card className="p-5 flex flex-col gap-4">
+            <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>
+              {t("@legalos.crm.detail.messagesHeading")}
+            </h2>
+            {(() => {
+              const logged = lead.timeline.filter(
+                (e) => e.type === "email" || e.type === "whatsapp"
+              );
+              if (logged.length === 0) {
+                return (
+                  <EmptyState
+                    title={t("@legalos.crm.detail.messagesEmptyTitle")}
+                    description={t("@legalos.crm.detail.messagesEmptyDescription")}
+                  />
+                );
+              }
+              return (
+                <div className="flex flex-col divide-y" style={{ borderColor: "var(--border)" }}>
+                  {logged.map((entry, i) => (
+                    <div key={`${entry.time}-${i}`} className="py-3 flex items-start justify-between gap-3 text-xs">
+                      <div className="flex items-start gap-3">
+                        <div className="p-1.5 rounded-md bg-[var(--surface2)]" style={{ color: "var(--text2)" }}>
+                          <Icon name={TIMELINE_ICON_NAME[entry.type]} size={16} />
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-semibold" style={{ color: "var(--text)" }}>
+                            {entry.who} · {t(TIMELINE_LABEL_KEY[entry.type])}
+                          </span>
+                          <span style={{ color: "var(--text2)" }}>{entry.text}</span>
+                        </div>
+                      </div>
+                      <span className="text-[11px] flex-shrink-0" style={{ color: "var(--text3)" }}>
+                        {entry.time}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </Card>
+
+          {/* الملاحظات */}
+          <Card className="p-5 flex flex-col gap-4">
+            <h2 className="text-base font-bold" style={{ color: "var(--text)" }}>
+              {t("@legalos.crm.detail.notes")}
+            </h2>
+            <div className="flex flex-col gap-2">
+              <textarea
+                value={draftNote}
+                onChange={(e) => setDraftNote(e.target.value)}
+                placeholder={t("@legalos.crm.detail.addNotePlaceholder")}
+                rows={2}
+                className="w-full text-xs p-3 rounded-md border outline-none transition-colors"
+                style={{
+                  borderColor: "var(--border)",
+                  backgroundColor: "var(--surface2)",
+                  color: "var(--text)",
+                }}
+              />
+              <div className="flex justify-end">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={!draftNote.trim()}
+                  onClick={addNote}
+                >
+                  <span>{t("@legalos.crm.detail.addNote")}</span>
+                </Button>
+              </div>
+            </div>
+
+            {notes.length > 0 && (
+              <div className="pt-3 border-t flex flex-col gap-2" style={{ borderColor: "var(--border)" }}>
+                {notes.map((note, i) => (
+                  <div key={i} className="p-2.5 rounded-md text-xs bg-[var(--surface2)]" style={{ color: "var(--text)" }}>
+                    {note}
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
+
+        {/* الشريط الجانبي للمعلومات */}
+        <div className="flex flex-col gap-5">
+          {/* بيانات العميل المحتمل */}
+          <Card className="p-5 flex flex-col gap-3">
+            <h3 className="text-xs font-bold" style={{ color: "var(--text)" }}>
+              {t("@legalos.crm.detail.leadDetails")}
+            </h3>
+            <div className="flex flex-col gap-2.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span style={{ color: "var(--text2)" }}>{t("@legalos.crm.detail.field.source")}</span>
+                <span className="font-semibold" style={{ color: "var(--text)" }}>{lead.source}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span style={{ color: "var(--text2)" }}>{t("@legalos.crm.detail.field.estimatedValue")}</span>
+                <span className="font-semibold" style={{ color: "var(--text)" }}>{formatEGP(lead.estValue)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span style={{ color: "var(--text2)" }}>{t("@legalos.crm.detail.field.assignedTo")}</span>
+                <span className="font-semibold" style={{ color: "var(--text)" }}>{lead.assignedTo}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span style={{ color: "var(--text2)" }}>{t("@legalos.crm.detail.field.created")}</span>
+                <span className="font-semibold" style={{ color: "var(--text)" }}>{lead.createdLabel}</span>
+              </div>
+            </div>
+            {lead.lostReason && (
+              <div className="pt-2 border-t text-xs" style={{ borderColor: "var(--border)", color: "var(--text2)" }}>
+                Lost — {lead.lostReason}
+              </div>
+            )}
+          </Card>
+
+          {/* فحص تعارض المصالح */}
+          <Card className="p-5 flex flex-col gap-2.5">
+            <div className="flex items-center gap-2">
+              <Icon name="verified_user" size={18} />
+              <h3 className="text-xs font-bold" style={{ color: "var(--text)" }}>
+                {t("@legalos.crm.detail.conflictCheck")}
+              </h3>
+            </div>
+            <div>
+              <Badge color={conflictMeta.color}>{t(conflictMeta.labelKey)}</Badge>
+            </div>
+            <p className="text-xs" style={{ color: "var(--text2)" }}>
+              {lead.conflictNote}
+            </p>
+          </Card>
+
+          {/* الاستشارة */}
+          <Card className="p-5 flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <Icon name="schedule" size={18} />
+              <h3 className="text-xs font-bold" style={{ color: "var(--text)" }}>
+                {t("@legalos.crm.detail.consultation")}
+              </h3>
+            </div>
+
+            {consultation.status === "completed" && (
+              <div className="flex items-center justify-between text-xs">
+                <span style={{ color: "var(--text)" }}>
+                  Held {consultation.date} at {consultation.time}
+                </span>
+                <Badge color="neutral">{t("@legalos.crm.detail.completed")}</Badge>
+              </div>
+            )}
+
+            {consultation.status === "scheduled" && (
+              <div className="flex items-center justify-between text-xs">
+                <span style={{ color: "var(--text)" }}>
+                  {consultation.date} at {consultation.time}
+                </span>
+                <Badge color="primary">{t("@legalos.crm.detail.scheduled")}</Badge>
+              </div>
+            )}
+
+            {consultation.status === "none" && !isScheduling && (
+              <div className="flex flex-col gap-2.5 text-xs">
+                <span style={{ color: "var(--text2)" }}>
+                  {t("@legalos.crm.detail.noConsultation")}
+                </span>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsScheduling(true)}
+                >
+                  <span>{t("@legalos.crm.detail.scheduleConsultation")}</span>
+                </Button>
+              </div>
+            )}
+
+            {isScheduling && (
+              <div className="flex flex-col gap-2.5">
+                <input
+                  type="datetime-local"
+                  value={scheduleValue ?? ""}
+                  onChange={(e) => setScheduleValue(e.target.value)}
+                  className="text-xs p-2 rounded border outline-none"
+                  style={{
+                    borderColor: "var(--border)",
+                    backgroundColor: "var(--surface2)",
+                    color: "var(--text)",
+                  }}
+                />
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    disabled={!scheduleValue}
+                    onClick={confirmSchedule}
+                  >
+                    <span>{t("@legalos.crm.detail.confirm")}</span>
                   </Button>
-                  <Button label={t("@legalos.crm.detail.convertToClient")} variant="primary">
-                    {t("@legalos.crm.detail.convertToClient")}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsScheduling(false)}
+                  >
+                    <span>{t("@legalos.crm.detail.cancel")}</span>
                   </Button>
-                </HStack>
-              </HStack>
-            </VStack>
+                </div>
+              </div>
+            )}
+          </Card>
 
-            <Grid columns={3} gap={6}>
-              <GridSpan columns={2}>
-                <VStack gap={6}>
-                  <Card>
-                    <VStack gap={4}>
-                      <Heading level={4}>{t("@legalos.crm.detail.timeline")}</Heading>
-                      <List hasDividers density="compact">
-                        {lead.timeline.map((entry, i) => (
-                          <ListItem
-                            key={`${entry.time}-${i}`}
-                            label={`${entry.who} · ${t(TIMELINE_LABEL_KEY[entry.type])}`}
-                            description={entry.text}
-                            startContent={
-                              <Icon icon={TIMELINE_ICON[entry.type]} size="sm" color="secondary" />
-                            }
-                            endContent={
-                              <Text type="supporting" color="secondary">
-                                {entry.time}
-                              </Text>
-                            }
-                          />
-                        ))}
-                      </List>
-                    </VStack>
-                  </Card>
-
-                  <Card>
-                    <VStack gap={4}>
-                      <Heading level={4}>{t("@legalos.crm.detail.messagesHeading")}</Heading>
-                      {(() => {
-                        const logged = lead.timeline.filter(
-                          (e) => e.type === "email" || e.type === "whatsapp"
-                        );
-                        if (logged.length === 0) {
-                          return (
-                            <EmptyState
-                              isCompact
-                              title={t("@legalos.crm.detail.messagesEmptyTitle")}
-                              description={t("@legalos.crm.detail.messagesEmptyDescription")}
-                            />
-                          );
-                        }
-                        return (
-                          <List hasDividers density="compact">
-                            {logged.map((entry, i) => (
-                              <ListItem
-                                key={`${entry.time}-${i}`}
-                                label={`${entry.who} · ${t(TIMELINE_LABEL_KEY[entry.type])}`}
-                                description={entry.text}
-                                startContent={
-                                  <Icon
-                                    icon={TIMELINE_ICON[entry.type]}
-                                    size="sm"
-                                    color="secondary"
-                                  />
-                                }
-                                endContent={
-                                  <Text type="supporting" color="secondary">
-                                    {entry.time}
-                                  </Text>
-                                }
-                              />
-                            ))}
-                          </List>
-                        );
-                      })()}
-                    </VStack>
-                  </Card>
-
-                  <Card>
-                    <VStack gap={4}>
-                      <Heading level={4}>{t("@legalos.crm.detail.notes")}</Heading>
-                      <VStack gap={2}>
-                        <TextArea
-                          label={t("@legalos.crm.detail.addNoteLabel")}
-                          isLabelHidden
-                          placeholder={t("@legalos.crm.detail.addNotePlaceholder")}
-                          value={draftNote}
-                          onChange={setDraftNote}
-                          rows={2}
-                        />
-                        <HStack hAlign="end">
-                          <Button
-                            label={t("@legalos.crm.detail.addNote")}
-                            variant="secondary"
-                            size="sm"
-                            isDisabled={draftNote.trim().length === 0}
-                            onClick={addNote}
-                          >
-                            {t("@legalos.crm.detail.addNote")}
-                          </Button>
-                        </HStack>
-                      </VStack>
-                      {notes.length > 0 && (
-                        <>
-                          <Divider />
-                          <VStack gap={3}>
-                            {notes.map((note, i) => (
-                              <Text key={i} type="body">
-                                {note}
-                              </Text>
-                            ))}
-                          </VStack>
-                        </>
-                      )}
-                    </VStack>
-                  </Card>
-                </VStack>
-              </GridSpan>
-
-              <VStack gap={6}>
-                <Card>
-                  <VStack gap={4}>
-                    <Heading level={4}>{t("@legalos.crm.detail.leadDetails")}</Heading>
-                    <MetadataList>
-                      <MetadataListItem label={t("@legalos.crm.detail.field.source")} icon={<Icon icon={UserGroupIcon} size="sm" color="secondary" />}>
-                        {lead.source}
-                      </MetadataListItem>
-                      <MetadataListItem label={t("@legalos.crm.detail.field.estimatedValue")} icon={<Icon icon={BanknotesIcon} size="sm" color="secondary" />}>
-                        {formatEGP(lead.estValue)}
-                      </MetadataListItem>
-                      <MetadataListItem label={t("@legalos.crm.detail.field.assignedTo")} icon={<Icon icon={UserIcon} size="sm" color="secondary" />}>
-                        {lead.assignedTo}
-                      </MetadataListItem>
-                      <MetadataListItem label={t("@legalos.crm.detail.field.created")} icon={<Icon icon={CalendarDaysIcon} size="sm" color="secondary" />}>
-                        {lead.createdLabel}
-                      </MetadataListItem>
-                    </MetadataList>
-                    {lead.lostReason && (
-                      <>
-                        <Divider />
-                        <Text type="supporting" color="secondary">
-                          Lost — {lead.lostReason}
-                        </Text>
-                      </>
-                    )}
-                  </VStack>
-                </Card>
-
-                <Card>
-                  <VStack gap={3}>
-                    <HStack gap={2} vAlign="center">
-                      <Icon icon={ShieldCheckIcon} size="sm" color="secondary" />
-                      <Heading level={4}>{t("@legalos.crm.detail.conflictCheck")}</Heading>
-                    </HStack>
-                    <HStack gap={2} vAlign="center">
-                      <StatusDot variant={conflictMeta.variant} label={t(conflictMeta.labelKey)} />
-                      <Text type="body" weight="semibold">
-                        {t(conflictMeta.labelKey)}
-                      </Text>
-                    </HStack>
-                    <Text type="supporting" color="secondary">
-                      {lead.conflictNote}
-                    </Text>
-                  </VStack>
-                </Card>
-
-                <Card>
-                  <VStack gap={3}>
-                    <HStack gap={2} vAlign="center">
-                      <Icon icon={ClockIcon} size="sm" color="secondary" />
-                      <Heading level={4}>{t("@legalos.crm.detail.consultation")}</Heading>
-                    </HStack>
-
-                    {consultation.status === "completed" && (
-                      <HStack hAlign="between" vAlign="center">
-                        <Text type="body">
-                          Held {consultation.date} at {consultation.time}
-                        </Text>
-                        <Badge variant="neutral" label={t("@legalos.crm.detail.completed")} />
-                      </HStack>
-                    )}
-
-                    {consultation.status === "scheduled" && (
-                      <HStack hAlign="between" vAlign="center">
-                        <Text type="body">
-                          {consultation.date} at {consultation.time}
-                        </Text>
-                        <Badge variant="info" label={t("@legalos.crm.detail.scheduled")} />
-                      </HStack>
-                    )}
-
-                    {consultation.status === "none" && !isScheduling && (
-                      <VStack gap={3}>
-                        <Text type="supporting" color="secondary">
-                          {t("@legalos.crm.detail.noConsultation")}
-                        </Text>
-                        <Button
-                          label={t("@legalos.crm.detail.scheduleConsultation")}
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => setIsScheduling(true)}
-                        >
-                          {t("@legalos.crm.detail.scheduleConsultation")}
-                        </Button>
-                      </VStack>
-                    )}
-
-                    {isScheduling && (
-                      <VStack gap={3}>
-                        <DateTimeInput
-                          label={t("@legalos.crm.detail.consultationDateLabel")}
-                          value={scheduleValue as never}
-                          onChange={(v) => setScheduleValue(v)}
-                        />
-                        <HStack gap={2}>
-                          <Button
-                            label={t("@legalos.crm.detail.confirm")}
-                            variant="primary"
-                            size="sm"
-                            isDisabled={!scheduleValue}
-                            onClick={confirmSchedule}
-                          >
-                            {t("@legalos.crm.detail.confirm")}
-                          </Button>
-                          <Button
-                            label={t("@legalos.crm.detail.cancel")}
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setIsScheduling(false)}
-                          >
-                            {t("@legalos.crm.detail.cancel")}
-                          </Button>
-                        </HStack>
-                      </VStack>
-                    )}
-                  </VStack>
-                </Card>
-
-                <Card variant="purple">
-                  <VStack gap={3}>
-                    <HStack gap={2} vAlign="center">
-                      <Icon icon={SparklesIcon} size="sm" className="text-purple-vivid" />
-                      <Heading level={4}>{t("@legalos.crm.detail.askAi")}</Heading>
-                    </HStack>
-                    <Text type="body">
-                      {t("@legalos.crm.detail.askAiPrompt", {
-                        name: lead.name,
-                        matterType: lead.matterType.toLowerCase(),
-                      })}
-                    </Text>
-                    <Button label={t("@legalos.crm.detail.draftFollowUp")} variant="secondary" size="sm">
-                      {t("@legalos.crm.detail.draftFollowUp")}
-                    </Button>
-                  </VStack>
-                </Card>
-              </VStack>
-            </Grid>
-          </VStack>
-        </LayoutContent>
-      }
-    />
+          {/* الاستشارة بالذكاء الاصطناعي */}
+          <Card className="p-5 flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <Icon name="auto_awesome" size={18} />
+              <h3 className="text-xs font-bold" style={{ color: "var(--text)" }}>
+                {t("@legalos.crm.detail.askAi")}
+              </h3>
+            </div>
+            <p className="text-xs leading-relaxed" style={{ color: "var(--text2)" }}>
+              {t("@legalos.crm.detail.askAiPrompt", {
+                name: lead.name,
+                matterType: lead.matterType.toLowerCase(),
+              })}
+            </p>
+            <Button variant="secondary" size="sm">
+              <span>{t("@legalos.crm.detail.draftFollowUp")}</span>
+            </Button>
+          </Card>
+        </div>
+      </div>
+    </div>
   );
 }

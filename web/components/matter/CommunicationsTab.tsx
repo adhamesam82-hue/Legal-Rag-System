@@ -11,34 +11,22 @@
  * is edited freely; a message is a thing the product sent and is not.
  */
 
-import { useMemo, useState } from "react";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Text } from "@astryxdesign/core/Text";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Badge } from "@astryxdesign/core/Badge";
-import { Avatar } from "@astryxdesign/core/Avatar";
-import { Card } from "@astryxdesign/core/Card";
-import { List, ListItem } from "@astryxdesign/core/List";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
-import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
-import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { TextArea } from "@astryxdesign/core/TextArea";
-import { NumberInput } from "@astryxdesign/core/NumberInput";
-import { Selector } from "@astryxdesign/core/Selector";
-import { Switch } from "@astryxdesign/core/Switch";
-import { Divider } from "@astryxdesign/core/Divider";
-import { TabList, Tab } from "@astryxdesign/core/TabList";
-import { SegmentedControl, SegmentedControlItem } from "@astryxdesign/core/SegmentedControl";
+import React, { useMemo, useState } from "react";
 import { useTranslator } from "@astryxdesign/core/i18n";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
+import { Icon } from "@/components/ui/Icon";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Input, Textarea } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Switch } from "@/components/ui/Switch";
 import {
-  ChatBubbleLeftRightIcon,
-  EnvelopeIcon,
-  PhoneIcon,
-  UserGroupIcon,
-  UsersIcon,
-} from "@heroicons/react/24/outline";
+  Dialog,
+  DialogHeader,
+  DialogContent,
+  DialogFooter,
+} from "@/components/ui/Dialog";
 import { useMemberName, useOrg } from "@/lib/org";
 import {
   type ClientPortal,
@@ -51,53 +39,79 @@ import { useFormat } from "@/lib/i18n/format";
 import { Panel, useWrite, type TabProps } from "./shared";
 
 const CHANNELS: CommunicationChannel[] = ["phone", "email", "meeting", "letter"];
-const CHANNEL_ICON = {
-  phone: PhoneIcon,
-  email: EnvelopeIcon,
-  meeting: UserGroupIcon,
-  letter: EnvelopeIcon,
-} as const;
-const PORTAL_VARIANT: Record<PortalStatus, "success" | "warning" | "neutral"> = {
+const CHANNEL_ICON: Record<CommunicationChannel, string> = {
+  phone: "call",
+  email: "mail",
+  meeting: "groups",
+  letter: "drafts",
+};
+
+const PORTAL_VARIANT: Record<PortalStatus, "success" | "warn" | "neutral"> = {
   active: "success",
-  invited: "warning",
+  invited: "warn",
   revoked: "neutral",
 };
 
 export function CommunicationsTab(props: TabProps) {
   const t = useTranslator();
-  const [sub, setSub] = useState("logs");
+  const [sub, setSub] = useState<"logs" | "messages" | "portals">("logs");
+
+  const unreadCount = props.data.threads.reduce(
+    (sum, thread) => sum + thread.unread_count,
+    0,
+  );
 
   return (
-    <VStack gap={4}>
-      <TabList value={sub} onChange={setSub} hasDivider>
-        <Tab value="logs" label={t("@legalos.matterWorkspace.comms.sub.logs")} />
-        <Tab
-          value="messages"
-          label={t("@legalos.matterWorkspace.comms.sub.messages")}
-          endContent={
-            props.data.threads.some((thread) => thread.unread_count > 0) ? (
-              <Badge
-                variant="error"
-                label={String(
-                  props.data.threads.reduce(
-                    (sum, thread) => sum + thread.unread_count,
-                    0,
-                  ),
-                )}
-              />
-            ) : undefined
-          }
-        />
-        <Tab
-          value="portals"
-          label={t("@legalos.matterWorkspace.comms.sub.portals")}
-        />
-      </TabList>
+    <div className="flex flex-col gap-4">
+      {/* Sub Tabs Bar */}
+      <div
+        className="flex items-center gap-2 border-b pb-2 flex-wrap"
+        style={{ borderColor: "var(--border)" }}
+      >
+        <button
+          type="button"
+          onClick={() => setSub("logs")}
+          className="px-3 py-1.5 text-xs font-semibold rounded transition-colors flex items-center gap-2"
+          style={{
+            backgroundColor: sub === "logs" ? "var(--surface2)" : "transparent",
+            color: sub === "logs" ? "var(--primary)" : "var(--text2)",
+          }}
+        >
+          {t("@legalos.matterWorkspace.comms.sub.logs")}
+        </button>
+        <button
+          type="button"
+          onClick={() => setSub("messages")}
+          className="px-3 py-1.5 text-xs font-semibold rounded transition-colors flex items-center gap-2"
+          style={{
+            backgroundColor: sub === "messages" ? "var(--surface2)" : "transparent",
+            color: sub === "messages" ? "var(--primary)" : "var(--text2)",
+          }}
+        >
+          <span>{t("@legalos.matterWorkspace.comms.sub.messages")}</span>
+          {unreadCount > 0 && (
+            <Badge color="danger" variant="soft" size="sm">
+              {String(unreadCount)}
+            </Badge>
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={() => setSub("portals")}
+          className="px-3 py-1.5 text-xs font-semibold rounded transition-colors flex items-center gap-2"
+          style={{
+            backgroundColor: sub === "portals" ? "var(--surface2)" : "transparent",
+            color: sub === "portals" ? "var(--primary)" : "var(--text2)",
+          }}
+        >
+          {t("@legalos.matterWorkspace.comms.sub.portals")}
+        </button>
+      </div>
 
       {sub === "logs" && <LogsPanel {...props} />}
       {sub === "messages" && <MessagesPanel {...props} />}
       {sub === "portals" && <PortalsPanel {...props} />}
-    </VStack>
+    </div>
   );
 }
 
@@ -128,98 +142,134 @@ function LogsPanel({ data, reload, onError }: TabProps) {
     <>
       <Panel
         action={
-          <HStack gap={3} vAlign="center" wrap="wrap">
-            <SegmentedControl
-              label={t("@legalos.matterWorkspace.comms.form.channel")}
-              value={channel}
-              size="sm"
-              onChange={(value) => setChannel(value as typeof channel)}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div
+              role="radiogroup"
+              aria-label={t("@legalos.matterWorkspace.comms.form.channel")}
+              className="inline-flex p-1 border max-w-fit"
+              style={{
+                backgroundColor: "var(--surface2)",
+                borderColor: "var(--border)",
+                borderRadius: "var(--rs)",
+              }}
             >
-              <SegmentedControlItem
-                value="all"
-                label={t("@legalos.matterWorkspace.comms.channel.all")}
-              />
-              {CHANNELS.map((value) => (
-                <SegmentedControlItem
-                  key={value}
-                  value={value}
-                  label={t(`@legalos.matterWorkspace.comms.channel.${value}`)}
-                />
+              <button
+                type="button"
+                role="radio"
+                aria-checked={channel === "all"}
+                onClick={() => setChannel("all")}
+                className="px-2.5 py-1 text-xs font-medium transition-all"
+                style={{
+                  borderRadius: "calc(var(--rs) - 2px)",
+                  backgroundColor: channel === "all" ? "var(--surface)" : "transparent",
+                  color: channel === "all" ? "var(--text)" : "var(--text2)",
+                  boxShadow: channel === "all" ? "var(--shadow)" : "none",
+                }}
+              >
+                {t("@legalos.matterWorkspace.comms.channel.all")}
+              </button>
+              {CHANNELS.map((ch) => (
+                <button
+                  key={ch}
+                  type="button"
+                  role="radio"
+                  aria-checked={channel === ch}
+                  onClick={() => setChannel(ch)}
+                  className="px-2.5 py-1 text-xs font-medium transition-all"
+                  style={{
+                    borderRadius: "calc(var(--rs) - 2px)",
+                    backgroundColor: channel === ch ? "var(--surface)" : "transparent",
+                    color: channel === ch ? "var(--text)" : "var(--text2)",
+                    boxShadow: channel === ch ? "var(--shadow)" : "none",
+                  }}
+                >
+                  {t(`@legalos.matterWorkspace.comms.channel.${ch}`)}
+                </button>
               ))}
-            </SegmentedControl>
-            <TextInput
-              label={t("@legalos.matterWorkspace.comms.logs.search")}
-              isLabelHidden
-              value={search}
-              onChange={setSearch}
-              placeholder={t("@legalos.matterWorkspace.comms.logs.search")}
-              width={220}
-            />
+            </div>
+            <div className="w-52">
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t("@legalos.matterWorkspace.comms.logs.search")}
+                startIcon={<Icon name="search" size={16} />}
+              />
+            </div>
             <Button
-              label={t("@legalos.matterWorkspace.comms.logs.new")}
               variant="primary"
               size="sm"
               onClick={() => setIsLogging(true)}
-            />
-          </HStack>
+            >
+              {t("@legalos.matterWorkspace.comms.logs.new")}
+            </Button>
+          </div>
         }
       >
         {visible.length === 0 ? (
           <EmptyState
-            icon={<Icon icon={PhoneIcon} size="lg" color="secondary" />}
+            icon={<Icon name="call" size={24} />}
             title={t("@legalos.matterWorkspace.comms.logs.emptyTitle")}
             description={t("@legalos.matterWorkspace.comms.logs.emptyDescription")}
-            actions={
+            action={
               <Button
-                label={t("@legalos.matterWorkspace.comms.logs.new")}
                 variant="secondary"
+                size="sm"
                 onClick={() => setIsLogging(true)}
-              />
+              >
+                {t("@legalos.matterWorkspace.comms.logs.new")}
+              </Button>
             }
           />
         ) : (
-          <List hasDividers density="compact">
+          <div
+            className="flex flex-col rounded-md border divide-y overflow-hidden"
+            style={{ borderColor: "var(--border)" }}
+          >
             {visible.map((entry) => (
-              <ListItem
+              <div
                 key={entry.id}
-                label={
-                  entry.subject ||
-                  t(`@legalos.matterWorkspace.comms.channel.${entry.channel}`)
-                }
-                description={[
-                  entry.counterparty,
-                  memberName(entry.logged_by),
-                  entry.duration_minutes
-                    ? t("@legalos.matterWorkspace.comms.logs.duration", {
-                        count: entry.duration_minutes,
-                      })
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-                startContent={
+                className="flex items-center justify-between gap-3 p-3"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
                   <Icon
-                    icon={CHANNEL_ICON[entry.channel]}
-                    size="sm"
-                    color="secondary"
+                    name={CHANNEL_ICON[entry.channel]}
+                    size={16}
+                    style={{ color: "var(--text3)" }}
                   />
-                }
-                endContent={
-                  <HStack gap={3} vAlign="center">
-                    <Badge
-                      variant="neutral"
-                      label={t(
-                        `@legalos.matterWorkspace.comms.direction.${entry.direction}`,
-                      )}
-                    />
-                    <Text type="supporting" color="secondary">
-                      {formatDateTime(entry.occurred_at)}
-                    </Text>
-                  </HStack>
-                }
-              />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>
+                      {entry.subject ||
+                        t(`@legalos.matterWorkspace.comms.channel.${entry.channel}`)}
+                    </span>
+                    <span className="text-xs truncate" style={{ color: "var(--text3)" }}>
+                      {[
+                        entry.counterparty,
+                        memberName(entry.logged_by),
+                        entry.duration_minutes
+                          ? t("@legalos.matterWorkspace.comms.logs.duration", {
+                              count: entry.duration_minutes,
+                            })
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  <Badge color="neutral" variant="soft">
+                    {t(
+                      `@legalos.matterWorkspace.comms.direction.${entry.direction}`,
+                    )}
+                  </Badge>
+                  <span className="text-xs" style={{ color: "var(--text3)" }}>
+                    {formatDateTime(entry.occurred_at)}
+                  </span>
+                </div>
+              </div>
             ))}
-          </List>
+          </div>
         )}
       </Panel>
 
@@ -289,88 +339,77 @@ function LogDialog({
 
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange} width={520}>
-      <Layout
-        header={
-          <DialogHeader
-            title={t("@legalos.matterWorkspace.comms.logs.new")}
-            onOpenChange={onOpenChange}
-          />
-        }
-        content={
-          <LayoutContent>
-            <VStack gap={4}>
-              <HStack gap={3}>
-                <Selector
-                  label={t("@legalos.matterWorkspace.comms.form.channel")}
-                  value={channel}
-                  onChange={(value) => setChannel(value as CommunicationChannel)}
-                  options={CHANNELS.map((value) => ({
-                    value,
-                    label: t(`@legalos.matterWorkspace.comms.channel.${value}`),
-                  }))}
-                />
-                <Selector
-                  label={t("@legalos.matterWorkspace.comms.form.direction")}
-                  value={direction}
-                  onChange={(value) =>
-                    setDirection(value as CommunicationDirection)
-                  }
-                  options={(["incoming", "outgoing"] as const).map((value) => ({
-                    value,
-                    label: t(`@legalos.matterWorkspace.comms.direction.${value}`),
-                  }))}
-                />
-                {hasDuration && (
-                  <NumberInput
-                    label={t("@legalos.matterWorkspace.comms.form.duration")}
-                    value={duration}
-                    onChange={(value) => setDuration(value ?? 1)}
-                    min={1}
-                    step={5}
-                  />
-                )}
-              </HStack>
-              <TextInput
-                label={t("@legalos.matterWorkspace.comms.form.counterparty")}
-                value={counterparty}
-                onChange={setCounterparty}
-              />
-              <TextInput
-                label={t("@legalos.matterWorkspace.comms.form.subject")}
-                value={subject}
-                onChange={setSubject}
-              />
-              <TextArea
-                label={t("@legalos.matterWorkspace.comms.form.body")}
-                value={body}
-                onChange={setBody}
-                rows={4}
-              />
-            </VStack>
-          </LayoutContent>
-        }
-        footer={
-          <LayoutFooter hasDivider>
-            <HStack gap={3} hAlign="end">
-              <Button
-                label={t("@legalos.matterWorkspace.action.cancel")}
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              />
-              <Button
-                label={
-                  saving
-                    ? t("@legalos.matterWorkspace.action.saving")
-                    : t("@legalos.matterWorkspace.action.save")
-                }
-                variant="primary"
-                isDisabled={saving}
-                onClick={submit}
-              />
-            </HStack>
-          </LayoutFooter>
-        }
+      <DialogHeader
+        title={t("@legalos.matterWorkspace.comms.logs.new")}
+        onOpenChange={onOpenChange}
       />
+      <DialogContent>
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Select
+              label={t("@legalos.matterWorkspace.comms.form.channel")}
+              value={channel}
+              onChange={(e) => setChannel(e.target.value as CommunicationChannel)}
+              options={CHANNELS.map((value) => ({
+                value,
+                label: t(`@legalos.matterWorkspace.comms.channel.${value}`),
+              }))}
+            />
+            <Select
+              label={t("@legalos.matterWorkspace.comms.form.direction")}
+              value={direction}
+              onChange={(e) =>
+                setDirection(e.target.value as CommunicationDirection)
+              }
+              options={(["incoming", "outgoing"] as const).map((value) => ({
+                value,
+                label: t(`@legalos.matterWorkspace.comms.direction.${value}`),
+              }))}
+            />
+            {hasDuration && (
+              <Input
+                type="number"
+                label={t("@legalos.matterWorkspace.comms.form.duration")}
+                value={duration}
+                onChange={(e) => setDuration(e.target.value ? Number(e.target.value) : 1)}
+                min={1}
+                step={5}
+              />
+            )}
+          </div>
+          <Input
+            label={t("@legalos.matterWorkspace.comms.form.counterparty")}
+            value={counterparty}
+            onChange={(e) => setCounterparty(e.target.value)}
+          />
+          <Input
+            label={t("@legalos.matterWorkspace.comms.form.subject")}
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+          />
+          <Textarea
+            label={t("@legalos.matterWorkspace.comms.form.body")}
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={4}
+          />
+        </div>
+      </DialogContent>
+      <DialogFooter>
+        <Button
+          variant="secondary"
+          onClick={() => onOpenChange(false)}
+        >
+          {t("@legalos.matterWorkspace.action.cancel")}
+        </Button>
+        <Button
+          variant="primary"
+          loading={saving}
+          onClick={submit}
+        >
+          {t("@legalos.matterWorkspace.action.save")}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }
@@ -386,30 +425,33 @@ function MessagesPanel({ data, reload, onError }: TabProps) {
       <Panel
         action={
           <Button
-            label={t("@legalos.matterWorkspace.comms.messages.new")}
             variant="primary"
             size="sm"
             onClick={() => setIsStarting(true)}
-          />
+          >
+            {t("@legalos.matterWorkspace.comms.messages.new")}
+          </Button>
         }
       >
         {data.threads.length === 0 ? (
           <EmptyState
-            icon={<Icon icon={ChatBubbleLeftRightIcon} size="lg" color="secondary" />}
+            icon={<Icon name="chat" size={24} />}
             title={t("@legalos.matterWorkspace.comms.messages.emptyTitle")}
             description={t(
               "@legalos.matterWorkspace.comms.messages.emptyDescription",
             )}
-            actions={
+            action={
               <Button
-                label={t("@legalos.matterWorkspace.comms.messages.new")}
                 variant="secondary"
+                size="sm"
                 onClick={() => setIsStarting(true)}
-              />
+              >
+                {t("@legalos.matterWorkspace.comms.messages.new")}
+              </Button>
             }
           />
         ) : (
-          <VStack gap={4}>
+          <div className="flex flex-col gap-4">
             {data.threads.map((thread) => (
               <ThreadCard
                 key={thread.id}
@@ -418,7 +460,7 @@ function MessagesPanel({ data, reload, onError }: TabProps) {
                 onError={onError}
               />
             ))}
-          </VStack>
+          </div>
         )}
       </Panel>
 
@@ -462,14 +504,14 @@ function ThreadCard({
   }
 
   return (
-    <Card>
-      <VStack gap={3}>
-        <HStack hAlign="between" vAlign="center" gap={3} wrap="wrap">
-          <VStack gap={0}>
-            <Text type="body" weight="semibold">
+    <Card className="p-4">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>
               {thread.subject}
-            </Text>
-            <Text type="supporting" color="secondary">
+            </span>
+            <span className="text-xs" style={{ color: "var(--text3)" }}>
               {[
                 thread.contact_name ??
                   t("@legalos.matterWorkspace.comms.messages.noPortal"),
@@ -477,20 +519,18 @@ function ThreadCard({
                   count: thread.message_count,
                 }),
               ].join(" · ")}
-            </Text>
-          </VStack>
-          <HStack gap={2} vAlign="center">
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
             {thread.unread_count > 0 && (
-              <Badge
-                variant="error"
-                label={t("@legalos.matterWorkspace.comms.messages.unread", {
+              <Badge color="danger" variant="soft">
+                {t("@legalos.matterWorkspace.comms.messages.unread", {
                   count: thread.unread_count,
                 })}
-              />
+              </Badge>
             )}
             {thread.unread_count > 0 && (
               <Button
-                label={t("@legalos.matterWorkspace.comms.messages.markRead")}
                 variant="ghost"
                 size="sm"
                 onClick={() =>
@@ -499,60 +539,75 @@ function ThreadCard({
                     "@legalos.matterWorkspace.errors.message",
                   )
                 }
-              />
+              >
+                {t("@legalos.matterWorkspace.comms.messages.markRead")}
+              </Button>
             )}
-          </HStack>
-        </HStack>
+          </div>
+        </div>
 
-        <Divider />
-
-        <List hasDividers density="compact">
-          {thread.messages.map((message) => (
-            <ListItem
-              key={message.id}
-              label={
-                message.author_kind === "firm"
-                  ? memberName(message.author_user)
-                  : message.author_name ||
-                    t("@legalos.matterWorkspace.comms.messages.client")
-              }
-              description={message.body}
-              startContent={
-                <Avatar
-                  name={
-                    message.author_kind === "firm"
-                      ? memberName(message.author_user)
-                      : message.author_name || "?"
-                  }
-                  size="sm"
-                  tooltip={false}
-                />
-              }
-              endContent={
-                <Text type="supporting" color="secondary">
+        <div
+          className="flex flex-col rounded-md border divide-y overflow-hidden my-2"
+          style={{ borderColor: "var(--border)" }}
+        >
+          {thread.messages.map((message) => {
+            const author =
+              message.author_kind === "firm"
+                ? memberName(message.author_user)
+                : message.author_name ||
+                  t("@legalos.matterWorkspace.comms.messages.client");
+            return (
+              <div
+                key={message.id}
+                className="flex items-start justify-between gap-3 p-3"
+              >
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <div
+                    title={author}
+                    className="flex items-center justify-center w-6 h-6 text-[10px] font-bold rounded-full border shrink-0 mt-0.5"
+                    style={{
+                      backgroundColor: "var(--surface3)",
+                      borderColor: "var(--border)",
+                      color: "var(--text2)",
+                    }}
+                  >
+                    {author ? author.slice(0, 2).toUpperCase() : "?"}
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-semibold" style={{ color: "var(--text)" }}>
+                      {author}
+                    </span>
+                    <p className="text-xs m-0 mt-1 leading-relaxed" style={{ color: "var(--text2)" }}>
+                      {message.body}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[11px] shrink-0" style={{ color: "var(--text3)" }}>
                   {formatDateTime(message.sent_at)}
-                </Text>
-              }
-            />
-          ))}
-        </List>
+                </span>
+              </div>
+            );
+          })}
+        </div>
 
-        <HStack gap={3} vAlign="end">
-          <TextInput
-            label={t("@legalos.matterWorkspace.comms.messages.reply")}
-            isLabelHidden
-            value={reply}
-            onChange={setReply}
-            placeholder={t("@legalos.matterWorkspace.comms.messages.reply")}
-          />
+        <div className="flex items-center gap-3">
+          <div className="flex-1">
+            <Input
+              value={reply}
+              onChange={(e) => setReply(e.target.value)}
+              placeholder={t("@legalos.matterWorkspace.comms.messages.reply")}
+            />
+          </div>
           <Button
-            label={t("@legalos.matterWorkspace.comms.messages.send")}
             variant="primary"
-            isDisabled={sending || !reply.trim()}
+            loading={sending}
+            disabled={!reply.trim()}
             onClick={send}
-          />
-        </HStack>
-      </VStack>
+          >
+            {t("@legalos.matterWorkspace.comms.messages.send")}
+          </Button>
+        </div>
+      </div>
     </Card>
   );
 }
@@ -604,65 +659,55 @@ function StartThreadDialog({
 
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange} width={520}>
-      <Layout
-        header={
-          <DialogHeader
-            title={t("@legalos.matterWorkspace.comms.messages.new")}
-            onOpenChange={onOpenChange}
-          />
-        }
-        content={
-          <LayoutContent>
-            <VStack gap={4}>
-              <Selector
-                label={t("@legalos.matterWorkspace.comms.messages.sendTo")}
-                value={portalId}
-                onChange={setPortalId}
-                hasClear
-                placeholder={t("@legalos.matterWorkspace.comms.messages.noPortal")}
-                options={reachable.map((portal) => ({
-                  value: String(portal.id),
-                  label: portal.contact_name,
-                }))}
-              />
-              <TextInput
-                label={t("@legalos.matterWorkspace.comms.messages.subject")}
-                value={subject}
-                onChange={setSubject}
-                isRequired
-              />
-              <TextArea
-                label={t("@legalos.matterWorkspace.comms.messages.firstMessage")}
-                value={body}
-                onChange={setBody}
-                rows={5}
-                isRequired
-              />
-            </VStack>
-          </LayoutContent>
-        }
-        footer={
-          <LayoutFooter hasDivider>
-            <HStack gap={3} hAlign="end">
-              <Button
-                label={t("@legalos.matterWorkspace.action.cancel")}
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              />
-              <Button
-                label={
-                  saving
-                    ? t("@legalos.matterWorkspace.action.saving")
-                    : t("@legalos.matterWorkspace.comms.messages.start")
-                }
-                variant="primary"
-                isDisabled={saving || !subject.trim() || !body.trim()}
-                onClick={submit}
-              />
-            </HStack>
-          </LayoutFooter>
-        }
+      <DialogHeader
+        title={t("@legalos.matterWorkspace.comms.messages.new")}
+        onOpenChange={onOpenChange}
       />
+      <DialogContent>
+        <div className="flex flex-col gap-4">
+          <Select
+            label={t("@legalos.matterWorkspace.comms.messages.sendTo")}
+            value={portalId ?? ""}
+            onChange={(e) => setPortalId(e.target.value || null)}
+            options={[
+              { value: "", label: t("@legalos.matterWorkspace.comms.messages.noPortal") },
+              ...reachable.map((portal) => ({
+                value: String(portal.id),
+                label: portal.contact_name,
+              })),
+            ]}
+          />
+          <Input
+            label={t("@legalos.matterWorkspace.comms.messages.subject")}
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            required
+          />
+          <Textarea
+            label={t("@legalos.matterWorkspace.comms.messages.firstMessage")}
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={5}
+            required
+          />
+        </div>
+      </DialogContent>
+      <DialogFooter>
+        <Button
+          variant="secondary"
+          onClick={() => onOpenChange(false)}
+        >
+          {t("@legalos.matterWorkspace.action.cancel")}
+        </Button>
+        <Button
+          variant="primary"
+          loading={saving}
+          disabled={!subject.trim() || !body.trim()}
+          onClick={submit}
+        >
+          {t("@legalos.matterWorkspace.comms.messages.start")}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }
@@ -681,113 +726,139 @@ export function PortalsPanel({ data, reload, onError }: TabProps) {
       <Panel
         action={
           <Button
-            label={t("@legalos.matterWorkspace.comms.portals.invite")}
             variant="primary"
             size="sm"
-            isDisabled={data.clientContacts.length === 0}
+            disabled={data.clientContacts.length === 0}
             onClick={() => setIsInviting(true)}
-          />
+          >
+            {t("@legalos.matterWorkspace.comms.portals.invite")}
+          </Button>
         }
       >
         {data.clientContacts.length === 0 && (
-          <Text type="body" color="secondary">
+          <p className="text-xs m-0" style={{ color: "var(--text3)" }}>
             {t("@legalos.matterWorkspace.comms.portals.noContacts")}
-          </Text>
+          </p>
         )}
 
         {data.portals.length === 0 ? (
           <EmptyState
-            icon={<Icon icon={UsersIcon} size="lg" color="secondary" />}
+            icon={<Icon name="groups" size={24} />}
             title={t("@legalos.matterWorkspace.comms.portals.emptyTitle")}
             description={t("@legalos.matterWorkspace.comms.portals.emptyDescription")}
           />
         ) : (
-          <List hasDividers>
+          <div
+            className="flex flex-col rounded-md border divide-y overflow-hidden"
+            style={{ borderColor: "var(--border)" }}
+          >
             {data.portals.map((portal) => (
-              <ListItem
+              <div
                 key={portal.id}
-                label={portal.contact_name}
-                description={[
-                  portal.contact_email,
-                  portal.last_active_at
-                    ? t("@legalos.matterWorkspace.comms.portals.lastActive", {
-                        date: formatDate(portal.last_active_at),
-                      })
-                    : t("@legalos.matterWorkspace.comms.portals.neverActive"),
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-                startContent={
-                  <Avatar name={portal.contact_name} size="sm" tooltip={false} />
-                }
-                endContent={
-                  <HStack gap={3} vAlign="center" wrap="wrap">
-                    <PortalPermissions portal={portal} />
-                    <Badge
-                      variant={PORTAL_VARIANT[portal.status]}
-                      label={t(
-                        `@legalos.matterWorkspace.comms.portals.status.${portal.status}`,
-                      )}
-                    />
-                    {portal.status === "revoked" ? (
-                      <Button
-                        label={t("@legalos.matterWorkspace.comms.portals.reinvite")}
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          write(
-                            () =>
-                              practice!.matters.invitePortal(data.matter.id, {
-                                contact_id: portal.contact_id,
-                                can_view_documents: portal.can_view_documents,
-                                can_view_bills: portal.can_view_bills,
-                                can_message: portal.can_message,
-                              }),
-                            "@legalos.matterWorkspace.errors.portal",
-                          )
-                        }
-                      />
-                    ) : (
-                      <>
-                        {portal.status === "invited" && (
-                          <Button
-                            label={t(
-                              "@legalos.matterWorkspace.comms.portals.activate",
-                            )}
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              write(
-                                () =>
-                                  practice!.portals.update(portal.id, {
-                                    status: "active",
-                                  }),
-                                "@legalos.matterWorkspace.errors.portal",
-                              )
-                            }
-                          />
-                        )}
+                className="flex items-center justify-between gap-3 p-3"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div
+                    title={portal.contact_name}
+                    className="flex items-center justify-center w-6 h-6 text-[10px] font-bold rounded-full border shrink-0"
+                    style={{
+                      backgroundColor: "var(--surface3)",
+                      borderColor: "var(--border)",
+                      color: "var(--text2)",
+                    }}
+                  >
+                    {portal.contact_name ? portal.contact_name.slice(0, 2).toUpperCase() : "?"}
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>
+                      {portal.contact_name}
+                    </span>
+                    <span className="text-xs truncate" style={{ color: "var(--text3)" }}>
+                      {[
+                        portal.contact_email,
+                        portal.last_active_at
+                          ? t("@legalos.matterWorkspace.comms.portals.lastActive", {
+                              date: formatDate(portal.last_active_at),
+                            })
+                          : t("@legalos.matterWorkspace.comms.portals.neverActive"),
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0 flex-wrap">
+                  <PortalPermissions portal={portal} />
+                  <Badge
+                    color={PORTAL_VARIANT[portal.status]}
+                    variant="soft"
+                  >
+                    {t(
+                      `@legalos.matterWorkspace.comms.portals.status.${portal.status}`,
+                    )}
+                  </Badge>
+                  {portal.status === "revoked" ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        write(
+                          () =>
+                            practice!.matters.invitePortal(data.matter.id, {
+                              contact_id: portal.contact_id,
+                              can_view_documents: portal.can_view_documents,
+                              can_view_bills: portal.can_view_bills,
+                              can_message: portal.can_message,
+                            }),
+                          "@legalos.matterWorkspace.errors.portal",
+                        )
+                      }
+                    >
+                      {t("@legalos.matterWorkspace.comms.portals.reinvite")}
+                    </Button>
+                  ) : (
+                    <>
+                      {portal.status === "invited" && (
                         <Button
-                          label={t("@legalos.matterWorkspace.comms.portals.revoke")}
                           variant="ghost"
                           size="sm"
                           onClick={() =>
                             write(
                               () =>
                                 practice!.portals.update(portal.id, {
-                                  status: "revoked",
+                                  status: "active",
                                 }),
                               "@legalos.matterWorkspace.errors.portal",
                             )
                           }
-                        />
-                      </>
-                    )}
-                  </HStack>
-                }
-              />
+                        >
+                          {t(
+                            "@legalos.matterWorkspace.comms.portals.activate",
+                          )}
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          write(
+                            () =>
+                              practice!.portals.update(portal.id, {
+                                status: "revoked",
+                              }),
+                            "@legalos.matterWorkspace.errors.portal",
+                          )
+                        }
+                      >
+                        {t("@legalos.matterWorkspace.comms.portals.revoke")}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
             ))}
-          </List>
+          </div>
         )}
       </Panel>
 
@@ -813,11 +884,13 @@ function PortalPermissions({ portal }: { portal: ClientPortal }) {
   ].filter(Boolean) as string[];
 
   return (
-    <HStack gap={1} wrap="wrap">
+    <div className="flex items-center gap-1 flex-wrap">
       {granted.map((label) => (
-        <Badge key={label} variant="neutral" label={label} />
+        <Badge key={label} color="neutral" variant="soft" size="sm">
+          {label}
+        </Badge>
       ))}
-    </HStack>
+    </div>
   );
 }
 
@@ -865,68 +938,59 @@ function InvitePortalDialog({
 
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange} width={480}>
-      <Layout
-        header={
-          <DialogHeader
-            title={t("@legalos.matterWorkspace.comms.portals.invite")}
-            onOpenChange={onOpenChange}
-          />
-        }
-        content={
-          <LayoutContent>
-            <VStack gap={4}>
-              <Selector
-                label={t("@legalos.matterWorkspace.contacts.form.pick")}
-                value={contactId}
-                onChange={setContactId}
-                hasClear
-                options={data.clientContacts.map((contact) => ({
-                  value: String(contact.id),
-                  label: contact.title
-                    ? `${contact.name} — ${contact.title}`
-                    : contact.name,
-                }))}
-              />
-              <Switch
-                label={t("@legalos.matterWorkspace.comms.portals.canViewDocuments")}
-                value={documents}
-                onChange={setDocuments}
-              />
-              <Switch
-                label={t("@legalos.matterWorkspace.comms.portals.canViewBills")}
-                value={bills}
-                onChange={setBills}
-              />
-              <Switch
-                label={t("@legalos.matterWorkspace.comms.portals.canMessage")}
-                value={messages}
-                onChange={setMessages}
-              />
-            </VStack>
-          </LayoutContent>
-        }
-        footer={
-          <LayoutFooter hasDivider>
-            <HStack gap={3} hAlign="end">
-              <Button
-                label={t("@legalos.matterWorkspace.action.cancel")}
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              />
-              <Button
-                label={
-                  saving
-                    ? t("@legalos.matterWorkspace.action.saving")
-                    : t("@legalos.matterWorkspace.comms.portals.invite")
-                }
-                variant="primary"
-                isDisabled={saving || !contactId}
-                onClick={submit}
-              />
-            </HStack>
-          </LayoutFooter>
-        }
+      <DialogHeader
+        title={t("@legalos.matterWorkspace.comms.portals.invite")}
+        onOpenChange={onOpenChange}
       />
+      <DialogContent>
+        <div className="flex flex-col gap-4">
+          <Select
+            label={t("@legalos.matterWorkspace.contacts.form.pick")}
+            value={contactId ?? ""}
+            onChange={(e) => setContactId(e.target.value || null)}
+            options={[
+              { value: "", label: "—" },
+              ...data.clientContacts.map((contact) => ({
+                value: String(contact.id),
+                label: contact.title
+                  ? `${contact.name} — ${contact.title}`
+                  : contact.name,
+              })),
+            ]}
+          />
+          <Switch
+            label={t("@legalos.matterWorkspace.comms.portals.canViewDocuments")}
+            checked={documents}
+            onChange={setDocuments}
+          />
+          <Switch
+            label={t("@legalos.matterWorkspace.comms.portals.canViewBills")}
+            checked={bills}
+            onChange={setBills}
+          />
+          <Switch
+            label={t("@legalos.matterWorkspace.comms.portals.canMessage")}
+            checked={messages}
+            onChange={setMessages}
+          />
+        </div>
+      </DialogContent>
+      <DialogFooter>
+        <Button
+          variant="secondary"
+          onClick={() => onOpenChange(false)}
+        >
+          {t("@legalos.matterWorkspace.action.cancel")}
+        </Button>
+        <Button
+          variant="primary"
+          loading={saving}
+          disabled={!contactId}
+          onClick={submit}
+        >
+          {t("@legalos.matterWorkspace.comms.portals.invite")}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

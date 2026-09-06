@@ -8,18 +8,17 @@
  * the matter ID so that facts, narrative and legal basis can be recorded immediately.
  */
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Text } from "@astryxdesign/core/Text";
-import { Button } from "@astryxdesign/core/Button";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { NumberInput } from "@astryxdesign/core/NumberInput";
-import { DateInput } from "@astryxdesign/core/DateInput";
-import { Selector } from "@astryxdesign/core/Selector";
-import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
-import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
-import type { ISODateString } from "@astryxdesign/core/Calendar";
+import {
+  Dialog,
+  DialogHeader,
+  DialogContent,
+  DialogFooter,
+} from "@/components/ui/Dialog";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
 import { useOrg } from "@/lib/org";
 import { InlineError } from "@/components/DataState";
 import { ApiError } from "@/lib/api";
@@ -44,7 +43,7 @@ export function CreateCaseDialog({
   const [caseNumber, setCaseNumber] = useState("");
   const [judicialYear, setJudicialYear] = useState<number | undefined>(undefined);
   const [litigationDegree, setLitigationDegree] = useState<string>("first_instance");
-  const [filedDate, setFiledDate] = useState<ISODateString | undefined>(undefined);
+  const [filedDate, setFiledDate] = useState<string | undefined>(undefined);
   const [opposingParty, setOpposingParty] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,7 +81,11 @@ export function CreateCaseDialog({
         // Race condition: another tab created it; trigger reload so user gets the case file
         onCreated();
       } else {
-        setError(exc instanceof Error ? exc.message : t("@legalos.matterWorkspace.caseFile.saveFailed"));
+        setError(
+          exc instanceof Error
+            ? exc.message
+            : t("@legalos.matterWorkspace.caseFile.saveFailed"),
+        );
       }
     } finally {
       setSaving(false);
@@ -97,91 +100,89 @@ export function CreateCaseDialog({
         if (!open) reset();
       }}
       purpose="form"
+      width={520}
     >
-      <Layout
-        header={
-          <DialogHeader
-            title={t("@legalos.matterWorkspace.caseFile.dialog.heading")}
-            onOpenChange={onOpenChange}
-          />
-        }
-        content={
-          <LayoutContent>
-            <VStack gap={4}>
-              <Text type="body" color="secondary">
-                {t("@legalos.matterWorkspace.caseFile.dialog.hint")}
-              </Text>
-
-              <InlineError message={error} onDismiss={() => setError(null)} />
-
-              <HStack gap={3}>
-                <TextInput
-                  label={t("@legalos.matterWorkspace.caseFile.dialog.court")}
-                  value={court}
-                  onChange={setCourt}
-                />
-                <TextInput
-                  label={t("@legalos.matterWorkspace.caseFile.dialog.caseNumber")}
-                  value={caseNumber}
-                  onChange={setCaseNumber}
-                />
-              </HStack>
-
-              <HStack gap={3}>
-                <NumberInput
-                  label={t("@legalos.matterWorkspace.caseFile.dialog.judicialYear")}
-                  value={judicialYear}
-                  onChange={(val) => setJudicialYear(val ?? undefined)}
-                  min={1900}
-                  max={2100}
-                  step={1}
-                />
-                <Selector
-                  label={t("@legalos.matterWorkspace.caseFile.dialog.litigationDegree")}
-                  value={litigationDegree}
-                  onChange={(v) => setLitigationDegree(v ?? "first_instance")}
-                  options={[
-                    { value: "first_instance", label: enumLabel("first_instance") },
-                    { value: "appeal", label: enumLabel("appeal") },
-                    { value: "cassation", label: enumLabel("cassation") },
-                  ]}
-                />
-              </HStack>
-
-              <HStack gap={3}>
-                <DateInput
-                  label={t("@legalos.matterWorkspace.caseFile.dialog.filedDate")}
-                  value={filedDate}
-                  onChange={setFiledDate}
-                />
-                <TextInput
-                  label={t("@legalos.matterWorkspace.caseFile.dialog.opposingParty")}
-                  value={opposingParty}
-                  onChange={setOpposingParty}
-                />
-              </HStack>
-            </VStack>
-          </LayoutContent>
-        }
-        footer={
-          <LayoutFooter>
-            <HStack gap={2} hAlign="end">
-              <Button
-                label={t("@legalos.matterWorkspace.action.cancel")}
-                variant="secondary"
-                isDisabled={saving}
-                onClick={() => onOpenChange(false)}
-              />
-              <Button
-                label={t("@legalos.matterWorkspace.caseFile.createCase")}
-                variant="primary"
-                isLoading={saving}
-                onClick={submit}
-              />
-            </HStack>
-          </LayoutFooter>
-        }
+      <DialogHeader
+        title={t("@legalos.matterWorkspace.caseFile.dialog.heading")}
+        onOpenChange={onOpenChange}
       />
+      <DialogContent>
+        <div className="flex flex-col gap-4">
+          <p className="text-xs m-0" style={{ color: "var(--text2)" }}>
+            {t("@legalos.matterWorkspace.caseFile.dialog.hint")}
+          </p>
+
+          <InlineError message={error} onDismiss={() => setError(null)} />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label={t("@legalos.matterWorkspace.caseFile.dialog.court")}
+              value={court}
+              onChange={(e) => setCourt(e.target.value)}
+            />
+            <Input
+              label={t("@legalos.matterWorkspace.caseFile.dialog.caseNumber")}
+              value={caseNumber}
+              onChange={(e) => setCaseNumber(e.target.value)}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              type="number"
+              label={t("@legalos.matterWorkspace.caseFile.dialog.judicialYear")}
+              value={judicialYear ?? ""}
+              onChange={(e) => {
+                const val = e.target.value ? Number(e.target.value) : undefined;
+                setJudicialYear(val);
+              }}
+              min={1900}
+              max={2100}
+              step={1}
+            />
+            <Select
+              label={t("@legalos.matterWorkspace.caseFile.dialog.litigationDegree")}
+              value={litigationDegree}
+              onChange={(e) => setLitigationDegree(e.target.value)}
+              options={[
+                { value: "first_instance", label: enumLabel("first_instance") },
+                { value: "appeal", label: enumLabel("appeal") },
+                { value: "cassation", label: enumLabel("cassation") },
+              ]}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              type="date"
+              label={t("@legalos.matterWorkspace.caseFile.dialog.filedDate")}
+              value={filedDate ?? ""}
+              onChange={(e) => setFiledDate(e.target.value || undefined)}
+            />
+            <Input
+              label={t("@legalos.matterWorkspace.caseFile.dialog.opposingParty")}
+              value={opposingParty}
+              onChange={(e) => setOpposingParty(e.target.value)}
+            />
+          </div>
+        </div>
+      </DialogContent>
+      <DialogFooter>
+        <Button
+          variant="secondary"
+          disabled={saving}
+          onClick={() => onOpenChange(false)}
+        >
+          {t("@legalos.matterWorkspace.action.cancel")}
+        </Button>
+        <Button
+          variant="primary"
+          loading={saving}
+          onClick={submit}
+        >
+          {t("@legalos.matterWorkspace.caseFile.createCase")}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }

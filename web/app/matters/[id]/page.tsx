@@ -13,32 +13,22 @@
  * can never disagree about what is unbilled.
  */
 
-import { use, useState } from "react";
-import { Layout, LayoutHeader, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Badge } from "@astryxdesign/core/Badge";
-import { Avatar } from "@astryxdesign/core/Avatar";
-import { List, ListItem } from "@astryxdesign/core/List";
-import { TabList, Tab, TabMenu } from "@astryxdesign/core/TabList";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { TextArea } from "@astryxdesign/core/TextArea";
-import { Selector } from "@astryxdesign/core/Selector";
-import { DateInput } from "@astryxdesign/core/DateInput";
-import type { ISODateString } from "@astryxdesign/core/Calendar";
-import { Link } from "@astryxdesign/core/Link";
-import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
-import { useTranslator } from "@astryxdesign/core/i18n";
-import {
-  ArrowLeftIcon,
-  ChatBubbleLeftRightIcon,
-  CheckCircleIcon,
-  DocumentTextIcon,
-} from "@heroicons/react/24/outline";
+import React, { use, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslator } from "@astryxdesign/core/i18n";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Icon } from "@/components/ui/Icon";
+import { Input, Textarea } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { EmptyState } from "@/components/ui/EmptyState";
+import {
+  Dialog,
+  DialogHeader,
+  DialogContent,
+  DialogFooter,
+} from "@/components/ui/Dialog";
 import { ApiError } from "@/lib/api";
 import { memberLabel, useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
@@ -236,181 +226,218 @@ export default function MatterWorkspacePage({
           onError: setError,
         };
 
+        const isOverflowActive = OVERFLOW_TABS.some((ot) => ot.value === tab);
+
         return (
-          <Layout
-            height="fill"
-            header={
-              <LayoutHeader hasDivider padding={0}>
-                <VStack gap={4}>
-                  <Link href="/matters">
-                    <HStack gap={1.5} vAlign="center">
-                      <Icon icon={ArrowLeftIcon} size="sm" color="secondary" />
-                      <Text type="body" color="secondary">
-                        {t("@legalos.matters.heading")}
-                      </Text>
-                    </HStack>
-                  </Link>
+          <div className="flex flex-col min-h-screen gap-6 p-4 md:p-8 max-w-7xl mx-auto w-full">
+            {/* Header section */}
+            <div className="flex flex-col gap-4 border-b pb-4" style={{ borderColor: "var(--border)" }}>
+              <Link
+                href="/matters"
+                className="inline-flex items-center gap-1.5 text-xs font-medium hover:underline max-w-fit"
+                style={{ color: "var(--text2)" }}
+              >
+                <Icon name="arrow_back" size={16} />
+                <span>{t("@legalos.matters.heading")}</span>
+              </Link>
 
-                  <HStack hAlign="between" vAlign="center" wrap="wrap" gap={4}>
-                    <VStack gap={1}>
-                      <HStack gap={3} vAlign="center" wrap="wrap">
-                        {/* The number leads, the way a firm refers to the file. */}
-                        <Heading level={2}>{matter.matter_number}</Heading>
-                        <MatterTypeBadge type={matter.matter_type} />
-                        <MatterStatusMark status={matter.status} />
-                      </HStack>
-                      <Text type="body" color="secondary">
-                        {matter.name}
-                        {" · "}
-                        <Link href={`/clients/${matter.client_id}`}>
-                          {matter.client_name}
-                        </Link>
-                        {" · "}
-                        {t("@legalos.distinction.matters.openedOn", {
-                          date: formatDate(matter.opened_date),
-                        })}
-                      </Text>
-                    </VStack>
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h1 className="text-xl font-bold tracking-tight m-0" style={{ color: "var(--text)" }}>
+                      {matter.matter_number}
+                    </h1>
+                    <MatterTypeBadge type={matter.matter_type} />
+                    <MatterStatusMark status={matter.status} />
+                  </div>
+                  <div className="text-xs" style={{ color: "var(--text2)" }}>
+                    <span>{matter.name}</span>
+                    <span>{" · "}</span>
+                    <Link
+                      href={`/clients/${matter.client_id}`}
+                      className="font-medium hover:underline"
+                      style={{ color: "var(--primary)" }}
+                    >
+                      {matter.client_name}
+                    </Link>
+                    <span>{" · "}</span>
+                    <span>
+                      {t("@legalos.distinction.matters.openedOn", {
+                        date: formatDate(matter.opened_date),
+                      })}
+                    </span>
+                  </div>
+                </div>
 
-                    <HStack gap={2} vAlign="center" wrap="wrap">
-                      <Selector
-                        label={t("@legalos.matters.field.status")}
-                        isLabelHidden
-                        value={matter.status}
-                        onChange={setStatus}
-                        width={150}
-                        options={[
-                          {
-                            value: "active",
-                            label: t("@legalos.matters.status.active"),
-                          },
-                          {
-                            value: "on_hold",
-                            label: t("@legalos.matters.status.onHold"),
-                          },
-                          {
-                            value: "closed",
-                            label: t("@legalos.matters.status.closed"),
-                          },
-                        ]}
-                      />
-                      <Button
-                        label={t("@legalos.matterWorkspace.action.duplicate")}
-                        variant="secondary"
-                        onClick={duplicate}
-                      />
-                      <Button
-                        label={t("@legalos.matterWorkspace.action.share")}
-                        variant="secondary"
-                        onClick={() => setTab("communications")}
-                      />
-                      <Button
-                        label={t("@legalos.matterWorkspace.action.edit")}
-                        variant="primary"
-                        onClick={() => setEditOpen(true)}
-                      />
-                    </HStack>
-                  </HStack>
-
-                  {/* Stays on screen whatever tab is open (spec §2, س-٢). */}
-                  <FinancialStrip
-                    data={data}
-                    onQuickBill={() => {
-                      setTab("bills");
-                      setQuickBillOpen(true);
-                    }}
-                    onOpenBills={() => setTab("bills")}
-                    onRecordDeposit={() => {
-                      setTab("transactions");
-                      setRecordFundsOpen(true);
-                    }}
-                  />
-
-                  <TabList value={tab} onChange={setTab} hasDivider>
-                    {TABS.map((tabDef) => (
-                      <Tab
-                        key={tabDef.value}
-                        value={tabDef.value}
-                        label={t(tabDef.labelKey)}
-                        endContent={
-                          tabDef.value === "tasks" && openTasks.length > 0 ? (
-                            <Badge
-                              variant="neutral"
-                              label={String(openTasks.length)}
-                            />
-                          ) : tabDef.value === "communications" && unread > 0 ? (
-                            <Badge variant="error" label={String(unread)} />
-                          ) : undefined
-                        }
-                      />
-                    ))}
-                    <TabMenu
-                      label={t("@legalos.matterWorkspace.tab.more")}
-                      options={OVERFLOW_TABS.map((tabDef) => ({
-                        value: tabDef.value,
-                        label: t(tabDef.labelKey),
-                      }))}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="w-36">
+                    <Select
+                      value={matter.status}
+                      onChange={(e) => setStatus(e.target.value)}
+                      options={[
+                        {
+                          value: "active",
+                          label: t("@legalos.matters.status.active"),
+                        },
+                        {
+                          value: "on_hold",
+                          label: t("@legalos.matters.status.onHold"),
+                        },
+                        {
+                          value: "closed",
+                          label: t("@legalos.matters.status.closed"),
+                        },
+                      ]}
                     />
-                  </TabList>
-                </VStack>
-              </LayoutHeader>
-            }
-            content={
-              <LayoutContent padding={0} isScrollable>
-                <VStack gap={6}>
-                  <InlineError message={error} onDismiss={() => setError(null)} />
+                  </div>
+                  <Button
+                    variant="secondary"
+                    onClick={duplicate}
+                  >
+                    {t("@legalos.matterWorkspace.action.duplicate")}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setTab("communications")}
+                  >
+                    {t("@legalos.matterWorkspace.action.share")}
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={() => setEditOpen(true)}
+                  >
+                    {t("@legalos.matterWorkspace.action.edit")}
+                  </Button>
+                </div>
+              </div>
 
-                  {tab === "dashboard" && <DashboardTab {...tabProps} />}
+              {/* Stays on screen whatever tab is open (spec §2, س-٢). */}
+              <FinancialStrip
+                data={data}
+                onQuickBill={() => {
+                  setTab("bills");
+                  setQuickBillOpen(true);
+                }}
+                onOpenBills={() => setTab("bills")}
+                onRecordDeposit={() => {
+                  setTab("transactions");
+                  setRecordFundsOpen(true);
+                }}
+              />
 
-                  {tab === "customFields" && <CustomFieldsTab {...tabProps} />}
+              {/* 11 Tabs Bar */}
+              <div
+                className="flex items-center gap-1 border-b overflow-x-auto pt-2"
+                style={{ borderColor: "var(--border)" }}
+              >
+                {TABS.map((tabDef) => {
+                  const isActive = tab === tabDef.value;
+                  return (
+                    <button
+                      key={tabDef.value}
+                      type="button"
+                      onClick={() => setTab(tabDef.value)}
+                      className="px-3 py-2 text-xs font-semibold whitespace-nowrap transition-colors border-b-2 flex items-center gap-1.5"
+                      style={{
+                        borderColor: isActive ? "var(--primary)" : "transparent",
+                        color: isActive ? "var(--primary)" : "var(--text2)",
+                        backgroundColor: "transparent",
+                      }}
+                    >
+                      <span>{t(tabDef.labelKey)}</span>
+                      {tabDef.value === "tasks" && openTasks.length > 0 && (
+                        <Badge color="neutral" variant="soft" size="sm">
+                          {String(openTasks.length)}
+                        </Badge>
+                      )}
+                      {tabDef.value === "communications" && unread > 0 && (
+                        <Badge color="danger" variant="soft" size="sm">
+                          {String(unread)}
+                        </Badge>
+                      )}
+                    </button>
+                  );
+                })}
 
-                  {tab === "activities" && (
-                    <ActivitiesTab
-                      {...tabProps}
-                      addTimeOpen={addTimeOpen}
-                      addExpenseOpen={addExpenseOpen}
-                      onAddTimeChange={setAddTimeOpen}
-                      onAddExpenseChange={setAddExpenseOpen}
+                {/* Overflow tabs menu */}
+                <div className="relative inline-flex items-center ms-auto">
+                  <div className="w-36">
+                    <Select
+                      value={isOverflowActive ? tab : ""}
+                      onChange={(e) => {
+                        if (e.target.value) setTab(e.target.value);
+                      }}
+                      options={[
+                        {
+                          value: "",
+                          label: isOverflowActive
+                            ? t(OVERFLOW_TABS.find((ot) => ot.value === tab)?.labelKey || "@legalos.matterWorkspace.tab.more")
+                            : t("@legalos.matterWorkspace.tab.more"),
+                        },
+                        ...OVERFLOW_TABS.map((ot) => ({
+                          value: ot.value,
+                          label: t(ot.labelKey),
+                        })),
+                      ]}
                     />
-                  )}
+                  </div>
+                </div>
+              </div>
+            </div>
 
-                  {tab === "calendar" && <CalendarTab {...tabProps} />}
+            {/* Content section */}
+            <div className="flex flex-col gap-6 flex-1">
+              <InlineError message={error} onDismiss={() => setError(null)} />
 
-                  {tab === "communications" && <CommunicationsTab {...tabProps} />}
+              {tab === "dashboard" && <DashboardTab {...tabProps} />}
 
-                  {tab === "notes" && <NotesTab {...tabProps} />}
+              {tab === "customFields" && <CustomFieldsTab {...tabProps} />}
 
-                  {tab === "documents" && <DocumentsTab {...tabProps} />}
+              {tab === "activities" && (
+                <ActivitiesTab
+                  {...tabProps}
+                  addTimeOpen={addTimeOpen}
+                  addExpenseOpen={addExpenseOpen}
+                  onAddTimeChange={setAddTimeOpen}
+                  onAddExpenseChange={setAddExpenseOpen}
+                />
+              )}
 
-                  {tab === "tasks" && <TasksTab {...tabProps} />}
+              {tab === "calendar" && <CalendarTab {...tabProps} />}
 
-                  {tab === "bills" && (
-                    <BillsTab
-                      {...tabProps}
-                      quickBillOpen={quickBillOpen}
-                      onQuickBillChange={setQuickBillOpen}
-                    />
-                  )}
+              {tab === "communications" && <CommunicationsTab {...tabProps} />}
 
-                  {tab === "transactions" && (
-                    <TransactionsTab
-                      {...tabProps}
-                      recordOpen={recordFundsOpen}
-                      onRecordChange={setRecordFundsOpen}
-                    />
-                  )}
+              {tab === "notes" && <NotesTab {...tabProps} />}
 
-                  {tab === "timeline" && <TimelineTab {...tabProps} />}
+              {tab === "documents" && <DocumentsTab {...tabProps} />}
 
-                  <EditMatterDialog
-                    isOpen={editOpen}
-                    onOpenChange={setEditOpen}
-                    {...tabProps}
-                  />
-                </VStack>
-              </LayoutContent>
-            }
-          />
+              {tab === "tasks" && <TasksTab {...tabProps} />}
+
+              {tab === "bills" && (
+                <BillsTab
+                  {...tabProps}
+                  quickBillOpen={quickBillOpen}
+                  onQuickBillChange={setQuickBillOpen}
+                />
+              )}
+
+              {tab === "transactions" && (
+                <TransactionsTab
+                  {...tabProps}
+                  recordOpen={recordFundsOpen}
+                  onRecordChange={setRecordFundsOpen}
+                />
+              )}
+
+              {tab === "timeline" && <TimelineTab {...tabProps} />}
+
+              <EditMatterDialog
+                isOpen={editOpen}
+                onOpenChange={setEditOpen}
+                {...tabProps}
+              />
+            </div>
+          </div>
         );
       }}
     </DataView>
@@ -475,85 +502,79 @@ function EditMatterDialog({
 
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange} width={520}>
-      <Layout
-        header={
-          <DialogHeader
-            title={t("@legalos.matterWorkspace.action.edit")}
-            onOpenChange={onOpenChange}
-          />
-        }
-        content={
-          <LayoutContent>
-            <VStack gap={4}>
-              <HStack gap={3}>
-                <TextInput
-                  label={t("@legalos.matterWorkspace.details.matterNumber")}
-                  value={matterNumber}
-                  onChange={setMatterNumber}
-                  width={160}
-                />
-                <TextInput
-                  label={t("@legalos.matters.list.table.matter")}
-                  value={name}
-                  onChange={setName}
-                  isRequired
-                />
-              </HStack>
-              <TextArea
-                label={t("@legalos.matters.field.description")}
-                value={description}
-                onChange={setDescription}
-                rows={3}
-              />
-              <HStack gap={3}>
-                <Selector
-                  label={t("@legalos.matters.field.responsible")}
-                  value={responsible}
-                  onChange={(value) => value && setResponsible(value)}
-                  options={members.map((member) => ({
-                    value: member.clerk_user_id,
-                    label: memberLabel(member),
-                  }))}
-                />
-                <Selector
-                  label={t("@legalos.matters.field.billing")}
-                  value={billingType}
-                  onChange={(value) => value && setBillingType(value)}
-                  options={(["hourly", "fixed_fee", "retainer"] as const).map(
-                    (value) => ({ value, label: enumLabel(value) }),
-                  )}
-                />
-              </HStack>
-              <TextInput
-                label={t("@legalos.matterWorkspace.details.tags")}
-                value={tags}
-                onChange={setTags}
-              />
-            </VStack>
-          </LayoutContent>
-        }
-        footer={
-          <LayoutFooter hasDivider>
-            <HStack gap={3} hAlign="end">
-              <Button
-                label={t("@legalos.matterWorkspace.action.cancel")}
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              />
-              <Button
-                label={
-                  saving
-                    ? t("@legalos.matterWorkspace.action.saving")
-                    : t("@legalos.matterWorkspace.action.save")
-                }
-                variant="primary"
-                isDisabled={saving || !name.trim() || !matterNumber.trim()}
-                onClick={submit}
-              />
-            </HStack>
-          </LayoutFooter>
-        }
+      <DialogHeader
+        title={t("@legalos.matterWorkspace.action.edit")}
+        onOpenChange={onOpenChange}
       />
+      <DialogContent>
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="sm:col-span-1">
+              <Input
+                label={t("@legalos.matterWorkspace.details.matterNumber")}
+                value={matterNumber}
+                onChange={(e) => setMatterNumber(e.target.value)}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <Input
+                label={t("@legalos.matters.list.table.matter")}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+          <Textarea
+            label={t("@legalos.matters.field.description")}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Select
+              label={t("@legalos.matters.field.responsible")}
+              value={responsible}
+              onChange={(e) => e.target.value && setResponsible(e.target.value)}
+              options={members.map((member) => ({
+                value: member.clerk_user_id,
+                label: memberLabel(member),
+              }))}
+            />
+            <Select
+              label={t("@legalos.matters.field.billing")}
+              value={billingType}
+              onChange={(e) => e.target.value && setBillingType(e.target.value)}
+              options={(["hourly", "fixed_fee", "retainer"] as const).map(
+                (value) => ({ value, label: enumLabel(value) }),
+              )}
+            />
+          </div>
+          <Input
+            label={t("@legalos.matterWorkspace.details.tags")}
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+          />
+        </div>
+      </DialogContent>
+      <DialogFooter>
+        <Button
+          variant="secondary"
+          onClick={() => onOpenChange(false)}
+        >
+          {t("@legalos.matterWorkspace.action.cancel")}
+        </Button>
+        <Button
+          variant="primary"
+          loading={saving}
+          disabled={!name.trim() || !matterNumber.trim()}
+          onClick={submit}
+        >
+          {saving
+            ? t("@legalos.matterWorkspace.action.saving")
+            : t("@legalos.matterWorkspace.action.save")}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }
@@ -588,57 +609,73 @@ function NotesTab({ data, reload, onError }: TabProps) {
 
   return (
     <Panel title={t("@legalos.matters.detail.notes.heading")}>
-      <VStack gap={3}>
-        <TextArea
+      <div className="flex flex-col gap-3">
+        <Textarea
           label={t("@legalos.matters.detail.notes.addLabel")}
           value={note}
-          onChange={setNote}
+          onChange={(e) => setNote(e.target.value)}
           rows={3}
           placeholder={t("@legalos.matters.detail.notes.placeholder")}
         />
-        <HStack hAlign="end">
+        <div className="flex justify-end">
           <Button
-            label={
-              saving
-                ? t("@legalos.matters.savingEllipsis")
-                : t("@legalos.matters.detail.notes.addButton")
-            }
             variant="primary"
-            isDisabled={saving || !note.trim()}
+            loading={saving}
+            disabled={!note.trim()}
             onClick={addNote}
-          />
-        </HStack>
-      </VStack>
+          >
+            {saving
+              ? t("@legalos.matters.savingEllipsis")
+              : t("@legalos.matters.detail.notes.addButton")}
+          </Button>
+        </div>
+      </div>
       {data.notes.length === 0 ? (
         <EmptyState
-          icon={
-            <Icon icon={ChatBubbleLeftRightIcon} size="lg" color="secondary" />
-          }
+          icon={<Icon name="chat" size={24} />}
           title={t("@legalos.matters.detail.notes.emptyTitle")}
           description={t("@legalos.matters.detail.notes.emptyDescription")}
         />
       ) : (
-        <List hasDividers density="compact">
-          {data.notes.map((entry) => (
-            <ListItem
-              key={entry.id}
-              label={memberName(entry.author)}
-              description={entry.content}
-              startContent={
-                <Avatar
-                  name={memberName(entry.author)}
-                  size="sm"
-                  tooltip={false}
-                />
-              }
-              endContent={
-                <Text type="supporting" color="secondary">
+        <div
+          className="flex flex-col rounded-md border divide-y overflow-hidden"
+          style={{ borderColor: "var(--border)" }}
+        >
+          {data.notes.map((entry) => {
+            const author = memberName(entry.author);
+            return (
+              <div
+                key={entry.id}
+                className="flex items-start justify-between gap-3 p-3"
+              >
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <div
+                    title={author}
+                    className="flex items-center justify-center w-6 h-6 text-[10px] font-bold rounded-full border shrink-0 mt-0.5"
+                    style={{
+                      backgroundColor: "var(--surface3)",
+                      borderColor: "var(--border)",
+                      color: "var(--text2)",
+                    }}
+                  >
+                    {author ? author.slice(0, 2).toUpperCase() : "?"}
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-semibold" style={{ color: "var(--text)" }}>
+                      {author}
+                    </span>
+                    <p className="text-xs m-0 mt-1 leading-relaxed" style={{ color: "var(--text2)" }}>
+                      {entry.content}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[11px] shrink-0" style={{ color: "var(--text3)" }}>
                   {formatDateTime(entry.created_at)}
-                </Text>
-              }
-            />
-          ))}
-        </List>
+                </span>
+              </div>
+            );
+          })}
+        </div>
       )}
     </Panel>
   );
@@ -654,46 +691,65 @@ function DocumentsTab({ data }: TabProps) {
     <Panel
       title={t("@legalos.matters.detail.documents.heading")}
       action={
-        <Link href="/documents">
+        <Link
+          href="/documents"
+          className="text-xs font-semibold hover:underline"
+          style={{ color: "var(--primary)" }}
+        >
           {t("@legalos.matters.detail.documents.allDocuments")}
         </Link>
       }
     >
       {data.documents.length === 0 ? (
         <EmptyState
-          icon={<Icon icon={DocumentTextIcon} size="lg" color="secondary" />}
+          icon={<Icon name="description" size={24} />}
           title={t("@legalos.matters.detail.documents.emptyTitle")}
           description={t("@legalos.matters.detail.documents.emptyDescription")}
         />
       ) : (
-        <List hasDividers density="compact">
+        <div
+          className="flex flex-col rounded-md border divide-y overflow-hidden"
+          style={{ borderColor: "var(--border)" }}
+        >
           {data.documents.map((doc) => (
-            <ListItem
+            <div
               key={doc.id}
-              label={doc.name}
-              href={`/documents/${doc.id}`}
-              description={t("@legalos.matters.detail.metaNameDate", {
-                name: memberName(doc.uploaded_by),
-                date: formatDate(doc.uploaded_at),
-              })}
-              startContent={
-                <Icon icon={DocumentTextIcon} size="sm" color="secondary" />
-              }
-              endContent={
-                <HStack gap={3} vAlign="center">
-                  <Badge variant="neutral" label={enumLabel(doc.status)} />
-                  <Text type="supporting" color="secondary">
-                    {/* Only for a record that actually holds a file; the
-                      * seeded ones carry a size with nothing behind it. */}
-                    {doc.storage_key && doc.size_bytes
-                      ? formatBytes(doc.size_bytes)
-                      : "—"}
-                  </Text>
-                </HStack>
-              }
-            />
+              className="flex items-center justify-between gap-3 p-3"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Icon name="description" size={16} style={{ color: "var(--text3)" }} />
+                <div className="flex flex-col min-w-0">
+                  <Link
+                    href={`/documents/${doc.id}`}
+                    className="text-xs font-semibold hover:underline truncate"
+                    style={{ color: "var(--primary)" }}
+                  >
+                    {doc.name}
+                  </Link>
+                  <span className="text-xs truncate" style={{ color: "var(--text3)" }}>
+                    {t("@legalos.matters.detail.metaNameDate", {
+                      name: memberName(doc.uploaded_by),
+                      date: formatDate(doc.uploaded_at),
+                    })}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                <Badge color="neutral" variant="soft">
+                  {enumLabel(doc.status)}
+                </Badge>
+                <span className="text-xs" style={{ color: "var(--text3)" }}>
+                  {/* Only for a record that actually holds a file; the
+                    * seeded ones carry a size with nothing behind it. */}
+                  {doc.storage_key && doc.size_bytes
+                    ? formatBytes(doc.size_bytes)
+                    : "—"}
+                </span>
+              </div>
+            </div>
           ))}
-        </List>
+        </div>
       )}
     </Panel>
   );
@@ -714,7 +770,7 @@ function NewMatterTaskDialog({
   const { practice, members } = useOrg();
   const [title, setTitle] = useState("");
   const [assignee, setAssignee] = useState<string | null>(null);
-  const [dueDate, setDueDate] = useState<ISODateString | undefined>(undefined);
+  const [dueDate, setDueDate] = useState<string | undefined>(undefined);
   const [priority, setPriority] = useState("medium");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -749,76 +805,68 @@ function NewMatterTaskDialog({
 
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange} purpose="form" width={440}>
-      <Layout
-        header={
-          <DialogHeader
-            title={t("@legalos.matters.detail.tasks.newTask")}
-            onOpenChange={onOpenChange}
-          />
-        }
-        content={
-          <LayoutContent>
-            <VStack gap={4}>
-              <InlineError message={error} onDismiss={() => setError(null)} />
-              <TextInput
-                label={t("@legalos.matters.detail.tasks.titleLabel")}
-                value={title}
-                onChange={setTitle}
-                isRequired
-              />
-              <Selector
-                label={t("@legalos.matters.detail.tasks.assigneeLabel")}
-                value={assignee}
-                onChange={setAssignee}
-                isRequired
-                hasClear
-                options={members.map((m) => ({
-                  value: m.clerk_user_id,
-                  label: memberLabel(m),
-                }))}
-              />
-              <HStack gap={3}>
-                <DateInput
-                  label={t("@legalos.matters.detail.tasks.dueLabel")}
-                  value={dueDate}
-                  onChange={setDueDate}
-                />
-                <Selector
-                  label={t("@legalos.matters.detail.tasks.priorityLabel")}
-                  value={priority}
-                  onChange={(v) => setPriority(v ?? "medium")}
-                  options={[
-                    { value: "low", label: t("@legalos.enum.low") },
-                    { value: "medium", label: t("@legalos.enum.medium") },
-                    { value: "high", label: t("@legalos.enum.high") },
-                  ]}
-                />
-              </HStack>
-            </VStack>
-          </LayoutContent>
-        }
-        footer={
-          <LayoutFooter hasDivider>
-            <HStack gap={3} hAlign="end">
-              <Button
-                label={t("@legalos.matters.dialog.cancel")}
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              >
-                {t("@legalos.matters.dialog.cancel")}
-              </Button>
-              <Button
-                label={t("@legalos.matters.detail.tasks.create")}
-                variant="primary"
-                isDisabled={saving || !title.trim() || !assignee}
-                onClick={submit}
-              >
-                {t("@legalos.matters.detail.tasks.create")}
-              </Button>
-            </HStack>
-          </LayoutFooter>
-        }
+      <DialogHeader
+        title={t("@legalos.matters.detail.tasks.newTask")}
+        onOpenChange={onOpenChange}
       />
+      <DialogContent>
+        <div className="flex flex-col gap-4">
+          <InlineError message={error} onDismiss={() => setError(null)} />
+          <Input
+            label={t("@legalos.matters.detail.tasks.titleLabel")}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
+          <Select
+            label={t("@legalos.matters.detail.tasks.assigneeLabel")}
+            value={assignee ?? ""}
+            onChange={(e) => setAssignee(e.target.value || null)}
+            required
+            options={[
+              { value: "", label: "—" },
+              ...members.map((m) => ({
+                value: m.clerk_user_id,
+                label: memberLabel(m),
+              })),
+            ]}
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              type="date"
+              label={t("@legalos.matters.detail.tasks.dueLabel")}
+              value={dueDate ?? ""}
+              onChange={(e) => setDueDate(e.target.value || undefined)}
+            />
+            <Select
+              label={t("@legalos.matters.detail.tasks.priorityLabel")}
+              value={priority}
+              onChange={(e) => setPriority(e.target.value || "medium")}
+              options={[
+                { value: "low", label: t("@legalos.enum.low") },
+                { value: "medium", label: t("@legalos.enum.medium") },
+                { value: "high", label: t("@legalos.enum.high") },
+              ]}
+            />
+          </div>
+        </div>
+      </DialogContent>
+      <DialogFooter>
+        <Button
+          variant="secondary"
+          onClick={() => onOpenChange(false)}
+        >
+          {t("@legalos.matters.dialog.cancel")}
+        </Button>
+        <Button
+          variant="primary"
+          loading={saving}
+          disabled={!title.trim() || !assignee}
+          onClick={submit}
+        >
+          {t("@legalos.matters.detail.tasks.create")}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }
@@ -848,17 +896,22 @@ function TasksTab({ data, reload, onError }: TabProps) {
     <Panel
       title={t("@legalos.matters.detail.tasks.heading")}
       action={
-        <HStack gap={3} vAlign="center">
-          <Link href="/tasks">{t("@legalos.matters.detail.tasks.allTasks")}</Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/tasks"
+            className="text-xs font-semibold hover:underline"
+            style={{ color: "var(--primary)" }}
+          >
+            {t("@legalos.matters.detail.tasks.allTasks")}
+          </Link>
           <Button
-            label={t("@legalos.matters.detail.tasks.newTask")}
             variant="secondary"
             size="sm"
             onClick={() => setIsNewOpen(true)}
           >
             {t("@legalos.matters.detail.tasks.newTask")}
           </Button>
-        </HStack>
+        </div>
       }
     >
       <NewMatterTaskDialog
@@ -869,58 +922,72 @@ function TasksTab({ data, reload, onError }: TabProps) {
       />
       {data.tasks.length === 0 ? (
         <EmptyState
-          icon={<Icon icon={CheckCircleIcon} size="lg" color="secondary" />}
+          icon={<Icon name="check_circle" size={24} />}
           title={t("@legalos.matters.detail.tasks.emptyTitle")}
           description={t("@legalos.matters.detail.tasks.emptyDescription")}
         />
       ) : (
-        <List hasDividers density="compact">
+        <div
+          className="flex flex-col rounded-md border divide-y overflow-hidden"
+          style={{ borderColor: "var(--border)" }}
+        >
           {data.tasks.map((task) => {
             const done = task.status === "done";
             const overdue = !done && daysUntil(task.due_date) < 0;
             return (
-              <ListItem
+              <div
                 key={task.id}
-                label={task.title}
-                description={
-                  task.due_date
-                    ? t("@legalos.matters.detail.tasks.dueDate", {
-                        name: memberName(task.assignee),
-                        date: formatDate(task.due_date),
-                      })
-                    : memberName(task.assignee)
-                }
-                startContent={
+                className="flex items-center justify-between gap-3 p-3"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
                   <Icon
-                    icon={CheckCircleIcon}
-                    size="sm"
-                    color={done ? "success" : "secondary"}
+                    name="check_circle"
+                    size={16}
+                    style={{
+                      color: done ? "var(--success)" : "var(--text3)",
+                    }}
                   />
-                }
-                endContent={
-                  <HStack gap={3} vAlign="center">
-                    {overdue && (
-                      <Badge
-                        variant="error"
-                        label={t("@legalos.matters.detail.tasks.overdue")}
-                      />
-                    )}
-                    <Button
-                      label={
-                        done
-                          ? t("@legalos.matters.detail.tasks.reopen")
-                          : t("@legalos.matters.detail.tasks.markDone")
-                      }
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleTask(task.id, !done)}
-                    />
-                  </HStack>
-                }
-              />
+                  <div className="flex flex-col min-w-0">
+                    <span
+                      className="text-xs font-semibold truncate"
+                      style={{
+                        color: "var(--text)",
+                        textDecoration: done ? "line-through" : "none",
+                      }}
+                    >
+                      {task.title}
+                    </span>
+                    <span className="text-xs truncate" style={{ color: "var(--text3)" }}>
+                      {task.due_date
+                        ? t("@legalos.matters.detail.tasks.dueDate", {
+                            name: memberName(task.assignee),
+                            date: formatDate(task.due_date),
+                          })
+                        : memberName(task.assignee)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  {overdue && (
+                    <Badge color="danger" variant="soft">
+                      {t("@legalos.matters.detail.tasks.overdue")}
+                    </Badge>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleTask(task.id, !done)}
+                  >
+                    {done
+                      ? t("@legalos.matters.detail.tasks.reopen")
+                      : t("@legalos.matters.detail.tasks.markDone")}
+                  </Button>
+                </div>
+              </div>
             );
           })}
-        </List>
+        </div>
       )}
     </Panel>
   );
@@ -935,28 +1002,42 @@ function TimelineTab({ data }: TabProps) {
     <Panel title={t("@legalos.matters.detail.timeline.heading")}>
       {data.timeline.length === 0 ? (
         <EmptyState
-          icon={<Icon icon={DocumentTextIcon} size="lg" color="secondary" />}
+          icon={<Icon name="schedule" size={24} />}
           title={t("@legalos.matters.detail.timeline.emptyTitle")}
           description={t("@legalos.matters.detail.timeline.emptyDescription")}
         />
       ) : (
-        <List hasDividers density="compact">
+        <div
+          className="flex flex-col rounded-md border divide-y overflow-hidden"
+          style={{ borderColor: "var(--border)" }}
+        >
           {data.timeline.map((event) => (
-            <ListItem
+            <div
               key={event.id}
-              label={event.label}
-              description={event.detail ?? undefined}
-              endContent={
-                <HStack gap={3} vAlign="center">
-                  <Badge variant="neutral" label={enumLabel(event.kind)} />
-                  <Text type="supporting" color="secondary">
-                    {formatDate(event.event_date)}
-                  </Text>
-                </HStack>
-              }
-            />
+              className="flex items-center justify-between gap-3 p-3"
+            >
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>
+                  {event.label}
+                </span>
+                {event.detail && (
+                  <span className="text-xs truncate" style={{ color: "var(--text3)" }}>
+                    {event.detail}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                <Badge color="neutral" variant="soft">
+                  {enumLabel(event.kind)}
+                </Badge>
+                <span className="text-xs" style={{ color: "var(--text3)" }}>
+                  {formatDate(event.event_date)}
+                </span>
+              </div>
+            </div>
           ))}
-        </List>
+        </div>
       )}
     </Panel>
   );

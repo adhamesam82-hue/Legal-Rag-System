@@ -8,20 +8,11 @@
  * table would be a fourth place for the same facts to be wrong in.
  */
 
-import { useMemo } from "react";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Text } from "@astryxdesign/core/Text";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Badge } from "@astryxdesign/core/Badge";
-import { List, ListItem } from "@astryxdesign/core/List";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
+import React, { useMemo } from "react";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import {
-  CalendarDaysIcon,
-  CheckCircleIcon,
-  FlagIcon,
-  ScaleIcon,
-} from "@heroicons/react/24/outline";
+import { Badge } from "@/components/ui/Badge";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
 import { useMemberName } from "@/lib/org";
 import { daysUntil } from "@/lib/practice";
 import { ProximityBadge } from "@/components/Distinction";
@@ -39,11 +30,11 @@ interface CalendarEvent {
   done: boolean;
 }
 
-const ICONS = {
-  hearing: ScaleIcon,
-  deadline: FlagIcon,
-  task: CheckCircleIcon,
-} as const;
+const ICONS: Record<EventKind, string> = {
+  hearing: "gavel",
+  deadline: "flag",
+  task: "check_circle",
+};
 
 export function CalendarTab({ data }: TabProps) {
   const t = useTranslator();
@@ -96,7 +87,7 @@ export function CalendarTab({ data }: TabProps) {
     return (
       <Panel title={t("@legalos.matterWorkspace.calendar.heading")}>
         <EmptyState
-          icon={<Icon icon={CalendarDaysIcon} size="lg" color="secondary" />}
+          icon={<Icon name="calendar_today" size={24} />}
           title={t("@legalos.matterWorkspace.calendar.emptyTitle")}
           description={t("@legalos.matterWorkspace.calendar.emptyDescription")}
         />
@@ -105,7 +96,7 @@ export function CalendarTab({ data }: TabProps) {
   }
 
   return (
-    <VStack gap={6}>
+    <div className="flex flex-col gap-6">
       {upcoming.length > 0 && (
         <Panel title={t("@legalos.matterWorkspace.calendar.upcoming")}>
           <EventList events={upcoming} />
@@ -116,7 +107,7 @@ export function CalendarTab({ data }: TabProps) {
           <EventList events={past} isPast />
         </Panel>
       )}
-    </VStack>
+    </div>
   );
 }
 
@@ -131,45 +122,56 @@ function EventList({
   const t = useTranslator();
 
   return (
-    <List hasDividers density="compact">
+    <div
+      className="flex flex-col rounded-md border divide-y overflow-hidden"
+      style={{ borderColor: "var(--border)" }}
+    >
       {events.map((event) => {
         const days = daysUntil(event.date);
         return (
-          <ListItem
+          <div
             key={event.key}
-            label={event.label}
-            description={event.detail || undefined}
-            startContent={
+            className="flex items-center justify-between gap-3 p-3"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
               <Icon
-                icon={ICONS[event.kind]}
-                size="sm"
-                color={event.done ? "success" : "secondary"}
+                name={ICONS[event.kind]}
+                size={16}
+                style={{
+                  color: event.done ? "var(--success)" : "var(--text3)",
+                }}
               />
-            }
-            endContent={
-              <HStack gap={3} vAlign="center">
-                <Badge
-                  variant="neutral"
-                  label={t(`@legalos.matterWorkspace.calendar.kind.${event.kind}`)}
-                />
-                {/* Overdue > today > this week, from the shared table; a
-                  * done or past event has nothing left to warn about. */}
-                {!isPast && !event.done && <ProximityBadge date={event.date} />}
-                <VStack gap={0} hAlign="end">
-                  <Text type="supporting" color="secondary">
-                    {formatDate(event.date)}
-                  </Text>
-                  {!isPast && !event.done && days > 0 && (
-                    <Text type="supporting" color="secondary">
-                      {t("@legalos.matterWorkspace.calendar.inDays", { count: days })}
-                    </Text>
-                  )}
-                </VStack>
-              </HStack>
-            }
-          />
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>
+                  {event.label}
+                </span>
+                {event.detail && (
+                  <span className="text-xs truncate" style={{ color: "var(--text3)" }}>
+                    {event.detail}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <Badge color="neutral" variant="soft">
+                {t(`@legalos.matterWorkspace.calendar.kind.${event.kind}`)}
+              </Badge>
+              {!isPast && !event.done && <ProximityBadge date={event.date} />}
+              <div className="flex flex-col items-end">
+                <span className="text-xs" style={{ color: "var(--text2)" }}>
+                  {formatDate(event.date)}
+                </span>
+                {!isPast && !event.done && days > 0 && (
+                  <span className="text-[11px]" style={{ color: "var(--text3)" }}>
+                    {t("@legalos.matterWorkspace.calendar.inDays", { count: days })}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
         );
       })}
-    </List>
+    </div>
   );
 }

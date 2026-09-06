@@ -47,6 +47,9 @@ export const en: Catalog = {
   "@legalos.timeTracking.table.lawyer": { defaultMessage: "Lawyer" },
   "@legalos.timeTracking.table.billable": { defaultMessage: "Billable" },
   "@legalos.timeTracking.table.duration": { defaultMessage: "Duration" },
+  "@legalos.timeTracking.table.actions": { defaultMessage: "Actions" },
+  "@legalos.timeTracking.deleteEntry": { defaultMessage: "Delete time entry" },
+  "@legalos.timeTracking.deleteFailed": { defaultMessage: "Could not delete time entry." },
 
   "@legalos.timeTracking.badge.nonBillable": { defaultMessage: "Non-billable" },
   "@legalos.timeTracking.badge.invoiced": { defaultMessage: "Invoiced" },
@@ -262,6 +265,9 @@ export const ar: Catalog = {
   "@legalos.timeTracking.table.lawyer": { defaultMessage: "المحامي" },
   "@legalos.timeTracking.table.billable": { defaultMessage: "الفوترة" },
   "@legalos.timeTracking.table.duration": { defaultMessage: "المدة" },
+  "@legalos.timeTracking.table.actions": { defaultMessage: "إجراءات" },
+  "@legalos.timeTracking.deleteEntry": { defaultMessage: "حذف قيد الوقت" },
+  "@legalos.timeTracking.deleteFailed": { defaultMessage: "تعذر حذف قيد الوقت." },
 
   "@legalos.timeTracking.badge.nonBillable": { defaultMessage: "غير قابلة للفوترة" },
   "@legalos.timeTracking.badge.invoiced": { defaultMessage: "مفوترة" },

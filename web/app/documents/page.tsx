@@ -22,23 +22,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Layout, LayoutContent, LayoutPanel } from "@astryxdesign/core/Layout";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { StatusDot } from "@astryxdesign/core/StatusDot";
-import { Avatar } from "@astryxdesign/core/Avatar";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { TreeList } from "@astryxdesign/core/TreeList";
-import { Collapsible } from "@astryxdesign/core/Collapsible";
-import { Token } from "@astryxdesign/core/Token";
-import { Table, proportional, pixel } from "@astryxdesign/core/Table";
-import type { TableColumn } from "@astryxdesign/core/Table";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
-import { Link } from "@astryxdesign/core/Link";
-import { Grid } from "@astryxdesign/core/Grid";
-import { SegmentedControl, SegmentedControlItem } from "@astryxdesign/core/SegmentedControl";
+import NextLink from "next/link";
 import {
   DocumentIcon,
   ArrowUpTrayIcon,
@@ -47,7 +31,13 @@ import {
   PencilSquareIcon,
   Squares2X2Icon,
   TagIcon,
+  ChevronDownIcon,
 } from "@heroicons/react/24/outline";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Input } from "@/components/ui/Input";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { API_BASE } from "@/lib/api";
 import { useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
@@ -65,14 +55,14 @@ import { DocTypeDialog } from "@/components/documents/DocTypeDialog";
 import { ManageTagsDialog } from "@/components/documents/ManageTagsDialog";
 import { MatterTypeIcon } from "@/components/Distinction";
 
-const STATUS_VARIANT: Record<
+const STATUS_BADGE_COLOR: Record<
   DocumentStatus,
-  "neutral" | "warning" | "accent" | "success"
+  "neutral" | "warn" | "accent" | "success" | "info"
 > = {
   draft: "neutral",
-  under_review: "warning",
+  under_review: "warn",
   signed: "success",
-  filed: "accent",
+  filed: "info",
   final: "success",
 };
 
@@ -283,8 +273,6 @@ export default function DocumentsPage() {
     .map((node) => ({
       id: `m${node.matter.id}`,
       label: `${node.matter.name} (${node.n})`,
-      // Same glyph and hue the matters list gives this type, so a file's
-      // branch in the tree is recognisable as the same matter.
       startContent: <MatterTypeIcon type={node.matter.matter_type} />,
       isSelected: filters.matterId === node.matter.id,
       onClick: () => set({ matterId: filters.matterId === node.matter.id ? null : node.matter.id }),
@@ -315,7 +303,7 @@ export default function DocumentsPage() {
       onClick: () => toggleTag(tag.id),
     }));
 
-  const groups: { key: Group; label: string; items: typeof generalItems }[] = [
+  const groups: { key: Group; label: string; items: { id: string; label: string; startContent?: React.ReactNode; isSelected: boolean; onClick: () => void }[] }[] = [
     { key: "general", label: t("@legalos.documents.tree.group.general"), items: generalItems },
     { key: "matters", label: t("@legalos.documents.tree.group.matters"), items: matterItems },
     { key: "clients", label: t("@legalos.documents.tree.group.clients"), items: clientItems },
@@ -368,8 +356,6 @@ export default function DocumentsPage() {
     setError(null);
     try {
       for (const file of Array.from(files)) {
-        // Filed where the lawyer is looking: the selected matter, and the
-        // selected type if one is active.
         await practice.documents.upload(file, {
           matter_id: filters.matterId ?? undefined,
           doc_type: filters.docType ?? undefined,
@@ -385,360 +371,447 @@ export default function DocumentsPage() {
     }
   }
 
-  const columns: TableColumn<DocRow>[] = [
-    {
-      key: "name",
-      header: t("@legalos.documents.field.document"),
-      width: proportional(3),
-      renderCell: (row) => (
-        <HStack gap={2} vAlign="center">
-          <Icon icon={fileIcon(row.contentType)} size="sm" color="secondary" />
-          <VStack gap={0}>
-            <Link href={`/documents/${row.id}`}>
-              <Text type="body" weight="semibold" maxLines={1}>
-                {row.name}
-              </Text>
-            </Link>
-            {row.tagIds.length > 0 && (
-              <HStack gap={1} wrap="wrap">
-                {row.tagIds.map((tagId) => {
-                  const tag = tagById.get(tagId);
-                  return tag ? <TagToken key={tagId} tag={tag} /> : null;
-                })}
-              </HStack>
-            )}
-          </VStack>
-        </HStack>
-      ),
-    },
-    {
-      key: "docType",
-      header: t("@legalos.documents.field.type"),
-      width: pixel(120),
-      renderCell: (row) => (
-        <Text type="body" color="secondary">
-          {docTypeLabel(row.docType)}
-        </Text>
-      ),
-    },
-    {
-      key: "matterName",
-      header: t("@legalos.documents.field.matter"),
-      width: proportional(2),
-      renderCell: (row) =>
-        row.matterId ? (
-          <Link href={`/matters/${row.matterId}`}>
-            <Text type="body" color="secondary" maxLines={1}>
-              {row.matterName}
-            </Text>
-          </Link>
-        ) : (
-          <Text type="body" color="secondary">
-            {t("@legalos.documents.unfiled")}
-          </Text>
-        ),
-    },
-    {
-      key: "uploadedBy",
-      header: t("@legalos.documents.field.uploadedBy"),
-      width: proportional(1.5),
-      renderCell: (row) => (
-        <HStack gap={2} vAlign="center">
-          <Avatar name={row.uploadedBy} size="sm" tooltip={false} />
-          <Text type="body" color="secondary">
-            {row.uploadedBy}
-          </Text>
-        </HStack>
-      ),
-    },
-    {
-      key: "uploadedAt",
-      header: t("@legalos.documents.field.uploaded"),
-      width: pixel(130),
-      renderCell: (row) => (
-        <Text type="body" color="secondary">
-          {formatDate(row.uploadedAt)}
-        </Text>
-      ),
-    },
-    {
-      key: "status",
-      header: t("@legalos.documents.field.status"),
-      width: pixel(130),
-      renderCell: (row) => (
-        <HStack gap={1.5} vAlign="center">
-          <StatusDot variant={STATUS_VARIANT[row.status]} label={enumLabel(row.status)} />
-          <Text type="body" color="secondary">
-            {enumLabel(row.status)}
-          </Text>
-        </HStack>
-      ),
-    },
-    {
-      key: "size",
-      header: t("@legalos.documents.field.size"),
-      width: pixel(120),
-      align: "end",
-      renderCell: (row) =>
-        row.hasFile ? (
-          <Link href={`${API_BASE}/api/orgs/${organizationId}/documents/${row.id}/content`}>
-            {formatBytes(row.size)}
-          </Link>
-        ) : (
-          <Text type="supporting" color="secondary">
-            {t("@legalos.documents.noFile")}
-          </Text>
-        ),
-    },
-    {
-      // Tags and type, from the row itself; both open a dialog in the page.
-      key: "actions",
-      header: "",
-      width: pixel(96),
-      align: "end",
-      renderCell: (row) => (
-        <HStack gap={0.5} hAlign="end">
-          <Button
-            label={t("@legalos.documents.tags.edit")}
-            variant="ghost"
-            size="sm"
-            icon={<Icon icon={TagIcon} size="sm" color="inherit" />}
-            isIconOnly
-            onClick={() => setTagsFor(row)}
-          />
-          <Button
-            label={t("@legalos.documents.type.change")}
-            variant="ghost"
-            size="sm"
-            icon={<Icon icon={PencilSquareIcon} size="sm" color="inherit" />}
-            isIconOnly
-            onClick={() => setTypeFor(row)}
-          />
-        </HStack>
-      ),
-    },
-  ];
-
   const filtered = activeCount > 0 || Boolean(debouncedQuery);
 
   return (
-    <Layout
-      height="fill"
-      start={
-        <LayoutPanel width={280} hasDivider>
-          <VStack gap={3}>
-            {groups.map((group) => (
-              <Collapsible
-                key={group.key}
-                value={group.key}
-                isOpen={open[group.key]}
-                onOpenChange={(isOpen) => toggle(group.key, isOpen)}
-                trigger={
-                  <Text type="label" color="secondary">
-                    {group.label}
-                  </Text>
-                }
-              >
-                {group.items.length > 0 ? (
-                  <TreeList items={group.items} density="compact" />
-                ) : (
-                  <Text type="supporting" color="secondary">
-                    {t("@legalos.documents.tree.groupEmpty")}
-                  </Text>
-                )}
-                {group.key === "tags" && (
-                  <Button
-                    label={t("@legalos.documents.tags.manage")}
-                    variant="ghost"
-                    size="sm"
-                    icon={<Icon icon={TagIcon} size="sm" color="inherit" />}
-                    onClick={() => setManageTags(true)}
-                  />
-                )}
-              </Collapsible>
-            ))}
-          </VStack>
-        </LayoutPanel>
-      }
-      content={
-        <LayoutContent padding={0}>
-          <VStack gap={5}>
-            <HStack hAlign="between" vAlign="center" wrap="wrap" gap={4}>
-              <VStack gap={1}>
-                <Heading level={2}>{t("@legalos.documents.heading")}</Heading>
-                <Text type="body" color="secondary">
-                  {t(
-                    filtered
-                      ? "@legalos.documents.subtitle.filtered"
-                      : "@legalos.documents.subtitle.firmWide",
-                    { count: filtered ? rows.length : (facets?.total ?? rows.length) },
-                  )}
-                </Text>
-              </VStack>
-              <HStack gap={3} vAlign="center" wrap="wrap">
-                <TextInput
-                  label={t("@legalos.documents.search.label")}
-                  isLabelHidden
-                  value={query}
-                  onChange={setQuery}
-                  placeholder={t("@legalos.documents.search.placeholder")}
-                  startIcon={MagnifyingGlassIcon}
-                  width={280}
-                />
-                <SegmentedControl
-                  label={t("@legalos.documents.view.label")}
-                  value={mode}
-                  onChange={(value) => choose(value as ViewMode)}
+    <div className="flex flex-col md:flex-row flex-1 min-h-[calc(100vh-64px)] w-full">
+      {/* Side panel: The filter tree */}
+      <aside
+        className="w-full md:w-72 shrink-0 p-4 border-b md:border-b-0 md:border-inline-end overflow-y-auto"
+        style={{
+          borderColor: "var(--border)",
+          backgroundColor: "var(--surface)",
+        }}
+      >
+        <div className="flex flex-col gap-4">
+          {groups.map((group) => {
+            const isOpen = open[group.key];
+            return (
+              <div key={group.key} className="flex flex-col">
+                <button
+                  type="button"
+                  onClick={() => toggle(group.key, !isOpen)}
+                  className="flex items-center justify-between py-1.5 px-2 text-xs font-semibold rounded hover:bg-[var(--surface2)] transition-colors select-none"
+                  style={{ color: "var(--text2)" }}
+                  aria-expanded={isOpen}
                 >
-                  <SegmentedControlItem
-                    value="list"
-                    label={t("@legalos.documents.view.list")}
-                    icon={<Icon icon={ListBulletIcon} size="sm" color="inherit" />}
+                  <span>{group.label}</span>
+                  <ChevronDownIcon
+                    className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? "" : "-rotate-90"}`}
                   />
-                  <SegmentedControlItem
-                    value="cards"
-                    label={t("@legalos.documents.view.cards")}
-                    icon={<Icon icon={Squares2X2Icon} size="sm" color="inherit" />}
-                  />
-                </SegmentedControl>
-                <Button
-                  label={t("@legalos.documents.tags.manage")}
-                  variant="secondary"
-                  icon={<Icon icon={TagIcon} size="sm" color="inherit" />}
-                  onClick={() => setManageTags(true)}
-                />
-                <Button
-                  label={uploading ? t("@legalos.documents.uploading") : t("@legalos.documents.upload")}
-                  variant="primary"
-                  isDisabled={uploading || !practice}
-                  icon={<Icon icon={ArrowUpTrayIcon} size="sm" color="inherit" />}
-                  onClick={() => fileInput.current?.click()}
-                />
-              </HStack>
-            </HStack>
-
-            {/* The real file picker; the Astryx Button above drives it. */}
-            <input
-              ref={fileInput}
-              type="file"
-              multiple
-              hidden
-              onChange={(event) => upload(event.target.files)}
-            />
-
-            {chips.length > 0 && (
-              <HStack gap={2} vAlign="center" wrap="wrap">
-                {chips.map((chip) => (
-                  <Token key={chip.key} label={chip.label} onRemove={chip.remove} />
-                ))}
-                <Button
-                  label={t("@legalos.documents.filters.clearAll")}
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setFilters(NO_FILTERS)}
-                />
-              </HStack>
-            )}
-
-            <InlineError message={error} onDismiss={() => setError(null)} />
-
-            <DataView resource={list} loadingLabel={t("@legalos.documents.loading")}>
-              {() =>
-                rows.length > 0 ? (
-                  <VStack gap={3}>
-                    {mode === "cards" ? (
-                      // Responsive by width: one column on a phone, as many as
-                      // fit on a desktop. Each card wraps its own name.
-                      <Grid columns={{ minWidth: 220, repeat: "fill" }} gap={4}>
-                        {rows.map((row) => (
-                          <DocumentCard
-                            key={row.id}
-                            doc={row}
-                            tagById={tagById}
-                            onEditTags={setTagsFor}
-                            onChangeType={setTypeFor}
-                          />
-                        ))}
-                      </Grid>
-                    ) : (
-                      <Table<DocRow> data={rows} columns={columns} idKey="id" hasHover />
-                    )}
-                    {lastPageFull && (
-                      <HStack hAlign="center">
-                        <Button
-                          label={t("@legalos.documents.loadMore")}
-                          variant="secondary"
-                          onClick={() => setOffset(offset + PAGE_SIZE)}
-                        />
-                      </HStack>
-                    )}
-                  </VStack>
-                ) : (
-                  <EmptyState
-                    icon={<Icon icon={DocumentIcon} size="lg" color="secondary" />}
-                    title={
-                      filtered
-                        ? t("@legalos.documents.empty.noMatchTitle")
-                        : t("@legalos.documents.empty.noneTitle")
-                    }
-                    description={
-                      filtered
-                        ? t("@legalos.documents.empty.filteredDescription")
-                        : t("@legalos.documents.empty.noneDescription")
-                    }
-                    actions={
-                      filtered ? (
-                        <Button
-                          label={t("@legalos.documents.filters.clearAll")}
-                          variant="secondary"
-                          onClick={() => {
-                            setFilters(NO_FILTERS);
-                            setQuery("");
+                </button>
+                {isOpen && (
+                  <div className="flex flex-col gap-0.5 mt-1 ps-1">
+                    {group.items.length > 0 ? (
+                      group.items.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={item.onClick}
+                          className="flex items-center justify-between w-full text-start py-1.5 px-2.5 rounded text-xs transition-colors"
+                          style={{
+                            backgroundColor: item.isSelected ? "var(--primary-soft)" : "transparent",
+                            color: item.isSelected ? "var(--primary)" : "var(--text)",
+                            fontWeight: item.isSelected ? 600 : 400,
                           }}
-                        />
-                      ) : (
+                        >
+                          <div className="flex items-center gap-2 min-w-0 truncate">
+                            {"startContent" in item && item.startContent}
+                            <span className="truncate">{item.label}</span>
+                          </div>
+                        </button>
+                      ))
+                    ) : (
+                      <span className="text-xs px-2.5 py-1.5" style={{ color: "var(--text3)" }}>
+                        {t("@legalos.documents.tree.groupEmpty")}
+                      </span>
+                    )}
+                    {group.key === "tags" && (
+                      <div className="mt-1 ps-2">
                         <Button
-                          label={t("@legalos.documents.empty.uploadAction")}
-                          variant="secondary"
-                          onClick={() => fileInput.current?.click()}
-                        />
-                      )
-                    }
-                  />
-                )
-              }
-            </DataView>
-          </VStack>
+                          variant="ghost"
+                          size="xs"
+                          startIcon={<TagIcon className="w-3.5 h-3.5" />}
+                          onClick={() => setManageTags(true)}
+                        >
+                          {t("@legalos.documents.tags.manage")}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </aside>
 
-          {tagsFor && (
-            <TagsDialog
-              isOpen
-              onOpenChange={(open) => !open && setTagsFor(null)}
-              documentId={tagsFor.id}
-              documentName={tagsFor.name}
-              tags={tags}
-              selected={tagsFor.tagIds}
-              onSaved={changed}
-            />
-          )}
-          {typeFor && (
-            <DocTypeDialog
-              isOpen
-              onOpenChange={(open) => !open && setTypeFor(null)}
-              documentId={typeFor.id}
-              documentName={typeFor.name}
-              current={typeFor.docType}
-              onSaved={changed}
-            />
-          )}
-          <ManageTagsDialog
-            isOpen={manageTags}
-            onOpenChange={setManageTags}
+      {/* Main content */}
+      <main className="flex-1 p-5 md:p-6 overflow-y-auto flex flex-col gap-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-wrap">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-xl font-bold" style={{ color: "var(--text)" }}>
+              {t("@legalos.documents.heading")}
+            </h1>
+            <p className="text-xs" style={{ color: "var(--text2)" }}>
+              {t(
+                filtered
+                  ? "@legalos.documents.subtitle.filtered"
+                  : "@legalos.documents.subtitle.firmWide",
+                { count: filtered ? rows.length : (facets?.total ?? rows.length) },
+              )}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="w-64">
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t("@legalos.documents.search.placeholder")}
+                aria-label={t("@legalos.documents.search.label")}
+                startIcon={<MagnifyingGlassIcon className="w-4 h-4" style={{ color: "var(--text2)" }} />}
+              />
+            </div>
+
+            <div
+              className="flex items-center p-0.5 rounded border"
+              style={{
+                borderColor: "var(--border)",
+                backgroundColor: "var(--surface2)",
+                borderRadius: "var(--rs)",
+              }}
+              role="radiogroup"
+              aria-label={t("@legalos.documents.view.label")}
+            >
+              <button
+                type="button"
+                onClick={() => choose("list")}
+                className="p-1.5 rounded transition-colors flex items-center justify-center"
+                style={{
+                  backgroundColor: mode === "list" ? "var(--surface)" : "transparent",
+                  color: mode === "list" ? "var(--text)" : "var(--text2)",
+                  boxShadow: mode === "list" ? "var(--shadow)" : "none",
+                  borderRadius: "var(--rs)",
+                }}
+                title={t("@legalos.documents.view.list")}
+                aria-label={t("@legalos.documents.view.list")}
+                aria-checked={mode === "list"}
+                role="radio"
+              >
+                <ListBulletIcon className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => choose("cards")}
+                className="p-1.5 rounded transition-colors flex items-center justify-center"
+                style={{
+                  backgroundColor: mode === "cards" ? "var(--surface)" : "transparent",
+                  color: mode === "cards" ? "var(--text)" : "var(--text2)",
+                  boxShadow: mode === "cards" ? "var(--shadow)" : "none",
+                  borderRadius: "var(--rs)",
+                }}
+                title={t("@legalos.documents.view.cards")}
+                aria-label={t("@legalos.documents.view.cards")}
+                aria-checked={mode === "cards"}
+                role="radio"
+              >
+                <Squares2X2Icon className="w-4 h-4" />
+              </button>
+            </div>
+
+            <Button
+              variant="secondary"
+              startIcon={<TagIcon className="w-4 h-4" />}
+              onClick={() => setManageTags(true)}
+            >
+              {t("@legalos.documents.tags.manage")}
+            </Button>
+
+            <Button
+              variant="primary"
+              disabled={uploading || !practice}
+              loading={uploading}
+              startIcon={<ArrowUpTrayIcon className="w-4 h-4" />}
+              onClick={() => fileInput.current?.click()}
+            >
+              {uploading ? t("@legalos.documents.uploading") : t("@legalos.documents.upload")}
+            </Button>
+          </div>
+        </div>
+
+        {/* Real file input */}
+        <input
+          ref={fileInput}
+          type="file"
+          multiple
+          hidden
+          onChange={(event) => upload(event.target.files)}
+        />
+
+        {chips.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {chips.map((chip) => (
+              <span
+                key={chip.key}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded border"
+                style={{
+                  backgroundColor: "var(--surface2)",
+                  color: "var(--text)",
+                  borderColor: "var(--border)",
+                  borderRadius: "var(--rs)",
+                }}
+              >
+                <span>{chip.label}</span>
+                <button
+                  type="button"
+                  onClick={chip.remove}
+                  className="hover:opacity-75 focus:outline-none flex items-center justify-center"
+                  style={{ color: "var(--text2)" }}
+                  aria-label={`Remove filter ${chip.label}`}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </span>
+            ))}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setFilters(NO_FILTERS)}
+            >
+              {t("@legalos.documents.filters.clearAll")}
+            </Button>
+          </div>
+        )}
+
+        <InlineError message={error} onDismiss={() => setError(null)} />
+
+        <DataView resource={list} loadingLabel={t("@legalos.documents.loading")}>
+          {() =>
+            rows.length > 0 ? (
+              <div className="flex flex-col gap-4">
+                {mode === "cards" ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {rows.map((row) => (
+                      <DocumentCard
+                        key={row.id}
+                        doc={row}
+                        tagById={tagById}
+                        onEditTags={setTagsFor}
+                        onChangeType={setTypeFor}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="border rounded-lg overflow-hidden" style={{ borderColor: "var(--border)", borderRadius: "var(--r)" }}>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t("@legalos.documents.field.document")}</TableHead>
+                          <TableHead style={{ width: "130px" }}>{t("@legalos.documents.field.type")}</TableHead>
+                          <TableHead>{t("@legalos.documents.field.matter")}</TableHead>
+                          <TableHead>{t("@legalos.documents.field.uploadedBy")}</TableHead>
+                          <TableHead style={{ width: "130px" }}>{t("@legalos.documents.field.uploaded")}</TableHead>
+                          <TableHead style={{ width: "130px" }}>{t("@legalos.documents.field.status")}</TableHead>
+                          <TableHead style={{ width: "110px", textAlign: "end" }}>{t("@legalos.documents.field.size")}</TableHead>
+                          <TableHead style={{ width: "96px", textAlign: "end" }}><span className="sr-only">Actions</span></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {rows.map((row) => {
+                          const FileIconComp = fileIcon(row.contentType);
+                          return (
+                            <TableRow key={row.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-2.5">
+                                  <FileIconComp className="w-5 h-5 shrink-0" style={{ color: "var(--text2)" }} />
+                                  <div className="flex flex-col min-w-0">
+                                    <NextLink
+                                      href={`/documents/${row.id}`}
+                                      className="font-medium hover:underline truncate"
+                                      style={{ color: "var(--text)" }}
+                                    >
+                                      {row.name}
+                                    </NextLink>
+                                    {row.tagIds.length > 0 && (
+                                      <div className="flex items-center gap-1 flex-wrap mt-1">
+                                        {row.tagIds.map((tagId) => {
+                                          const tag = tagById.get(tagId);
+                                          return tag ? <TagToken key={tagId} tag={tag} /> : null;
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell style={{ color: "var(--text2)" }}>
+                                {docTypeLabel(row.docType)}
+                              </TableCell>
+                              <TableCell>
+                                {row.matterId ? (
+                                  <NextLink
+                                    href={`/matters/${row.matterId}`}
+                                    className="hover:underline truncate block"
+                                    style={{ color: "var(--text2)" }}
+                                  >
+                                    {row.matterName}
+                                  </NextLink>
+                                ) : (
+                                  <span style={{ color: "var(--text2)" }}>
+                                    {t("@legalos.documents.unfiled")}
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs"
+                                    style={{
+                                      backgroundColor: "var(--surface3)",
+                                      color: "var(--text)",
+                                    }}
+                                  >
+                                    {row.uploadedBy?.charAt(0) || "U"}
+                                  </div>
+                                  <span style={{ color: "var(--text2)" }}>{row.uploadedBy}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell style={{ color: "var(--text2)" }}>
+                                {formatDate(row.uploadedAt)}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="dot"
+                                  color={STATUS_BADGE_COLOR[row.status] || "neutral"}
+                                >
+                                  {enumLabel(row.status)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell style={{ textAlign: "end" }}>
+                                {row.hasFile ? (
+                                  <a
+                                    href={`${API_BASE}/api/orgs/${organizationId}/documents/${row.id}/content`}
+                                    download
+                                    className="hover:underline text-xs"
+                                    style={{ color: "var(--primary)" }}
+                                  >
+                                    {formatBytes(row.size)}
+                                  </a>
+                                ) : (
+                                  <span className="text-xs" style={{ color: "var(--text3)" }}>
+                                    {t("@legalos.documents.noFile")}
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell style={{ textAlign: "end" }}>
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    title={t("@legalos.documents.tags.edit")}
+                                    onClick={() => setTagsFor(row)}
+                                  >
+                                    <TagIcon className="w-4 h-4" />
+                                    <span className="sr-only">{t("@legalos.documents.tags.edit")}</span>
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    title={t("@legalos.documents.type.change")}
+                                    onClick={() => setTypeFor(row)}
+                                  >
+                                    <PencilSquareIcon className="w-4 h-4" />
+                                    <span className="sr-only">{t("@legalos.documents.type.change")}</span>
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+
+                {lastPageFull && (
+                  <div className="flex justify-center mt-2">
+                    <Button
+                      variant="secondary"
+                      onClick={() => setOffset(offset + PAGE_SIZE)}
+                    >
+                      {t("@legalos.documents.loadMore")}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <EmptyState
+                icon={<DocumentIcon className="w-8 h-8" style={{ color: "var(--text2)" }} />}
+                title={
+                  filtered
+                    ? t("@legalos.documents.empty.noMatchTitle")
+                    : t("@legalos.documents.empty.noneTitle")
+                }
+                description={
+                  filtered
+                    ? t("@legalos.documents.empty.filteredDescription")
+                    : t("@legalos.documents.empty.noneDescription")
+                }
+                action={
+                  filtered ? (
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setFilters(NO_FILTERS);
+                        setQuery("");
+                      }}
+                    >
+                      {t("@legalos.documents.filters.clearAll")}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="secondary"
+                      onClick={() => fileInput.current?.click()}
+                    >
+                      {t("@legalos.documents.empty.uploadAction")}
+                    </Button>
+                  )
+                }
+              />
+            )
+          }
+        </DataView>
+
+        {tagsFor && (
+          <TagsDialog
+            isOpen
+            onOpenChange={(open) => !open && setTagsFor(null)}
+            documentId={tagsFor.id}
+            documentName={tagsFor.name}
             tags={tags}
-            onChanged={changed}
+            selected={tagsFor.tagIds}
+            onSaved={changed}
           />
-        </LayoutContent>
-      }
-    />
+        )}
+        {typeFor && (
+          <DocTypeDialog
+            isOpen
+            onOpenChange={(open) => !open && setTypeFor(null)}
+            documentId={typeFor.id}
+            documentName={typeFor.name}
+            current={typeFor.docType}
+            onSaved={changed}
+          />
+        )}
+        <ManageTagsDialog
+          isOpen={manageTags}
+          onOpenChange={setManageTags}
+          tags={tags}
+          onChanged={changed}
+        />
+      </main>
+    </div>
   );
 }

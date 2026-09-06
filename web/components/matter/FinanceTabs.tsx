@@ -9,31 +9,22 @@
  * firm's, and a screen that merged them would suggest otherwise.
  */
 
-import { useState } from "react";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Grid } from "@astryxdesign/core/Grid";
-import { Text } from "@astryxdesign/core/Text";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Badge } from "@astryxdesign/core/Badge";
-import { List, ListItem } from "@astryxdesign/core/List";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
-import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
-import { Layout, LayoutContent, LayoutFooter } from "@astryxdesign/core/Layout";
-import { TextInput } from "@astryxdesign/core/TextInput";
-import { NumberInput } from "@astryxdesign/core/NumberInput";
-import { DateInput } from "@astryxdesign/core/DateInput";
-import { Selector } from "@astryxdesign/core/Selector";
-import { Divider } from "@astryxdesign/core/Divider";
+import React, { useState } from "react";
+import Link from "next/link";
 import { useTranslator } from "@astryxdesign/core/i18n";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Icon } from "@/components/ui/Icon";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
 import {
-  ArrowDownTrayIcon,
-  ArrowUpTrayIcon,
-  BanknotesIcon,
-  BuildingLibraryIcon,
-} from "@heroicons/react/24/outline";
+  Dialog,
+  DialogHeader,
+  DialogContent,
+  DialogFooter,
+} from "@/components/ui/Dialog";
 import { useMemberName, useOrg } from "@/lib/org";
-import { useEnumLabel } from "@/lib/i18n/enum-label";
 import {
   todayIso,
   type ISODateString,
@@ -61,7 +52,6 @@ export function BillsTab({
 }) {
   const { formatDate, formatEGP } = useFormat();
   const t = useTranslator();
-  const enumLabel = useEnumLabel();
   const money = financialsOf(data);
 
   return (
@@ -70,52 +60,64 @@ export function BillsTab({
         title={t("@legalos.matterWorkspace.bills.heading")}
         action={
           <Button
-            label={t("@legalos.matterWorkspace.financial.quickBill")}
             variant="primary"
             size="sm"
-            isDisabled={money.workInProgress <= 0}
+            disabled={money.workInProgress <= 0}
             onClick={() => onQuickBillChange(true)}
-          />
+          >
+            {t("@legalos.matterWorkspace.financial.quickBill")}
+          </Button>
         }
       >
         {data.invoices.length === 0 ? (
           <EmptyState
-            icon={<Icon icon={BanknotesIcon} size="lg" color="secondary" />}
+            icon={<Icon name="payments" size={24} />}
             title={t("@legalos.matterWorkspace.bills.emptyTitle")}
             description={t("@legalos.matterWorkspace.bills.emptyDescription")}
           />
         ) : (
-          <List hasDividers>
+          <div
+            className="flex flex-col rounded-md border divide-y overflow-hidden"
+            style={{ borderColor: "var(--border)" }}
+          >
             {data.invoices.map((invoice) => (
-              <ListItem
+              <div
                 key={invoice.id}
-                label={invoice.number}
-                href={`/billing/${invoice.id}`}
-                description={
-                  invoice.paid_date
-                    ? t("@legalos.matterWorkspace.bills.paid", {
-                        date: formatDate(invoice.paid_date),
-                      })
-                    : `${t("@legalos.matterWorkspace.bills.issued", {
-                        date: formatDate(invoice.issued_date),
-                      })} · ${t("@legalos.matterWorkspace.bills.due", {
-                        date: formatDate(invoice.due_date),
-                      })}`
-                }
-                startContent={
-                  <Icon icon={BanknotesIcon} size="sm" color="secondary" />
-                }
-                endContent={
-                  <HStack gap={3} vAlign="center">
-                    <InvoiceStatusMark status={invoice.status} />
-                    <Text type="body" weight="semibold">
-                      {formatEGP(Number(invoice.amount), invoice.currency)}
-                    </Text>
-                  </HStack>
-                }
-              />
+                className="flex items-center justify-between gap-3 p-3"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Icon name="receipt_long" size={16} style={{ color: "var(--text3)" }} />
+                  <div className="flex flex-col min-w-0">
+                    <Link
+                      href={`/billing/${invoice.id}`}
+                      className="text-xs font-semibold hover:underline truncate"
+                      style={{ color: "var(--primary)" }}
+                    >
+                      {invoice.number}
+                    </Link>
+                    <span className="text-xs truncate" style={{ color: "var(--text3)" }}>
+                      {invoice.paid_date
+                        ? t("@legalos.matterWorkspace.bills.paid", {
+                            date: formatDate(invoice.paid_date),
+                          })
+                        : `${t("@legalos.matterWorkspace.bills.issued", {
+                            date: formatDate(invoice.issued_date),
+                          })} · ${t("@legalos.matterWorkspace.bills.due", {
+                            date: formatDate(invoice.due_date),
+                          })}`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  <InvoiceStatusMark status={invoice.status} />
+                  <span className="text-xs font-semibold" style={{ color: "var(--text)" }}>
+                    {formatEGP(Number(invoice.amount), invoice.currency)}
+                  </span>
+                </div>
+              </div>
             ))}
-          </List>
+          </div>
         )}
       </Panel>
 
@@ -164,82 +166,72 @@ function QuickBillDialog({
 
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange} width={440}>
-      <Layout
-        header={
-          <DialogHeader
-            title={t("@legalos.matterWorkspace.financial.quickBill")}
-            onOpenChange={onOpenChange}
-          />
-        }
-        content={
-          <LayoutContent>
-            <VStack gap={4}>
-              {money.workInProgress <= 0 ? (
-                <Text type="body" color="secondary">
-                  {t("@legalos.matterWorkspace.financial.nothingToBill")}
-                </Text>
-              ) : (
-                <>
-                  <HStack hAlign="between">
-                    <Text type="body">
-                      {t("@legalos.matterWorkspace.financial.unbilledTime")}
-                    </Text>
-                    <Text type="body" weight="semibold">
-                      {formatEGP(money.unbilledTime, money.currency)}
-                    </Text>
-                  </HStack>
-                  <HStack hAlign="between">
-                    <Text type="body">
-                      {t("@legalos.matterWorkspace.financial.unbilledExpenses")}
-                    </Text>
-                    <Text type="body" weight="semibold">
-                      {formatEGP(money.unbilledExpenses, money.currency)}
-                    </Text>
-                  </HStack>
-                  <Divider />
-                  <HStack hAlign="between">
-                    <Text type="body" weight="semibold">
-                      {t("@legalos.matterWorkspace.financial.workInProgress")}
-                    </Text>
-                    <Text type="body" weight="semibold">
-                      {formatEGP(money.workInProgress, money.currency)}
-                    </Text>
-                  </HStack>
-                  <NumberInput
-                    label={t("@legalos.matterWorkspace.bills.paymentTerms")}
-                    value={terms}
-                    onChange={(value) => setTerms(value ?? 30)}
-                    min={0}
-                    max={365}
-                    step={5}
-                  />
-                </>
-              )}
-            </VStack>
-          </LayoutContent>
-        }
-        footer={
-          <LayoutFooter hasDivider>
-            <HStack gap={3} hAlign="end">
-              <Button
-                label={t("@legalos.matterWorkspace.action.cancel")}
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              />
-              <Button
-                label={
-                  saving
-                    ? t("@legalos.matterWorkspace.action.saving")
-                    : t("@legalos.matterWorkspace.financial.quickBill")
-                }
-                variant="primary"
-                isDisabled={saving || money.workInProgress <= 0}
-                onClick={submit}
-              />
-            </HStack>
-          </LayoutFooter>
-        }
+      <DialogHeader
+        title={t("@legalos.matterWorkspace.financial.quickBill")}
+        onOpenChange={onOpenChange}
       />
+      <DialogContent>
+        <div className="flex flex-col gap-4">
+          {money.workInProgress <= 0 ? (
+            <p className="text-xs m-0" style={{ color: "var(--text3)" }}>
+              {t("@legalos.matterWorkspace.financial.nothingToBill")}
+            </p>
+          ) : (
+            <>
+              <div className="flex items-center justify-between text-xs">
+                <span style={{ color: "var(--text)" }}>
+                  {t("@legalos.matterWorkspace.financial.unbilledTime")}
+                </span>
+                <span className="font-semibold" style={{ color: "var(--text)" }}>
+                  {formatEGP(money.unbilledTime, money.currency)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span style={{ color: "var(--text)" }}>
+                  {t("@legalos.matterWorkspace.financial.unbilledExpenses")}
+                </span>
+                <span className="font-semibold" style={{ color: "var(--text)" }}>
+                  {formatEGP(money.unbilledExpenses, money.currency)}
+                </span>
+              </div>
+              <hr style={{ borderColor: "var(--border)" }} />
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold" style={{ color: "var(--text)" }}>
+                  {t("@legalos.matterWorkspace.financial.workInProgress")}
+                </span>
+                <span className="font-semibold" style={{ color: "var(--text)" }}>
+                  {formatEGP(money.workInProgress, money.currency)}
+                </span>
+              </div>
+              <Input
+                type="number"
+                label={t("@legalos.matterWorkspace.bills.paymentTerms")}
+                value={terms}
+                onChange={(e) => setTerms(e.target.value ? Number(e.target.value) : 30)}
+                min={0}
+                max={365}
+                step={5}
+              />
+            </>
+          )}
+        </div>
+      </DialogContent>
+      <DialogFooter>
+        <Button
+          variant="secondary"
+          onClick={() => onOpenChange(false)}
+        >
+          {t("@legalos.matterWorkspace.action.cancel")}
+        </Button>
+        <Button
+          variant="primary"
+          loading={saving}
+          disabled={money.workInProgress <= 0}
+          onClick={submit}
+        >
+          {t("@legalos.matterWorkspace.financial.quickBill")}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }
@@ -269,22 +261,23 @@ export function TransactionsTab({
       <>
         <Panel title={t("@legalos.matterWorkspace.transactions.heading")}>
           <EmptyState
-            icon={<Icon icon={BuildingLibraryIcon} size="lg" color="secondary" />}
+            icon={<Icon name="account_balance" size={24} />}
             title={t("@legalos.matterWorkspace.transactions.noAccountTitle")}
             description={t(
               "@legalos.matterWorkspace.transactions.noAccountDescription",
             )}
-            actions={
+            action={
               role === "owner" ? (
                 <Button
-                  label={t("@legalos.matterWorkspace.transactions.openAccount")}
                   variant="primary"
                   onClick={() => onRecordChange(true)}
-                />
+                >
+                  {t("@legalos.matterWorkspace.transactions.openAccount")}
+                </Button>
               ) : (
-                <Text type="supporting" color="secondary">
+                <span className="text-xs" style={{ color: "var(--text3)" }}>
                   {t("@legalos.matterWorkspace.transactions.ownerOnly")}
-                </Text>
+                </span>
               )
             }
           />
@@ -301,9 +294,9 @@ export function TransactionsTab({
 
   return (
     <>
-      <VStack gap={6}>
+      <div className="flex flex-col gap-6">
         <Panel title={t("@legalos.matterWorkspace.transactions.heading")}>
-          <Grid columns={3} gap={4}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <StatTile
               label={t("@legalos.matterWorkspace.transactions.balance")}
               value={formatEGP(Number(balance.balance), currency)}
@@ -316,80 +309,90 @@ export function TransactionsTab({
               label={t("@legalos.matterWorkspace.transactions.disbursed")}
               value={formatEGP(Number(balance.disbursed), currency)}
             />
-          </Grid>
+          </div>
         </Panel>
 
         <Panel
           action={
             <Button
-              label={t("@legalos.matterWorkspace.transactions.record")}
               variant="primary"
               size="sm"
-              isDisabled={role === "lawyer"}
+              disabled={role === "lawyer"}
               onClick={() => onRecordChange(true)}
-            />
+            >
+              {t("@legalos.matterWorkspace.transactions.record")}
+            </Button>
           }
         >
           {role === "lawyer" && (
-            <Text type="supporting" color="secondary">
+            <span className="text-xs" style={{ color: "var(--text3)" }}>
               {t("@legalos.matterWorkspace.transactions.staffOnly")}
-            </Text>
+            </span>
           )}
           {data.trustTransactions.length === 0 ? (
             <EmptyState
-              icon={<Icon icon={BanknotesIcon} size="lg" color="secondary" />}
+              icon={<Icon name="payments" size={24} />}
               title={t("@legalos.matterWorkspace.transactions.emptyTitle")}
               description={t(
                 "@legalos.matterWorkspace.transactions.emptyDescription",
               )}
             />
           ) : (
-            <List hasDividers>
+            <div
+              className="flex flex-col rounded-md border divide-y overflow-hidden"
+              style={{ borderColor: "var(--border)" }}
+            >
               {data.trustTransactions.map((entry) => {
                 const isOutflow = OUTFLOWS.includes(entry.kind);
                 return (
-                  <ListItem
+                  <div
                     key={entry.id}
-                    label={
-                      entry.description ||
-                      t(`@legalos.matterWorkspace.transactions.kind.${entry.kind}`)
-                    }
-                    description={[
-                      memberName(entry.recorded_by),
-                      formatDate(entry.transaction_date),
-                      entry.reference,
-                      entry.invoice_number,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                    startContent={
+                    className="flex items-center justify-between gap-3 p-3"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <Icon
-                        icon={isOutflow ? ArrowUpTrayIcon : ArrowDownTrayIcon}
-                        size="sm"
-                        color={isOutflow ? "secondary" : "success"}
+                        name={isOutflow ? "arrow_upward" : "arrow_downward"}
+                        size={16}
+                        style={{
+                          color: isOutflow ? "var(--text3)" : "var(--success)",
+                        }}
                       />
-                    }
-                    endContent={
-                      <HStack gap={3} vAlign="center">
-                        <Badge
-                          variant="neutral"
-                          label={t(
-                            `@legalos.matterWorkspace.transactions.kind.${entry.kind}`,
-                          )}
-                        />
-                        <Text type="body" weight="semibold">
-                          {isOutflow ? "−" : "+"}
-                          {formatEGP(Number(entry.amount), entry.currency)}
-                        </Text>
-                      </HStack>
-                    }
-                  />
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-semibold truncate" style={{ color: "var(--text)" }}>
+                          {entry.description ||
+                            t(`@legalos.matterWorkspace.transactions.kind.${entry.kind}`)}
+                        </span>
+                        <span className="text-xs truncate" style={{ color: "var(--text3)" }}>
+                          {[
+                            memberName(entry.recorded_by),
+                            formatDate(entry.transaction_date),
+                            entry.reference,
+                            entry.invoice_number,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      <Badge color="neutral" variant="soft">
+                        {t(
+                          `@legalos.matterWorkspace.transactions.kind.${entry.kind}`,
+                        )}
+                      </Badge>
+                      <span className="text-xs font-semibold" style={{ color: "var(--text)" }}>
+                        {isOutflow ? "−" : "+"}
+                        {formatEGP(Number(entry.amount), entry.currency)}
+                      </span>
+                    </div>
+                  </div>
                 );
               })}
-            </List>
+            </div>
           )}
         </Panel>
-      </VStack>
+      </div>
 
       <RecordTransactionDialog
         isOpen={recordOpen}
@@ -439,57 +442,46 @@ function OpenAccountDialog({
 
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange} width={440}>
-      <Layout
-        header={
-          <DialogHeader
-            title={t("@legalos.matterWorkspace.transactions.openAccount")}
-            onOpenChange={onOpenChange}
-          />
-        }
-        content={
-          <LayoutContent>
-            <VStack gap={4}>
-              <TextInput
-                label={t("@legalos.matterWorkspace.transactions.account.name")}
-                value={name}
-                onChange={setName}
-                isRequired
-              />
-              <TextInput
-                label={t("@legalos.matterWorkspace.transactions.account.bank")}
-                value={bank}
-                onChange={setBank}
-              />
-              <TextInput
-                label={t("@legalos.matterWorkspace.transactions.account.number")}
-                value={number}
-                onChange={setNumber}
-              />
-            </VStack>
-          </LayoutContent>
-        }
-        footer={
-          <LayoutFooter hasDivider>
-            <HStack gap={3} hAlign="end">
-              <Button
-                label={t("@legalos.matterWorkspace.action.cancel")}
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              />
-              <Button
-                label={
-                  saving
-                    ? t("@legalos.matterWorkspace.action.saving")
-                    : t("@legalos.matterWorkspace.action.save")
-                }
-                variant="primary"
-                isDisabled={saving || !name.trim()}
-                onClick={submit}
-              />
-            </HStack>
-          </LayoutFooter>
-        }
+      <DialogHeader
+        title={t("@legalos.matterWorkspace.transactions.openAccount")}
+        onOpenChange={onOpenChange}
       />
+      <DialogContent>
+        <div className="flex flex-col gap-4">
+          <Input
+            label={t("@legalos.matterWorkspace.transactions.account.name")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+          <Input
+            label={t("@legalos.matterWorkspace.transactions.account.bank")}
+            value={bank}
+            onChange={(e) => setBank(e.target.value)}
+          />
+          <Input
+            label={t("@legalos.matterWorkspace.transactions.account.number")}
+            value={number}
+            onChange={(e) => setNumber(e.target.value)}
+          />
+        </div>
+      </DialogContent>
+      <DialogFooter>
+        <Button
+          variant="secondary"
+          onClick={() => onOpenChange(false)}
+        >
+          {t("@legalos.matterWorkspace.action.cancel")}
+        </Button>
+        <Button
+          variant="primary"
+          loading={saving}
+          disabled={!name.trim()}
+          onClick={submit}
+        >
+          {t("@legalos.matterWorkspace.action.save")}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }
@@ -553,97 +545,88 @@ function RecordTransactionDialog({
 
   return (
     <Dialog isOpen={isOpen} onOpenChange={onOpenChange} width={480}>
-      <Layout
-        header={
-          <DialogHeader
-            title={t("@legalos.matterWorkspace.transactions.record")}
-            onOpenChange={onOpenChange}
-          />
-        }
-        content={
-          <LayoutContent>
-            <VStack gap={4}>
-              <HStack gap={3}>
-                <Selector
-                  label={t("@legalos.matterWorkspace.transactions.form.kind")}
-                  value={kind}
-                  onChange={(value) => setKind(value as TrustKind)}
-                  options={KINDS.map((value) => ({
-                    value,
-                    label: t(
-                      `@legalos.matterWorkspace.transactions.kind.${value}`,
-                    ),
-                  }))}
-                />
-                <NumberInput
-                  label={t("@legalos.matterWorkspace.transactions.form.amount")}
-                  value={amount}
-                  onChange={(value) => setAmount(value ?? 0)}
-                  min={0}
-                  step={500}
-                />
-                <DateInput
-                  label={t("@legalos.matterWorkspace.transactions.form.date")}
-                  value={date}
-                  onChange={(value) => setDate(value ?? date)}
-                />
-              </HStack>
-              {needsInvoice && (
-                <Selector
-                  label={t("@legalos.matterWorkspace.transactions.form.invoice")}
-                  value={invoiceId}
-                  onChange={setInvoiceId}
-                  hasClear
-                  isRequired
-                  options={payable.map((invoice) => ({
-                    value: String(invoice.id),
-                    label: `${invoice.number} — ${formatEGP(
-                      Number(invoice.amount),
-                      invoice.currency,
-                    )}`,
-                  }))}
-                />
-              )}
-              <TextInput
-                label={t("@legalos.matterWorkspace.transactions.form.description")}
-                value={description}
-                onChange={setDescription}
-              />
-              <TextInput
-                label={t("@legalos.matterWorkspace.transactions.form.reference")}
-                value={reference}
-                onChange={setReference}
-                placeholder={t(
-                  "@legalos.matterWorkspace.transactions.form.referencePlaceholder",
-                )}
-              />
-            </VStack>
-          </LayoutContent>
-        }
-        footer={
-          <LayoutFooter hasDivider>
-            <HStack gap={3} hAlign="end">
-              <Button
-                label={t("@legalos.matterWorkspace.action.cancel")}
-                variant="secondary"
-                onClick={() => onOpenChange(false)}
-              />
-              <Button
-                label={
-                  saving
-                    ? t("@legalos.matterWorkspace.action.saving")
-                    : t("@legalos.matterWorkspace.action.save")
-                }
-                variant="primary"
-                isDisabled={
-                  saving || amount <= 0 || (needsInvoice && !invoiceId)
-                }
-                onClick={submit}
-              />
-            </HStack>
-          </LayoutFooter>
-        }
+      <DialogHeader
+        title={t("@legalos.matterWorkspace.transactions.record")}
+        onOpenChange={onOpenChange}
       />
+      <DialogContent>
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Select
+              label={t("@legalos.matterWorkspace.transactions.form.kind")}
+              value={kind}
+              onChange={(e) => setKind(e.target.value as TrustKind)}
+              options={KINDS.map((value) => ({
+                value,
+                label: t(
+                  `@legalos.matterWorkspace.transactions.kind.${value}`,
+                ),
+              }))}
+            />
+            <Input
+              type="number"
+              label={t("@legalos.matterWorkspace.transactions.form.amount")}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value ? Number(e.target.value) : 0)}
+              min={0}
+              step={500}
+            />
+            <Input
+              type="date"
+              label={t("@legalos.matterWorkspace.transactions.form.date")}
+              value={date}
+              onChange={(e) => setDate((e.target.value as ISODateString) || date)}
+            />
+          </div>
+          {needsInvoice && (
+            <Select
+              label={t("@legalos.matterWorkspace.transactions.form.invoice")}
+              value={invoiceId ?? ""}
+              onChange={(e) => setInvoiceId(e.target.value || null)}
+              required
+              options={[
+                { value: "", label: "—" },
+                ...payable.map((invoice) => ({
+                  value: String(invoice.id),
+                  label: `${invoice.number} — ${formatEGP(
+                    Number(invoice.amount),
+                    invoice.currency,
+                  )}`,
+                })),
+              ]}
+            />
+          )}
+          <Input
+            label={t("@legalos.matterWorkspace.transactions.form.description")}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+          <Input
+            label={t("@legalos.matterWorkspace.transactions.form.reference")}
+            value={reference}
+            onChange={(e) => setReference(e.target.value)}
+            placeholder={t(
+              "@legalos.matterWorkspace.transactions.form.referencePlaceholder",
+            )}
+          />
+        </div>
+      </DialogContent>
+      <DialogFooter>
+        <Button
+          variant="secondary"
+          onClick={() => onOpenChange(false)}
+        >
+          {t("@legalos.matterWorkspace.action.cancel")}
+        </Button>
+        <Button
+          variant="primary"
+          loading={saving}
+          disabled={amount <= 0 || (needsInvoice && !invoiceId)}
+          onClick={submit}
+        >
+          {t("@legalos.matterWorkspace.action.save")}
+        </Button>
+      </DialogFooter>
     </Dialog>
   );
 }
