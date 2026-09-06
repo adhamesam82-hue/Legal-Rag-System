@@ -7,10 +7,11 @@ import { useLocale } from "@/lib/i18n/provider";
 import { useTranslator, type TranslatorFn } from "@astryxdesign/core/i18n";
 import { useOrg } from "@/lib/org";
 import { useFormat } from "@/lib/i18n/format";
-import type { PracticeApi } from "@/lib/practice";
+import { PLACEHOLDER_SEAT_LIMIT, type PracticeApi } from "@/lib/practice";
 import { isPathEnabled, featureForPath } from "@/lib/features";
 import { useAppearance } from "@/lib/appearance";
 import { Icon } from "@/components/ui/Icon";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { Banner } from "@astryxdesign/core/Banner";
 import { Button } from "@astryxdesign/core/Button";
 import {
@@ -317,6 +318,140 @@ function TrialBar() {
         </Button>
       }
     />
+  );
+}
+
+/**
+ * بطاقة «خطة المكتب» أسفل الشريط الجانبي (T-058)
+ */
+function FirmPlanCard({ collapsed }: { collapsed: boolean }) {
+  const { memberships, organizationId } = useOrg();
+  const t = useTranslator();
+  const { formatDate } = useFormat();
+
+  const active = memberships.find((m) => m.organization_id === organizationId);
+  if (!active) return null;
+
+  const plan = active.plan ?? "trial";
+  const planName = t(`@legalos.shell.plan.${plan}`);
+  const planTitle = t("@legalos.shell.planCard.titleWithPlan", { plan: planName });
+  const userCount = memberships.length;
+  const seatLimit = PLACEHOLDER_SEAT_LIMIT;
+  const progressPercent = Math.min(100, (userCount / seatLimit) * 100);
+  const expiryFormatted = active.trial_ends_at ? formatDate(active.trial_ends_at) : "";
+  const isExpired = Boolean(active.trial_expired);
+
+  const usersCountText = t("@legalos.shell.planCard.usersCount", {
+    current: userCount,
+    total: seatLimit,
+  });
+
+  const expiryText = isExpired
+    ? t("@legalos.shell.planCard.trialExpired")
+    : t("@legalos.shell.planCard.expiresOn", { date: expiryFormatted });
+
+  const fullTooltip = `${planTitle} · ${usersCountText} · ${expiryText}${
+    isExpired && expiryFormatted ? ` (${expiryFormatted})` : ""
+  }`;
+
+  if (collapsed) {
+    return (
+      <div
+        className="flex items-center justify-center py-2"
+        title={fullTooltip}
+        aria-label={fullTooltip}
+      >
+        <div
+          className="flex h-10 w-10 items-center justify-center rounded-[var(--rs,10px)] transition-colors"
+          style={{
+            backgroundColor: isExpired
+              ? "color-mix(in oklab, var(--danger) 12%, transparent)"
+              : "var(--surface2)",
+            color: isExpired ? "var(--danger)" : "var(--accent)",
+            border: isExpired
+              ? "1px solid var(--danger)"
+              : "1px solid var(--border)",
+          }}
+        >
+          <Icon name="workspace_premium" size={20} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="m-2.5 rounded-[var(--rs,10px)] p-3 transition-colors"
+      style={{
+        backgroundColor: isExpired
+          ? "color-mix(in oklab, var(--danger) 6%, var(--surface2))"
+          : "var(--surface2)",
+        border: isExpired
+          ? "1px solid var(--danger)"
+          : "1px solid var(--border)",
+      }}
+      aria-label={planTitle}
+    >
+      {/* رأس البطاقة: أيقونة واسم الخطة */}
+      <div className="mb-2 flex items-center gap-2">
+        <Icon
+          name="workspace_premium"
+          size={18}
+          className="flex-none"
+          style={{
+            color: isExpired ? "var(--danger)" : "var(--accent)",
+          }}
+        />
+        <span
+          className="truncate text-[12px] font-semibold"
+          style={{ color: "var(--text)" }}
+        >
+          {planTitle}
+        </span>
+      </div>
+
+      {/* شريط التقدم: لا يتجاوز 100% ولا لون خطر عند الامتلاء */}
+      <div
+        className="mb-2 h-1.5 w-full overflow-hidden rounded-full"
+        style={{ backgroundColor: "var(--border)" }}
+        role="progressbar"
+        aria-valuenow={userCount}
+        aria-valuemin={0}
+        aria-valuemax={seatLimit}
+      >
+        <div
+          className="h-full rounded-full transition-all duration-300"
+          style={{
+            width: `${progressPercent}%`,
+            backgroundColor: isExpired ? "var(--danger)" : "var(--accent)",
+          }}
+        />
+      </div>
+
+      {/* تذييل البطاقة: عدد المقاعد وتاريخ الانتهاء */}
+      <div
+        className="flex flex-wrap items-center justify-between gap-1 text-[11px]"
+        style={{ color: "var(--text2)" }}
+      >
+        <span style={{ color: "var(--text2)" }}>{usersCountText}</span>
+        <span style={{ color: "var(--text2)" }}>·</span>
+        {isExpired ? (
+          <span className="flex items-center gap-1">
+            <span
+              className="font-semibold"
+              style={{ color: "var(--danger)" }}
+            >
+              {t("@legalos.shell.planCard.trialExpired")}
+            </span>
+            {expiryFormatted && (
+              <span style={{ color: "var(--text2)" }}>({expiryFormatted})</span>
+            )}
+          </span>
+        ) : (
+          <span style={{ color: "var(--text2)" }}>{expiryText}</span>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -658,6 +793,16 @@ export function Shell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
+        {/* بطاقة «خطة المكتب» أسفل الشريط الجانبي (T-058) */}
+        <div
+          className="flex-none"
+          style={{
+            borderTop: "1px solid var(--border)",
+          }}
+        >
+          <FirmPlanCard collapsed={isCollapsed} />
+        </div>
+
         {/* تذييل الشريط الجانبي: زر الطي والتوسيع المستمر */}
         <div
           className="flex flex-none items-center justify-between p-2.5"
@@ -970,6 +1115,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
             backgroundColor: "var(--bg)",
           }}
         >
+          {/* شريط المسار فوق عنوان كل شاشة (T-060 / E-5) */}
+          <Breadcrumb />
           {children}
         </main>
       </div>

@@ -1517,7 +1517,7 @@ def put_member_matter_scope(
     Deciding who reads which client's file is the firm's call to make, not a
     lawyer's own -- so this is the narrower gate, not get_current_membership.
     """
-    with request_connection() as conn:
+    with request_connection(organization_id=organization_id) as conn:
         try:
             membership = set_matter_scope(
                 conn, organization_id, clerk_user_id, request.matter_scope

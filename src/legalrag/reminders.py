@@ -37,12 +37,15 @@ into notification_sends per (recipient, thing, offset, date being reminded
 about) and the UNIQUE index -- not a check in this file -- is what makes the
 sweep safe to run five times in a morning.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, timedelta
 
 import psycopg
+
+from legalrag.db import set_tenant_context
 
 # Three days out to prepare, one day out to confirm, and the morning of.
 # Deliberately few: a reminder people learn to ignore protects nobody.
@@ -196,12 +199,26 @@ def due_tasks(conn: psycopg.Connection, today: date) -> list[Reminder]:
         ]
 
 
-def collect(conn: psycopg.Connection, today: date) -> list[Reminder]:
+def collect_for_org(
+    conn: psycopg.Connection, organization_id: int, today: date
+) -> list[Reminder]:
+    """Collects due reminders for a single organization under its tenant context."""
+    set_tenant_context(conn, organization_id)
     return (
-        due_hearings(conn, today)
-        + due_deadlines(conn, today)
-        + due_tasks(conn, today)
+        due_hearings(conn, today) + due_deadlines(conn, today) + due_tasks(conn, today)
     )
+
+
+def collect(conn: psycopg.Connection, today: date) -> list[Reminder]:
+    """Sweeps all organizations, setting the tenant context for each one."""
+    with conn.cursor() as cur:
+        cur.execute("SELECT id FROM organizations ORDER BY id")
+        org_ids = [row[0] for row in cur.fetchall()]
+
+    all_reminders: list[Reminder] = []
+    for org_id in org_ids:
+        all_reminders.extend(collect_for_org(conn, org_id, today))
+    return all_reminders
 
 
 def already_sent(
@@ -215,14 +232,20 @@ def already_sent(
     like a duplicate, so the lawyer got the mail, never got the notification,
     and nothing reported a failure. Migration 0017 widened the key.
     """
+    set_tenant_context(conn, reminder.organization_id)
     with conn.cursor() as cur:
         cur.execute(
             "SELECT 1 FROM notification_sends "
-            "WHERE recipient = %s AND subject_kind = %s AND subject_id = %s "
+            "WHERE organization_id = %s AND recipient = %s AND subject_kind = %s AND subject_id = %s "
             "  AND offset_days = %s AND subject_date = %s AND channel = %s",
             (
-                reminder.recipient, reminder.kind, reminder.subject_id,
-                reminder.offset_days, reminder.subject_date, channel,
+                reminder.organization_id,
+                reminder.recipient,
+                reminder.kind,
+                reminder.subject_id,
+                reminder.offset_days,
+                reminder.subject_date,
+                channel,
             ),
         )
         return cur.fetchone() is not None
@@ -236,6 +259,7 @@ def record_sent(
     ON CONFLICT DO NOTHING rather than a prior check, so two sweeps racing --
     a manual run beside the timer -- cannot both decide it is unsent.
     """
+    set_tenant_context(conn, reminder.organization_id)
     with conn.cursor() as cur:
         cur.execute(
             "INSERT INTO notification_sends (organization_id, recipient, "
@@ -243,8 +267,12 @@ def record_sent(
             "VALUES (%s, %s, %s, %s, %s, %s, %s) "
             "ON CONFLICT DO NOTHING RETURNING id",
             (
-                reminder.organization_id, reminder.recipient, reminder.kind,
-                reminder.subject_id, reminder.offset_days, reminder.subject_date,
+                reminder.organization_id,
+                reminder.recipient,
+                reminder.kind,
+                reminder.subject_id,
+                reminder.offset_days,
+                reminder.subject_date,
                 channel,
             ),
         )
@@ -262,6 +290,7 @@ def devices_for(
     registers separately, and a reminder about one firm's hearing has no
     business reaching a device signed in to the other.
     """
+    set_tenant_context(conn, organization_id)
     with conn.cursor() as cur:
         cur.execute(
             "SELECT id, token FROM device_tokens "

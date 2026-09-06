@@ -20,6 +20,54 @@ export type ThemeMode = "light" | "dark" | "mixed" | "mixed-inv";
 export type DensityMode = "comfortable" | "medium" | "compact";
 
 /**
+ * خيارات لون التمييز الأربعة المعتمدة في قالب السِّجل (T-057 / E-5):
+ * 1. oklch(0.66 0.11 76)  <- كهرماني (الافتراضي)
+ * 2. oklch(0.5 0.14 25)   <- طوبي
+ * 3. oklch(0.52 0.11 190) <- فيروزي
+ * 4. oklch(0.5 0.13 300)  <- أرجواني
+ */
+export const ACCENT_OPTIONS = [
+  "oklch(0.66 0.11 76)",
+  "oklch(0.5 0.14 25)",
+  "oklch(0.52 0.11 190)",
+  "oklch(0.5 0.13 300)",
+] as const;
+
+export type AccentColor = (typeof ACCENT_OPTIONS)[number];
+
+export const ACCENT_PRESETS: {
+  id: string;
+  value: AccentColor;
+  labelKey: string;
+  descKey: string;
+}[] = [
+  {
+    id: "amber",
+    value: "oklch(0.66 0.11 76)",
+    labelKey: "@legalos.settings.appearance.accent.amber",
+    descKey: "@legalos.settings.appearance.accent.amberDesc",
+  },
+  {
+    id: "brick",
+    value: "oklch(0.5 0.14 25)",
+    labelKey: "@legalos.settings.appearance.accent.brick",
+    descKey: "@legalos.settings.appearance.accent.brickDesc",
+  },
+  {
+    id: "teal",
+    value: "oklch(0.52 0.11 190)",
+    labelKey: "@legalos.settings.appearance.accent.teal",
+    descKey: "@legalos.settings.appearance.accent.tealDesc",
+  },
+  {
+    id: "purple",
+    value: "oklch(0.5 0.13 300)",
+    labelKey: "@legalos.settings.appearance.accent.purple",
+    descKey: "@legalos.settings.appearance.accent.purpleDesc",
+  },
+];
+
+/**
  * كائن التخزين الموحد لإعدادات المظهر (AppearanceSettings)
  */
 export interface AppearanceSettings {
@@ -27,6 +75,8 @@ export interface AppearanceSettings {
   density: DensityMode;
   radius: number; // 4..22 step 1, default 14
   sidebarCollapsed: boolean; // default false
+  brandHue: number; // 0..360 step 5, default 265
+  accent: AccentColor; // default oklch(0.66 0.11 76)
 }
 
 /** مفتاح التخزين الموحد في localStorage */
@@ -43,16 +93,18 @@ export const LEGACY_SIDEBAR_KEYS = [
 /** اسم الحدث المخصص لبث تحديثات المظهر لجميع المكونات الحية */
 export const APPEARANCE_CHANGE_EVENT = "legalos:appearance-change";
 
-/** القيم الافتراضية المعتمدة وفقاً لعقد التذكرة T-054 */
+/** القيم الافتراضية المعتمدة وفقاً لعقد التذكرتين T-054 و T-057 */
 export const DEFAULT_APPEARANCE_SETTINGS: AppearanceSettings = {
   theme: "mixed",
   density: "medium",
   radius: 14,
   sidebarCollapsed: false,
+  brandHue: 265,
+  accent: "oklch(0.66 0.11 76)",
 };
 
 /**
- * التحقق الصارم من صحة إعدادات المظهر وتصحيح أي قيم تالفة أو خارج النطاق
+ * التحقق الصارم من صحة إعدادات المظهر وتصحيح أي قيم تالفة أو خارج النطاق (T-057)
  */
 export function sanitizeAppearanceSettings(input: unknown): AppearanceSettings {
   if (!input || typeof input !== "object") {
@@ -87,11 +139,33 @@ export function sanitizeAppearanceSettings(input: unknown): AppearanceSettings {
       ? raw.sidebarCollapsed
       : DEFAULT_APPEARANCE_SETTINGS.sidebarCollapsed;
 
+  // فحص درجة لون العلامة (brandHue: 0..360 خطوة 5)
+  let brandHue = DEFAULT_APPEARANCE_SETTINGS.brandHue;
+  if (
+    typeof raw.brandHue === "number" &&
+    !Number.isNaN(raw.brandHue) &&
+    raw.brandHue >= 0 &&
+    raw.brandHue <= 360
+  ) {
+    brandHue = Math.min(360, Math.max(0, Math.round(raw.brandHue / 5) * 5));
+  }
+
+  // فحص لون التمييز الصارم (accent: إحدى القيم الأربع حصراً لمنع حقن CSS)
+  let accent: AccentColor = DEFAULT_APPEARANCE_SETTINGS.accent;
+  if (
+    typeof raw.accent === "string" &&
+    (ACCENT_OPTIONS as readonly string[]).includes(raw.accent)
+  ) {
+    accent = raw.accent as AccentColor;
+  }
+
   return {
     theme,
     density,
     radius,
     sidebarCollapsed,
+    brandHue,
+    accent,
   };
 }
 
@@ -140,6 +214,8 @@ export function loadAppearanceSettings(): AppearanceSettings {
         density: DEFAULT_APPEARANCE_SETTINGS.density,
         radius: DEFAULT_APPEARANCE_SETTINGS.radius,
         sidebarCollapsed: migratedCollapsed ?? DEFAULT_APPEARANCE_SETTINGS.sidebarCollapsed,
+        brandHue: DEFAULT_APPEARANCE_SETTINGS.brandHue,
+        accent: DEFAULT_APPEARANCE_SETTINGS.accent,
       };
 
       // حفظ الكائن الموحد الجديد
@@ -237,6 +313,9 @@ export function resetAppearanceSettings(): AppearanceSettings {
  * - --r: زاوية الاستدارة الحرة (4-22px)
  * - --rs: زاوية الاستدارة الصغيرة المشتقة: max(4px, --r - 4px)
  * - --rowpad: هوامش الأسطر (comfortable: 18px, medium: 14px, compact: 10px)
+ * - --brand-h: درجة لون العلامة (0-360)
+ * - --accent: لون التمييز
+ * - --accent-soft: اللون المشتق: color-mix(in oklab, accent 16%, var(--surface))
  */
 export function applyAppearanceVars(
   settings: AppearanceSettings,
@@ -247,7 +326,7 @@ export function applyAppearanceVars(
   const target = targetElement ?? document.documentElement;
   if (!target) return;
 
-  const { radius, density, theme } = settings;
+  const { radius, density, theme, brandHue, accent } = settings;
 
   // حساب المتغيرات المشتقة وفقاً للمواصفة
   const rPx = `${radius}px`;
@@ -258,6 +337,12 @@ export function applyAppearanceVars(
   target.style.setProperty("--r", rPx);
   target.style.setProperty("--rs", rsPx);
   target.style.setProperty("--rowpad", rowpad);
+  target.style.setProperty("--brand-h", String(brandHue));
+  target.style.setProperty("--accent", accent);
+  target.style.setProperty(
+    "--accent-soft",
+    `color-mix(in oklab, ${accent} 16%, var(--surface))`,
+  );
 
   // تحديث ثيم القشرة الرئيسي على جذر الصفحة
   const shellTheme = theme === "dark" || theme === "mixed-inv" ? "dark" : "light";
@@ -265,7 +350,7 @@ export function applyAppearanceVars(
 }
 
 /**
- * سكريبت تهيئة سريع يُحقن في <head> لمنع وميض الوضع الداكن (Anti-Flicker)
+ * سكريبت تهيئة سريع يُحقن في <head> لمنع وميض الوضع الداكن ولون العلامة (Anti-Flicker)
  * يُنفذ تزامناً قبل أول رسم للشاشة من قبل المتصفح
  */
 export const APPEARANCE_INLINE_SCRIPT = `
@@ -285,13 +370,21 @@ export const APPEARANCE_INLINE_SCRIPT = `
           theme: (oldTheme && ['light','dark','mixed','mixed-inv'].indexOf(oldTheme) >= 0) ? oldTheme : 'mixed',
           sidebarCollapsed: oldCollapse === 'true' || oldCollapse === '1',
           density: 'medium',
-          radius: 14
+          radius: 14,
+          brandHue: 265,
+          accent: 'oklch(0.66 0.11 76)'
         };
       }
     }
     var theme = (s && s.theme) || 'mixed';
     var radius = (s && typeof s.radius === 'number' && !isNaN(s.radius)) ? Math.min(22, Math.max(4, Math.round(s.radius))) : 14;
     var density = (s && s.density) || 'medium';
+    var validAccents = ['oklch(0.66 0.11 76)', 'oklch(0.5 0.14 25)', 'oklch(0.52 0.11 190)', 'oklch(0.5 0.13 300)'];
+    var accent = (s && typeof s.accent === 'string' && validAccents.indexOf(s.accent) >= 0) ? s.accent : 'oklch(0.66 0.11 76)';
+    var brandHue = 265;
+    if (s && typeof s.brandHue === 'number' && !isNaN(s.brandHue) && s.brandHue >= 0 && s.brandHue <= 360) {
+      brandHue = Math.min(360, Math.max(0, Math.round(s.brandHue / 5) * 5));
+    }
     var shellTheme = (theme === 'dark' || theme === 'mixed-inv') ? 'dark' : 'light';
     var el = document.documentElement;
     el.setAttribute('data-theme', shellTheme);
@@ -299,6 +392,9 @@ export const APPEARANCE_INLINE_SCRIPT = `
     el.style.setProperty('--rs', Math.max(4, radius - 4) + 'px');
     var pads = { comfortable: '18px', medium: '14px', compact: '10px' };
     el.style.setProperty('--rowpad', pads[density] || '14px');
+    el.style.setProperty('--brand-h', brandHue);
+    el.style.setProperty('--accent', accent);
+    el.style.setProperty('--accent-soft', 'color-mix(in oklab, ' + accent + ' 16%, var(--surface))');
   } catch (e) {}
 })();
 `.trim();

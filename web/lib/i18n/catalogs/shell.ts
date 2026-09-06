@@ -84,6 +84,25 @@ export const en: Catalog = {
   "@legalos.shell.account.profile": { defaultMessage: "Profile" },
   "@legalos.shell.account.firmSettings": { defaultMessage: "Firm settings" },
   "@legalos.shell.account.signOut": { defaultMessage: "Sign out" },
+
+  // Breadcrumb (T-060)
+  "@legalos.shell.breadcrumb.ariaLabel": { defaultMessage: "Breadcrumbs" },
+  "@legalos.shell.breadcrumb.home": { defaultMessage: "Home" },
+  "@legalos.shell.breadcrumb.loading": { defaultMessage: "Loading…" },
+  "@legalos.shell.nav.plans": { defaultMessage: "Plans" },
+  "@legalos.shell.nav.subscribe": { defaultMessage: "Subscribe" },
+
+  // Firm plan card (T-058)
+  "@legalos.shell.plan.trial": { defaultMessage: "Trial" },
+  "@legalos.shell.plan.basic": { defaultMessage: "Basic" },
+  "@legalos.shell.plan.pro": { defaultMessage: "Professional" },
+  "@legalos.shell.plan.enterprise": { defaultMessage: "Enterprise" },
+  "@legalos.shell.planCard.title": { defaultMessage: "Firm plan" },
+  "@legalos.shell.planCard.titleWithPlan": { defaultMessage: "Firm plan — {plan}" },
+  "@legalos.shell.planCard.usersCount": { defaultMessage: "{current} of {total} users" },
+  "@legalos.shell.planCard.expiresOn": { defaultMessage: "Ends {date}" },
+  "@legalos.shell.planCard.trialExpired": { defaultMessage: "Trial expired" },
+  "@legalos.shell.planCard.collapsedTooltip": { defaultMessage: "Firm plan: {plan} · {users} · {expiry}" },
 };
 
 export const ar: Catalog = {
@@ -167,4 +186,23 @@ export const ar: Catalog = {
   "@legalos.shell.account.profile": { defaultMessage: "الملف الشخصي" },
   "@legalos.shell.account.firmSettings": { defaultMessage: "إعدادات المكتب" },
   "@legalos.shell.account.signOut": { defaultMessage: "تسجيل الخروج" },
+
+  // Breadcrumb (T-060)
+  "@legalos.shell.breadcrumb.ariaLabel": { defaultMessage: "مسار التنقل" },
+  "@legalos.shell.breadcrumb.home": { defaultMessage: "الرئيسية" },
+  "@legalos.shell.breadcrumb.loading": { defaultMessage: "جارٍ التحميل…" },
+  "@legalos.shell.nav.plans": { defaultMessage: "الباقات" },
+  "@legalos.shell.nav.subscribe": { defaultMessage: "الاشتراك" },
+
+  // بطاقة خطة المكتب (T-058)
+  "@legalos.shell.plan.trial": { defaultMessage: "التجربة" },
+  "@legalos.shell.plan.basic": { defaultMessage: "الأساسية" },
+  "@legalos.shell.plan.pro": { defaultMessage: "الاحترافية" },
+  "@legalos.shell.plan.enterprise": { defaultMessage: "للمكاتب الكبيرة" },
+  "@legalos.shell.planCard.title": { defaultMessage: "خطة المكتب" },
+  "@legalos.shell.planCard.titleWithPlan": { defaultMessage: "خطة المكتب — {plan}" },
+  "@legalos.shell.planCard.usersCount": { defaultMessage: "{current} من {total} مستخدمًا" },
+  "@legalos.shell.planCard.expiresOn": { defaultMessage: "تنتهي {date}" },
+  "@legalos.shell.planCard.trialExpired": { defaultMessage: "انتهت التجربة" },
+  "@legalos.shell.planCard.collapsedTooltip": { defaultMessage: "خطة المكتب: {plan} · {users} · {expiry}" },
 };

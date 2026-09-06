@@ -640,6 +640,100 @@ export interface Dashboard {
   tasks_due_this_week: number;
 }
 
+export interface MonthMovement {
+  month: string;
+  label: string;
+  opened: number;
+  closed: number;
+}
+
+export interface MatterTypeStat {
+  matter_type: string;
+  count: number;
+  percentage: number;
+}
+
+export interface MattersByType {
+  items: MatterTypeStat[];
+  total_active: number;
+}
+
+export interface KpiDirectionDelta {
+  delta_pct: number;
+  direction: "up" | "down" | "flat";
+}
+
+export interface KpiDeltas {
+  active_matters: KpiDirectionDelta;
+  open_tasks: KpiDirectionDelta;
+  unbilled_hours: KpiDirectionDelta;
+  outstanding_amount: KpiDirectionDelta;
+}
+
+export interface KpiSeries {
+  active_matters: number[];
+  open_tasks: number[];
+  unbilled_hours: number[];
+  outstanding_amount: number[];
+}
+
+export interface CollectionsInsight {
+  collected: number;
+  outstanding: number;
+}
+
+export interface TopCollectionRate {
+  matter_type: string | null;
+  rate: number;
+}
+
+export interface RecentMatterItem {
+  id: number;
+  matter_number: string;
+  name: string;
+  client_name: string;
+  matter_type: string;
+  court: string;
+  responsible_user: string;
+  status: string;
+  next_deadline: { label: string; due_date: string } | null;
+}
+
+export interface RecentMatters {
+  items: RecentMatterItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface MyTaskItem {
+  id: number;
+  title: string;
+  status: TaskStatus;
+  due_date: string | null;
+  priority: Priority;
+  matter_id: number | null;
+  matter_name: string | null;
+}
+
+export interface MyTasksToday {
+  items: MyTaskItem[];
+  done: number;
+  total: number;
+}
+
+export interface DashboardInsights {
+  matters_movement: MonthMovement[];
+  matters_by_type: MattersByType;
+  kpi_series: KpiSeries;
+  kpi_deltas: KpiDeltas;
+  collections: CollectionsInsight;
+  top_collection_rate: TopCollectionRate;
+  recent_matters: RecentMatters;
+  my_tasks_today: MyTasksToday;
+}
+
+
 export interface Me {
   clerk_user_id: string;
   organization_id: number;
@@ -673,6 +767,11 @@ export function practiceApi(organizationId: number) {
     me: () => request<Me>(`${base}/me`),
     dashboard: (upcomingDays = 30) =>
       request<Dashboard>(`${base}/dashboard${query({ upcoming_days: upcomingDays })}`),
+    dashboardInsights: (filters: { limit?: number; offset?: number; scope?: "all" | "my" } = {}) =>
+      request<DashboardInsights>(`${base}/dashboard/insights${query(filters)}`),
+    dashboardExportCsv: (scope: "all" | "my" = "all") =>
+      fetchBlob(`${base}/dashboard/export/recent-matters${query({ scope })}`),
+
 
     clients: {
       list: (filters: { status?: string; q?: string } = {}) =>
@@ -1032,4 +1131,9 @@ export function todayIso(): ISODateString {
   const day = `${now.getDate()}`.padStart(2, "0");
   return `${now.getFullYear()}-${month}-${day}` as ISODateString;
 }
+
+/** مؤقّت حتى يصل seat_limit من الخلفية — T-041 (ملحمة الاشتراكات).
+ *  لا يمنع شيئًا ولا يُبنى عليه قرار: عرضٌ فقط.
+ *  عند وصول الحقل: احذف هذا الثابت واقرأ practice.seat_limit. */
+export const PLACEHOLDER_SEAT_LIMIT = 25;
 

@@ -1063,5 +1063,86 @@
       "web/app/settings/appearance/page.tsx"
     ],
     "source": "owner request 2026-09-05"
+  },
+  {
+    "id": "T-058",
+    "title": "بطاقة «خطة المكتب» أسفل الشريط الجانبي",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "3س",
+    "labels": [
+      "frontend",
+      "تصميم"
+    ],
+    "deps": [
+      "T-051"
+    ],
+    "files": [
+      "web/components/Shell.tsx",
+      "web/lib/i18n/catalogs/shell.ts"
+    ],
+    "source": "owner request 2026-09-05"
+  },
+  {
+    "id": "T-059",
+    "title": "أقسام لوحة التحكم كما في القالب",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "1ي",
+    "labels": [
+      "frontend",
+      "تصميم"
+    ],
+    "deps": [
+      "T-056"
+    ],
+    "files": [
+      "web/app/dashboard/page.tsx"
+    ],
+    "source": "owner request 2026-09-05"
+  },
+  {
+    "id": "T-060",
+    "title": "شريط المسار (breadcrumb) في كل الشاشات",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "4س",
+    "labels": [
+      "frontend",
+      "تصميم"
+    ],
+    "deps": [
+      "T-051"
+    ],
+    "files": [
+      "web/components/ui/Breadcrumb.tsx",
+      "web/components/Shell.tsx",
+      "web/lib/i18n/catalogs/shell.ts"
+    ],
+    "source": "owner request 2026-09-06"
+  },
+  {
+    "id": "T-061",
+    "title": "تقسيم حقول السرد بين الملفّ والسجل القضائي",
+    "batch": "case-file",
+    "owner": "fullstack",
+    "est": "1ي",
+    "labels": [
+      "backend",
+      "frontend",
+      "نموذج-بيانات",
+      "محجوب"
+    ],
+    "deps": [
+      "T-046"
+    ],
+    "files": [
+      "migrations/",
+      "src/legalrag/practice/matters.py",
+      "src/legalrag/practice/cases.py",
+      "web/components/matter/CaseFile.tsx",
+      "web/lib/practice.ts"
+    ],
+    "source": "owner decision 2026-09-06"
   }
 ]
