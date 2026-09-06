@@ -83,6 +83,7 @@ def test_components_index_exports():
         "Icon",
         "Chat",
         "Dialog",
+        "Breadcrumb",
     ]
 
     for item in expected_exports:
