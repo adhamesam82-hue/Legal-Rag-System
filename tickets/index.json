@@ -1196,23 +1196,6 @@
     "source": "observed during T-047 human check 2026-09-06"
   },
   {
-    "id": "T-065",
-    "title": "مبدّل المكاتب — لا سبيل إلى مكتب ثانٍ من الواجهة",
-    "batch": "sijil-shell",
-    "owner": "frontend",
-    "est": "4س",
-    "labels": [
-      "frontend",
-      "واجهة"
-    ],
-    "deps": [],
-    "files": [
-      "web/components/Shell.tsx",
-      "web/lib/i18n/catalogs/shell.ts"
-    ],
-    "source": "owner request 2026-09-06"
-  },
-  {
     "id": "T-066",
     "title": "الشريط الجانبي: العدّادات وتمييز البند وسطوع اللون",
     "batch": "sijil-shell",
@@ -1255,5 +1238,96 @@
       "web/app/documents/page.tsx"
     ],
     "source": "owner review on staging 2026-09-06"
+  },
+  {
+    "id": "T-068",
+    "title": "تسجيل الدخول والتسجيل بحساب جوجل",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "6س",
+    "labels": [
+      "frontend",
+      "مصادقة"
+    ],
+    "deps": [],
+    "files": [
+      "web/app/sign-in/[[...sign-in]]/page.tsx",
+      "web/app/sign-up/[[...sign-up]]/page.tsx"
+    ],
+    "source": "owner request 2026-09-06"
+  },
+  {
+    "id": "T-069",
+    "title": "الدعوة تُرفض ببريد صحيح — تطبيع البريد ورسالة تُفيد",
+    "batch": "sijil-shell",
+    "owner": "backend",
+    "est": "5س",
+    "labels": [
+      "backend",
+      "مصادقة"
+    ],
+    "deps": [],
+    "files": [
+      "src/legalrag/invites.py",
+      "src/legalrag/api.py",
+      "web/app/invite/[token]/page.tsx"
+    ],
+    "source": "observed 2026-09-06"
+  },
+  {
+    "id": "T-070",
+    "title": "التطبيق لا يقول لمستخدمه من هو",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "4س",
+    "labels": [
+      "frontend",
+      "واجهة"
+    ],
+    "deps": [],
+    "files": [
+      "web/app/settings/profile/page.tsx",
+      "web/components/Shell.tsx",
+      "web/lib/org.tsx"
+    ],
+    "source": "observed 2026-09-06"
+  },
+  {
+    "id": "T-071",
+    "title": "عدّاد المقاعد يعرض عدد مكاتبك لا عدد أعضاء مكتبك",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "2س",
+    "labels": [
+      "frontend",
+      "واجهة"
+    ],
+    "deps": [
+      "T-058"
+    ],
+    "files": [
+      "web/components/Shell.tsx"
+    ],
+    "source": "observed 2026-09-06"
+  },
+  {
+    "id": "T-072",
+    "title": "«الباقة» لا تعني شيئًا: لا حدّ مقاعد ولا أثر لانتهاء التجربة",
+    "batch": "sijil-shell",
+    "owner": "backend",
+    "est": "1ي",
+    "labels": [
+      "backend",
+      "اشتراك"
+    ],
+    "deps": [
+      "T-041"
+    ],
+    "files": [
+      "src/legalrag/orgs.py",
+      "src/legalrag/invites.py",
+      "src/legalrag/api.py"
+    ],
+    "source": "observed 2026-09-06"
   }
 ]
