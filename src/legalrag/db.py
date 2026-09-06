@@ -16,6 +16,7 @@ the membership check, one for the route body -- so roughly 25ms of every
 request was spent on handshakes for ~1ms of actual work, and a screen that
 fires three requests paid it three times over.
 """
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -81,7 +82,7 @@ def set_tenant_context(conn: psycopg.Connection, organization_id: int) -> None:
     the connection returns to the pool.
     """
     with conn.cursor() as cur:
-        cur.execute("SET LOCAL app.organization_id = %s", (organization_id,))
+        cur.execute(f"SET LOCAL app.organization_id = {int(organization_id)}")
 
 
 @contextmanager

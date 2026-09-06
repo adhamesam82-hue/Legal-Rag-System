@@ -8,6 +8,7 @@ Implements T-047 verification suite covering:
 5. Shared articles accessibility (corpus is readable across tenants)
 6. Non-exempt role verification (current user is not superuser and lacks BYPASSRLS)
 """
+
 from __future__ import annotations
 
 import re
@@ -17,16 +18,17 @@ import psycopg
 import pytest
 from conftest import connect_or_skip, drop_organizations_after
 
-from legalrag.db import get_connection, request_connection, set_tenant_context
+from legalrag.db import request_connection, set_tenant_context
 from legalrag.orgs import create_organization
-
 
 # --- Static and Configuration Tests (always run without requiring live DB) ---
 
 
 def test_migration_0029_structure():
     """Verify that migration 0029_tenant_rls.sql defines RLS, policies, and legalrag_app role."""
-    migration_path = Path(__file__).resolve().parent.parent / "migrations" / "0029_tenant_rls.sql"
+    migration_path = (
+        Path(__file__).resolve().parent.parent / "migrations" / "0029_tenant_rls.sql"
+    )
     assert migration_path.exists(), "migrations/0029_tenant_rls.sql does not exist"
     sql = migration_path.read_text(encoding="utf-8")
 
@@ -47,7 +49,9 @@ def test_no_bare_set_without_local():
 
     # Match SET <config_param> where it's not SET LOCAL and not UPDATE ... SET
     # e.g., SET app.organization_id = ...
-    bare_set_pattern = re.compile(r'\bSET\s+(?!LOCAL\b)[a-zA-Z0-9_.]+\s*=', re.IGNORECASE)
+    bare_set_pattern = re.compile(
+        r"\bSET\s+(?!LOCAL\b)[a-zA-Z0-9_.]+\s*=", re.IGNORECASE
+    )
 
     for py_file in py_files:
         content = py_file.read_text(encoding="utf-8")
@@ -58,7 +62,9 @@ def test_no_bare_set_without_local():
             if "UPDATE " in stripped:
                 continue
             matches = bare_set_pattern.findall(stripped)
-            assert not matches, f"{py_file.name}:{idx} contains bare SET without LOCAL: {stripped}"
+            assert not matches, (
+                f"{py_file.name}:{idx} contains bare SET without LOCAL: {stripped}"
+            )
 
 
 def test_database_url_templates_use_app_role():
@@ -154,12 +160,11 @@ def test_2_cross_tenant_write(test_tenants):
 
     # بمتغيّر مكتب ب، حاول INSERT مع organization_id مكتب أ
     set_tenant_context(conn, org_b_id)
-    with conn.cursor() as cur:
-        with pytest.raises(psycopg.Error):
-            cur.execute(
-                "INSERT INTO clients (organization_id, name) VALUES (%s, 'موكّل متسلل')",
-                (org_a_id,),
-            )
+    with conn.cursor() as cur, pytest.raises(psycopg.Error):
+        cur.execute(
+            "INSERT INTO clients (organization_id, name) VALUES (%s, 'موكّل متسلل')",
+            (org_a_id,),
+        )
     conn.rollback()
 
     # ثم UPDATE صفّ مكتب أ بمتغيّر مكتب ب
@@ -205,26 +210,23 @@ def test_4_pool_leakage(test_tenants):
 
     المجمّع، ثم استعلم بلا ضبط ← صفر. (يثبت أن SET LOCAL تُمحى.)
     """
-    conn, org_a_id, org_b_id = test_tenants
+    _conn, org_a_id, org_b_id = test_tenants
 
     # استعلام لمكتب أ
-    with request_connection(organization_id=org_a_id) as c1:
-        with c1.cursor() as cur:
-            cur.execute("SELECT current_setting('app.organization_id', true)")
-            assert cur.fetchone()[0] == str(org_a_id)
+    with request_connection(organization_id=org_a_id) as c1, c1.cursor() as cur:
+        cur.execute("SELECT current_setting('app.organization_id', true)")
+        assert cur.fetchone()[0] == str(org_a_id)
 
     # استعلام لمكتب ب
-    with request_connection(organization_id=org_b_id) as c2:
-        with c2.cursor() as cur:
-            cur.execute("SELECT current_setting('app.organization_id', true)")
-            assert cur.fetchone()[0] == str(org_b_id)
+    with request_connection(organization_id=org_b_id) as c2, c2.cursor() as cur:
+        cur.execute("SELECT current_setting('app.organization_id', true)")
+        assert cur.fetchone()[0] == str(org_b_id)
 
     # استعلام بدون ضبط المتغيّر على اتصال مستعار من المجمّع
-    with request_connection() as c3:
-        with c3.cursor() as cur:
-            cur.execute("SELECT current_setting('app.organization_id', true)")
-            val = cur.fetchone()[0]
-            assert val is None or val == "", f"تسرّب سياق المستأجر: {val}"
+    with request_connection() as c3, c3.cursor() as cur:
+        cur.execute("SELECT current_setting('app.organization_id', true)")
+        val = cur.fetchone()[0]
+        assert val is None or val == "", f"تسرّب سياق المستأجر: {val}"
 
 
 def test_5_shared_articles_accessible(test_tenants):
