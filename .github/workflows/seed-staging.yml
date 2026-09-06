@@ -1,0 +1,99 @@
+# Seeds the two isolation-check firms on staging, from the GitHub UI.
+#
+# WHY A WORKFLOW AND NOT A DOCUMENTED SSH COMMAND
+# -----------------------------------------------
+# T-047's manual check is mandatory before that ticket closes, and it needs two
+# firms with known record ids. The person who has to do the check does not
+# necessarily hold SSH to the box -- the deploy key lives in this repository's
+# secrets, not on anyone's laptop. So the check would stall on access rather
+# than on the work. This turns it into a button.
+#
+# STAGING ONLY, AND STRUCTURALLY SO
+# ---------------------------------
+# Every path here is /opt/alsigil-staging and the compose file is the staging
+# one. There is no environment input to get wrong: pointing this at production
+# would take editing the file, not filling a field. That is deliberate -- it
+# runs with --reset, which deletes two firms by name.
+
+name: Seed staging firms
+
+on:
+  workflow_dispatch:
+    inputs:
+      alpha_email:
+        description: "Email of the account to own مكتب ألفا (must exist in staging's Clerk)"
+        required: true
+      beta_email:
+        description: "Email to own مكتب بيتا. Must differ from alpha's -- one account in both firms makes the isolation check prove nothing."
+        required: true
+      reset:
+        description: "Delete the two firms first (safe to re-run; only these two names are touched)"
+        type: boolean
+        default: true
+
+concurrency:
+  # Two seeds racing on one database would interleave their writes and leave
+  # firms half-built, which reads as an isolation bug rather than a collision.
+  group: seed-staging
+  cancel-in-progress: false
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up SSH
+        run: |
+          install -d -m 0700 ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Copy the script into the running api container
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          # Copied from this checkout rather than run from the image, so the
+          # seed always matches the repository at the moment you press the
+          # button. Waiting for a rebuild to change a seeding script is a slow
+          # loop for something that is not shipped code.
+          scp scripts/seed_staging_two_firms.py \
+            "deploy@$SSH_HOST:/tmp/seed_staging_two_firms.py"
+          ssh "deploy@$SSH_HOST" bash -euo pipefail <<'EOF'
+            cd /opt/alsigil-staging
+            docker compose -f deploy/docker-compose.staging.yml \
+              cp /tmp/seed_staging_two_firms.py api:/app/scripts/seed_staging_two_firms.py
+            rm -f /tmp/seed_staging_two_firms.py
+          EOF
+
+      - name: Seed
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          ALPHA_EMAIL: ${{ inputs.alpha_email }}
+          BETA_EMAIL: ${{ inputs.beta_email }}
+          RESET_FLAG: ${{ inputs.reset && '--reset' || '' }}
+        run: |
+          # The emails go through env: rather than into the script body, so a
+          # value containing shell metacharacters cannot become a command on
+          # the runner that holds SSH_PRIVATE_KEY.
+          ssh "deploy@$SSH_HOST" \
+            "cd /opt/alsigil-staging && \
+             docker compose -f deploy/docker-compose.staging.yml exec -T api \
+               python scripts/seed_staging_two_firms.py $RESET_FLAG \
+                 --alpha-email '$ALPHA_EMAIL' --beta-email '$BETA_EMAIL'" \
+            | tee seed-output.txt
+
+      - name: Publish the ids the check needs
+        if: always()
+        run: |
+          # Into the run summary, not just the log: the ids are the whole point
+          # of running this, and a summary is what you can keep open in a tab
+          # while typing them into the address bar.
+          {
+            echo '## معرّفات الفحص البشري (T-047)'
+            echo
+            echo '```'
+            cat seed-output.txt 2>/dev/null || echo "لم يُنتج السكربت مخرجات — راجع الخطوة السابقة."
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
