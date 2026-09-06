@@ -1,40 +1,31 @@
 "use client";
 
+/**
+ * Document detail page (T-053 / Wave 5).
+ *
+ * Shows full document metadata, download link, tag editing via TagsDialog,
+ * type editing via DocTypeDialog, status selector, and delete action.
+ * Preserves all hooks, contract layer calls, and state intact.
+ */
+
 import { use, useState } from "react";
-import { Layout, LayoutContent } from "@astryxdesign/core/Layout";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Grid, GridSpan } from "@astryxdesign/core/Grid";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Card } from "@astryxdesign/core/Card";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Badge } from "@astryxdesign/core/Badge";
-import { Link } from "@astryxdesign/core/Link";
-import { Selector } from "@astryxdesign/core/Selector";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
-import { MetadataList, MetadataListItem } from "@astryxdesign/core/MetadataList";
-import {
-  ArrowLeftIcon,
-  ArrowDownTrayIcon,
-  DocumentIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Select } from "@/components/ui/Select";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Icon } from "@/components/ui/Icon";
 import { API_BASE } from "@/lib/api";
 import { useOrg, useMemberName, useResource } from "@/lib/org";
 import { DataView, InlineError } from "@/components/DataState";
-import {
-  type DocumentStatus,
-} from "@/lib/practice";
+import { type DocumentStatus } from "@/lib/practice";
 import { useFormat } from "@/lib/i18n/format";
 import { useTranslator } from "@astryxdesign/core/i18n";
 import { useDocTypeLabel, useEnumLabel } from "@/lib/i18n/enum-label";
 import { TagsDialog, TagToken } from "@/components/documents/TagsDialog";
 import { DocTypeDialog } from "@/components/documents/DocTypeDialog";
-
-// Version history and comment threads were in the UI concept but have no
-// backend; this page shows the document's real stored state and the actions
-// the API actually supports.
 
 const STATUSES: DocumentStatus[] = [
   "draft",
@@ -104,202 +95,237 @@ export default function DocumentDetailPage({
   }
 
   return (
-    <Layout
-      height="fill"
-      content={
-        <LayoutContent padding={0}>
-          <DataView resource={resource} loadingLabel={t("@legalos.documents.detail.loading")}>
-            {(doc) => (
-              <VStack gap={6}>
-                <Link href="/documents">
-                  <HStack gap={1.5} vAlign="center">
-                    <Icon icon={ArrowLeftIcon} size="sm" color="secondary" />
-                    <Text type="body" color="secondary">
-                      {t("@legalos.documents.detail.backLink")}
-                    </Text>
-                  </HStack>
-                </Link>
+    <div
+      className="w-full flex flex-col gap-6"
+      style={{
+        maxWidth: "1280px",
+        margin: "0 auto",
+        padding: "24px 20px",
+      }}
+    >
+      <DataView resource={resource} loadingLabel={t("@legalos.documents.detail.loading")}>
+        {(doc) => (
+          <div className="flex flex-col gap-6">
+            {/* Back link */}
+            <div>
+              <Link
+                href="/documents"
+                className="inline-flex items-center gap-1.5 text-sm font-medium hover:underline"
+                style={{ color: "var(--text2)" }}
+              >
+                <Icon name="arrow_back" size={18} />
+                <span>{t("@legalos.documents.detail.backLink")}</span>
+              </Link>
+            </div>
 
-                <HStack hAlign="between" vAlign="center" wrap="wrap" gap={4}>
-                  <VStack gap={1}>
-                    <HStack gap={3} vAlign="center">
-                      <Icon icon={DocumentIcon} size="md" color="secondary" />
-                      <Heading level={2}>{doc.name}</Heading>
-                    </HStack>
-                    <Text type="body" color="secondary">
-                      {doc.matter_id ? (
-                        <Link href={`/matters/${doc.matter_id}`}>
-                          {doc.matter_name}
-                        </Link>
-                      ) : (
-                        t("@legalos.documents.detail.notFiled")
-                      )}
-                    </Text>
-                  </VStack>
-                  <HStack gap={3} vAlign="center">
-                    <Selector
-                      label={t("@legalos.documents.field.status")}
-                      isLabelHidden
-                      value={doc.status}
-                      onChange={setStatus}
-                      isDisabled={pending}
-                      width={180}
-                      options={STATUSES.map((s) => ({ value: s, label: enumLabel(s) }))}
-                    />
-                    {doc.storage_key && (
-                      <Button
-                        label={t("@legalos.documents.detail.download")}
-                        variant="primary"
-                        href={`${API_BASE}/api/orgs/${organizationId}/documents/${doc.id}/content`}
-                        icon={
-                          <Icon icon={ArrowDownTrayIcon} size="sm" color="inherit" />
-                        }
-                      >
-                        {t("@legalos.documents.detail.download")}
-                      </Button>
-                    )}
-                    <Button
-                      label={t("@legalos.documents.detail.deleteDocument")}
-                      variant="destructive"
-                      isDisabled={pending}
-                      icon={<Icon icon={TrashIcon} size="sm" color="inherit" />}
-                      onClick={remove}
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b" style={{ borderColor: "var(--border)" }}>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-9 h-9 rounded flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: "var(--surface2)", color: "var(--primary)" }}
+                  >
+                    <Icon name="description" size={22} />
+                  </div>
+                  <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text)" }}>
+                    {doc.name}
+                  </h1>
+                </div>
+                <p className="text-sm" style={{ color: "var(--text2)" }}>
+                  {doc.matter_id ? (
+                    <Link
+                      href={`/matters/${doc.matter_id}`}
+                      className="font-medium hover:underline"
+                      style={{ color: "var(--primary)" }}
                     >
-                      {t("@legalos.documents.detail.delete")}
+                      {doc.matter_name}
+                    </Link>
+                  ) : (
+                    t("@legalos.documents.detail.notFiled")
+                  )}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 flex-wrap">
+                <div style={{ width: "160px" }}>
+                  <Select
+                    value={doc.status}
+                    onChange={(e) => setStatus(e.target.value)}
+                    disabled={pending}
+                    options={STATUSES.map((s) => ({ value: s, label: enumLabel(s) }))}
+                  />
+                </div>
+
+                {doc.storage_key && (
+                  <a
+                    href={`${API_BASE}/api/orgs/${organizationId}/documents/${doc.id}/content`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium border"
+                    style={{
+                      borderColor: "var(--border)",
+                      backgroundColor: "var(--surface)",
+                      color: "var(--text)",
+                    }}
+                  >
+                    <Icon name="download" size={16} />
+                    <span>{t("@legalos.documents.detail.download")}</span>
+                  </a>
+                )}
+
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={pending}
+                  onClick={remove}
+                >
+                  <Icon name="delete" size={16} />
+                  <span>{t("@legalos.documents.detail.delete")}</span>
+                </Button>
+              </div>
+            </div>
+
+            <InlineError message={error} onDismiss={() => setError(null)} />
+
+            {/* Main content grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left 2 columns: Stored File & Tags */}
+              <div className="lg:col-span-2 flex flex-col gap-6">
+                {/* File preview/status */}
+                <Card className="p-5 flex flex-col gap-4">
+                  <h2 className="text-base font-semibold" style={{ color: "var(--text)" }}>
+                    {t("@legalos.documents.detail.fileHeading")}
+                  </h2>
+                  {doc.storage_key ? (
+                    <div className="flex flex-col gap-3">
+                      <p className="text-sm" style={{ color: "var(--text2)" }}>
+                        {doc.content_type} · {formatBytes(doc.size_bytes)}
+                      </p>
+                      <div>
+                        <a
+                          href={`${API_BASE}/api/orgs/${organizationId}/documents/${doc.id}/content`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium hover:underline inline-flex items-center gap-1.5"
+                          style={{ color: "var(--primary)" }}
+                        >
+                          <Icon name="open_in_new" size={16} />
+                          <span>{t("@legalos.documents.detail.openStoredFile")}</span>
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    <EmptyState
+                      icon={<Icon name="draft" size={32} />}
+                      title={t("@legalos.documents.detail.noFileTitle")}
+                      description={t("@legalos.documents.detail.noFileDescription")}
+                    />
+                  )}
+                </Card>
+
+                {/* Tags */}
+                <Card className="p-5 flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-base font-semibold" style={{ color: "var(--text)" }}>
+                      {t("@legalos.documents.detail.tagsHeading")}
+                    </h2>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={pending}
+                      onClick={() => setTagsOpen(true)}
+                    >
+                      {t("@legalos.documents.detail.editTags")}
                     </Button>
-                  </HStack>
-                </HStack>
+                  </div>
+                  {doc.tag_ids.length === 0 ? (
+                    <p className="text-sm" style={{ color: "var(--text2)" }}>
+                      {t("@legalos.documents.detail.noTags")}
+                    </p>
+                  ) : (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {doc.tag_ids.map((id) => {
+                        const tag = tagById.get(id);
+                        return tag ? <TagToken key={id} tag={tag} size="md" /> : null;
+                      })}
+                    </div>
+                  )}
+                </Card>
+              </div>
 
-                <InlineError message={error} onDismiss={() => setError(null)} />
+              {/* Right column: Document Details */}
+              <div className="flex flex-col gap-6">
+                <Card className="p-5 flex flex-col gap-4">
+                  <h2 className="text-base font-semibold" style={{ color: "var(--text)" }}>
+                    {t("@legalos.documents.detail.detailsHeading")}
+                  </h2>
+                  <dl className="flex flex-col gap-2.5 text-sm">
+                    <div className="flex justify-between py-1 border-b" style={{ borderColor: "var(--border)" }}>
+                      <dt style={{ color: "var(--text2)" }}>{t("@legalos.documents.field.status")}</dt>
+                      <dd>
+                        <Badge color="neutral">{enumLabel(doc.status)}</Badge>
+                      </dd>
+                    </div>
+                    <div className="flex justify-between items-center py-1 border-b" style={{ borderColor: "var(--border)" }}>
+                      <dt style={{ color: "var(--text2)" }}>{t("@legalos.documents.field.type")}</dt>
+                      <dd className="flex items-center gap-2">
+                        <span className="font-medium" style={{ color: "var(--text)" }}>
+                          {docTypeLabel(doc.doc_type)}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={pending}
+                          onClick={() => setTypeOpen(true)}
+                        >
+                          {t("@legalos.documents.type.change")}
+                        </Button>
+                      </dd>
+                    </div>
+                    <div className="flex justify-between py-1 border-b" style={{ borderColor: "var(--border)" }}>
+                      <dt style={{ color: "var(--text2)" }}>{t("@legalos.documents.field.size")}</dt>
+                      <dd className="font-medium" style={{ color: "var(--text)" }}>
+                        {doc.storage_key && doc.size_bytes ? formatBytes(doc.size_bytes) : "—"}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between py-1 border-b" style={{ borderColor: "var(--border)" }}>
+                      <dt style={{ color: "var(--text2)" }}>{t("@legalos.documents.field.uploadedBy")}</dt>
+                      <dd className="font-medium" style={{ color: "var(--text)" }}>{memberName(doc.uploaded_by)}</dd>
+                    </div>
+                    <div className="flex justify-between py-1" style={{ borderColor: "var(--border)" }}>
+                      <dt style={{ color: "var(--text2)" }}>{t("@legalos.documents.field.uploaded")}</dt>
+                      <dd className="font-medium" style={{ color: "var(--text)" }}>{formatDateTime(doc.uploaded_at)}</dd>
+                    </div>
+                  </dl>
+                </Card>
+              </div>
+            </div>
 
-                <Grid columns={3} gap={6}>
-                  <GridSpan columns={2}>
-                    <VStack gap={6}>
-                    <Card>
-                      <VStack gap={4}>
-                        <Heading level={4}>{t("@legalos.documents.detail.fileHeading")}</Heading>
-                        {doc.storage_key ? (
-                          <VStack gap={3}>
-                            <Text type="body" color="secondary">
-                              {doc.content_type} · {formatBytes(doc.size_bytes)}
-                            </Text>
-                            <Link
-                              href={`${API_BASE}/api/orgs/${organizationId}/documents/${doc.id}/content`}
-                            >
-                              {t("@legalos.documents.detail.openStoredFile")}
-                            </Link>
-                          </VStack>
-                        ) : (
-                          <EmptyState
-                            icon={
-                              <Icon icon={DocumentIcon} size="lg" color="secondary" />
-                            }
-                            title={t("@legalos.documents.detail.noFileTitle")}
-                            description={t("@legalos.documents.detail.noFileDescription")}
-                          />
-                        )}
-                      </VStack>
-                    </Card>
-
-                    {/* --- tags: by name and colour, edited from here too --- */}
-                    <Card>
-                      <VStack gap={4}>
-                        <HStack hAlign="between" vAlign="center">
-                          <Heading level={4}>{t("@legalos.documents.detail.tagsHeading")}</Heading>
-                          <Button
-                            label={t("@legalos.documents.detail.editTags")}
-                            variant="secondary"
-                            size="sm"
-                            isDisabled={pending}
-                            onClick={() => setTagsOpen(true)}
-                          />
-                        </HStack>
-                        {doc.tag_ids.length === 0 ? (
-                          <Text type="body" color="secondary">
-                            {t("@legalos.documents.detail.noTags")}
-                          </Text>
-                        ) : (
-                          <HStack gap={1} wrap="wrap">
-                            {doc.tag_ids.map((id) => {
-                              const tag = tagById.get(id);
-                              return tag ? <TagToken key={id} tag={tag} size="md" /> : null;
-                            })}
-                          </HStack>
-                        )}
-                      </VStack>
-                    </Card>
-                    </VStack>
-                  </GridSpan>
-
-                  <Card>
-                    <VStack gap={4}>
-                      <Heading level={4}>{t("@legalos.documents.detail.detailsHeading")}</Heading>
-                      <MetadataList>
-                        <MetadataListItem label={t("@legalos.documents.field.status")}>
-                          <Badge variant="neutral" label={enumLabel(doc.status)} />
-                        </MetadataListItem>
-                        {/* A record with no stored file has no format and no
-                          * size, whatever its metadata says. The seeded rows
-                          * carry both — "PDF · 540 KB" — and printing them
-                          * beside a card that reads "no file stored" made the
-                          * page contradict itself, describing a file that is
-                          * not there as though it were. */}
-                        {/* doc_type is what the document IS (a brief, a
-                          * judgment), not its file format, so it shows whether
-                          * or not bytes are stored; the format is in the file
-                          * card. Changed from a dialog, never prompt(). */}
-                        <MetadataListItem label={t("@legalos.documents.field.type")}>
-                          <HStack gap={2} vAlign="center" wrap="wrap">
-                            <span>{docTypeLabel(doc.doc_type)}</span>
-                            <Button
-                              label={t("@legalos.documents.type.change")}
-                              variant="ghost"
-                              size="sm"
-                              isDisabled={pending}
-                              onClick={() => setTypeOpen(true)}
-                            />
-                          </HStack>
-                        </MetadataListItem>
-                        <MetadataListItem label={t("@legalos.documents.field.size")}>
-                          {doc.storage_key && doc.size_bytes
-                            ? formatBytes(doc.size_bytes)
-                            : "—"}
-                        </MetadataListItem>
-                        <MetadataListItem label={t("@legalos.documents.field.uploadedBy")}>
-                          {memberName(doc.uploaded_by)}
-                        </MetadataListItem>
-                        <MetadataListItem label={t("@legalos.documents.field.uploaded")}>
-                          {formatDateTime(doc.uploaded_at)}
-                        </MetadataListItem>
-                      </MetadataList>
-                    </VStack>
-                  </Card>
-                </Grid>
-                <TagsDialog
-                  isOpen={tagsOpen}
-                  onOpenChange={setTagsOpen}
-                  documentId={doc.id}
-                  documentName={doc.name}
-                  tags={tags}
-                  selected={doc.tag_ids}
-                  onSaved={() => {
-                    resource.reload();
-                    tagList.reload();
-                  }}
-                />
-                <DocTypeDialog
-                  isOpen={typeOpen}
-                  onOpenChange={setTypeOpen}
-                  documentId={doc.id}
-                  documentName={doc.name}
-                  current={doc.doc_type}
-                  onSaved={resource.reload}
-                />
-              </VStack>
-            )}
-          </DataView>
-        </LayoutContent>
-      }
-    />
+            {/* Dialogs */}
+            <TagsDialog
+              isOpen={tagsOpen}
+              onOpenChange={setTagsOpen}
+              documentId={doc.id}
+              documentName={doc.name}
+              tags={tags}
+              selected={doc.tag_ids}
+              onSaved={() => {
+                resource.reload();
+                tagList.reload();
+              }}
+            />
+            <DocTypeDialog
+              isOpen={typeOpen}
+              onOpenChange={setTypeOpen}
+              documentId={doc.id}
+              documentName={doc.name}
+              current={doc.doc_type}
+              onSaved={resource.reload}
+            />
+          </div>
+        )}
+      </DataView>
+    </div>
   );
 }
