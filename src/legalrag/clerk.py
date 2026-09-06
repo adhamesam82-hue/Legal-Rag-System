@@ -16,7 +16,7 @@ from legalrag.config import (
     get_clerk_secret_key,
     get_dev_auth_user,
 )
-from legalrag.db import db
+from legalrag.db import db, set_tenant_context
 from legalrag.orgs import Membership, get_membership
 
 
@@ -97,6 +97,7 @@ def get_current_membership(
         raise HTTPException(
             status_code=403, detail="Not a member of this organization"
         )
+    set_tenant_context(conn, organization_id)
     return membership
 
 

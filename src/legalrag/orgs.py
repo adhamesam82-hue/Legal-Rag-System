@@ -199,8 +199,10 @@ def create_organization(
     # Suggested document tags, planted once. Imported here rather than at
     # module level because legalrag.practice imports Membership from this
     # module.
+    from legalrag.db import set_tenant_context
     from legalrag.practice.document_tags import seed_default_tags
 
+    set_tenant_context(conn, org_id)
     seed_default_tags(conn, org_id)
     conn.commit()
     return Organization(

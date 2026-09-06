@@ -196,12 +196,29 @@ def due_tasks(conn: psycopg.Connection, today: date) -> list[Reminder]:
         ]
 
 
-def collect(conn: psycopg.Connection, today: date) -> list[Reminder]:
+def collect_for_org(
+    conn: psycopg.Connection, organization_id: int, today: date
+) -> list[Reminder]:
+    """Collects due reminders for a single organization under its tenant context."""
+    with conn.cursor() as cur:
+        cur.execute("SET LOCAL app.organization_id = %s", (organization_id,))
     return (
         due_hearings(conn, today)
         + due_deadlines(conn, today)
         + due_tasks(conn, today)
     )
+
+
+def collect(conn: psycopg.Connection, today: date) -> list[Reminder]:
+    """Sweeps all organizations, setting the tenant context for each one."""
+    with conn.cursor() as cur:
+        cur.execute("SELECT id FROM organizations ORDER BY id")
+        org_ids = [row[0] for row in cur.fetchall()]
+
+    all_reminders: list[Reminder] = []
+    for org_id in org_ids:
+        all_reminders.extend(collect_for_org(conn, org_id, today))
+    return all_reminders
 
 
 def already_sent(
@@ -216,12 +233,13 @@ def already_sent(
     and nothing reported a failure. Migration 0017 widened the key.
     """
     with conn.cursor() as cur:
+        cur.execute("SET LOCAL app.organization_id = %s", (reminder.organization_id,))
         cur.execute(
             "SELECT 1 FROM notification_sends "
-            "WHERE recipient = %s AND subject_kind = %s AND subject_id = %s "
+            "WHERE organization_id = %s AND recipient = %s AND subject_kind = %s AND subject_id = %s "
             "  AND offset_days = %s AND subject_date = %s AND channel = %s",
             (
-                reminder.recipient, reminder.kind, reminder.subject_id,
+                reminder.organization_id, reminder.recipient, reminder.kind, reminder.subject_id,
                 reminder.offset_days, reminder.subject_date, channel,
             ),
         )
@@ -237,6 +255,7 @@ def record_sent(
     a manual run beside the timer -- cannot both decide it is unsent.
     """
     with conn.cursor() as cur:
+        cur.execute("SET LOCAL app.organization_id = %s", (reminder.organization_id,))
         cur.execute(
             "INSERT INTO notification_sends (organization_id, recipient, "
             "subject_kind, subject_id, offset_days, subject_date, channel) "
@@ -263,6 +282,7 @@ def devices_for(
     business reaching a device signed in to the other.
     """
     with conn.cursor() as cur:
+        cur.execute("SET LOCAL app.organization_id = %s", (organization_id,))
         cur.execute(
             "SELECT id, token FROM device_tokens "
             " WHERE organization_id = %s AND subject = %s "

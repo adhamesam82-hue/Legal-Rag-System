@@ -73,15 +73,33 @@ def close_pool() -> None:
         _pool = None
 
 
+def set_tenant_context(conn: psycopg.Connection, organization_id: int) -> None:
+    """Sets the transaction-scoped tenant context for Row Level Security (RLS).
+
+    Uses SET LOCAL so that the setting is scoped strictly to the current
+    transaction and automatically cleared on commit or rollback when
+    the connection returns to the pool.
+    """
+    with conn.cursor() as cur:
+        cur.execute("SET LOCAL app.organization_id = %s", (organization_id,))
+
+
 @contextmanager
-def request_connection() -> Iterator[psycopg.Connection]:
+def request_connection(
+    organization_id: int | None = None,
+) -> Iterator[psycopg.Connection]:
     """A pooled connection, returned to the pool on exit.
 
     Commits on clean exit and rolls back on an exception, which is psycopg's
     own `with connection` behaviour -- unchanged from what the unpooled
     `with get_connection()` callers already relied on.
+
+    If organization_id is provided, sets transaction-local tenant context
+    via SET LOCAL app.organization_id for Row Level Security (RLS).
     """
     with get_pool().connection() as conn:
+        if organization_id is not None:
+            set_tenant_context(conn, organization_id)
         yield conn
 
 
