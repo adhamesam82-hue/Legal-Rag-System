@@ -25,7 +25,7 @@ const NAV_GROUPS: { titleKey?: string; items: NavItem[] }[] = [
     titleKey: "@legalos.settings.group.myAccount",
     items: [
       { href: "/settings/profile", labelKey: "@legalos.settings.nav.profile", iconName: "person" },
-      { href: "/settings/appearance", labelKey: "@legalos.settings.nav.appearance", iconName: "palette" },
+      { href: "/settings/appearance", labelKey: "@legalos.settings.nav.appearance", iconName: "palette" /* PaintBrushIcon */ },
     ],
   },
   {
