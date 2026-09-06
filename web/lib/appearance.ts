@@ -338,11 +338,12 @@ export function applyAppearanceVars(
   target.style.setProperty("--rs", rsPx);
   target.style.setProperty("--rowpad", rowpad);
   target.style.setProperty("--brand-h", String(brandHue));
-  target.style.setProperty("--accent", accent);
-  target.style.setProperty(
-    "--accent-soft",
-    `color-mix(in oklab, ${accent} 16%, var(--surface))`,
-  );
+  // --accent-base لا --accent: القشرة تحمل data-theme، وكتلته في globals.css
+  // تعيد تعريف --accent، فأي قيمة تُكتب هنا باسم --accent تُداس عند أول عنصر
+  // داخل التطبيق. الكتلة تقرأ --accent-base، فيصل الاختيار.
+  // و--accent-soft لا يُكتب هنا إطلاقًا: الكتلة تشتقّه من --accent والسطح معًا،
+  // فيتبع اللون والثيم بلا حساب في مكانين.
+  target.style.setProperty("--accent-base", accent);
 
   // تحديث ثيم القشرة الرئيسي على جذر الصفحة
   const shellTheme = theme === "dark" || theme === "mixed-inv" ? "dark" : "light";
@@ -393,8 +394,7 @@ export const APPEARANCE_INLINE_SCRIPT = `
     var pads = { comfortable: '18px', medium: '14px', compact: '10px' };
     el.style.setProperty('--rowpad', pads[density] || '14px');
     el.style.setProperty('--brand-h', brandHue);
-    el.style.setProperty('--accent', accent);
-    el.style.setProperty('--accent-soft', 'color-mix(in oklab, ' + accent + ' 16%, var(--surface))');
+    el.style.setProperty('--accent-base', accent);
   } catch (e) {}
 })();
 `.trim();
