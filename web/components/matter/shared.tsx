@@ -10,11 +10,9 @@
  * one consistent snapshot is worth more than the saved round trips.
  */
 
-import { useCallback } from "react";
+import React, { useCallback } from "react";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Card } from "@astryxdesign/core/Card";
-import { Heading, Text } from "@astryxdesign/core/Text";
+import { Card } from "@/components/ui/Card";
 import type {
   ActivityEntry,
   CaseRecord,
@@ -122,16 +120,22 @@ export function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <Card>
-      <VStack gap={4}>
+    <Card className="p-5">
+      <div className="flex flex-col gap-4">
         {(title || action) && (
-          <HStack hAlign="between" vAlign="center" gap={3} wrap="wrap">
-            {title ? <Heading level={4}>{title}</Heading> : <span />}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            {title ? (
+              <h3 className="text-sm font-bold m-0" style={{ color: "var(--text)" }}>
+                {title}
+              </h3>
+            ) : (
+              <span />
+            )}
             {action}
-          </HStack>
+          </div>
         )}
         {children}
-      </VStack>
+      </div>
     </Card>
   );
 }
@@ -151,32 +155,34 @@ export function StatTile({
   action?: React.ReactNode;
 }) {
   return (
-    <VStack gap={2} hAlign="center">
-      <Text type="body" weight="semibold">
+    <div className="flex flex-col items-center text-center gap-2">
+      <span className="text-xs font-semibold" style={{ color: "var(--text2)" }}>
         {label}
-      </Text>
-      <Heading level={2}>{value}</Heading>
+      </span>
+      <div className="text-2xl font-bold tracking-tight" style={{ color: "var(--text)" }}>
+        {value}
+      </div>
       {hint && (
-        <Text type="supporting" color="secondary">
+        <span className="text-xs" style={{ color: "var(--text3)" }}>
           {hint}
-        </Text>
+        </span>
       )}
       {breakdown && breakdown.length > 0 && (
-        <VStack gap={1} width="100%">
+        <div className="flex flex-col gap-1 w-full mt-1">
           {breakdown.map((row) => (
-            <HStack key={row.label} hAlign="between" gap={3}>
-              <Text type="supporting" color="secondary">
-                {row.label}
-              </Text>
-              <Text type="supporting" color="secondary">
-                {row.value}
-              </Text>
-            </HStack>
+            <div
+              key={row.label}
+              className="flex items-center justify-between text-xs gap-3"
+              style={{ color: "var(--text2)" }}
+            >
+              <span>{row.label}</span>
+              <span>{row.value}</span>
+            </div>
           ))}
-        </VStack>
+        </div>
       )}
       {action}
-    </VStack>
+    </div>
   );
 }
 

@@ -15,13 +15,11 @@
  * what it is rather than as six sections that would fail on save.
  */
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Heading, Text } from "@astryxdesign/core/Text";
-import { Button } from "@astryxdesign/core/Button";
-import { TextArea } from "@astryxdesign/core/TextArea";
-import { Collapsible } from "@astryxdesign/core/Collapsible";
+import { Button } from "@/components/ui/Button";
+import { Textarea } from "@/components/ui/Input";
+import { Icon } from "@/components/ui/Icon";
 import { useOrg } from "@/lib/org";
 import type { CaseRecord } from "@/lib/practice";
 import { Panel, useWrite, type TabProps } from "./shared";
@@ -95,22 +93,23 @@ export function CaseFile({ data, reload, onError }: TabProps) {
   if (!linkedCase) {
     return (
       <Panel title={t("@legalos.matterWorkspace.caseFile.heading")}>
-        <VStack gap={4} hAlign="start">
-          <Text type="body" color="secondary">
+        <div className="flex flex-col items-start gap-4">
+          <p className="text-xs m-0" style={{ color: "var(--text2)" }}>
             {t("@legalos.matterWorkspace.caseFile.noCase")}
-          </Text>
+          </p>
           <Button
-            label={t("@legalos.matterWorkspace.caseFile.createCase")}
             variant="primary"
             onClick={() => setCreateOpen(true)}
-          />
+          >
+            {t("@legalos.matterWorkspace.caseFile.createCase")}
+          </Button>
           <CreateCaseDialog
             matterId={data.matter.id}
             isOpen={createOpen}
             onOpenChange={setCreateOpen}
             onCreated={reload}
           />
-        </VStack>
+        </div>
       </Panel>
     );
   }
@@ -141,38 +140,74 @@ function CaseFileSections({
 
   return (
     <Panel title={t("@legalos.matterWorkspace.caseFile.heading")}>
-      <VStack gap={2}>
-        {CASE_FILE_FIELDS.map((field) => (
-          <Collapsible
-            key={field}
-            value={field}
-            // Until the saved state is read, render open: a flash of
-            // collapsed sections on every load would be worse than a
-            // flash of open ones.
-            isOpen={loaded ? open[field] : true}
-            onOpenChange={(isOpen) => toggle(field, isOpen)}
-            trigger={
-              <Heading level={5}>{t(`@legalos.matterWorkspace.caseFile.${field}`)}</Heading>
-            }
-          >
-            <Section
-              field={field}
-              caseId={linkedCase.id}
-              value={linkedCase[field]}
-              reload={reload}
-              onError={onError}
-            />
-          </Collapsible>
-        ))}
-        <Collapsible
-          value="sub_cases"
-          isOpen={loaded ? open.sub_cases : true}
-          onOpenChange={(isOpen) => toggle("sub_cases", isOpen)}
-          trigger={<Heading level={5}>{t("@legalos.cases.related.heading")}</Heading>}
-        >
-          <SubCases linkedCase={linkedCase} reload={reload} onError={onError} />
-        </Collapsible>
-      </VStack>
+      <div className="flex flex-col gap-2">
+        {CASE_FILE_FIELDS.map((field) => {
+          const isOpen = loaded ? open[field] : true;
+          return (
+            <div
+              key={field}
+              className="rounded-md border overflow-hidden"
+              style={{ borderColor: "var(--border)" }}
+            >
+              <button
+                type="button"
+                onClick={() => toggle(field, !isOpen)}
+                className="w-full flex items-center justify-between p-3 text-start transition-colors"
+                style={{
+                  backgroundColor: "var(--surface2)",
+                  color: "var(--text)",
+                }}
+              >
+                <h4 className="text-xs font-semibold m-0">
+                  {t(`@legalos.matterWorkspace.caseFile.${field}`)}
+                </h4>
+                <Icon name={isOpen ? "expand_less" : "expand_more"} size={18} />
+              </button>
+              {isOpen && (
+                <div className="p-4 border-t" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
+                  <Section
+                    field={field}
+                    caseId={linkedCase.id}
+                    value={linkedCase[field]}
+                    reload={reload}
+                    onError={onError}
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {(() => {
+          const isSubCasesOpen = loaded ? open.sub_cases : true;
+          return (
+            <div
+              className="rounded-md border overflow-hidden"
+              style={{ borderColor: "var(--border)" }}
+            >
+              <button
+                type="button"
+                onClick={() => toggle("sub_cases", !isSubCasesOpen)}
+                className="w-full flex items-center justify-between p-3 text-start transition-colors"
+                style={{
+                  backgroundColor: "var(--surface2)",
+                  color: "var(--text)",
+                }}
+              >
+                <h4 className="text-xs font-semibold m-0">
+                  {t("@legalos.cases.related.heading")}
+                </h4>
+                <Icon name={isSubCasesOpen ? "expand_less" : "expand_more"} size={18} />
+              </button>
+              {isSubCasesOpen && (
+                <div className="p-4 border-t" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
+                  <SubCases linkedCase={linkedCase} reload={reload} onError={onError} />
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </div>
     </Panel>
   );
 }
@@ -218,66 +253,67 @@ function Section({
 
   if (editing) {
     return (
-      <VStack gap={3}>
-        <TextArea
-          label={t(`@legalos.matterWorkspace.caseFile.${field}`)}
-          isLabelHidden
+      <div className="flex flex-col gap-3">
+        <Textarea
           value={draft}
-          onChange={setDraft}
+          onChange={(e) => setDraft(e.target.value)}
           rows={8}
           placeholder={t(`@legalos.matterWorkspace.caseFile.${field}.placeholder`)}
         />
-        <HStack gap={2} hAlign="end">
+        <div className="flex items-center justify-end gap-2">
           <Button
-            label={t("@legalos.matterWorkspace.action.cancel")}
             variant="secondary"
             size="sm"
-            isDisabled={saving}
+            disabled={saving}
             onClick={() => {
               setDraft(value);
               setEditing(false);
             }}
-          />
+          >
+            {t("@legalos.matterWorkspace.action.cancel")}
+          </Button>
           <Button
-            label={t("@legalos.matterWorkspace.action.save")}
             variant="primary"
             size="sm"
-            isLoading={saving}
+            loading={saving}
             onClick={save}
-          />
-        </HStack>
-      </VStack>
+          >
+            {t("@legalos.matterWorkspace.action.save")}
+          </Button>
+        </div>
+      </div>
     );
   }
 
   return (
-    <VStack gap={2}>
+    <div className="flex flex-col gap-2">
       {value ? (
         // pre-wrap: the lawyer's own line breaks are the structure of the
         // text, and a statement of facts flattened into one paragraph is not
         // the same document.
-        <Text type="body">
+        <div className="text-xs leading-relaxed" style={{ color: "var(--text)" }}>
           <span style={{ whiteSpace: "pre-wrap" }}>{value}</span>
-        </Text>
+        </div>
       ) : (
-        <Text type="body" color="secondary">
+        <p className="text-xs m-0" style={{ color: "var(--text3)" }}>
           {t("@legalos.matterWorkspace.caseFile.empty", {
             hint: t(`@legalos.matterWorkspace.caseFile.${field}.placeholder`),
           })}
-        </Text>
+        </p>
       )}
-      <HStack hAlign="end">
+      <div className="flex justify-end">
         <Button
-          label={t(
+          variant="ghost"
+          size="sm"
+          onClick={startEditing}
+        >
+          {t(
             value
               ? "@legalos.matterWorkspace.action.edit"
               : "@legalos.matterWorkspace.caseFile.write",
           )}
-          variant="ghost"
-          size="sm"
-          onClick={startEditing}
-        />
-      </HStack>
-    </VStack>
+        </Button>
+      </div>
+    </div>
   );
 }
