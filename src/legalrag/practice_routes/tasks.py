@@ -50,9 +50,20 @@ def patch_task(
     conn=Depends(db),
 ):
     try:
-        return tasks.update_task(
+        task = tasks.update_task(
             conn, organization_id, task_id, **body.model_dump(exclude_unset=True)
         )
+        if body.status is not None:
+            action = f"أكمل مهمة: {task.title}" if task.status == "done" else f"حدّث حالة المهمة: {task.title}"
+            activity.record(
+                conn,
+                organization_id,
+                actor=membership.display_name or membership.clerk_user_id,
+                action=action,
+                matter_id=task.matter_id,
+            )
+            conn.commit()
+        return task
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Task not found")
 
