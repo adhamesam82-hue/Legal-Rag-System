@@ -1161,5 +1161,55 @@
       "web/lib/i18n/catalogs/shell.ts"
     ],
     "source": "rصd during T-047 human check prep 2026-09-06"
+  },
+  {
+    "id": "T-063",
+    "title": "مجموعة الاختبارات تعمل مرّتين على كل فرع فيه طلب سحب",
+    "batch": "sijil-shell",
+    "owner": "backend",
+    "est": "1س",
+    "labels": [
+      "تحسين"
+    ],
+    "deps": [],
+    "files": [
+      ".github/workflows/test.yml"
+    ],
+    "source": "observed 2026-09-06"
+  },
+  {
+    "id": "T-064",
+    "title": "المؤقّت يموت عند الانتقال بين الأقسام — يُرفع إلى لوحة عائمة",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "5س",
+    "labels": [
+      "frontend",
+      "واجهة"
+    ],
+    "deps": [],
+    "files": [
+      "web/app/time-tracking/page.tsx",
+      "web/app/providers.tsx",
+      "web/components/Shell.tsx"
+    ],
+    "source": "observed during T-047 human check 2026-09-06"
+  },
+  {
+    "id": "T-065",
+    "title": "مبدّل المكاتب — لا سبيل إلى مكتب ثانٍ من الواجهة",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "4س",
+    "labels": [
+      "frontend",
+      "واجهة"
+    ],
+    "deps": [],
+    "files": [
+      "web/components/Shell.tsx",
+      "web/lib/i18n/catalogs/shell.ts"
+    ],
+    "source": "owner request 2026-09-06"
   }
 ]
