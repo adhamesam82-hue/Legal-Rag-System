@@ -130,8 +130,9 @@ def test_1_cross_tenant_read(test_tenants):
         cur.execute(
             "INSERT INTO matters ("
             "    organization_id, client_id, name, matter_type, "
-            "    responsible_user, opened_date, billing_type"
-            ") VALUES (%s, %s, 'قضية ألفا', 'advisory', 'user_alpha', CURRENT_DATE, 'hourly') "
+            "    responsible_user, opened_date, billing_type, "
+            "    number_seq, matter_number"
+            ") VALUES (%s, %s, 'قضية ألفا', 'advisory', 'user_alpha', CURRENT_DATE, 'hourly', 1, 'MAT-0001') "
             "RETURNING id",
             (org_a_id, client_a_id),
         )
