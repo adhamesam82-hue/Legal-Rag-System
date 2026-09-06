@@ -692,7 +692,7 @@ def export_recent_matters_csv(
     - تصدير UTF-8 مع علامة ترتيب البايتات (BOM) لضمان قراءة النصوص العربية دون تشويه في Excel.
     - حماية الخلايا من هجمات حقن صيغ CSV.
     """
-    m_vis, m_params = matter_visibility(membership, "m")
+    m_vis, m_params = matter_visibility("m.id", membership)
 
     base_where = f"m.organization_id = %s AND {m_vis}"
     base_params: list[object] = [organization_id, *m_params]
