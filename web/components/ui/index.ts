@@ -15,3 +15,4 @@ export * from "./Icon";
 export * from "./Chat";
 export * from "./Dialog";
 export * from "./Breadcrumb";
+export * from "./Tooltip";

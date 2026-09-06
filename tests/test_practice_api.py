@@ -493,3 +493,150 @@ class TestTenantIsolation:
 
         response = client.get(f"/api/orgs/{other_org}/clients/{created['id']}")
         assert response.status_code == 404
+
+
+class TestDashboardInsights:
+    """T-059 dashboard insights endpoint tests."""
+
+    def test_empty_organization_returns_clean_zeroes(self, client, org):
+        response = client.get(f"/api/orgs/{org}/dashboard/insights")
+        assert response.status_code == 200
+        data = response.json()
+
+        # All eight fields must be present
+        for field in (
+            "matters_movement",
+            "matters_by_type",
+            "kpi_series",
+            "kpi_deltas",
+            "collections",
+            "top_collection_rate",
+            "recent_matters",
+            "my_tasks_today",
+        ):
+            assert field in data, f"missing {field}"
+
+        # 1. 8 months movement
+        assert len(data["matters_movement"]) == 8
+        for m in data["matters_movement"]:
+            assert m["opened"] == 0
+            assert m["closed"] == 0
+            assert "label" in m
+
+        # 2. Matters by type
+        assert data["matters_by_type"]["total_active"] == 0
+        assert data["matters_by_type"]["items"] == []
+
+        # 3. KPI series: exactly 9 points for each of the 4 metrics
+        for k in ("active_matters", "open_tasks", "unbilled_hours", "outstanding_amount"):
+            assert len(data["kpi_series"][k]) == 9
+
+        # 4. KPI deltas: flat direction
+        for k in ("active_matters", "open_tasks", "unbilled_hours", "outstanding_amount"):
+            assert data["kpi_deltas"][k]["direction"] == "flat"
+
+        # 5. Collections
+        assert data["collections"]["collected"] == 0.0
+        assert data["collections"]["outstanding"] == 0.0
+
+        # 6. Top collection rate
+        assert data["top_collection_rate"]["matter_type"] is None
+        assert data["top_collection_rate"]["rate"] == 0.0
+
+        # 7. Recent matters
+        assert data["recent_matters"]["total"] == 0
+        assert data["recent_matters"]["items"] == []
+
+        # 8. My tasks today
+        assert data["my_tasks_today"]["total"] == 0
+        assert data["my_tasks_today"]["done"] == 0
+        assert data["my_tasks_today"]["items"] == []
+
+    def test_tenant_isolation_firm_b_cannot_see_firm_a_insights(self, client, org):
+        c = make_client(client, org, name="Org A Client")
+        m = make_matter(client, org, c["id"], name="Org A Matter", matter_type="commercial")
+        client.post(
+            f"/api/orgs/{org}/tasks",
+            json={"title": "Org A Task", "matter_id": m["id"], "assignee": OWNER},
+        )
+
+        other_org = client.post("/api/orgs", json={"name": "Org B"}).json()["id"]
+
+        # Org B should see 0
+        res_b = client.get(f"/api/orgs/{other_org}/dashboard/insights")
+        assert res_b.status_code == 200
+        b_data = res_b.json()
+        assert b_data["recent_matters"]["total"] == 0
+        assert b_data["matters_by_type"]["total_active"] == 0
+        assert b_data["my_tasks_today"]["total"] == 0
+
+        # Org A should see 1
+        res_a = client.get(f"/api/orgs/{org}/dashboard/insights")
+        assert res_a.status_code == 200
+        a_data = res_a.json()
+        assert a_data["recent_matters"]["total"] == 1
+        assert a_data["matters_by_type"]["total_active"] == 1
+        assert a_data["my_tasks_today"]["total"] == 1
+
+    def test_patch_task_records_activity_for_dashboard_feed(self, client, org):
+        c = make_client(client, org)
+        m = make_matter(client, org, c["id"])
+        task = client.post(
+            f"/api/orgs/{org}/tasks",
+            json={"title": "Draft appeal brief", "matter_id": m["id"], "assignee": OWNER},
+        ).json()
+
+        # Complete task via PATCH
+        res = client.patch(
+            f"/api/orgs/{org}/tasks/{task['id']}",
+            json={"status": "done"},
+        )
+        assert res.status_code == 200
+
+        # Check activity feed via /activity or /dashboard
+        act_res = client.get(f"/api/orgs/{org}/activity")
+        assert act_res.status_code == 200
+        actions = [a["action"] for a in act_res.json()]
+        assert any("أكمل مهمة: Draft appeal brief" in a for a in actions)
+
+    def test_dashboard_export_recent_matters_csv(self, client, org):
+        """التحقق من مواصفات تصدير CSV (T-059):
+        - ترميز UTF-8 مع علامة BOM لبرنامج Excel.
+        - فواصل الأسطر \\r\\n.
+        - ترويسة Content-Disposition.
+        - تحصين الخلايا ضد هجمات حقن الصيغ (Formula Injection).
+        - عزل المستأجرين (Tenant Isolation).
+        """
+        c = make_client(client, org, name="شركة النور")
+        # قضية عادية وقضية تبدأ بصيغة لاختبار الحماية
+        make_matter(client, org, c["id"], name="قضية تجارية عادية", matter_type="commercial")
+        make_matter(client, org, c["id"], name="=CMD('calc')|'A'", matter_type="civil")
+
+        other_org = client.post("/api/orgs", json={"name": "Org B"}).json()["id"]
+
+        # طلب تصدير Org A
+        res_a = client.get(f"/api/orgs/{org}/dashboard/export/recent-matters")
+        assert res_a.status_code == 200
+        assert "text/csv" in res_a.headers["content-type"]
+        assert "attachment; filename=" in res_a.headers.get("content-disposition", "")
+        
+        content = res_a.content
+        # 1. فحص وجود BOM
+        assert content.startswith(b"\xef\xbb\xbf"), "ملف CSV يجب أن يبدأ بـ UTF-8 BOM"
+
+        # 2. فحص فواصل الأسطر CRLF
+        text = content.decode("utf-8-sig")
+        assert "\r\n" in text, "فواصل الأسطر يجب أن تكون \\r\\n"
+
+        # 3. فحص الحماية من حقن الصيغ
+        assert "'=CMD('calc')|'A'" in text, "الصيغة التنفيذية يجب أن تسبق بفاصلة عليا للحماية"
+        assert "قضية تجارية عادية" in text
+
+        # 4. فحص عزل المستأجرين
+        res_b = client.get(f"/api/orgs/{other_org}/dashboard/export/recent-matters")
+        assert res_b.status_code == 200
+        text_b = res_b.content.decode("utf-8-sig")
+        assert "قضية تجارية عادية" not in text_b
+        assert "'=CMD('calc')|'A'" not in text_b
+
+

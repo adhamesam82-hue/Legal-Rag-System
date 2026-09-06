@@ -33,6 +33,54 @@ def get_dashboard(
     return activity.dashboard(conn, organization_id, upcoming_days=upcoming_days)
 
 
+@router.get("/dashboard/insights")
+def get_dashboard_insights(
+    organization_id: int,
+    limit: int = Query(default=5, ge=1, le=50),
+    offset: int = Query(default=0, ge=0),
+    scope: Literal["all", "my"] = Query(default="all"),
+    membership: Membership = Depends(get_current_membership),
+    clerk_user_id: str = Depends(get_current_user_id),
+    conn=Depends(db),
+):
+    return activity.dashboard_insights(
+        conn,
+        organization_id,
+        clerk_user_id=clerk_user_id,
+        membership=membership,
+        limit=limit,
+        offset=offset,
+        scope=scope,
+    )
+
+
+@router.get("/dashboard/export/recent-matters")
+def export_recent_matters_csv(
+    organization_id: int,
+    scope: Literal["all", "my"] = Query(default="all"),
+    membership: Membership = Depends(get_current_membership),
+    clerk_user_id: str = Depends(get_current_user_id),
+    conn=Depends(db),
+):
+    """تصدير جدول القضايا الأخيرة بصيغة CSV المتوافقة مع إكسيل (T-059)."""
+    csv_bytes = activity.export_recent_matters_csv(
+        conn,
+        organization_id,
+        clerk_user_id=clerk_user_id,
+        membership=membership,
+        scope=scope,
+    )
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    filename = f"recent-matters-{today_str}.csv"
+    return Response(
+        content=csv_bytes,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        },
+    )
+
+
 @router.get("/me")
 def get_me(
     organization_id: int,
