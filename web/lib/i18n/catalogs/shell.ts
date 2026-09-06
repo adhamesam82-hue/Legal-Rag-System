@@ -84,6 +84,13 @@ export const en: Catalog = {
   "@legalos.shell.account.profile": { defaultMessage: "Profile" },
   "@legalos.shell.account.firmSettings": { defaultMessage: "Firm settings" },
   "@legalos.shell.account.signOut": { defaultMessage: "Sign out" },
+
+  // Breadcrumb (T-060)
+  "@legalos.shell.breadcrumb.ariaLabel": { defaultMessage: "Breadcrumbs" },
+  "@legalos.shell.breadcrumb.home": { defaultMessage: "Home" },
+  "@legalos.shell.breadcrumb.loading": { defaultMessage: "Loading…" },
+  "@legalos.shell.nav.plans": { defaultMessage: "Plans" },
+  "@legalos.shell.nav.subscribe": { defaultMessage: "Subscribe" },
 };
 
 export const ar: Catalog = {
@@ -167,4 +174,11 @@ export const ar: Catalog = {
   "@legalos.shell.account.profile": { defaultMessage: "الملف الشخصي" },
   "@legalos.shell.account.firmSettings": { defaultMessage: "إعدادات المكتب" },
   "@legalos.shell.account.signOut": { defaultMessage: "تسجيل الخروج" },
+
+  // Breadcrumb (T-060)
+  "@legalos.shell.breadcrumb.ariaLabel": { defaultMessage: "مسار التنقل" },
+  "@legalos.shell.breadcrumb.home": { defaultMessage: "الرئيسية" },
+  "@legalos.shell.breadcrumb.loading": { defaultMessage: "جارٍ التحميل…" },
+  "@legalos.shell.nav.plans": { defaultMessage: "الباقات" },
+  "@legalos.shell.nav.subscribe": { defaultMessage: "الاشتراك" },
 };

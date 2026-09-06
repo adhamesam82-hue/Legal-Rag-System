@@ -21,7 +21,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 
-from legalrag.db import db
+from legalrag.db import db, set_tenant_context
 from legalrag.practice import NotFoundError, documents as docs_layer, portals
 from legalrag.practice import client_access
 from legalrag.practice import uploads
@@ -49,7 +49,9 @@ def portal_grant(
     if not presented:
         raise HTTPException(status_code=401, detail="This link is no longer valid")
     try:
-        return client_access.resolve(conn, presented)
+        grant = client_access.resolve(conn, presented)
+        set_tenant_context(conn, grant.organization_id)
+        return grant
     except client_access.PortalAccessError as exc:
         # Same message and status for unknown, revoked and expired: telling a
         # caller which one confirms a grant existed, and that is a fact about

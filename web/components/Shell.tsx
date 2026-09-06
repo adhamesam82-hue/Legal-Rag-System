@@ -11,6 +11,7 @@ import type { PracticeApi } from "@/lib/practice";
 import { isPathEnabled, featureForPath } from "@/lib/features";
 import { useAppearance } from "@/lib/appearance";
 import { Icon } from "@/components/ui/Icon";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { Banner } from "@astryxdesign/core/Banner";
 import { Button } from "@astryxdesign/core/Button";
 import {
@@ -970,6 +971,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
             backgroundColor: "var(--bg)",
           }}
         >
+          {/* شريط المسار فوق عنوان كل شاشة (T-060 / E-5) */}
+          <Breadcrumb />
           {children}
         </main>
       </div>
