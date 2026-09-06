@@ -41,7 +41,7 @@ jobs:
   seed:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up SSH
         run: |
@@ -78,6 +78,12 @@ jobs:
           BETA_EMAIL: ${{ inputs.beta_email }}
           RESET_FLAG: ${{ inputs.reset && '--reset' || '' }}
         run: |
+          # pipefail, because `ssh … | tee` reports tee's status. Without it
+          # the seed raised, printed a traceback, and this job went green --
+          # the exact failure the seeded data is meant to help detect, produced
+          # by the tool meant to detect it.
+          set -o pipefail
+
           # The emails go through env: rather than into the script body, so a
           # value containing shell metacharacters cannot become a command on
           # the runner that holds SSH_PRIVATE_KEY.

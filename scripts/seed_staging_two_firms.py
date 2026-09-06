@@ -206,7 +206,9 @@ def seed_firm(conn: psycopg.Connection, key: str, owner_clerk_id: str | None) ->
 
     doc = create_document(
         conn, org_id, name=f"مذكرة دفاع — {prefix}.pdf", uploaded_by=owner_id,
-        matter_id=matter_a.id, doc_type="memo", status="under_review",
+        # brief, not memo: DOC_TYPES has no "memo" and the call raises on an
+        # unknown type. «مذكرة» is a brief in this taxonomy.
+        matter_id=matter_a.id, doc_type="brief", status="under_review",
         content=b"%PDF-1.4 seeded on staging\n",
     )
 

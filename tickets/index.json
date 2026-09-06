@@ -1144,5 +1144,22 @@
       "web/lib/practice.ts"
     ],
     "source": "owner decision 2026-09-06"
+  },
+  {
+    "id": "T-062",
+    "title": "مبدّل المكاتب — عضوية في مكتبين بلا طريقة للتنقّل بينهما",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "6س",
+    "labels": [
+      "frontend",
+      "تحسين"
+    ],
+    "deps": [],
+    "files": [
+      "web/components/Shell.tsx",
+      "web/lib/i18n/catalogs/shell.ts"
+    ],
+    "source": "rصd during T-047 human check prep 2026-09-06"
   }
 ]
