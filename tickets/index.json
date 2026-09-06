@@ -1255,5 +1255,22 @@
       "web/app/documents/page.tsx"
     ],
     "source": "owner review on staging 2026-09-06"
+  },
+  {
+    "id": "T-068",
+    "title": "تسجيل الدخول والتسجيل بحساب جوجل",
+    "batch": "sijil-shell",
+    "owner": "frontend",
+    "est": "6س",
+    "labels": [
+      "frontend",
+      "مصادقة"
+    ],
+    "deps": [],
+    "files": [
+      "web/app/sign-in/[[...sign-in]]/page.tsx",
+      "web/app/sign-up/[[...sign-up]]/page.tsx"
+    ],
+    "source": "owner request 2026-09-06"
   }
 ]
