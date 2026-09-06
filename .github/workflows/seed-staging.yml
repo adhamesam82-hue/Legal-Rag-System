@@ -50,6 +50,10 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
 
+      # The service is api-staging, not api: staging and production share the
+      # box and Caddy serves both hostnames, so the staging compose project
+      # namespaces its services. Using "api" here found no container and the
+      # job failed before writing anything -- which is the right way round.
       - name: Copy the script into the running api container
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -63,7 +67,7 @@ jobs:
           ssh "deploy@$SSH_HOST" bash -euo pipefail <<'EOF'
             cd /opt/alsigil-staging
             docker compose -f deploy/docker-compose.staging.yml \
-              cp /tmp/seed_staging_two_firms.py api:/app/scripts/seed_staging_two_firms.py
+              cp /tmp/seed_staging_two_firms.py api-staging:/app/scripts/seed_staging_two_firms.py
             rm -f /tmp/seed_staging_two_firms.py
           EOF
 
@@ -79,7 +83,7 @@ jobs:
           # the runner that holds SSH_PRIVATE_KEY.
           ssh "deploy@$SSH_HOST" \
             "cd /opt/alsigil-staging && \
-             docker compose -f deploy/docker-compose.staging.yml exec -T api \
+             docker compose -f deploy/docker-compose.staging.yml exec -T api-staging \
                python scripts/seed_staging_two_firms.py $RESET_FLAG \
                  --alpha-email '$ALPHA_EMAIL' --beta-email '$BETA_EMAIL'" \
             | tee seed-output.txt
