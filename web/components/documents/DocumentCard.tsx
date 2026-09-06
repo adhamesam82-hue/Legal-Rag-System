@@ -15,14 +15,11 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import NextLink from "next/link";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { VStack, HStack } from "@astryxdesign/core/Stack";
-import { Text } from "@astryxdesign/core/Text";
-import { Card } from "@astryxdesign/core/Card";
-import { Badge } from "@astryxdesign/core/Badge";
-import { Button } from "@astryxdesign/core/Button";
-import { Icon } from "@astryxdesign/core/Icon";
-import { Link } from "@astryxdesign/core/Link";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import {
   ArrowDownTrayIcon,
   DocumentIcon,
@@ -71,9 +68,12 @@ function useSeen(ref: React.RefObject<HTMLElement | null>) {
       setSeen(true);
       return;
     }
-    const observer = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) setSeen(true);
-    }, { rootMargin: "200px" });
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) setSeen(true);
+      },
+      { rootMargin: "200px" },
+    );
     observer.observe(node);
     return () => observer.disconnect();
   }, [ref, seen]);
@@ -127,21 +127,21 @@ export function DocumentCard({
   const thumbnail = useThumbnail(doc.id, seen && isImage);
   const contentUrl = `${API_BASE}/api/orgs/${organizationId}/documents/${doc.id}/content`;
   const tags = doc.tagIds.map((id) => tagById.get(id)).filter((tag): tag is DocumentTag => Boolean(tag));
+  const FileIconComponent = fileIcon(doc.contentType);
 
   return (
     <div ref={ref} style={{ minWidth: 0 }}>
-      <Card>
-        <VStack gap={3}>
+      <Card className="h-full">
+        <div className="p-4 flex flex-col gap-3 h-full">
           {/* --- preview or icon ------------------------------------------ */}
-          <Link href={`/documents/${doc.id}`}>
+          <NextLink href={`/documents/${doc.id}`} className="block">
             <div
+              className="w-full flex items-center justify-center overflow-hidden border"
               style={{
-                height: THUMBNAIL_HEIGHT,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                overflow: "hidden",
-                borderRadius: 6,
+                height: `${THUMBNAIL_HEIGHT}px`,
+                borderRadius: "var(--rs)",
+                backgroundColor: "var(--surface2)",
+                borderColor: "var(--border)",
               }}
             >
               {thumbnail ? (
@@ -149,65 +149,80 @@ export function DocumentCard({
                 <img
                   src={thumbnail}
                   alt=""
-                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                  className="w-full h-full object-cover block"
                 />
               ) : (
-                <Icon icon={fileIcon(doc.contentType)} size="lg" color="secondary" />
+                <FileIconComponent className="w-10 h-10" style={{ color: "var(--text2)" }} />
               )}
             </div>
-          </Link>
+          </NextLink>
 
           {/* --- name: wraps anywhere, so one long token cannot widen the grid */}
-          <Link href={`/documents/${doc.id}`}>
+          <NextLink href={`/documents/${doc.id}`} className="block">
             <div style={{ overflowWrap: "anywhere", minWidth: 0 }}>
-              <Text type="body" weight="semibold" maxLines={2}>
+              <h4
+                className="text-sm font-semibold line-clamp-2 hover:underline"
+                style={{ color: "var(--text)" }}
+              >
                 {doc.name}
-              </Text>
+              </h4>
             </div>
-          </Link>
+          </NextLink>
 
-          <HStack gap={2} vAlign="center" wrap="wrap">
-            <Badge variant="neutral" label={docTypeLabel(doc.docType)} />
-            <Text type="supporting" color="secondary">
+          <div className="flex items-center gap-2 flex-wrap text-xs">
+            <Badge variant="soft" color="neutral">
+              {docTypeLabel(doc.docType)}
+            </Badge>
+            <span style={{ color: "var(--text2)" }}>
               {doc.hasFile ? formatBytes(doc.size) : t("@legalos.documents.noFile")}
-            </Text>
-          </HStack>
+            </span>
+          </div>
 
           {tags.length > 0 && (
-            <HStack gap={1} wrap="wrap">
+            <div className="flex items-center gap-1 flex-wrap">
               {tags.map((tag) => (
                 <TagToken key={tag.id} tag={tag} />
               ))}
-            </HStack>
+            </div>
           )}
 
           {/* --- quick actions ------------------------------------------- */}
-          <HStack gap={1} wrap="wrap">
+          <div
+            className="flex items-center gap-1 flex-wrap mt-auto pt-2 border-t"
+            style={{ borderColor: "var(--border)" }}
+          >
             <Button
-              label={t("@legalos.documents.tags.edit")}
               variant="ghost"
               size="sm"
-              icon={<Icon icon={TagIcon} size="sm" color="inherit" />}
+              title={t("@legalos.documents.tags.edit")}
               onClick={() => onEditTags(doc)}
-            />
+            >
+              <TagIcon className="w-4 h-4" />
+              <span className="sr-only">{t("@legalos.documents.tags.edit")}</span>
+            </Button>
             <Button
-              label={t("@legalos.documents.type.change")}
               variant="ghost"
               size="sm"
-              icon={<Icon icon={PencilSquareIcon} size="sm" color="inherit" />}
+              title={t("@legalos.documents.type.change")}
               onClick={() => onChangeType(doc)}
-            />
+            >
+              <PencilSquareIcon className="w-4 h-4" />
+              <span className="sr-only">{t("@legalos.documents.type.change")}</span>
+            </Button>
             {doc.hasFile && (
-              <Button
-                label={t("@legalos.documents.card.download")}
-                variant="ghost"
-                size="sm"
-                icon={<Icon icon={ArrowDownTrayIcon} size="sm" color="inherit" />}
+              <a
                 href={contentUrl}
-              />
+                download
+                className="inline-flex items-center justify-center p-1.5 rounded transition-colors hover:bg-[var(--surface2)]"
+                style={{ color: "var(--text2)", borderRadius: "var(--rs)" }}
+                title={t("@legalos.documents.card.download")}
+                aria-label={t("@legalos.documents.card.download")}
+              >
+                <ArrowDownTrayIcon className="w-4 h-4" />
+              </a>
             )}
-          </HStack>
-        </VStack>
+          </div>
+        </div>
       </Card>
     </div>
   );
