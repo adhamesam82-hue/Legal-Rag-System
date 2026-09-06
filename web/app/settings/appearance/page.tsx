@@ -2,7 +2,13 @@
 
 import React, { useState } from "react";
 import { useTranslator } from "@astryxdesign/core/i18n";
-import { useAppearance, type ThemeMode, type DensityMode } from "@/lib/appearance";
+import {
+  useAppearance,
+  ACCENT_PRESETS,
+  type ThemeMode,
+  type DensityMode,
+  type AccentColor,
+} from "@/lib/appearance";
 import { Icon } from "@/components/ui/Icon";
 import { Switch } from "@/components/ui/Switch";
 import { Button } from "@/components/ui/Button";
@@ -28,6 +34,8 @@ export default function AppearanceSettingsPage() {
   const currentDensity = settings.density;
   const currentRadius = settings.radius;
   const derivedRs = Math.max(4, currentRadius - 4);
+  const currentBrandHue = settings.brandHue;
+  const currentAccent = settings.accent;
   const isSidebarCollapsed = settings.sidebarCollapsed;
 
   // خيارات الأنماط الأربعة
@@ -107,6 +115,21 @@ export default function AppearanceSettingsPage() {
     if (!Number.isNaN(val)) {
       updateSettings({ radius: val });
     }
+  };
+
+  const handleBrandHueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = parseInt(e.target.value, 10);
+    if (!Number.isNaN(val)) {
+      updateSettings({ brandHue: val });
+    }
+  };
+
+  const handleBrandHuePreset = (hue: number) => {
+    updateSettings({ brandHue: hue });
+  };
+
+  const handleAccentSelect = (accent: AccentColor) => {
+    updateSettings({ accent });
   };
 
   const handleSidebarToggle = (collapsed: boolean) => {
@@ -315,7 +338,205 @@ export default function AppearanceSettingsPage() {
         </div>
       </section>
 
-      {/* بطاقة 3: استدارة الحواف والزوايا (منزلق حر 4–22 بكسل بخطوة 1) */}
+      {/* بطاقة 3: درجة لون العلامة الأساسي (منزلق 0–360 بخطوة 5) */}
+      <section
+        aria-labelledby="brandhue-heading"
+        className="flex flex-col gap-5 p-5 border shadow-sm"
+        style={{
+          borderRadius: "var(--r)",
+          backgroundColor: "var(--surface)",
+          borderColor: "var(--border)",
+        }}
+      >
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <h2 id="brandhue-heading" className="text-base font-semibold" style={{ color: "var(--text)" }}>
+              {t("@legalos.settings.appearance.brandHue.heading")}
+            </h2>
+            <div className="flex items-center gap-2">
+              <span
+                className="font-mono text-xs font-semibold px-2 py-0.5 border flex items-center gap-1.5"
+                style={{
+                  borderRadius: "var(--rs)",
+                  borderColor: "var(--border)",
+                  backgroundColor: "var(--surface2)",
+                  color: "var(--primary)",
+                }}
+              >
+                <span
+                  className="inline-block h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: "var(--primary)" }}
+                />
+                --brand-h: {currentBrandHue}
+              </span>
+            </div>
+          </div>
+          <p className="text-xs" style={{ color: "var(--text2)" }}>
+            {t("@legalos.settings.appearance.brandHue.description")}
+          </p>
+          <p className="text-[11px]" style={{ color: "var(--text3)" }}>
+            {t("@legalos.settings.appearance.brandHue.derivedNote")}
+          </p>
+        </div>
+
+        {/* المنزلق التفاعلي الحر مع التدرج اللوني الكامل */}
+        <div className="flex flex-col gap-2 pt-2">
+          <div className="flex items-center justify-between text-xs font-medium" style={{ color: "var(--text3)" }}>
+            <span>0°</span>
+            <span className="font-semibold" style={{ color: "var(--text)" }}>
+              {currentBrandHue}°
+            </span>
+            <span>360°</span>
+          </div>
+
+          <input
+            type="range"
+            min={0}
+            max={360}
+            step={5}
+            value={currentBrandHue}
+            onChange={handleBrandHueChange}
+            aria-label={t("@legalos.settings.appearance.brandHue.sliderAria")}
+            aria-valuenow={currentBrandHue}
+            aria-valuemin={0}
+            aria-valuemax={360}
+            className="h-2 w-full cursor-pointer appearance-none rounded-lg accent-[var(--primary)]"
+            style={{
+              backgroundColor: "var(--surface3)",
+            }}
+          />
+
+          {/* أزرار سريعة للدرجات الخمس المحورية: 0، 90، 180، 265، 340 */}
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {[0, 90, 180, 265, 340].map((hue) => {
+              const isSelected = currentBrandHue === hue;
+              return (
+                <button
+                  key={hue}
+                  type="button"
+                  onClick={() => handleBrandHuePreset(hue)}
+                  aria-pressed={isSelected}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all focus:outline-none focus-visible:ring-2"
+                  style={{
+                    borderRadius: "var(--rs)",
+                    border: isSelected
+                      ? "2px solid var(--primary)"
+                      : "1px solid var(--border)",
+                    backgroundColor: isSelected
+                      ? "var(--surface2)"
+                      : "var(--surface)",
+                    color: isSelected ? "var(--primary)" : "var(--text2)",
+                  }}
+                >
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{
+                      backgroundColor: `oklch(0.55 0.14 ${hue})`,
+                    }}
+                  />
+                  <span>{hue}°</span>
+                  {hue === 265 && <span className="text-[10px] opacity-75">(الافتراضي)</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* بطاقة 4: خيارات لون التمييز (الألوان الأربعة المعتمدة) */}
+      <section
+        aria-labelledby="accent-heading"
+        className="flex flex-col gap-4 p-5 border shadow-sm"
+        style={{
+          borderRadius: "var(--r)",
+          backgroundColor: "var(--surface)",
+          borderColor: "var(--border)",
+        }}
+      >
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <h2 id="accent-heading" className="text-base font-semibold" style={{ color: "var(--text)" }}>
+              {t("@legalos.settings.appearance.accent.heading")}
+            </h2>
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold"
+              style={{
+                borderRadius: "var(--rs)",
+                backgroundColor: "var(--accent-soft)",
+                color: "var(--accent)",
+                border: "1px solid var(--accent)",
+              }}
+            >
+              <Icon name="palette" size={15} />
+              <span>{t("@legalos.settings.appearance.accent.previewBadge")}</span>
+            </div>
+          </div>
+          <p className="text-xs" style={{ color: "var(--text2)" }}>
+            {t("@legalos.settings.appearance.accent.description")}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {ACCENT_PRESETS.map((opt) => {
+            const isSelected = currentAccent === opt.value;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => handleAccentSelect(opt.value)}
+                aria-pressed={isSelected}
+                className="group relative flex flex-col items-start gap-3 p-4 text-start transition-all focus:outline-none focus-visible:ring-2"
+                style={{
+                  borderRadius: "var(--rs)",
+                  border: isSelected
+                    ? "2px solid var(--primary)"
+                    : "1px solid var(--border)",
+                  backgroundColor: isSelected
+                    ? "var(--surface2)"
+                    : "var(--surface)",
+                  boxShadow: isSelected ? "var(--shadow)" : "none",
+                }}
+              >
+                <div className="flex w-full items-center justify-between">
+                  <div
+                    className="flex h-9 w-9 items-center justify-center transition-transform group-hover:scale-105"
+                    style={{
+                      borderRadius: "var(--rs)",
+                      backgroundColor: opt.value,
+                      boxShadow: "0 2px 4px rgba(0,0,0,0.12)",
+                    }}
+                  >
+                    {isSelected && (
+                      <span style={{ color: "#ffffff" }}>
+                        <Icon name="check" size={18} />
+                      </span>
+                    )}
+                  </div>
+                  {isSelected && (
+                    <span
+                      className="flex h-5 w-5 items-center justify-center"
+                      style={{ color: "var(--primary)" }}
+                    >
+                      <Icon name="check_circle" size={18} />
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+                    {t(opt.labelKey)}
+                  </span>
+                  <span className="text-xs leading-relaxed" style={{ color: "var(--text3)" }}>
+                    {t(opt.descKey)}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* بطاقة 5: استدارة الحواف والزوايا (منزلق حر 4–22 بكسل بخطوة 1) */}
       <section
         aria-labelledby="radius-heading"
         className="flex flex-col gap-5 p-5 border shadow-sm"
@@ -434,15 +655,29 @@ export default function AppearanceSettingsPage() {
               {t("@legalos.settings.appearance.radius.previewBadge")}
             </Badge>
 
-            {/* زر تجريبي */}
+            {/* زر تجريبي أساسي يتبع درجة اللون */}
             <Button variant="primary" size="sm">
               {t("@legalos.settings.appearance.radius.previewButton")}
             </Button>
+
+            {/* شارة تمييز تجريبية تتبع لون التمييز المشتق */}
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold shadow-xs"
+              style={{
+                borderRadius: "var(--rs)",
+                backgroundColor: "var(--accent-soft)",
+                color: "var(--accent)",
+                border: "1px solid var(--accent)",
+              }}
+            >
+              <Icon name="palette" size={15} />
+              <span>{t("@legalos.settings.appearance.accent.previewBadge")}</span>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* بطاقة 4: سلوك الشريط الجانبي */}
+      {/* بطاقة 6: سلوك الشريط الجانبي */}
       <section
         aria-labelledby="sidebar-heading"
         className="flex items-center justify-between gap-4 p-5 border shadow-sm"
@@ -470,7 +705,7 @@ export default function AppearanceSettingsPage() {
         />
       </section>
 
-      {/* بطاقة 5: إعادة الضبط للافتراضيات */}
+      {/* بطاقة 7: إعادة الضبط للافتراضيات */}
       <section
         aria-labelledby="reset-heading"
         className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 border shadow-sm"
