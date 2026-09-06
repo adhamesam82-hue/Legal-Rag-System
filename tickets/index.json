@@ -1120,5 +1120,29 @@
       "web/lib/i18n/catalogs/shell.ts"
     ],
     "source": "owner request 2026-09-06"
+  },
+  {
+    "id": "T-061",
+    "title": "تقسيم حقول السرد بين الملفّ والسجل القضائي",
+    "batch": "case-file",
+    "owner": "fullstack",
+    "est": "1ي",
+    "labels": [
+      "backend",
+      "frontend",
+      "نموذج-بيانات",
+      "محجوب"
+    ],
+    "deps": [
+      "T-046"
+    ],
+    "files": [
+      "migrations/",
+      "src/legalrag/practice/matters.py",
+      "src/legalrag/practice/cases.py",
+      "web/components/matter/CaseFile.tsx",
+      "web/lib/practice.ts"
+    ],
+    "source": "owner decision 2026-09-06"
   }
 ]
