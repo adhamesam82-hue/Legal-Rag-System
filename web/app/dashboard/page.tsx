@@ -26,6 +26,8 @@ import {
 } from "@/lib/practice";
 import { useFormat } from "@/lib/i18n/format";
 import { useEnumLabel } from "@/lib/i18n/enum-label";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { MatterTypeIcon, ProximityBadge } from "@/components/Distinction";
 
 export default function DashboardPage() {
   const { formatDate, formatDateTime, formatEGP, formatEGPCompact } = useFormat();
@@ -1184,9 +1186,12 @@ export default function DashboardPage() {
                                   </div>
                                   <div style={{ display: "flex", flexDirection: "column" }}>
                                     <span style={{ fontWeight: 500 }}>{matter.client_name || matter.name}</span>
-                                    <span style={{ fontSize: "10.5px", color: "var(--text3)" }}>
-                                      {enumLabel(matter.matter_type) || matter.matter_type}
-                                    </span>
+                                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                      <MatterTypeIcon type={matter.matter_type} />
+                                      <span style={{ fontSize: "10.5px", color: "var(--text3)" }}>
+                                        {enumLabel(matter.matter_type) || matter.matter_type}
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
                               </td>
@@ -1204,11 +1209,18 @@ export default function DashboardPage() {
                                   fontVariantNumeric: "tabular-nums",
                                 }}
                               >
-                                {matter.next_deadline
-                                  ? isTodayDeadline
-                                    ? `اليوم · ${matter.next_deadline.label}`
-                                    : `${formatDate(matter.next_deadline.due_date)}`
-                                  : "—"}
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                  <span>
+                                    {matter.next_deadline
+                                      ? isTodayDeadline
+                                        ? `اليوم · ${matter.next_deadline.label}`
+                                        : `${formatDate(matter.next_deadline.due_date)}`
+                                      : "—"}
+                                  </span>
+                                  {matter.next_deadline && (
+                                    <ProximityBadge date={matter.next_deadline.due_date} />
+                                  )}
+                                </div>
                               </td>
                               <td style={{ padding: "12px 16px" }}>
                                 <span
@@ -1257,7 +1269,7 @@ export default function DashboardPage() {
                                     height: "28px",
                                     display: "grid",
                                     placeItems: "center",
-                                    borderRadius: "7px",
+                                    borderRadius: "var(--rs)",
                                     color: "var(--text3)",
                                   }}
                                   aria-label="تفاصيل القضية"
@@ -1270,8 +1282,12 @@ export default function DashboardPage() {
                         })}
                         {(insights.recent_matters?.items ?? []).length === 0 && (
                           <tr>
-                            <td colSpan={7} style={{ textAlign: "center", padding: "28px", color: "var(--text3)" }}>
-                              لا توجد قضايا لعرضها في هذا النطاق
+                            <td colSpan={7} style={{ textAlign: "center", padding: "28px" }}>
+                              <EmptyState
+                                icon="folder_open"
+                                title="لا توجد قضايا"
+                                description="لا توجد قضايا لعرضها في هذا النطاق حالياً"
+                              />
                             </td>
                           </tr>
                         )}

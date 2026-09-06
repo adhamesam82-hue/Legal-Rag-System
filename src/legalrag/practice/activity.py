@@ -429,7 +429,7 @@ def dashboard_insights(
                        AND te.entry_date <= s.snap::date),
                    (SELECT coalesce(sum(i.amount), 0) FROM invoices i
                      WHERE i.organization_id = %(org)s AND i.status IN ('sent', 'overdue')
-                       AND i.issue_date <= s.snap::date)
+                       AND i.issued_date <= s.snap::date)
               FROM generate_series(%(start_date)s::date, %(end_date)s::date, '7 days'::interval) s(snap)
              ORDER BY s.snap
              LIMIT 9
@@ -494,7 +494,7 @@ def dashboard_insights(
               FROM invoices i
               JOIN matters m ON m.id = i.matter_id
              WHERE i.organization_id = %s AND {m_vis}
-               AND i.issue_date >= date_trunc('month', CURRENT_DATE)
+               AND i.issued_date >= date_trunc('month', CURRENT_DATE)
              GROUP BY m.matter_type
             HAVING sum(i.amount) > 0
              ORDER BY (sum(CASE WHEN i.status = 'paid' THEN i.amount ELSE 0 END) / sum(i.amount)) DESC

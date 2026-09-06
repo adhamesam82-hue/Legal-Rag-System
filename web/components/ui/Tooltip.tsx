@@ -72,7 +72,7 @@ export function Tooltip({
             fontSize: "11px",
             fontWeight: 600,
             padding: "5px 9px",
-            borderRadius: "7px",
+            borderRadius: "var(--rs)",
             whiteSpace: "nowrap",
             boxShadow: "var(--shadow-lg)",
             lineHeight: 1.2,
