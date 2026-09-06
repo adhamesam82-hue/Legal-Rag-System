@@ -222,7 +222,7 @@ export default function KnowledgeBaseDetailPage({
                 </div>
               ) : (
                 <p className="text-xs" style={{ color: "var(--text2)" }}>
-                  No related items yet.
+                  {t("@legalos.knowledgeBase.detail.noRelatedItems")}
                 </p>
               )}
             </Card>

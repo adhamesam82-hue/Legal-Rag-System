@@ -74,6 +74,7 @@ export const en: Catalog = {
   "@legalos.knowledgeBase.detail.author": { defaultMessage: "Author" },
   "@legalos.knowledgeBase.detail.lastUpdated": { defaultMessage: "Last updated" },
   "@legalos.knowledgeBase.detail.tags": { defaultMessage: "Tags" },
+  "@legalos.knowledgeBase.detail.noRelatedItems": { defaultMessage: "No related items yet." },
 };
 
 export const ar: Catalog = {
@@ -146,4 +147,5 @@ export const ar: Catalog = {
   "@legalos.knowledgeBase.detail.author": { defaultMessage: "المُعِدّ" },
   "@legalos.knowledgeBase.detail.lastUpdated": { defaultMessage: "آخر تحديث" },
   "@legalos.knowledgeBase.detail.tags": { defaultMessage: "الوسوم" },
+  "@legalos.knowledgeBase.detail.noRelatedItems": { defaultMessage: "لا توجد عناصر ذات صلة بعد." },
 };

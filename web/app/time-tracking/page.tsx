@@ -52,7 +52,6 @@ interface SavedTimerState {
   isRunning: boolean;
   matterId: string | null;
   description: string;
-  startTime: number | null;
   baseSeconds: number;
 }
 
@@ -186,7 +185,7 @@ export default function TimeTrackingPage() {
       await practice.time.remove(id);
       resource.reload();
     } catch (exc) {
-      setActionError(exc instanceof Error ? exc.message : "تعذر حذف قيد الوقت.");
+      setActionError(exc instanceof Error ? exc.message : t("@legalos.timeTracking.deleteFailed"));
     } finally {
       setDeletingId(null);
     }
@@ -468,7 +467,7 @@ export default function TimeTrackingPage() {
                               {t("@legalos.timeTracking.table.duration")}
                             </TableHead>
                             <TableHead style={{ width: "50px", textAlign: "end" }}>
-                              <span className="sr-only">إجراءات</span>
+                              <span className="sr-only">{t("@legalos.timeTracking.table.actions")}</span>
                             </TableHead>
                           </TableRow>
                         </TableHeader>
@@ -481,12 +480,12 @@ export default function TimeTrackingPage() {
                                 </span>
                               </TableCell>
                               <TableCell>
-                                <span className="text-xs font-semibold line-clamp-2" style={{ color: "var(--text)" }}>
+                                <span className="text-xs font-medium" style={{ color: "var(--text)" }}>
                                   {item.matter}
                                 </span>
                               </TableCell>
                               <TableCell>
-                                <span className="text-xs line-clamp-2" style={{ color: "var(--text)" }}>
+                                <span className="text-xs leading-relaxed" style={{ color: "var(--text2)" }}>
                                   {item.description || "—"}
                                 </span>
                               </TableCell>
@@ -496,22 +495,23 @@ export default function TimeTrackingPage() {
                                 </span>
                               </TableCell>
                               <TableCell>
-                                {!item.billable ? (
-                                  <Badge variant="soft" color="neutral" size="sm">
-                                    {t("@legalos.timeTracking.badge.nonBillable")}
-                                  </Badge>
-                                ) : item.invoiced ? (
-                                  <Badge variant="soft" color="info" size="sm">
-                                    {t("@legalos.timeTracking.badge.invoiced")}
+                                {item.billable ? (
+                                  <Badge color="success" variant="soft" size="sm">
+                                    {item.invoiced
+                                      ? t("@legalos.timeTracking.badge.invoiced")
+                                      : formatEGP(item.amount)}
                                   </Badge>
                                 ) : (
-                                  <span className="text-xs font-medium" style={{ color: "var(--text2)" }}>
-                                    {formatEGP(item.amount)}
-                                  </span>
+                                  <Badge color="neutral" variant="soft" size="sm">
+                                    {t("@legalos.timeTracking.badge.nonBillable")}
+                                  </Badge>
                                 )}
                               </TableCell>
                               <TableCell style={{ textAlign: "end" }}>
-                                <span className="text-xs font-semibold" style={{ color: "var(--text)" }}>
+                                <span
+                                  className="text-xs font-mono font-semibold"
+                                  style={{ color: "var(--text)" }}
+                                >
                                   {t("@legalos.timeTracking.hoursShort", { hours: item.hours.toFixed(1) })}
                                 </span>
                               </TableCell>
@@ -524,7 +524,7 @@ export default function TimeTrackingPage() {
                                     disabled={deletingId === item.id}
                                     onClick={() => handleDeleteEntry(item.id)}
                                     style={{ color: "var(--danger)" }}
-                                    aria-label="حذف قيد الوقت"
+                                    aria-label={t("@legalos.timeTracking.deleteEntry")}
                                   >
                                     <Icon name="delete" size={16} />
                                   </Button>
@@ -666,7 +666,8 @@ function LiveTimer({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // استرجاع حالة المؤقت من localStorage عند mount
+  // استرجاع حالة المؤقت من localStorage دون استئناف العدّ تلقائياً
+  // حماية لفواتير الموكلين من احتساب ساعات وهمية أثناء إغلاق التبويب (T-053)
   useEffect(() => {
     try {
       const raw = localStorage.getItem(TIMER_STORAGE_KEY);
@@ -674,15 +675,8 @@ function LiveTimer({
       const parsed: SavedTimerState = JSON.parse(raw);
       if (parsed.matterId) setMatterId(parsed.matterId);
       if (parsed.description) setDescription(parsed.description);
-
-      if (parsed.isRunning && parsed.startTime) {
-        const elapsed = Math.floor((Date.now() - parsed.startTime) / 1000);
-        setSeconds((parsed.baseSeconds ?? 0) + Math.max(0, elapsed));
-        setIsRunning(true);
-      } else {
-        setSeconds(parsed.baseSeconds ?? 0);
-        setIsRunning(false);
-      }
+      setSeconds(parsed.baseSeconds ?? 0);
+      setIsRunning(false);
     } catch {
       // تجاهل أخطاء التخزين المحلي
     }
@@ -700,10 +694,9 @@ function LiveTimer({
     if (!isRunning && seconds === 0 && !matterId && !description) return;
     try {
       const state: SavedTimerState = {
-        isRunning,
+        isRunning: false,
         matterId,
         description,
-        startTime: isRunning ? Date.now() - seconds * 1000 : null,
         baseSeconds: seconds,
       };
       localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(state));
@@ -714,18 +707,6 @@ function LiveTimer({
 
   function startTimer() {
     setIsRunning(true);
-    try {
-      const state: SavedTimerState = {
-        isRunning: true,
-        matterId,
-        description,
-        startTime: Date.now(),
-        baseSeconds: seconds,
-      };
-      localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      // تجاهل
-    }
   }
 
   async function stopAndLog() {

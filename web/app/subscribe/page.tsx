@@ -16,7 +16,7 @@ import { api } from "@/lib/api";
 import { DataView } from "@/components/DataState";
 
 export default function SubscribePage() {
-  const { organizationId, role } = useOrg();
+  const { organizationId } = useOrg();
   const t = useTranslator();
   const { formatDate } = useFormat();
   const firm = useResource(() => api.organization(organizationId!), [organizationId]);

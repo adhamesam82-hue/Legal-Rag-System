@@ -121,8 +121,8 @@ export default function ProfileSettingsPage() {
                     value={locale}
                     onChange={(e) => setLocale(e.target.value as Locale)}
                     options={[
-                      { value: "ar", label: "العربية" },
-                      { value: "en", label: "English" },
+                      { value: "ar", label: t("@legalos.settings.preferences.locale.ar") },
+                      { value: "en", label: t("@legalos.settings.preferences.locale.en") },
                     ]}
                   />
                 </div>
